@@ -33,7 +33,7 @@ export const DiscountInviteBanner = memo(function DiscountInviteBanner({
         className,
       )}
     >
-      <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-brand-pink/25 blur-2xl" />
+      <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-brand-pink/25 blur-2xl" />
       <div className="relative">
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-black text-white shadow-sm">

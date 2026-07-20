@@ -32,12 +32,16 @@ export function LocationPageClient({
 
   if (!location) {
     return (
-      <div
-        className={cn(
-          "mx-auto min-h-dvh overflow-x-hidden bg-background px-4 pt-8 lg:px-8",
-          APP_SHELL_WIDTH_CLASS,
-        )}
-      >
+    <div
+      className={cn(
+        "mx-auto min-h-dvh bg-background pt-8",
+        APP_SHELL_WIDTH_CLASS,
+      )}
+      style={{
+        paddingLeft: "max(1rem, env(safe-area-inset-left, 0px))",
+        paddingRight: "max(1rem, env(safe-area-inset-right, 0px))",
+      }}
+    >
         <div className="rounded-2xl border border-primary-black/10 p-6 text-center">
           <h1 className="text-xl font-bold text-primary-black">
             Location non trovata
@@ -59,9 +63,13 @@ export function LocationPageClient({
   return (
     <div
       className={cn(
-        "mx-auto min-h-dvh overflow-x-hidden bg-background px-4 pt-6 shadow-none sm:shadow-[0_0_60px_-15px_rgba(15,15,17,0.12)] lg:px-8 lg:pt-8",
+        "mx-auto min-h-dvh bg-background pt-6 shadow-none sm:shadow-[0_0_60px_-15px_rgba(15,15,17,0.12)] lg:pt-8",
         APP_SHELL_WIDTH_CLASS,
       )}
+      style={{
+        paddingLeft: "max(1rem, env(safe-area-inset-left, 0px))",
+        paddingRight: "max(1rem, env(safe-area-inset-right, 0px))",
+      }}
     >
       <LocationDetailView
         location={location}

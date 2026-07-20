@@ -73,15 +73,17 @@ export function MobileShell() {
 
   return (
     <div
-      className={`relative mx-auto min-h-dvh overflow-x-hidden bg-background shadow-none sm:shadow-[0_0_60px_-15px_rgba(15,15,17,0.12)] ${APP_SHELL_WIDTH_CLASS}`}
+      className={`relative mx-auto min-h-dvh bg-background shadow-none sm:shadow-[0_0_60px_-15px_rgba(15,15,17,0.12)] ${APP_SHELL_WIDTH_CLASS}`}
     >
       <main
-        className="min-w-0 px-4 pt-6 lg:px-8 lg:pt-8"
+        className="min-w-0 max-w-full overflow-x-clip pt-6 lg:pt-8"
         style={{
           paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))",
+          paddingLeft: "max(1rem, env(safe-area-inset-left, 0px))",
+          paddingRight: "max(1rem, env(safe-area-inset-right, 0px))",
         }}
       >
-        <div className="screen-enter">
+        <div className="screen-enter min-w-0 max-w-full overflow-x-clip">
           {renderActiveScreen()}
         </div>
       </main>

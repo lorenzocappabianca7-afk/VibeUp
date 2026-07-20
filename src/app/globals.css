@@ -22,6 +22,16 @@
   box-sizing: border-box;
 }
 
+html {
+  font-size: 16px;
+  scroll-behavior: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -31,21 +41,18 @@ body {
   overscroll-behavior-y: none;
   -ms-overflow-style: none;
   scrollbar-width: none;
+  width: 100%;
   max-width: 100%;
-}
-
-html {
-  font-size: 16.5px;
-  scroll-behavior: auto;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  max-width: 100%;
+  overflow-x: clip;
+  position: relative;
 }
 
 img,
 video,
+canvas,
 svg {
   max-width: 100%;
+  height: auto;
 }
 
 html::-webkit-scrollbar,

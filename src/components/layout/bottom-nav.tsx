@@ -28,10 +28,14 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   return (
     <nav
       className={cn(
-        "fixed bottom-0 left-1/2 z-50 -translate-x-1/2 border-t border-primary-black/15 bg-background lg:rounded-t-3xl lg:border-x",
+        "fixed inset-x-0 bottom-0 z-50 mx-auto border-t border-primary-black/15 bg-background lg:rounded-t-3xl lg:border-x",
         APP_SHELL_WIDTH_CLASS,
       )}
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      style={{
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        paddingLeft: "env(safe-area-inset-left, 0px)",
+        paddingRight: "env(safe-area-inset-right, 0px)",
+      }}
       aria-label="Navigazione principale"
     >
       <ul className="flex items-stretch justify-around px-1 pt-1.5 pb-2">

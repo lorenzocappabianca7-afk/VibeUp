@@ -62,7 +62,7 @@ export const CompareFavorites = memo(function CompareFavorites({
         )}
       </div>
 
-      <div className="max-w-full overflow-x-auto">
+      <div className="max-w-full overflow-x-auto overscroll-x-contain">
         <table
           className="w-full border-separate border-spacing-0 text-sm"
           style={{ minWidth: `${tableMinWidth}px` }}

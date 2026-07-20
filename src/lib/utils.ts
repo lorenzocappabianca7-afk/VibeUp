@@ -6,7 +6,7 @@ export function cn(...classes: (string | undefined | false | null)[]): string {
 
 /** Shared responsive width for app shell, pages, and bottom navigation */
 export const APP_SHELL_WIDTH_CLASS =
-  "w-full max-w-full sm:max-w-lg md:max-w-2xl lg:max-w-6xl";
+  "w-full max-w-full overflow-x-clip sm:max-w-lg md:max-w-2xl lg:max-w-6xl";
 
 export const MODAL_SAFE_BOTTOM_STYLE = {
   paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))",

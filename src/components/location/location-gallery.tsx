@@ -14,7 +14,7 @@ export function LocationGallery({ images, name }: LocationGalleryProps) {
 
   return (
     <div className="space-y-3">
-      <div className="relative -mx-4 aspect-[4/3] overflow-hidden sm:mx-0 sm:rounded-2xl lg:aspect-[16/10]">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl lg:aspect-[16/10]">
         <Image
           src={images[activeIndex]}
           alt={`${name} — foto ${activeIndex + 1}`}
@@ -28,7 +28,7 @@ export function LocationGallery({ images, name }: LocationGalleryProps) {
         </div>
       </div>
 
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+      <div className="flex max-w-full gap-2 overflow-x-auto pb-1">
         {images.map((image, index) => (
           <button
             key={image}

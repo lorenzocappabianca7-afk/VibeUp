@@ -608,8 +608,8 @@ function SimilarLocationsCarousel({ locations }: { locations: Location[] }) {
         </p>
       </div>
 
-      <div className="scrollbar-hidden smooth-scroll -mx-4 overflow-x-auto px-4 pb-2 lg:-mx-8 lg:px-8">
-        <ul className="flex gap-3">
+      <div className="scrollbar-hidden smooth-scroll max-w-full overflow-x-auto pb-2">
+        <ul className="flex w-max gap-3">
           {locations.map((similarLocation) => {
             const price = getLocationPricePresentation(similarLocation);
 
@@ -677,8 +677,8 @@ function RecommendedDjsCarousel({
         </p>
       </div>
 
-      <div className="scrollbar-hidden smooth-scroll -mx-4 overflow-x-auto px-4 pb-2 lg:-mx-8 lg:px-8">
-        <ul className="flex gap-3">
+      <div className="scrollbar-hidden smooth-scroll max-w-full overflow-x-auto pb-2">
+        <ul className="flex w-max gap-3">
           {djs.map((dj) => (
             <li key={dj.id} className="w-[15rem] shrink-0 lg:w-[17rem]">
               <Link
