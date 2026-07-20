@@ -7,7 +7,7 @@ export function Footer() {
         <div>
           <div className="flex items-center gap-3">
             <Image
-              src="/vibeup-logo.png"
+              src="/vibeup-mark.png"
               alt="Logo VibeUp"
               width={52}
               height={52}

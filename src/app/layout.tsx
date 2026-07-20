@@ -40,14 +40,14 @@ export const metadata: Metadata = {
     title: "VibeUp — Organizza feste senza stress",
     description:
       "Trova location, servizi e organizza la tua festa con VibeUp.",
-    images: [{ url: "/vibeup-logo.png", width: 512, height: 512, alt: "VibeUp" }],
+    images: [{ url: "/vibeup-mark.png", width: 512, height: 512, alt: "VibeUp" }],
   },
   twitter: {
     card: "summary",
     title: "VibeUp — Organizza feste senza stress",
     description:
       "Trova location, servizi e organizza la tua festa con VibeUp.",
-    images: ["/vibeup-logo.png"],
+    images: ["/vibeup-mark.png"],
   },
   robots: {
     index: true,
@@ -55,11 +55,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/vibeup-mark-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/vibeup-mark-512.png", sizes: "512x512", type: "image/png" },
     ],
-    shortcut: "/vibeup-logo.png",
-    apple: "/apple-touch-icon.png",
+    shortcut: "/favicon.ico",
+    apple: "/vibeup-apple.png",
   },
 };
 
