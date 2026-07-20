@@ -322,9 +322,9 @@ export const MyEventsScreen = memo(function MyEventsScreen({}: MyEventsScreenPro
   }, []);
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="min-w-0 w-full max-w-full space-y-6 overflow-x-hidden">
       <header className="flex min-w-0 items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 pr-1">
           <h1 className="text-2xl font-bold text-primary-black">
             I Miei Eventi
           </h1>
@@ -332,7 +332,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({}: MyEventsScreenPro
             Feste che stai organizzando
           </p>
         </div>
-        <div className="relative mt-4 shrink-0">
+        <div className="relative mt-1 shrink-0">
           {discountBannerOpen && (
             <button
               type="button"
@@ -344,7 +344,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({}: MyEventsScreenPro
           <button
             type="button"
             onClick={toggleDiscountBanner}
-            className="relative z-50 rounded-full border border-brand-pink bg-brand-pink/12 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-brand-pink transition-colors hover:bg-brand-pink/20 sm:px-3 sm:py-2 sm:text-[11px] sm:tracking-[0.12em]"
+            className="relative z-50 max-w-[9.5rem] truncate rounded-full border border-brand-pink bg-brand-pink/12 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-brand-pink transition-colors hover:bg-brand-pink/20 sm:max-w-none sm:px-3 sm:py-2 sm:text-[11px] sm:tracking-[0.12em]"
             aria-expanded={discountBannerOpen}
           >
             Ottieni sconti
@@ -465,14 +465,14 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   }, [event.id, event.title]);
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-primary-black/10 bg-white shadow-[0_6px_24px_-12px_rgba(15,15,17,0.18)]">
-      <div className="border-b border-primary-black/8 px-5 py-4">
-        <div className="flex items-start justify-between gap-3">
+    <article className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-primary-black/10 bg-white shadow-[0_6px_24px_-12px_rgba(15,15,17,0.18)]">
+      <div className="border-b border-primary-black/8 px-4 py-4">
+        <div className="flex min-w-0 items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <p className={`text-xs font-medium ${statusColors[event.status]}`}>
               {EVENT_STATUS_LABELS[event.status]}
             </p>
-            <label className="mt-1 block">
+            <label className="mt-1 block min-w-0">
               <span className="sr-only">Titolo evento</span>
               <input
                 value={titleDraft}
@@ -484,7 +484,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                   }
                 }}
                 placeholder="Nome evento"
-                className="w-full bg-transparent text-xl font-semibold leading-snug text-primary-black outline-none placeholder:text-primary-black/35"
+                className="w-full min-w-0 max-w-full bg-transparent text-xl font-semibold leading-snug text-primary-black outline-none placeholder:text-primary-black/35"
                 aria-label="Titolo evento"
               />
             </label>
@@ -496,33 +496,29 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
           </div>
           <Link
             href={`/event/${event.id}`}
-            className="shrink-0 text-sm font-medium text-primary-black underline underline-offset-4"
+            className="shrink-0 pt-5 text-sm font-medium text-primary-black underline underline-offset-4"
           >
             Dettagli
           </Link>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-primary-black/65">
-          <span className="inline-flex items-center gap-1.5">
+        <div className="mt-4 space-y-1.5 text-sm text-primary-black/65">
+          <p className="flex min-w-0 items-center gap-1.5">
             <Calendar className="h-4 w-4 shrink-0" aria-hidden />
-            {formatDate(event.date)} · {event.time}
-          </span>
-          <span className="hidden text-primary-black/25 sm:inline" aria-hidden>
-            ·
-          </span>
-          <span className="inline-flex min-w-0 items-center gap-1.5">
+            <span className="min-w-0 truncate">
+              {formatDate(event.date)} · {event.time}
+            </span>
+          </p>
+          <p className="flex min-w-0 items-center gap-1.5">
             <MapPin className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="truncate">
+            <span className="min-w-0 truncate">
               {event.locationName}, {event.city}
             </span>
-          </span>
-          <span className="hidden text-primary-black/25 sm:inline" aria-hidden>
-            ·
-          </span>
-          <span className="inline-flex items-center gap-1.5">
+          </p>
+          <p className="flex min-w-0 items-center gap-1.5">
             <Users className="h-4 w-4 shrink-0" aria-hidden />
             {event.guestCount} ospiti
-          </span>
+          </p>
         </div>
       </div>
 
@@ -533,16 +529,16 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
         onPayDeposit={payDeposit}
       />
 
-      <div className="px-5 py-4">
-        <div className="flex items-center justify-between gap-3">
+      <div className="min-w-0 px-4 py-4">
+        <div className="flex min-w-0 items-center justify-between gap-3">
           <h3 className="text-sm font-semibold text-primary-black">Servizi</h3>
-          <p className="text-sm text-primary-black/50">
+          <p className="shrink-0 text-sm text-primary-black/50">
             {event.services.length}{" "}
             {event.services.length === 1 ? "voce" : "voci"}
           </p>
         </div>
 
-        <ul className="mt-3 divide-y divide-primary-black/8">
+        <ul className="mt-3 min-w-0 divide-y divide-primary-black/8">
           {event.services.map((service) => {
             const payment =
               paymentStates[`${event.id}:${service.id}`] ?? { paid: false };
@@ -550,9 +546,9 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
             return (
               <li
                 key={service.id}
-                className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                className="flex min-w-0 flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
               >
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-primary-black">
                     {service.name}
                   </p>
@@ -560,8 +556,8 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                     {service.providerName}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <span className="text-sm font-medium text-primary-black">
+                <div className="flex min-w-0 items-center justify-between gap-2 sm:justify-end">
+                  <span className="text-sm font-medium tabular-nums text-primary-black">
                     {formatCurrency(service.amountPaid)}
                   </span>
                   <button
@@ -572,7 +568,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                         : onOpenPayment({ event, service })
                     }
                     disabled={payment.paid}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                       payment.paid
                         ? "bg-primary-black text-white"
                         : "border border-primary-black/15 text-primary-black hover:border-primary-black/30"
@@ -587,15 +583,15 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
         </ul>
 
         <dl className="mt-4 space-y-2 border-t border-primary-black/8 pt-4 text-sm">
-          <div className="flex items-center justify-between gap-3">
-            <dt className="text-primary-black/55">Caparra location</dt>
-            <dd className="font-medium text-primary-black">
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <dt className="min-w-0 text-primary-black/55">Caparra location</dt>
+            <dd className="shrink-0 font-medium tabular-nums text-primary-black">
               {formatCurrency(depositAmount)}
             </dd>
           </div>
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center justify-between gap-3">
             <dt className="font-semibold text-primary-black">Totale</dt>
-            <dd className="text-base font-semibold text-primary-black">
+            <dd className="shrink-0 text-base font-semibold tabular-nums text-primary-black">
               {formatCurrency(totalCost)}
             </dd>
           </div>
@@ -603,7 +599,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       </div>
 
       {menuServices.length > 0 && (
-        <section className="border-t border-primary-black/8 px-5 py-4">
+        <section className="min-w-0 border-t border-primary-black/8 px-4 py-4">
           <div className="flex items-center gap-2">
             <UtensilsCrossed className="h-4 w-4 text-primary-black/45" aria-hidden />
             <h3 className="text-sm font-semibold text-primary-black">Menu</h3>
@@ -616,18 +612,18 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
               return (
                 <div
                   key={service.id}
-                  className="rounded-xl bg-primary-black/[0.03] p-3"
+                  className="min-w-0 rounded-xl bg-primary-black/[0.03] p-3"
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-primary-black">
+                      <p className="truncate text-sm font-medium text-primary-black">
                         {service.name}
                       </p>
-                      <p className="text-xs text-primary-black/50">
+                      <p className="truncate text-xs text-primary-black/50">
                         {service.providerName}
                       </p>
                     </div>
-                    <p className="shrink-0 text-sm font-medium text-primary-black">
+                    <p className="shrink-0 text-sm font-medium tabular-nums text-primary-black">
                       {formatCurrency(service.amountPaid)}
                     </p>
                   </div>
@@ -656,14 +652,14 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       )}
 
       {missingSuggestions.length > 0 && (
-        <section className="border-t border-primary-black/8 bg-rose-50/60 px-5 py-4">
+        <section className="min-w-0 border-t border-primary-black/8 bg-rose-50/60 px-4 py-4">
           <p className="text-sm font-medium text-primary-black">
             Potrebbe mancare
           </p>
           <p className="mt-0.5 text-xs text-primary-black/50">
             Aggiungi altri servizi alla festa
           </p>
-          <div className="scrollbar-hidden mt-3 flex gap-2 overflow-x-auto pb-1">
+          <div className="scrollbar-hidden mt-3 flex max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1">
             {missingSuggestions.map((suggestion) => {
               const Icon = suggestion.icon;
 
@@ -708,8 +704,8 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
   }, [deadline]);
 
   return (
-    <section className="border-b border-primary-black/8 bg-primary-black/[0.02] px-5 py-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <section className="min-w-0 border-b border-primary-black/8 bg-primary-black/[0.02] px-4 py-3">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-medium text-primary-black">
             Caparra {formatCurrency(depositAmount)}
@@ -728,18 +724,18 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
         </div>
 
         {payment.paid ? (
-          <span className="inline-flex shrink-0 items-center rounded-lg bg-primary-black px-4 py-2 text-xs font-medium text-white">
+          <span className="inline-flex w-fit shrink-0 items-center rounded-lg bg-primary-black px-4 py-2 text-xs font-medium text-white">
             Caparra pagata
           </span>
         ) : countdown.isPast ? (
-          <span className="inline-flex shrink-0 items-center rounded-lg border border-primary-black/15 px-4 py-2 text-xs font-medium text-primary-black/60">
+          <span className="inline-flex w-fit shrink-0 items-center rounded-lg border border-primary-black/15 px-4 py-2 text-xs font-medium text-primary-black/60">
             Scadenza superata
           </span>
         ) : (
           <button
             type="button"
             onClick={onPayDeposit}
-            className="inline-flex shrink-0 items-center rounded-lg bg-primary-black px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-primary-black/85"
+            className="inline-flex w-fit shrink-0 items-center rounded-lg bg-primary-black px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-primary-black/85"
           >
             Paga caparra
           </button>
