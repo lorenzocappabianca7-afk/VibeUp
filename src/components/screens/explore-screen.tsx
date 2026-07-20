@@ -662,10 +662,10 @@ export function ExploreScreen({
 
           {filteredServices.length > 0 ? (
             <>
-              <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              <ul className="grid min-w-0 gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {filteredServices.map((service) => (
-                  <li key={service.id} className="render-contained h-full">
-                    <ServiceCard
+                <li key={service.id} className="min-w-0 h-full">
+                  <ServiceCard
                       service={service}
                       href={buildServiceHref(service)}
                       isFavorite={favoriteServiceIdSet.has(service.id)}
@@ -717,9 +717,9 @@ export function ExploreScreen({
           </div>
 
           {filteredLocations.length > 0 ? (
-            <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <ul className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredLocations.map((location) => (
-                <li key={location.id} className="render-contained h-full">
+                <li key={location.id} className="min-w-0 h-full">
                   <LocationCard
                     location={location}
                     isFavorite={favoriteLocationIdSet.has(location.id)}

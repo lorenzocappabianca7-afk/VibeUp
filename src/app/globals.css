@@ -29,7 +29,7 @@ html {
   scrollbar-width: none;
   width: 100%;
   max-width: 100%;
-  overflow-x: clip;
+  overflow-x: hidden;
 }
 
 body {
@@ -43,7 +43,7 @@ body {
   scrollbar-width: none;
   width: 100%;
   max-width: 100%;
-  overflow-x: clip;
+  overflow-x: hidden;
   position: relative;
 }
 
@@ -92,7 +92,9 @@ input[type="number"]::-webkit-outer-spin-button {
 .render-contained {
   contain: layout paint;
   content-visibility: auto;
-  contain-intrinsic-size: 420px;
+  /* Solo altezza: una larghezza fissa (es. 420px) fa uscire il layout su mobile */
+  contain-intrinsic-block-size: 420px;
+  contain-intrinsic-inline-size: auto;
 }
 
 .vibeup-map-marker {

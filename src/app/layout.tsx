@@ -82,8 +82,8 @@ export default function RootLayout({
     >
       <body className="min-h-dvh text-primary-black">
         <AppProviders>
-          <div className="flex min-h-dvh min-w-0 max-w-full flex-col overflow-x-clip">
-            <div className="min-w-0 max-w-full flex-1 overflow-x-clip">{children}</div>
+          <div className="flex min-h-dvh min-w-0 max-w-full flex-col overflow-x-hidden">
+            <div className="min-w-0 max-w-full flex-1 overflow-x-hidden">{children}</div>
             <Footer />
           </div>
         </AppProviders>
