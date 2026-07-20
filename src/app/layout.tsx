@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppProviders } from "@/components/providers/app-providers";
 import { Footer } from "@/components/layout/footer";
+import { getSiteUrl } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,9 +16,57 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VibeUp — Organizza feste senza stress",
+  metadataBase: new URL(getSiteUrl()),
+  title: {
+    default: "VibeUp — Organizza feste senza stress",
+    template: "%s | VibeUp",
+  },
   description:
-    "Web app per organizzare feste: gestisci invitati, attività e timeline in un unico posto.",
+    "VibeUp (Vibe Up) è la web app per organizzare feste: trova location, DJ, fotografi e servizi per il tuo evento in un unico posto.",
+  keywords: [
+    "VibeUp",
+    "Vibe Up",
+    "organizzare feste",
+    "organizza feste",
+    "location per feste",
+    "eventi",
+    "party planner",
+  ],
+  applicationName: "VibeUp",
+  openGraph: {
+    type: "website",
+    locale: "it_IT",
+    siteName: "VibeUp",
+    title: "VibeUp — Organizza feste senza stress",
+    description:
+      "Trova location, servizi e organizza la tua festa con VibeUp.",
+    images: [{ url: "/vibeup-logo.png", width: 512, height: 512, alt: "VibeUp" }],
+  },
+  twitter: {
+    card: "summary",
+    title: "VibeUp — Organizza feste senza stress",
+    description:
+      "Trova location, servizi e organizza la tua festa con VibeUp.",
+    images: ["/vibeup-logo.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/vibeup-logo.png",
+    apple: "/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -28,12 +77,12 @@ export default function RootLayout({
   return (
     <html
       lang="it"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full overflow-x-hidden antialiased`}
     >
-      <body className="min-h-dvh text-primary-black">
+      <body className="min-h-dvh overflow-x-hidden text-primary-black">
         <AppProviders>
-          <div className="flex min-h-dvh flex-col">
-            <div className="flex-1">{children}</div>
+          <div className="flex min-h-dvh min-w-0 flex-col overflow-x-hidden">
+            <div className="min-w-0 flex-1">{children}</div>
             <Footer />
           </div>
         </AppProviders>

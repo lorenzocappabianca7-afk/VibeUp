@@ -35,19 +35,19 @@ export function BookingSummary({
 
       <dl className="space-y-2 text-sm">
         {quote.hours > 0 && (
-          <div className="flex justify-between">
-            <dt className="text-primary-black/60">
+          <div className="flex justify-between gap-3">
+            <dt className="min-w-0 text-primary-black/60">
               Location ({quote.hours} ore × {formatCurrency(hourlyPrice)})
             </dt>
-            <dd className="font-medium text-primary-black">
+            <dd className="shrink-0 font-medium text-primary-black">
               {formatCurrency(quote.locationCost)}
             </dd>
           </div>
         )}
         {quote.extrasCost > 0 && (
-          <div className="flex justify-between">
-            <dt className="text-primary-black/60">Servizi extra</dt>
-            <dd className="font-medium text-primary-black">
+          <div className="flex justify-between gap-3">
+            <dt className="min-w-0 text-primary-black/60">Servizi extra</dt>
+            <dd className="shrink-0 font-medium text-primary-black">
               {formatCurrency(quote.extrasCost)}
             </dd>
           </div>
@@ -58,11 +58,11 @@ export function BookingSummary({
             {quote.total > 0 ? formatCurrency(quote.total) : "—"}
           </dd>
         </div>
-        <div className="flex justify-between rounded-xl bg-brand-pink/10 px-3 py-2.5">
-          <dt className="text-sm font-medium text-primary-black">
+        <div className="flex justify-between gap-3 rounded-xl bg-brand-pink/10 px-3 py-2.5">
+          <dt className="min-w-0 text-sm font-medium text-primary-black">
             Caparra stimata (30% location)
           </dt>
-          <dd className="text-sm font-bold text-brand-pink">
+          <dd className="shrink-0 text-sm font-bold text-brand-pink">
             {quote.depositAmount > 0
               ? formatCurrency(quote.depositAmount)
               : "—"}

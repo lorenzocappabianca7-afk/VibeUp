@@ -21,7 +21,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
+import { SafeImage } from "@/components/ui/safe-image";
 import { useAppState } from "@/context/app-state-context";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
@@ -128,6 +128,7 @@ export function ProfileScreen() {
     removeFavoriteService,
     switchAccount,
     updateCurrentUser,
+    isStorageHydrated,
   } = useAppState();
   const [newAccountName, setNewAccountName] = useState("");
   const [newAccountEmail, setNewAccountEmail] = useState("");
@@ -147,11 +148,37 @@ export function ProfileScreen() {
     phoneNumber: currentUser.phoneNumber ?? "",
   });
   const lastSyncedUserId = useRef(currentUser.id);
+  const hasHydratedProfileDraft = useRef(false);
   const canManagePublications = canAccessAdminCatalog(currentUser.email);
 
   useEffect(() => {
-    if (lastSyncedUserId.current === currentUser.id) return;
-    lastSyncedUserId.current = currentUser.id;
+    if (!isStorageHydrated) return;
+
+    if (lastSyncedUserId.current !== currentUser.id) {
+      lastSyncedUserId.current = currentUser.id;
+      hasHydratedProfileDraft.current = true;
+
+      queueMicrotask(() => {
+        setProfileDraft({
+          name: currentUser.name,
+          email: currentUser.email,
+          instagramHandle: currentUser.instagramHandle ?? "",
+          phoneNumber: currentUser.phoneNumber ?? "",
+        });
+        setCardDraft((current) => ({
+          ...current,
+          cardholderName: currentUser.name,
+          cardNumber: "",
+          expiry: "",
+          cvc: "",
+        }));
+        setCardError(null);
+      });
+      return;
+    }
+
+    if (hasHydratedProfileDraft.current) return;
+    hasHydratedProfileDraft.current = true;
 
     queueMicrotask(() => {
       setProfileDraft({
@@ -163,11 +190,7 @@ export function ProfileScreen() {
       setCardDraft((current) => ({
         ...current,
         cardholderName: currentUser.name,
-        cardNumber: "",
-        expiry: "",
-        cvc: "",
       }));
-      setCardError(null);
     });
   }, [
     currentUser.email,
@@ -175,6 +198,7 @@ export function ProfileScreen() {
     currentUser.instagramHandle,
     currentUser.name,
     currentUser.phoneNumber,
+    isStorageHydrated,
   ]);
   const favoriteLocations = useMemo(() => {
     const managedLocations = managedListings
@@ -316,7 +340,7 @@ export function ProfileScreen() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-primary-black">Profilo</h1>
         <p className="mt-1 text-sm text-primary-black/60">
@@ -325,7 +349,7 @@ export function ProfileScreen() {
       </header>
 
       <div className="rounded-2xl border border-primary-black/10 bg-primary-black/[0.02] p-5">
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-center gap-4">
           <label className="group relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-brand-pink/20 text-brand-pink">
             {currentUser.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -348,8 +372,8 @@ export function ProfileScreen() {
             />
           </label>
           <div className="min-w-0 flex-1">
-            <p className="font-semibold text-primary-black">{currentUser.name}</p>
-            <p className="text-sm text-primary-black/60">{currentUser.email}</p>
+            <p className="truncate font-semibold text-primary-black">{currentUser.name}</p>
+            <p className="truncate text-sm text-primary-black/60">{currentUser.email}</p>
             <span className="mt-1 inline-block rounded-full bg-brand-teal/15 px-2.5 py-0.5 text-xs font-medium text-brand-teal">
               {isBusinessUser ? "Account Business" : "Piano gratuito"}
             </span>
@@ -732,7 +756,7 @@ export function ProfileScreen() {
                   className="flex gap-3 p-2 pr-11"
                 >
                   <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl">
-                    <Image
+                    <SafeImage
                       src={location.imageUrl}
                       alt={location.name}
                       fill
@@ -814,7 +838,7 @@ export function ProfileScreen() {
                 >
                   <div className="relative flex h-20 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-brand-teal/10 text-brand-teal">
                     {service.imageUrl ? (
-                      <Image
+                      <SafeImage
                         src={service.imageUrl}
                         alt={service.name}
                         fill

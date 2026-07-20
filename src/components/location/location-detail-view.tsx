@@ -510,14 +510,14 @@ export function LocationDetailView({
         </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(390px,0.95fr)] lg:items-start">
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)] xl:items-start">
         <div className="space-y-6">
           <LocationGallery images={location.gallery} name={location.name} />
 
           <LocationInfo location={location} />
         </div>
 
-        <aside className="space-y-6 lg:sticky lg:top-8">
+        <aside className="space-y-6 xl:sticky xl:top-8">
           <SmartLocationDetailsSection
             partyType={
               initialQuoteContext?.partyType

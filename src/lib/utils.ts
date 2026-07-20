@@ -4,6 +4,17 @@ export function cn(...classes: (string | undefined | false | null)[]): string {
   return classes.filter(Boolean).join(" ");
 }
 
+/** Shared responsive width for app shell, pages, and bottom navigation */
+export const APP_SHELL_WIDTH_CLASS =
+  "w-full max-w-full sm:max-w-lg md:max-w-2xl lg:max-w-6xl";
+
+export const MODAL_SAFE_BOTTOM_STYLE = {
+  paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))",
+} as const;
+
+export const DISCOUNT_POPOVER_CLASS =
+  "fixed inset-x-4 top-24 z-50 max-h-[calc(100dvh-7rem-env(safe-area-inset-bottom,0px))] overflow-y-auto sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-3 sm:max-h-none sm:w-[min(100%,42rem)] sm:overflow-visible";
+
 export function formatDate(date: string | Date, locale = "it-IT"): string {
   return new Intl.DateTimeFormat(locale, {
     day: "numeric",

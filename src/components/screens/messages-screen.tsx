@@ -24,7 +24,7 @@ const placeholderMessages = [
 
 export const MessagesScreen = memo(function MessagesScreen() {
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-primary-black">Messaggi</h1>
         <p className="mt-1 text-sm text-primary-black/60">
@@ -57,7 +57,7 @@ export const MessagesScreen = memo(function MessagesScreen() {
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-semibold text-primary-black">
+                <p className="min-w-0 truncate text-sm font-semibold text-primary-black">
                   {message.sender}
                 </p>
                 {message.unread && (
@@ -67,7 +67,7 @@ export const MessagesScreen = memo(function MessagesScreen() {
                   />
                 )}
               </div>
-              <p className="mt-0.5 text-sm text-primary-black/60">
+              <p className="mt-0.5 line-clamp-2 text-sm text-primary-black/60">
                 {message.message}
               </p>
               <p className="mt-1 text-xs text-primary-black/40">

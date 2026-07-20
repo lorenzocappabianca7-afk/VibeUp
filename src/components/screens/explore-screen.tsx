@@ -17,7 +17,7 @@ import {
   matchesGeoFilter,
   matchesNearMeFilter,
 } from "@/lib/geo";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, DISCOUNT_POPOVER_CLASS, formatCurrency } from "@/lib/utils";
 import {
   DEFAULT_EXPLORE_FILTERS,
   DEFAULT_SERVICE_EXPLORE_FILTERS,
@@ -49,7 +49,7 @@ import {
   useTransition,
 } from "react";
 import type { ManagedListing, ManagedLocationListing } from "@/types/admin";
-import Image from "next/image";
+import { SafeImage } from "@/components/ui/safe-image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -516,10 +516,10 @@ export function ExploreScreen({
   );
 
   return (
-    <div className="space-y-5 lg:space-y-6">
-      <header className="relative">
-        <div className="flex items-start justify-between gap-3">
-          <div>
+    <div className="min-w-0 space-y-5 lg:space-y-6">
+      <header className="relative min-w-0">
+        <div className="flex min-w-0 items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-bold text-primary-black">Esplora</h1>
             <p className="mt-1 text-sm text-primary-black/60">
               Esplora i servizi per la tua festa
@@ -538,14 +538,14 @@ export function ExploreScreen({
               <button
                 type="button"
                 onClick={toggleDiscountBanner}
-                className="relative z-50 rounded-full border border-brand-pink bg-brand-pink/12 px-3 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-brand-pink transition-colors hover:bg-brand-pink/20"
+                className="relative z-50 rounded-full border border-brand-pink bg-brand-pink/12 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-brand-pink transition-colors hover:bg-brand-pink/20 sm:px-3 sm:py-2 sm:text-[11px] sm:tracking-[0.12em]"
                 aria-expanded={discountBannerOpen}
               >
                 Ottieni sconti
               </button>
               {discountBannerOpen && (
-                <div className="absolute right-0 top-full z-50 mt-3 w-[min(calc(100vw-2rem),42rem)]">
-                  <span className="absolute -top-2 right-8 h-4 w-4 rotate-45 border-l-2 border-t-2 border-brand-pink bg-pink-50" />
+                <div className={DISCOUNT_POPOVER_CLASS}>
+                  <span className="absolute -top-2 right-8 hidden h-4 w-4 rotate-45 border-l-2 border-t-2 border-brand-pink bg-pink-50 sm:block" />
                   <DiscountInviteBanner
                     contact={inviteContact}
                     sent={inviteSent}
@@ -558,8 +558,8 @@ export function ExploreScreen({
             </div>
           )}
         </div>
-        <div className="scrollbar-hidden smooth-scroll -mx-1 mt-3 overflow-x-auto px-1 pb-1 lg:overflow-visible">
-          <div className="mx-auto flex w-max max-w-full min-w-max justify-center gap-2 rounded-3xl border border-primary-black/10 bg-primary-black/[0.03] p-2 lg:min-w-0 lg:flex-wrap">
+        <div className="mt-3 rounded-3xl border border-primary-black/10 bg-primary-black/[0.03] p-2">
+          <div className="flex flex-wrap justify-center gap-2">
             {EXPLORE_CATEGORIES.map((category) => {
               const Icon = category.icon;
               return (
@@ -651,8 +651,8 @@ export function ExploreScreen({
             isCategoryPending && "opacity-80",
           )}
         >
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-primary-black/60">
+          <div className="flex min-w-0 items-center justify-between gap-2">
+            <p className="min-w-0 text-sm text-primary-black/60">
               {filteredServices.length}{" "}
               {filteredServices.length === 1
                 ? "servizio trovato"
@@ -662,7 +662,7 @@ export function ExploreScreen({
 
           {filteredServices.length > 0 ? (
             <>
-              <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {filteredServices.map((service) => (
                   <li key={service.id} className="render-contained h-full">
                     <ServiceCard
@@ -699,8 +699,8 @@ export function ExploreScreen({
             isCategoryPending && "opacity-80",
           )}
         >
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-primary-black/60">
+          <div className="flex min-w-0 items-center justify-between gap-2">
+            <p className="min-w-0 text-sm text-primary-black/60">
               {filteredLocations.length}{" "}
               {filteredLocations.length === 1
                 ? "location trovata"
@@ -717,7 +717,7 @@ export function ExploreScreen({
           </div>
 
           {filteredLocations.length > 0 ? (
-            <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredLocations.map((location) => (
                 <li key={location.id} className="render-contained h-full">
                   <LocationCard
@@ -794,45 +794,40 @@ const ServiceCard = memo(function ServiceCard({
   onToggleFavorite: (id: string) => void;
 }) {
   return (
-    <Link
-      href={href}
-      className="block h-full overflow-hidden rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-colors duration-150 hover:border-primary-black"
-    >
-      {service.imageUrl && (
-        <div className="relative aspect-[16/9] bg-primary-black/[0.03]">
-          <Image
-            src={service.imageUrl}
-            alt={service.name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 448px) 100vw, 360px"
-          />
+    <article className="h-full overflow-hidden rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-colors duration-150 hover:border-primary-black">
+      <Link href={href} className="block">
+        {service.imageUrl && (
+          <div className="relative aspect-[16/9] bg-primary-black/[0.03]">
+            <SafeImage
+              src={service.imageUrl}
+              alt={service.name}
+              fill
+              className="object-cover"
+              sizes="(max-width: 448px) 100vw, 360px"
+            />
+          </div>
+        )}
+        <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+          <div className="min-w-0">
+            <h3 className="truncate font-semibold text-primary-black">
+              {service.name}
+            </h3>
+            <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-primary-black/60">
+              {service.description}
+            </p>
+            <p className="mt-2 truncate text-xs text-primary-black/45">
+              {service.providerZone}
+            </p>
+          </div>
+          <span className="shrink-0 self-start rounded-full bg-primary-black px-3 py-1.5 text-xs font-bold text-white sm:self-auto">
+            {getServicePriceLabel(service)}
+          </span>
         </div>
-      )}
-      <div className="flex items-start justify-between gap-3 p-4">
-        <div className="min-w-0">
-          <h3 className="truncate font-semibold text-primary-black">
-            {service.name}
-          </h3>
-          <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-primary-black/60">
-            {service.description}
-          </p>
-          <p className="mt-2 truncate text-xs text-primary-black/45">
-            {service.providerZone}
-          </p>
-        </div>
-        <span className="shrink-0 rounded-full bg-primary-black px-3 py-1.5 text-xs font-bold text-white">
-          {getServicePriceLabel(service)}
-        </span>
-      </div>
+      </Link>
       <div className="px-4 pb-4">
         <button
           type="button"
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            onToggleFavorite(service.id);
-          }}
+          onClick={() => onToggleFavorite(service.id)}
           className={cn(
             "flex w-full items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-black transition-colors",
             isFavorite
@@ -853,6 +848,6 @@ const ServiceCard = memo(function ServiceCard({
           {isFavorite ? "Nei preferiti" : "Aggiungi ai preferiti"}
         </button>
       </div>
-    </Link>
+    </article>
   );
 });

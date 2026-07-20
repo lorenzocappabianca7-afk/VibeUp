@@ -9,7 +9,7 @@ import {
   type BookedService,
   type UserEvent,
 } from "@/types/event";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, MODAL_SAFE_BOTTOM_STYLE } from "@/lib/utils";
 import {
   ArrowLeft,
   Camera,
@@ -34,7 +34,7 @@ export function EventDashboardView({
   eventId,
   initialEvent,
 }: EventDashboardViewProps) {
-  const { getEvent } = useAppState();
+  const { getEvent, isStorageHydrated } = useAppState();
   const event = getEvent(eventId) ?? initialEvent;
   const [refundService, setRefundService] = useState<BookedService | null>(
     null,
@@ -43,6 +43,15 @@ export function EventDashboardView({
   const [addServicesOpen, setAddServicesOpen] = useState(false);
 
   if (!event) {
+    if (!isStorageHydrated) {
+      return (
+        <div className="space-y-6 pb-8">
+          <div className="h-8 w-40 animate-pulse rounded-xl bg-primary-black/10" />
+          <div className="h-48 animate-pulse rounded-3xl bg-primary-black/[0.04]" />
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6 pb-8">
         <Link
@@ -162,10 +171,10 @@ export function EventDashboardView({
         <dl className="space-y-2 text-sm">
           {currentEvent.services.map((service) => (
             <div key={service.id} className="flex justify-between gap-3">
-              <dt className="text-primary-black/60">
+              <dt className="min-w-0 truncate text-primary-black/60">
                 {service.name} · {service.providerName}
               </dt>
-              <dd className="font-medium text-primary-black">
+              <dd className="shrink-0 font-medium text-primary-black">
                 {formatCurrency(service.amountPaid)}
               </dd>
             </div>
@@ -264,7 +273,10 @@ function AddServicesModal({
         aria-label="Chiudi aggiunta servizi"
       />
 
-      <div className="smooth-scroll relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-background p-5 shadow-xl lg:rounded-3xl">
+      <div
+        className="smooth-scroll relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-background p-5 shadow-xl lg:rounded-3xl"
+        style={MODAL_SAFE_BOTTOM_STYLE}
+      >
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-bold text-primary-black">

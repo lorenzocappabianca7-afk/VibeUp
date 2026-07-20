@@ -5,14 +5,14 @@ import {
   getServiceProviderById,
   type ServiceProvider,
 } from "@/lib/mock/service-providers";
-import { cn, formatCurrency } from "@/lib/utils";
+import { APP_SHELL_WIDTH_CLASS, cn, formatCurrency } from "@/lib/utils";
 import type { ManagedListing, ManagedServiceListing } from "@/types/admin";
 import type { BookedServiceCategory } from "@/types/event";
 import type { MusicType, PartyType } from "@/types/location";
 import { ArrowLeft, Calendar, Check, Clock, MapPin, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface ServiceProfileViewProps {
   serviceId: string;
@@ -144,7 +144,8 @@ export function ServiceProfileView({
   serviceId,
   initialContext,
 }: ServiceProfileViewProps) {
-  const { addServiceToEvent, events, getEvent, managedListings } = useAppState();
+  const { addServiceToEvent, events, getEvent, isStorageHydrated, managedListings } =
+    useAppState();
   const service = useMemo(() => {
     const staticService = getServiceProviderById(serviceId);
     if (staticService) return staticService;
@@ -185,6 +186,23 @@ export function ServiceProfileView({
     initialContext?.eventAddress ??
       (event ? `${event.locationName}, ${event.city}` : ""),
   );
+
+  useEffect(() => {
+    if (!isStorageHydrated || !initialContext?.eventId) return;
+
+    const linkedEvent = getEvent(initialContext.eventId);
+    if (!linkedEvent) return;
+
+    queueMicrotask(() => {
+      setSelectedEventId((current) => current || linkedEvent.id);
+      setDateFrom((current) => current || linkedEvent.date);
+      setEventAddress(
+        (current) =>
+          current ||
+          `${linkedEvent.locationName}, ${linkedEvent.city}`,
+      );
+    });
+  }, [getEvent, initialContext?.eventId, isStorageHydrated]);
   const [generatedQuote, setGeneratedQuote] = useState<number | null>(null);
   const [serviceAdded, setServiceAdded] = useState(false);
   const resetGeneratedQuote = useCallback(() => {
@@ -192,9 +210,8 @@ export function ServiceProfileView({
     setServiceAdded(false);
   }, []);
   const isDecorationShop = service?.category === "decorazioni";
-  const prefersEventSelection =
-    service?.category === "dj" || service?.category === "fotografo";
-  const usesEventSelection = prefersEventSelection && Boolean(selectedEvent);
+  const showEventSelection = availableEvents.length > 0;
+  const usesEventSelection = Boolean(selectedEvent);
   const serviceRoleLabel =
     service?.category === "fotografo"
       ? "fotografo"
@@ -275,8 +292,13 @@ export function ServiceProfileView({
   const tags = getServiceTags(service);
 
   return (
-    <div className="mx-auto min-h-dvh w-full max-w-md bg-background px-4 pt-6 shadow-none sm:shadow-[0_0_60px_-15px_rgba(15,15,17,0.12)] lg:max-w-6xl lg:px-8 lg:pt-8">
-      <div className="space-y-6 pb-10">
+    <div
+      className={cn(
+        "mx-auto min-h-dvh overflow-x-hidden bg-background px-4 pt-6 shadow-none sm:shadow-[0_0_60px_-15px_rgba(15,15,17,0.12)] lg:px-8 lg:pt-8",
+        APP_SHELL_WIDTH_CLASS,
+      )}
+    >
+      <div className="min-w-0 space-y-6 pb-10">
         <Link
           href={`/?tab=explore&category=${service.category}`}
           className="inline-flex items-center gap-1.5 text-sm font-bold text-primary-black/60 transition-colors hover:text-primary-black"
@@ -285,7 +307,7 @@ export function ServiceProfileView({
           Torna ai servizi
         </Link>
 
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.75fr)]">
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.75fr)]">
           <div className="space-y-5">
             {serviceImages.length > 0 && (
               <section className="render-contained overflow-hidden rounded-3xl border border-primary-black/10 bg-primary-black/[0.02]">
@@ -387,7 +409,7 @@ export function ServiceProfileView({
           </div>
 
           {isDecorationShop ? (
-            <aside className="smooth-scroll rounded-3xl bg-brand-teal p-4 text-white lg:sticky lg:top-8 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto">
+            <aside className="smooth-scroll rounded-3xl bg-brand-teal p-4 text-white xl:sticky xl:top-8 xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-white/80">
                 Seleziona negozio
               </p>
@@ -480,7 +502,7 @@ export function ServiceProfileView({
               )}
             </aside>
           ) : (
-          <aside className="smooth-scroll rounded-3xl bg-brand-teal p-4 text-white lg:sticky lg:top-8 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto">
+          <aside className="smooth-scroll rounded-3xl bg-brand-teal p-4 text-white xl:sticky xl:top-8 xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-white/80">
               Preventivo servizio
             </p>
@@ -496,7 +518,7 @@ export function ServiceProfileView({
             )}
 
             <div className="mt-4 space-y-3">
-              {prefersEventSelection && (
+              {showEventSelection && (
                 <label className="block rounded-2xl bg-white p-3 text-primary-black">
                   <span className="flex items-center gap-1.5 text-xs font-bold text-primary-black/55">
                     <Calendar className="h-3.5 w-3.5" aria-hidden />

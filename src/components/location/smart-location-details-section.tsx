@@ -577,18 +577,18 @@ export function SmartLocationDetailsSection({
 
           {generatedQuote ? (
             <dl className="mt-4 space-y-2 text-sm">
-              <div className="flex justify-between text-white/72">
-                <dt>
+              <div className="flex justify-between gap-3 text-white/72">
+                <dt className="min-w-0">
                   Location ({generatedQuote.hours || 0}h x{" "}
                   {formatCurrency(hourlyPrice)})
                 </dt>
-                <dd className="font-bold text-white">
+                <dd className="shrink-0 font-bold text-white">
                   {formatCurrency(generatedQuote.locationCost)}
                 </dd>
               </div>
-              <div className="flex justify-between text-white/72">
-                <dt>Servizi selezionati</dt>
-                <dd className="font-bold text-white">
+              <div className="flex justify-between gap-3 text-white/72">
+                <dt className="min-w-0">Servizi selezionati</dt>
+                <dd className="shrink-0 font-bold text-white">
                   {formatCurrency(generatedQuote.extrasCost)}
                 </dd>
               </div>

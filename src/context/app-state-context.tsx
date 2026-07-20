@@ -42,6 +42,7 @@ interface AppStateContextValue {
   accounts: CurrentUser[];
   businessProfile: BusinessProfile | null;
   isBusinessUser: boolean;
+  isStorageHydrated: boolean;
   events: UserEvent[];
   paymentStates: Record<string, PaymentState>;
   favoriteLocationIds: string[];
@@ -93,16 +94,80 @@ const MOCK_ACCOUNTS: CurrentUser[] = [
 const MAX_COMPARE_LOCATIONS = 3;
 const STORAGE_KEY = "vibeup-app-state-v1";
 
+interface UserScopedState {
+  events: UserEvent[];
+  paymentStates: Record<string, PaymentState>;
+  favoriteLocationIds: string[];
+  favoriteServiceIds: string[];
+  compareLocationIds: string[];
+}
+
 interface StoredAppState {
   accounts?: CurrentUser[];
   currentUserId?: string;
   businessProfile?: BusinessProfile | null;
+  userStates?: Record<string, UserScopedState>;
+  managedListings?: ManagedListing[];
   events?: UserEvent[];
   paymentStates?: Record<string, PaymentState>;
   favoriteLocationIds?: string[];
   favoriteServiceIds?: string[];
   compareLocationIds?: string[];
-  managedListings?: ManagedListing[];
+}
+
+function createDefaultUserState(userId: string): UserScopedState {
+  const hasDemoEvents =
+    userId === MOCK_CURRENT_USER.id || userId === "account-demo-user";
+
+  return {
+    events: hasDemoEvents ? MOCK_EVENTS : [],
+    paymentStates: {},
+    favoriteLocationIds: [],
+    favoriteServiceIds: [],
+    compareLocationIds: [],
+  };
+}
+
+function trimCompareIds(ids: string[]) {
+  return ids.slice(0, MAX_COMPARE_LOCATIONS);
+}
+
+function hydrateUserStates(stored: StoredAppState): Record<string, UserScopedState> {
+  if (stored.userStates && Object.keys(stored.userStates).length > 0) {
+    return Object.fromEntries(
+      Object.entries(stored.userStates).map(([userId, state]) => [
+        userId,
+        {
+          ...state,
+          compareLocationIds: trimCompareIds(state.compareLocationIds ?? []),
+        },
+      ]),
+    );
+  }
+
+  const accounts = stored.accounts ?? MOCK_ACCOUNTS;
+  const map = Object.fromEntries(
+    accounts.map((account) => [account.id, createDefaultUserState(account.id)]),
+  );
+  const ownerId = stored.currentUserId ?? MOCK_CURRENT_USER.id;
+  const hasLegacyData =
+    stored.events ||
+    stored.paymentStates ||
+    stored.favoriteLocationIds ||
+    stored.favoriteServiceIds ||
+    stored.compareLocationIds;
+
+  if (hasLegacyData) {
+    map[ownerId] = {
+      events: stored.events ?? map[ownerId]?.events ?? MOCK_EVENTS,
+      paymentStates: stored.paymentStates ?? {},
+      favoriteLocationIds: stored.favoriteLocationIds ?? [],
+      favoriteServiceIds: stored.favoriteServiceIds ?? [],
+      compareLocationIds: trimCompareIds(stored.compareLocationIds ?? []),
+    };
+  }
+
+  return map;
 }
 
 function readStoredAppState(): StoredAppState {
@@ -132,14 +197,41 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [currentUserId, setCurrentUserId] = useState(MOCK_CURRENT_USER.id);
   const [businessProfile, setBusinessProfile] =
     useState<BusinessProfile | null>(null);
-  const [events, setEvents] = useState<UserEvent[]>(MOCK_EVENTS);
-  const [paymentStates, setPaymentStates] = useState<Record<string, PaymentState>>(
-    {},
+  const [userStatesMap, setUserStatesMap] = useState<
+    Record<string, UserScopedState>
+  >(() =>
+    Object.fromEntries(
+      MOCK_ACCOUNTS.map((account) => [
+        account.id,
+        createDefaultUserState(account.id),
+      ]),
+    ),
   );
-  const [favoriteLocationIds, setFavoriteLocationIds] = useState<string[]>([]);
-  const [favoriteServiceIds, setFavoriteServiceIds] = useState<string[]>([]);
-  const [compareLocationIds, setCompareLocationIds] = useState<string[]>([]);
   const [managedListings, setManagedListings] = useState<ManagedListing[]>([]);
+
+  const currentUserState =
+    userStatesMap[currentUserId] ?? createDefaultUserState(currentUserId);
+  const events = currentUserState.events;
+  const paymentStates = currentUserState.paymentStates;
+  const favoriteLocationIds = currentUserState.favoriteLocationIds;
+  const favoriteServiceIds = currentUserState.favoriteServiceIds;
+  const compareLocationIds = currentUserState.compareLocationIds;
+
+  const updateCurrentUserState = useCallback(
+    (updater: (state: UserScopedState) => UserScopedState) => {
+      setUserStatesMap((map) => {
+        const current = map[currentUserId] ?? createDefaultUserState(currentUserId);
+        const next = updater(current);
+        if (next === current) return map;
+
+        return {
+          ...map,
+          [currentUserId]: next,
+        };
+      });
+    },
+    [currentUserId],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -154,17 +246,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if ("businessProfile" in storedState) {
         setBusinessProfile(storedState.businessProfile ?? null);
       }
-      if (storedState.events) setEvents(storedState.events);
-      if (storedState.paymentStates) setPaymentStates(storedState.paymentStates);
-      if (storedState.favoriteLocationIds) {
-        setFavoriteLocationIds(storedState.favoriteLocationIds);
-      }
-      if (storedState.favoriteServiceIds) {
-        setFavoriteServiceIds(storedState.favoriteServiceIds);
-      }
-      if (storedState.compareLocationIds) {
-        setCompareLocationIds(storedState.compareLocationIds);
-      }
+      setUserStatesMap(hydrateUserStates(storedState));
       if (storedState.managedListings) {
         setManagedListings(storedState.managedListings);
       }
@@ -184,29 +266,24 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       accounts,
       currentUserId,
       businessProfile,
-      events,
-      paymentStates,
-      favoriteLocationIds,
-      favoriteServiceIds,
-      compareLocationIds,
+      userStates: userStatesMap,
       managedListings,
     });
   }, [
     accounts,
     businessProfile,
-    compareLocationIds,
     currentUserId,
-    events,
-    favoriteLocationIds,
-    favoriteServiceIds,
     hydratedFromStorage,
     managedListings,
-    paymentStates,
+    userStatesMap,
   ]);
 
   const addEvent = useCallback((event: UserEvent) => {
-    setEvents((prev) => [event, ...prev.filter((item) => item.id !== event.id)]);
-  }, []);
+    updateCurrentUserState((state) => ({
+      ...state,
+      events: [event, ...state.events.filter((item) => item.id !== event.id)],
+    }));
+  }, [updateCurrentUserState]);
 
   const getEvent = useCallback(
     (id: string) => events.find((event) => event.id === id),
@@ -214,30 +291,33 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   );
 
   const updateEventTitle = useCallback((eventId: string, title: string) => {
-    setEvents((prev) =>
-      prev.map((event) =>
+    updateCurrentUserState((state) => ({
+      ...state,
+      events: state.events.map((event) =>
         event.id === eventId && event.title !== title ? { ...event, title } : event,
       ),
-    );
-  }, []);
+    }));
+  }, [updateCurrentUserState]);
 
   const updateEventMenuSelections = useCallback(
     (eventId: string, selections: EventMenuSelection[]) => {
-      setEvents((prev) =>
-        prev.map((event) =>
+      updateCurrentUserState((state) => ({
+        ...state,
+        events: state.events.map((event) =>
           event.id === eventId
             ? { ...event, menuSelections: selections }
             : event,
         ),
-      );
+      }));
     },
-    [],
+    [updateCurrentUserState],
   );
 
   const addServiceToEvent = useCallback(
     (eventId: string, service: BookedService) => {
-      setEvents((prev) =>
-        prev.map((event) => {
+      updateCurrentUserState((state) => ({
+        ...state,
+        events: state.events.map((event) => {
           if (event.id !== eventId) return event;
 
           const services = [
@@ -255,76 +335,105 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             depositAmount: locationCost * 0.3,
           };
         }),
-      );
+      }));
     },
-    [],
+    [updateCurrentUserState],
   );
 
   const markServicePaid = useCallback(
     (eventId: string, serviceId: string, method?: string) => {
-      setPaymentStates((current) => {
+      updateCurrentUserState((state) => {
         const key = `${eventId}:${serviceId}`;
-        const existing = current[key];
-        if (existing?.paid && existing.method === method) return current;
+        const existing = state.paymentStates[key];
+        if (existing?.paid && existing.method === method) return state;
 
         return {
-          ...current,
-          [key]: { paid: true, method },
+          ...state,
+          paymentStates: {
+            ...state.paymentStates,
+            [key]: { paid: true, method },
+          },
         };
       });
     },
-    [],
+    [updateCurrentUserState],
   );
 
   const toggleFavoriteLocation = useCallback((id: string) => {
-    setFavoriteLocationIds((prev) =>
-      prev.includes(id)
-        ? prev.filter((favoriteId) => favoriteId !== id)
-        : [...prev, id],
-    );
-  }, []);
+    updateCurrentUserState((state) => ({
+      ...state,
+      favoriteLocationIds: state.favoriteLocationIds.includes(id)
+        ? state.favoriteLocationIds.filter((favoriteId) => favoriteId !== id)
+        : [...state.favoriteLocationIds, id],
+    }));
+  }, [updateCurrentUserState]);
 
   const removeFavoriteLocation = useCallback((id: string) => {
-    setFavoriteLocationIds((prev) => {
-      if (!prev.includes(id)) return prev;
-      return prev.filter((favoriteId) => favoriteId !== id);
+    updateCurrentUserState((state) => {
+      if (!state.favoriteLocationIds.includes(id)) return state;
+      return {
+        ...state,
+        favoriteLocationIds: state.favoriteLocationIds.filter(
+          (favoriteId) => favoriteId !== id,
+        ),
+      };
     });
-  }, []);
+  }, [updateCurrentUserState]);
 
   const toggleFavoriteService = useCallback((id: string) => {
-    setFavoriteServiceIds((prev) =>
-      prev.includes(id)
-        ? prev.filter((favoriteId) => favoriteId !== id)
-        : [...prev, id],
-    );
-  }, []);
+    updateCurrentUserState((state) => ({
+      ...state,
+      favoriteServiceIds: state.favoriteServiceIds.includes(id)
+        ? state.favoriteServiceIds.filter((favoriteId) => favoriteId !== id)
+        : [...state.favoriteServiceIds, id],
+    }));
+  }, [updateCurrentUserState]);
 
   const removeFavoriteService = useCallback((id: string) => {
-    setFavoriteServiceIds((prev) => {
-      if (!prev.includes(id)) return prev;
-      return prev.filter((favoriteId) => favoriteId !== id);
+    updateCurrentUserState((state) => {
+      if (!state.favoriteServiceIds.includes(id)) return state;
+      return {
+        ...state,
+        favoriteServiceIds: state.favoriteServiceIds.filter(
+          (favoriteId) => favoriteId !== id,
+        ),
+      };
     });
-  }, []);
+  }, [updateCurrentUserState]);
 
   const toggleCompareLocation = useCallback((id: string) => {
-    setCompareLocationIds((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((compareId) => compareId !== id);
+    updateCurrentUserState((state) => {
+      if (state.compareLocationIds.includes(id)) {
+        return {
+          ...state,
+          compareLocationIds: state.compareLocationIds.filter(
+            (compareId) => compareId !== id,
+          ),
+        };
       }
 
-      const next = [...prev, id];
-      return next.length > MAX_COMPARE_LOCATIONS
-        ? next.slice(next.length - MAX_COMPARE_LOCATIONS)
-        : next;
+      const next = [...state.compareLocationIds, id];
+      return {
+        ...state,
+        compareLocationIds:
+          next.length > MAX_COMPARE_LOCATIONS
+            ? next.slice(next.length - MAX_COMPARE_LOCATIONS)
+            : next,
+      };
     });
-  }, []);
+  }, [updateCurrentUserState]);
 
   const removeCompareLocation = useCallback((id: string) => {
-    setCompareLocationIds((prev) => {
-      if (!prev.includes(id)) return prev;
-      return prev.filter((compareId) => compareId !== id);
+    updateCurrentUserState((state) => {
+      if (!state.compareLocationIds.includes(id)) return state;
+      return {
+        ...state,
+        compareLocationIds: state.compareLocationIds.filter(
+          (compareId) => compareId !== id,
+        ),
+      };
     });
-  }, []);
+  }, [updateCurrentUserState]);
 
   const upsertManagedListing = useCallback((listing: ManagedListing) => {
     setManagedListings((prev) => [
@@ -361,6 +470,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       nextAccount,
       ...prev.filter((item) => item.email.toLowerCase() !== normalizedEmail),
     ]);
+    setUserStatesMap((map) => ({
+      ...map,
+      [id]: createDefaultUserState(id),
+    }));
     setCurrentUserId(id);
   }, []);
 
@@ -399,6 +512,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       accounts,
       businessProfile,
       isBusinessUser: businessProfile !== null,
+      isStorageHydrated: hydratedFromStorage,
       events,
       paymentStates,
       favoriteLocationIds,
@@ -431,6 +545,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       accounts,
       currentUserId,
       businessProfile,
+      hydratedFromStorage,
       events,
       paymentStates,
       favoriteLocationIds,

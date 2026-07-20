@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn, APP_SHELL_WIDTH_CLASS } from "@/lib/utils";
 import { TABS, type TabId } from "@/types/navigation";
 import { Calendar, MessageCircle, Search, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -27,11 +27,14 @@ interface BottomNavProps {
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   return (
     <nav
-      className="fixed bottom-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 border-t border-primary-black/15 bg-background lg:max-w-xl lg:rounded-t-3xl lg:border-x"
+      className={cn(
+        "fixed bottom-0 left-1/2 z-50 -translate-x-1/2 border-t border-primary-black/15 bg-background lg:rounded-t-3xl lg:border-x",
+        APP_SHELL_WIDTH_CLASS,
+      )}
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label="Navigazione principale"
     >
-      <ul className="flex items-stretch justify-around px-2 pt-2 pb-2">
+      <ul className="flex items-stretch justify-around px-1 pt-1.5 pb-2">
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = TAB_ICONS[tab.id];
@@ -43,7 +46,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
                 onClick={() => onTabChange(tab.id)}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex w-full flex-col items-center gap-1 rounded-xl px-1 py-2 transition-colors duration-150",
+                  "flex w-full min-w-0 flex-col items-center gap-0.5 rounded-xl px-0.5 py-1.5 transition-colors duration-150 sm:gap-1 sm:px-1 sm:py-2",
                   isActive
                     ? `${ACTIVE_COLORS[tab.id]} bg-primary-black/[0.03]`
                     : "text-primary-black/45 hover:text-primary-black/70",
@@ -59,7 +62,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
                 />
                 <span
                   className={cn(
-                    "text-[10px] font-medium leading-tight transition-colors duration-150",
+                    "max-w-full truncate px-0.5 text-[9px] font-medium leading-none transition-colors duration-150 sm:text-[10px] sm:leading-tight",
                     isActive ? ACTIVE_COLORS[tab.id] : "text-current",
                   )}
                 >

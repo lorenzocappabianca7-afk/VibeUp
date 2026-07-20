@@ -48,13 +48,13 @@ export function EventCountdown({ event }: EventCountdownProps) {
         Countdown all&apos;evento
       </p>
 
-      <div className="mt-4 grid grid-cols-4 gap-2">
+      <div className="mt-4 grid grid-cols-4 gap-1.5 sm:gap-2">
         {units.map((unit) => (
           <div
             key={unit.label}
-            className="flex flex-col items-center rounded-xl bg-background py-3"
+            className="flex flex-col items-center rounded-xl bg-background py-2.5 sm:py-3"
           >
-            <span className="text-2xl font-bold tabular-nums text-primary-black">
+            <span className="text-xl font-bold tabular-nums text-primary-black sm:text-2xl">
               {String(unit.value).padStart(2, "0")}
             </span>
             <span className="mt-0.5 text-[10px] font-medium uppercase text-primary-black/50">

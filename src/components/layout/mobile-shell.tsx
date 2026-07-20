@@ -6,8 +6,9 @@ import { MessagesScreen } from "@/components/screens/messages-screen";
 import { MyEventsScreen } from "@/components/screens/my-events-screen";
 import { ProfileScreen } from "@/components/screens/profile-screen";
 import { TABS, type TabId } from "@/types/navigation";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { APP_SHELL_WIDTH_CLASS } from "@/lib/utils";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 const VALID_TABS = new Set(TABS.map((tab) => tab.id));
 
@@ -19,10 +20,28 @@ function getInitialTab(tabParam: string | null): TabId {
 }
 
 export function MobileShell() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState<TabId>(() =>
     getInitialTab(tabParam),
+  );
+
+  const handleTabChange = useCallback(
+    (tab: TabId) => {
+      setActiveTab(tab);
+
+      const params = new URLSearchParams(searchParams.toString());
+      if (tab === "explore") {
+        params.delete("tab");
+      } else {
+        params.set("tab", tab);
+      }
+
+      const query = params.toString();
+      router.replace(query ? `/?${query}` : "/", { scroll: false });
+    },
+    [router, searchParams],
   );
 
   useEffect(() => {
@@ -41,7 +60,7 @@ export function MobileShell() {
   function renderActiveScreen() {
     switch (activeTab) {
       case "events":
-        return <MyEventsScreen onCreateEvent={() => setActiveTab("explore")} />;
+        return <MyEventsScreen onCreateEvent={() => handleTabChange("explore")} />;
       case "messages":
         return <MessagesScreen />;
       case "profile":
@@ -53,9 +72,11 @@ export function MobileShell() {
   }
 
   return (
-    <div className="relative mx-auto min-h-dvh w-full max-w-md bg-background shadow-none sm:shadow-[0_0_60px_-15px_rgba(15,15,17,0.12)] lg:max-w-6xl">
+    <div
+      className={`relative mx-auto min-h-dvh overflow-x-hidden bg-background shadow-none sm:shadow-[0_0_60px_-15px_rgba(15,15,17,0.12)] ${APP_SHELL_WIDTH_CLASS}`}
+    >
       <main
-        className="px-4 pt-6 lg:px-8 lg:pt-8"
+        className="min-w-0 px-4 pt-6 lg:px-8 lg:pt-8"
         style={{
           paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))",
         }}
@@ -65,7 +86,7 @@ export function MobileShell() {
         </div>
       </main>
 
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
   );
 }

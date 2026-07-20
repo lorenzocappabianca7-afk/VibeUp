@@ -28,7 +28,7 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import Image from "next/image";
+import { SafeImage } from "@/components/ui/safe-image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -842,7 +842,7 @@ function PhotoUploadField({
               className="relative overflow-hidden rounded-2xl border border-primary-black/10 bg-background"
             >
               <div className="relative aspect-[4/3]">
-                <Image
+                <SafeImage
                   src={image}
                   alt={`${label} ${index + 1}`}
                   fill

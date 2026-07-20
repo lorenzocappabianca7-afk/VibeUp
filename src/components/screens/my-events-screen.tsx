@@ -8,14 +8,11 @@ import {
   Camera,
   Check,
   ChevronDown,
-  Clock,
   CreditCard,
   Gift,
   MapPin,
   Music,
-  ReceiptText,
   ShieldCheck,
-  Sparkles,
   UtensilsCrossed,
   Users,
   WalletCards,
@@ -28,7 +25,12 @@ import {
   type EventMenuSelection,
   type UserEvent,
 } from "@/types/event";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import {
+  DISCOUNT_POPOVER_CLASS,
+  formatCurrency,
+  formatDate,
+  MODAL_SAFE_BOTTOM_STYLE,
+} from "@/lib/utils";
 import Link from "next/link";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
@@ -44,10 +46,10 @@ interface ServicePaymentState {
 }
 
 const statusColors: Record<UserEvent["status"], string> = {
-  draft: "bg-primary-black/10 text-primary-black/60",
-  organizing: "bg-brand-teal/15 text-brand-teal",
-  confirmed: "bg-brand-pink/15 text-primary-black",
-  completed: "bg-primary-black/10 text-primary-black/60",
+  draft: "text-primary-black/50",
+  organizing: "text-primary-black",
+  confirmed: "text-primary-black",
+  completed: "text-primary-black/50",
 };
 
 const paymentMethodLabels: Record<PaymentMethod, string> = {
@@ -320,9 +322,9 @@ export const MyEventsScreen = memo(function MyEventsScreen({}: MyEventsScreenPro
   }, []);
 
   return (
-    <div className="space-y-6">
-      <header className="flex items-start justify-between gap-3">
-        <div>
+    <div className="min-w-0 space-y-6">
+      <header className="flex min-w-0 items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold text-primary-black">
             I Miei Eventi
           </h1>
@@ -342,14 +344,14 @@ export const MyEventsScreen = memo(function MyEventsScreen({}: MyEventsScreenPro
           <button
             type="button"
             onClick={toggleDiscountBanner}
-            className="relative z-50 rounded-full border border-brand-pink bg-brand-pink/12 px-3 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-brand-pink transition-colors hover:bg-brand-pink/20"
+            className="relative z-50 rounded-full border border-brand-pink bg-brand-pink/12 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-brand-pink transition-colors hover:bg-brand-pink/20 sm:px-3 sm:py-2 sm:text-[11px] sm:tracking-[0.12em]"
             aria-expanded={discountBannerOpen}
           >
             Ottieni sconti
           </button>
           {discountBannerOpen && (
-            <div className="absolute right-0 top-full z-50 mt-3 w-[min(calc(100vw-2rem),42rem)]">
-              <span className="absolute -top-2 right-8 h-4 w-4 rotate-45 border-l-2 border-t-2 border-brand-pink bg-pink-50" />
+            <div className={DISCOUNT_POPOVER_CLASS}>
+              <span className="absolute -top-2 right-8 hidden h-4 w-4 rotate-45 border-l-2 border-t-2 border-brand-pink bg-pink-50 sm:block" />
               <DiscountInviteBanner
                 contact={inviteContact}
                 sent={inviteSent}
@@ -363,11 +365,11 @@ export const MyEventsScreen = memo(function MyEventsScreen({}: MyEventsScreenPro
       </header>
 
       {upcomingEvents.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-primary-black/50">
+        <section className="space-y-4">
+          <h2 className="text-base font-semibold text-primary-black">
             In programma
           </h2>
-          <ul className="grid gap-5">
+          <ul className="grid gap-6">
             {upcomingEvents.map((event) => (
               <li key={event.id}>
                 <ExpandedEventCard
@@ -385,11 +387,11 @@ export const MyEventsScreen = memo(function MyEventsScreen({}: MyEventsScreenPro
       )}
 
       {pastEvents.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-primary-black/50">
+        <section className="space-y-4">
+          <h2 className="text-base font-semibold text-primary-black">
             Passati
           </h2>
-          <ul className="grid gap-5">
+          <ul className="grid gap-6">
             {pastEvents.map((event) => (
               <li key={event.id}>
                 <ExpandedEventCard
@@ -463,227 +465,105 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   }, [event.id, event.title]);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-start justify-between gap-3 px-1">
-        <div className="min-w-0">
-          <span
-            className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${statusColors[event.status]}`}
-          >
-            {EVENT_STATUS_LABELS[event.status]}
-          </span>
-          <label className="mt-1.5 block">
-            <span className="sr-only">Titolo evento</span>
-            <input
-              value={titleDraft}
-              onChange={(inputEvent) => setTitleDraft(inputEvent.target.value)}
-              onBlur={commitTitleDraft}
-              onKeyDown={(inputEvent) => {
-                if (inputEvent.key === "Enter") {
-                  inputEvent.currentTarget.blur();
-                }
-              }}
-              placeholder="Nome evento"
-              className="w-full bg-transparent text-2xl font-black leading-tight text-primary-black outline-none placeholder:text-primary-black/35"
-              aria-label="Titolo evento"
-            />
-          </label>
-          {event.description && (
-            <p className="mt-0.5 line-clamp-1 text-sm font-medium leading-snug text-primary-black/62">
-              {event.description}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <article className="overflow-hidden rounded-[2rem] border-2 border-primary-black bg-white shadow-sm">
-      <div className="border-b-2 border-primary-black bg-white p-3">
+    <article className="overflow-hidden rounded-2xl border border-primary-black/10 bg-white shadow-[0_6px_24px_-12px_rgba(15,15,17,0.18)]">
+      <div className="border-b border-primary-black/8 px-5 py-4">
         <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className={`text-xs font-medium ${statusColors[event.status]}`}>
+              {EVENT_STATUS_LABELS[event.status]}
+            </p>
+            <label className="mt-1 block">
+              <span className="sr-only">Titolo evento</span>
+              <input
+                value={titleDraft}
+                onChange={(inputEvent) => setTitleDraft(inputEvent.target.value)}
+                onBlur={commitTitleDraft}
+                onKeyDown={(inputEvent) => {
+                  if (inputEvent.key === "Enter") {
+                    inputEvent.currentTarget.blur();
+                  }
+                }}
+                placeholder="Nome evento"
+                className="w-full bg-transparent text-xl font-semibold leading-snug text-primary-black outline-none placeholder:text-primary-black/35"
+                aria-label="Titolo evento"
+              />
+            </label>
+            {event.description && (
+              <p className="mt-1 line-clamp-2 text-sm text-primary-black/55">
+                {event.description}
+              </p>
+            )}
+          </div>
+          <Link
+            href={`/event/${event.id}`}
+            className="shrink-0 text-sm font-medium text-primary-black underline underline-offset-4"
+          >
+            Dettagli
+          </Link>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <EventInfoItem
-            icon={Calendar}
-            label="Data"
-            value={`${formatDate(event.date)} · ${event.time}`}
-          />
-          <EventInfoItem
-            icon={MapPin}
-            label="Location"
-            value={`${event.locationName}, ${event.city}`}
-          />
-          <EventInfoItem
-            icon={Users}
-            label="Ospiti"
-            value={`${event.guestCount} persone`}
-          />
+        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-primary-black/65">
+          <span className="inline-flex items-center gap-1.5">
+            <Calendar className="h-4 w-4 shrink-0" aria-hidden />
+            {formatDate(event.date)} · {event.time}
+          </span>
+          <span className="hidden text-primary-black/25 sm:inline" aria-hidden>
+            ·
+          </span>
+          <span className="inline-flex min-w-0 items-center gap-1.5">
+            <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="truncate">
+              {event.locationName}, {event.city}
+            </span>
+          </span>
+          <span className="hidden text-primary-black/25 sm:inline" aria-hidden>
+            ·
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Users className="h-4 w-4 shrink-0" aria-hidden />
+            {event.guestCount} ospiti
+          </span>
         </div>
-
-        <DepositDeadlineTimer
-          event={event}
-          depositAmount={depositAmount}
-          payment={depositPayment}
-          onPayDeposit={payDeposit}
-        />
       </div>
 
-      <div className="space-y-4 p-5">
-        <section className="rounded-2xl border border-primary-black bg-white p-4">
-          <h3 className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-brand-teal">
-            <Sparkles className="h-4 w-4" aria-hidden />
-            Servizi inclusi
-          </h3>
-          <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
-            {event.services.map((service) => (
-              <div
+      <DepositDeadlineTimer
+        event={event}
+        depositAmount={depositAmount}
+        payment={depositPayment}
+        onPayDeposit={payDeposit}
+      />
+
+      <div className="px-5 py-4">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold text-primary-black">Servizi</h3>
+          <p className="text-sm text-primary-black/50">
+            {event.services.length}{" "}
+            {event.services.length === 1 ? "voce" : "voci"}
+          </p>
+        </div>
+
+        <ul className="mt-3 divide-y divide-primary-black/8">
+          {event.services.map((service) => {
+            const payment =
+              paymentStates[`${event.id}:${service.id}`] ?? { paid: false };
+
+            return (
+              <li
                 key={service.id}
-                className="min-w-0 rounded-xl border border-primary-black/20 bg-white px-3 py-2"
+                className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
               >
-                <p className="truncate text-xs font-black text-primary-black">
-                  {service.name}
-                </p>
-                <p className="mt-0.5 truncate text-[11px] font-medium text-primary-black/55">
-                  {service.providerName}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {menuServices.length > 0 && (
-          <section className="rounded-2xl border border-primary-black bg-white p-4">
-            <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary-black/25 bg-white text-primary-black">
-                <UtensilsCrossed className="h-5 w-5" aria-hidden />
-              </span>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.14em] text-brand-teal">
-                  Menu scelto
-                </h3>
-                <p className="mt-1 text-sm text-primary-black/60">
-                  Menu selezionato per questo evento e allergeni da comunicare agli invitati.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-3 space-y-3">
-              {menuServices.map((service) => {
-                const allergens = inferMenuAllergens(service);
-
-                return (
-                  <div
-                    key={service.id}
-                    className="rounded-2xl border border-primary-black/25 bg-white p-3"
-                  >
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="text-sm font-black text-primary-black">
-                          {service.name}
-                        </p>
-                        <p className="text-xs font-medium text-primary-black/55">
-                          {service.providerName}
-                        </p>
-                      </div>
-                      <span className="text-sm font-black text-primary-black">
-                        {formatCurrency(service.amountPaid)}
-                      </span>
-                    </div>
-                    <div className="mt-3">
-                      <p className="text-xs font-black uppercase tracking-[0.14em] text-primary-black/45">
-                        Allergeni
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {allergens.map((allergen) => (
-                          <span
-                            key={allergen}
-                            className="rounded-full border border-primary-black/25 px-3 py-1 text-xs font-bold text-primary-black"
-                          >
-                            {allergen}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <MenuCoursePicker
-              selections={event.menuSelections ?? []}
-              onChange={(selections) =>
-                onMenuSelectionsChange(event.id, selections)
-              }
-            />
-          </section>
-        )}
-
-        {missingSuggestions.length > 0 && (
-          <section className="rounded-2xl border border-pink-300 bg-gradient-to-br from-pink-50 via-rose-100 to-fuchsia-100 p-3">
-            <div>
-              <h3 className="text-[11px] font-black uppercase tracking-[0.14em] text-pink-700">
-                Potrebbe mancare
-              </h3>
-              <p className="mt-0.5 text-xs text-primary-black/60">
-                Suggerimenti automatici in base ai servizi già aggiunti
-                all&apos;evento.
-              </p>
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2.5 md:grid-cols-4">
-              {missingSuggestions.map((suggestion) => {
-                const Icon = suggestion.icon;
-
-                return (
-                  <Link
-                    key={suggestion.id}
-                    href={buildSuggestionHref(event, suggestion.exploreCategory)}
-                    className="flex min-w-0 items-start gap-2.5 rounded-2xl border border-pink-200 bg-white/80 px-3 py-2.5 transition-colors hover:bg-white"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-pink-200 bg-white text-pink-700">
-                      <Icon className="h-4.5 w-4.5" aria-hidden />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-black text-primary-black">
-                        {suggestion.label}
-                      </span>
-                      <span className="mt-0.5 block line-clamp-2 text-xs leading-tight text-primary-black/58">
-                        {suggestion.description}
-                      </span>
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        <section className="rounded-2xl border border-primary-black bg-white p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <ReceiptText className="h-4 w-4 text-brand-teal" aria-hidden />
-            <h3 className="text-[11px] font-black uppercase tracking-[0.14em] text-brand-teal">
-              Tabella costi
-            </h3>
-          </div>
-
-          <div className="space-y-2">
-            {event.services.map((service) => {
-              const payment =
-                paymentStates[`${event.id}:${service.id}`] ?? { paid: false };
-
-              return (
-                <div
-                  key={service.id}
-                  className="grid gap-2 rounded-2xl border border-primary-black/25 bg-white p-3 xl:grid-cols-[1fr_auto_auto] xl:items-center"
-                >
-                  <div>
-                    <p className="text-sm font-bold text-primary-black">
-                      {service.name}
-                    </p>
-                    <p className="text-xs text-primary-black/55">
-                      {service.providerName}
-                    </p>
-                  </div>
-                  <p className="text-base font-black text-primary-black xl:text-right">
-                    {formatCurrency(service.amountPaid)}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-primary-black">
+                    {service.name}
                   </p>
+                  <p className="truncate text-xs text-primary-black/50">
+                    {service.providerName}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="text-sm font-medium text-primary-black">
+                    {formatCurrency(service.amountPaid)}
+                  </span>
                   <button
                     type="button"
                     onClick={() =>
@@ -691,48 +571,117 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                         ? undefined
                         : onOpenPayment({ event, service })
                     }
-                    className={`rounded-full px-3 py-2 text-xs font-black transition-colors duration-150 ${
+                    disabled={payment.paid}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                       payment.paid
                         ? "bg-primary-black text-white"
-                        : "border border-brand-teal bg-brand-teal text-white hover:bg-brand-teal/90"
+                        : "border border-primary-black/15 text-primary-black hover:border-primary-black/30"
                     }`}
                   >
                     {payment.paid ? "Pagato" : "Da pagare"}
                   </button>
-                  {payment.method && (
-                    <p className="text-xs font-semibold text-emerald-700 xl:col-start-3 xl:text-center">
-                      con{" "}
-                      {paymentMethodLabels[payment.method as PaymentMethod] ??
-                        payment.method}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        <dl className="mt-4 space-y-2 border-t border-primary-black/8 pt-4 text-sm">
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-primary-black/55">Caparra location</dt>
+            <dd className="font-medium text-primary-black">
+              {formatCurrency(depositAmount)}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <dt className="font-semibold text-primary-black">Totale</dt>
+            <dd className="text-base font-semibold text-primary-black">
+              {formatCurrency(totalCost)}
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      {menuServices.length > 0 && (
+        <section className="border-t border-primary-black/8 px-5 py-4">
+          <div className="flex items-center gap-2">
+            <UtensilsCrossed className="h-4 w-4 text-primary-black/45" aria-hidden />
+            <h3 className="text-sm font-semibold text-primary-black">Menu</h3>
+          </div>
+
+          <div className="mt-3 space-y-3">
+            {menuServices.map((service) => {
+              const allergens = inferMenuAllergens(service);
+
+              return (
+                <div
+                  key={service.id}
+                  className="rounded-xl bg-primary-black/[0.03] p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-primary-black">
+                        {service.name}
+                      </p>
+                      <p className="text-xs text-primary-black/50">
+                        {service.providerName}
+                      </p>
+                    </div>
+                    <p className="shrink-0 text-sm font-medium text-primary-black">
+                      {formatCurrency(service.amountPaid)}
                     </p>
-                  )}
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {allergens.map((allergen) => (
+                      <span
+                        key={allergen}
+                        className="rounded-full bg-white px-2.5 py-0.5 text-[11px] text-primary-black/65 ring-1 ring-primary-black/10"
+                      >
+                        {allergen}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               );
             })}
           </div>
 
-          <dl className="mt-4 space-y-2 border-t border-primary-black/10 pt-3">
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <dt className="text-primary-black/60">
-                Caparra location stimata
-              </dt>
-              <dd className="font-bold text-primary-black">
-                {formatCurrency(depositAmount)}
-              </dd>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <dt className="text-base font-black text-primary-black">
-                Costo totale
-              </dt>
-              <dd className="text-xl font-black text-primary-black">
-                {formatCurrency(totalCost)}
-              </dd>
-            </div>
-          </dl>
+          <MenuCoursePicker
+            selections={event.menuSelections ?? []}
+            onChange={(selections) =>
+              onMenuSelectionsChange(event.id, selections)
+            }
+          />
         </section>
-      </div>
+      )}
+
+      {missingSuggestions.length > 0 && (
+        <section className="border-t border-primary-black/8 bg-rose-50/60 px-5 py-4">
+          <p className="text-sm font-medium text-primary-black">
+            Potrebbe mancare
+          </p>
+          <p className="mt-0.5 text-xs text-primary-black/50">
+            Aggiungi altri servizi alla festa
+          </p>
+          <div className="scrollbar-hidden mt-3 flex gap-2 overflow-x-auto pb-1">
+            {missingSuggestions.map((suggestion) => {
+              const Icon = suggestion.icon;
+
+              return (
+                <Link
+                  key={suggestion.id}
+                  href={buildSuggestionHref(event, suggestion.exploreCategory)}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary-black/10 bg-white px-3.5 py-2 text-sm font-medium text-primary-black transition-colors hover:border-primary-black/25"
+                >
+                  <Icon className="h-4 w-4 text-primary-black/55" aria-hidden />
+                  {suggestion.label}
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </article>
-    </div>
   );
 });
 
@@ -753,76 +702,48 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
   useEffect(() => {
     const interval = setInterval(() => {
       setCountdown(getCountdown(deadline));
-    }, 60_000);
+    }, 10_000);
 
     return () => clearInterval(interval);
   }, [deadline]);
 
-  const units = [
-    { value: countdown.days, label: "gg" },
-    { value: countdown.hours, label: "ore" },
-    { value: countdown.minutes, label: "min" },
-  ];
-
   return (
-    <section className="mt-4 rounded-2xl border border-primary-black bg-white p-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <section className="border-b border-primary-black/8 bg-primary-black/[0.02] px-5 py-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="inline-flex items-center gap-1.5 rounded-full bg-brand-teal/15 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-primary-black">
-            <Clock className="h-3.5 w-3.5" aria-hidden />
-            Scadenza caparra
+          <p className="text-sm font-medium text-primary-black">
+            Caparra {formatCurrency(depositAmount)}
           </p>
-          <p className="mt-2 text-sm font-bold text-primary-black">
-            Entro {formatDepositDeadline(deadline)} ·{" "}
-            {formatCurrency(depositAmount)}
-          </p>
-          <p className="mt-0.5 text-[11px] text-primary-black/55">
-            La caparra va pagata entro 2 giorni lavorativi prima dell&apos;evento.
+          <p className="mt-0.5 text-xs text-primary-black/50">
+            Entro {formatDepositDeadline(deadline)}
+            {!countdown.isPast && (
+              <>
+                {" "}
+                · {String(countdown.days).padStart(2, "0")}g{" "}
+                {String(countdown.hours).padStart(2, "0")}h{" "}
+                {String(countdown.minutes).padStart(2, "0")}m
+              </>
+            )}
           </p>
         </div>
 
-        <div className="flex flex-col gap-2 sm:items-end">
-          {countdown.isPast ? (
-            <span className="rounded-full border border-primary-black/30 bg-white px-3 py-2 text-xs font-black text-primary-black">
-              Scadenza superata
-            </span>
-          ) : (
-            <div className="grid grid-cols-3 gap-1 sm:min-w-[9rem]">
-              {units.map((unit) => (
-                <div
-                  key={unit.label}
-                  className="rounded-xl border border-primary-black/25 bg-white px-2 py-1.5 text-center"
-                >
-                  <span className="block text-sm font-black tabular-nums text-primary-black">
-                    {String(unit.value).padStart(2, "0")}
-                  </span>
-                  <span className="text-[9px] font-bold uppercase text-primary-black/45">
-                    {unit.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-          {payment.paid ? (
-            <span className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-black text-white">
-              Caparra pagata
-              {payment.method
-                ? ` con ${
-                    paymentMethodLabels[payment.method as PaymentMethod] ??
-                    payment.method
-                  }`
-                : ""}
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={onPayDeposit}
-              className="rounded-xl bg-primary-black px-4 py-2 text-xs font-black text-white transition-colors hover:bg-primary-black/85"
-            >
-              Paga caparra
-            </button>
-          )}
-        </div>
+        {payment.paid ? (
+          <span className="inline-flex shrink-0 items-center rounded-lg bg-primary-black px-4 py-2 text-xs font-medium text-white">
+            Caparra pagata
+          </span>
+        ) : countdown.isPast ? (
+          <span className="inline-flex shrink-0 items-center rounded-lg border border-primary-black/15 px-4 py-2 text-xs font-medium text-primary-black/60">
+            Scadenza superata
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={onPayDeposit}
+            className="inline-flex shrink-0 items-center rounded-lg bg-primary-black px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-primary-black/85"
+          >
+            Paga caparra
+          </button>
+        )}
       </div>
     </section>
   );
@@ -868,20 +789,16 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
   }
 
   return (
-    <div className="mt-4 border-t border-primary-black/10 pt-4">
-      <div>
-        <h4 className="text-[11px] font-black uppercase tracking-[0.14em] text-brand-teal">
-          Scegli portate e cibi
-        </h4>
-        <p className="mt-1 text-xs text-primary-black/55">
-          Seleziona cosa includere nel menu da condividere con il fornitore.
-        </p>
-      </div>
+    <div className="mt-4 border-t border-primary-black/8 pt-4">
+      <p className="text-sm font-medium text-primary-black">Portate</p>
+      <p className="mt-0.5 text-xs text-primary-black/50">
+        Seleziona cosa includere nel menu
+      </p>
 
       <div className="mt-3 space-y-3">
         {MENU_COURSES.map((course) => (
           <div key={course.id}>
-            <p className="text-xs font-black text-primary-black">
+            <p className="text-xs font-medium text-primary-black/70">
               {course.label}
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -893,10 +810,10 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
                     key={item.id}
                     type="button"
                     onClick={() => toggleSelection(course, item)}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                       selected
-                        ? "border-brand-teal bg-brand-teal text-white"
-                        : "border-primary-black/25 bg-white text-primary-black hover:border-primary-black"
+                        ? "bg-primary-black text-white"
+                        : "bg-white text-primary-black ring-1 ring-primary-black/12 hover:ring-primary-black/25"
                     }`}
                   >
                     {item.label}
@@ -909,44 +826,17 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
       </div>
 
       {selections.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-primary-black/25 bg-primary-black/[0.02] p-3">
-          <p className="text-xs font-black uppercase tracking-[0.14em] text-primary-black/45">
-            Menu selezionato
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {selections.map((selection) => (
-              <span
-                key={`${selection.courseId}-${selection.itemId}`}
-                className="rounded-full bg-white px-3 py-1 text-xs font-bold text-primary-black ring-1 ring-primary-black/20"
-              >
-                {selection.courseLabel}: {selection.itemLabel}
-              </span>
-            ))}
-          </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {selections.map((selection) => (
+            <span
+              key={`${selection.courseId}-${selection.itemId}`}
+              className="rounded-full bg-white px-3 py-1 text-xs text-primary-black ring-1 ring-primary-black/10"
+            >
+              {selection.courseLabel}: {selection.itemLabel}
+            </span>
+          ))}
         </div>
       )}
-    </div>
-  );
-});
-
-const EventInfoItem = memo(function EventInfoItem({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof Calendar;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="min-w-0 text-center">
-      <p className="flex items-center justify-center gap-1 text-[11px] font-black text-brand-teal">
-        <Icon className="h-3.5 w-3.5" aria-hidden />
-        {label}
-      </p>
-      <p className="mt-1 text-sm font-black leading-tight text-primary-black">
-        {value}
-      </p>
     </div>
   );
 });
@@ -986,16 +876,19 @@ const PaymentChoiceModal = memo(function PaymentChoiceModal({
         onClick={onClose}
         aria-label="Chiudi scelta pagamento"
       />
-      <div className="relative w-full max-w-lg rounded-t-[2rem] bg-background p-5 shadow-xl lg:rounded-[2rem]">
-        <div className="flex items-start justify-between gap-3">
-          <div>
+      <div
+        className="smooth-scroll relative max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-background p-5 shadow-xl lg:rounded-[2rem]"
+        style={MODAL_SAFE_BOTTOM_STYLE}
+      >
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-teal">
               Pagamento servizio
             </p>
-            <h2 className="mt-1 text-xl font-black text-primary-black">
+            <h2 className="mt-1 truncate text-xl font-black text-primary-black">
               {service.name}
             </h2>
-            <p className="mt-1 text-sm text-primary-black/60">
+            <p className="mt-1 truncate text-sm text-primary-black/60">
               {event.title} · {formatCurrency(service.amountPaid)}
             </p>
           </div>

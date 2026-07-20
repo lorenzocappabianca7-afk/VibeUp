@@ -2,8 +2,8 @@
 
 import type { Location } from "@/types/location";
 import { Check, X } from "lucide-react";
-import Image from "next/image";
 import { memo, useMemo } from "react";
+import { SafeImage } from "@/components/ui/safe-image";
 
 interface CompareFavoritesProps {
   locations: Location[];
@@ -55,9 +55,14 @@ export const CompareFavorites = memo(function CompareFavorites({
         <p className="mt-1 text-xs text-primary-black/55">
           Ogni colonna rappresenta un locale; ogni riga mostra una caratteristica o un servizio incluso.
         </p>
+        {locations.length > 1 && (
+          <p className="mt-2 text-[11px] font-medium text-brand-teal sm:hidden">
+            Scorri orizzontalmente per vedere tutte le colonne
+          </p>
+        )}
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="max-w-full overflow-x-auto">
         <table
           className="w-full border-separate border-spacing-0 text-sm"
           style={{ minWidth: `${tableMinWidth}px` }}
@@ -75,7 +80,7 @@ export const CompareFavorites = memo(function CompareFavorites({
                 >
                   <div className="relative overflow-hidden rounded-2xl border border-primary-black/10 bg-background text-left">
                     <div className="relative aspect-[16/10]">
-                      <Image
+                      <SafeImage
                         src={location.imageUrl}
                         alt={location.name}
                         fill

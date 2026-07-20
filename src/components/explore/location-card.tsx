@@ -1,10 +1,10 @@
 "use client";
 
+import { SafeImage } from "@/components/ui/safe-image";
 import { DistanceBadge } from "@/components/explore/distance-badge";
 import { cn, getLocationPricePresentation } from "@/lib/utils";
 import type { Location } from "@/types/location";
 import { GitCompareArrows, Heart, MapPin } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { memo, useState } from "react";
 
@@ -37,7 +37,7 @@ export const LocationCard = memo(function LocationCard({
           href={href}
           className="relative block h-full w-full"
         >
-          <Image
+          <SafeImage
             src={location.imageUrl}
             alt={location.name}
             fill
@@ -103,17 +103,19 @@ export const LocationCard = memo(function LocationCard({
       </div>
 
       <Link href={href} className="block p-4">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
           <div className="min-w-0">
             <h3 className="truncate font-semibold text-primary-black">
               {location.name}
             </h3>
-            <p className="mt-0.5 flex items-center gap-1 text-xs text-primary-black/50">
+            <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-primary-black/50">
               <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-              {location.zoneLabel} · {location.comune} · fino a {location.capacity} ospiti
+              <span className="truncate">
+                {location.zoneLabel} · {location.comune} · fino a {location.capacity} ospiti
+              </span>
             </p>
           </div>
-          <p className="shrink-0 text-right">
+          <p className="shrink-0 self-start sm:text-right">
             <span className="rounded-full bg-primary-black px-3 py-1 text-xs font-bold text-white">
               {price.eyebrow} {price.price}
             </span>

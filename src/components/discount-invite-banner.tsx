@@ -44,7 +44,7 @@ export const DiscountInviteBanner = memo(function DiscountInviteBanner({
               <BadgePercent className="h-3.5 w-3.5" aria-hidden />
               Sconto location
             </span>
-            <h3 className="mt-1.5 text-xl font-black leading-tight text-primary-black">
+            <h3 className="mt-1.5 text-lg font-black leading-tight text-primary-black sm:text-xl">
               Non trovi il tuo {categoryLabel}{" "}
               <span className="text-primary-black">
                 (es. DJ, fotografo, pasticceria ecc.)

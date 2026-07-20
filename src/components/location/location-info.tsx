@@ -77,9 +77,9 @@ export function LocationInfo({ location }: LocationInfoProps) {
         <h1 className="text-2xl font-bold text-primary-black">
           {location.name}
         </h1>
-        <p className="mt-1 flex items-center gap-1 text-sm text-primary-black/60">
+        <p className="mt-1 flex min-w-0 items-start gap-1 text-sm text-primary-black/60">
           <MapPin className="h-4 w-4 shrink-0" aria-hidden />
-          {location.address}
+          <span className="min-w-0 break-words">{location.address}</span>
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-primary-black/5 px-3 py-1 text-xs font-medium text-primary-black/70">

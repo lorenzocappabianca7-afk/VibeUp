@@ -3,6 +3,7 @@
 import { LocationDetailView } from "@/components/location/location-detail-view";
 import { useAppState } from "@/context/app-state-context";
 import { getLocationById } from "@/lib/location";
+import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import type { ManagedLocationListing } from "@/types/admin";
 import Link from "next/link";
 
@@ -31,7 +32,12 @@ export function LocationPageClient({
 
   if (!location) {
     return (
-      <div className="mx-auto min-h-dvh w-full max-w-md bg-background px-4 pt-8 lg:max-w-6xl lg:px-8">
+      <div
+        className={cn(
+          "mx-auto min-h-dvh overflow-x-hidden bg-background px-4 pt-8 lg:px-8",
+          APP_SHELL_WIDTH_CLASS,
+        )}
+      >
         <div className="rounded-2xl border border-primary-black/10 p-6 text-center">
           <h1 className="text-xl font-bold text-primary-black">
             Location non trovata
@@ -51,7 +57,12 @@ export function LocationPageClient({
   }
 
   return (
-    <div className="mx-auto min-h-dvh w-full max-w-md bg-background px-4 pt-6 shadow-none sm:shadow-[0_0_60px_-15px_rgba(15,15,17,0.12)] lg:max-w-6xl lg:px-8 lg:pt-8">
+    <div
+      className={cn(
+        "mx-auto min-h-dvh overflow-x-hidden bg-background px-4 pt-6 shadow-none sm:shadow-[0_0_60px_-15px_rgba(15,15,17,0.12)] lg:px-8 lg:pt-8",
+        APP_SHELL_WIDTH_CLASS,
+      )}
+    >
       <LocationDetailView
         location={location}
         initialQuoteContext={initialQuoteContext}
