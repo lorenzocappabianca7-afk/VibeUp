@@ -68,11 +68,15 @@ export const LocationCard = memo(function LocationCard({
             className={cn(
               "flex h-9 w-9 items-center justify-center rounded-full shadow-md backdrop-blur-md transition-colors duration-150",
               isCompareSelected
-                ? "bg-brand-teal text-white"
-                : "bg-white text-brand-teal hover:bg-brand-teal/10",
+                ? "bg-brand-teal-strong text-white"
+                : "bg-white text-brand-teal-strong hover:bg-brand-teal/10",
             )}
           >
-            <GitCompareArrows className="h-4 w-4" aria-hidden />
+            <GitCompareArrows
+              className="h-4 w-4"
+              strokeWidth={2.75}
+              aria-hidden
+            />
           </button>
           <button
             type="button"
@@ -95,6 +99,7 @@ export const LocationCard = memo(function LocationCard({
           >
             <Heart
               className="h-4 w-4"
+              strokeWidth={2.75}
               fill={isFavorite ? "currentColor" : "none"}
               aria-hidden
             />

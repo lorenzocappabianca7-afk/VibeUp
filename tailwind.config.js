@@ -11,6 +11,7 @@ module.exports = {
         background: "#FFFFFF",
         "primary-black": "#0F0F11",
         "brand-teal": "#32B4B4",
+        "brand-teal-strong": "#1F8F8F",
         "brand-pink": "#F091B2",
       },
     },

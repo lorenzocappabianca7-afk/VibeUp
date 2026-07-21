@@ -502,8 +502,8 @@ export function LocationDetailView({
             onClick={toggleCompare}
             className={`inline-flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-md transition-colors ${
               isCompareSelected
-                ? "border-brand-teal bg-brand-teal text-white"
-                : "border-brand-teal/25 bg-white text-brand-teal hover:bg-brand-teal/10"
+                ? "border-brand-teal-strong bg-brand-teal-strong text-white"
+                : "border-brand-teal-strong/30 bg-white text-brand-teal-strong hover:bg-brand-teal/10"
             }`}
             aria-label={
               isCompareSelected
@@ -511,7 +511,11 @@ export function LocationDetailView({
                 : `Aggiungi ${location.name} al confronto`
             }
           >
-            <GitCompareArrows className="h-4 w-4" aria-hidden />
+            <GitCompareArrows
+              className="h-4 w-4"
+              strokeWidth={2.75}
+              aria-hidden
+            />
           </button>
           <button
             type="button"
@@ -529,6 +533,7 @@ export function LocationDetailView({
           >
             <Heart
               className="h-4 w-4"
+              strokeWidth={2.75}
               fill={isFavorite ? "currentColor" : "none"}
               aria-hidden
             />

@@ -700,14 +700,18 @@ export function ExploreScreen({
             onClick={() => setView("compare")}
             disabled={compareLocationIds.length === 0}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-medium transition-colors duration-150",
+              "flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-semibold transition-colors duration-150",
               view === "compare"
-                ? "bg-brand-teal text-white shadow-sm"
-                : "bg-white text-brand-teal hover:bg-brand-teal/10",
+                ? "bg-brand-teal-strong text-white shadow-sm"
+                : "bg-white text-brand-teal-strong hover:bg-brand-teal/10",
               compareLocationIds.length === 0 && "opacity-50",
             )}
           >
-            <GitCompareArrows className="h-4 w-4" aria-hidden />
+            <GitCompareArrows
+              className="h-4 w-4"
+              strokeWidth={2.75}
+              aria-hidden
+            />
             Compara
             {compareLocationIds.length > 0 && (
               <span
@@ -715,7 +719,7 @@ export function ExploreScreen({
                   "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
                   view === "compare"
                     ? "bg-white/25 text-white"
-                    : "bg-brand-teal/15 text-brand-teal",
+                    : "bg-brand-teal-strong/15 text-brand-teal-strong",
                 )}
               >
                 {compareLocationIds.length}
