@@ -71,28 +71,32 @@ const EXPLORE_CATEGORIES: {
     label: "Locali",
     icon: Sparkles,
     iconClass: "text-brand-teal",
-    activeClass: "bg-brand-teal/15 text-primary-black shadow-sm ring-1 ring-brand-teal/35",
+    activeClass:
+      "bg-brand-teal/15 text-primary-black shadow-sm ring-1 ring-brand-teal/35",
   },
   {
     id: "dj",
     label: "DJ",
     icon: Disc3,
     iconClass: "text-brand-pink",
-    activeClass: "bg-brand-pink/15 text-primary-black shadow-sm ring-1 ring-brand-pink/35",
+    activeClass:
+      "bg-brand-pink/15 text-primary-black shadow-sm ring-1 ring-brand-pink/35",
   },
   {
     id: "fotografo",
     label: "Fotografo",
     icon: Camera,
-    iconClass: "text-brand-teal",
-    activeClass: "bg-brand-teal/15 text-primary-black shadow-sm ring-1 ring-brand-teal/35",
+    iconClass: "text-[#4A8FE7]",
+    activeClass:
+      "bg-[#4A8FE7]/15 text-primary-black shadow-sm ring-1 ring-[#4A8FE7]/35",
   },
   {
     id: "decorazioni",
     label: "Decorazioni",
     icon: Gift,
-    iconClass: "text-brand-pink",
-    activeClass: "bg-brand-pink/15 text-primary-black shadow-sm ring-1 ring-brand-pink/35",
+    iconClass: "text-[#E8A54B]",
+    activeClass:
+      "bg-[#E8A54B]/15 text-primary-black shadow-sm ring-1 ring-[#E8A54B]/35",
   },
 ];
 
@@ -589,17 +593,17 @@ export function ExploreScreen({
                   type="button"
                   onClick={() => selectCategory(category.id)}
                   className={cn(
-                    "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2.5 text-center transition-colors duration-150",
+                    "flex min-w-0 flex-1 items-center justify-center gap-1 rounded-2xl px-1.5 py-2.5 transition-colors duration-150 sm:gap-1.5 sm:px-2",
                     isActive
                       ? category.activeClass
                       : "bg-background text-primary-black/65 hover:text-primary-black",
                   )}
                 >
                   <Icon
-                    className={cn("h-4 w-4 shrink-0", category.iconClass)}
+                    className={cn("h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4", category.iconClass)}
                     aria-hidden
                   />
-                  <span className="w-full truncate text-[10px] font-semibold leading-tight sm:text-xs">
+                  <span className="truncate text-[10px] font-semibold leading-none sm:text-xs">
                     {category.label}
                   </span>
                 </button>
