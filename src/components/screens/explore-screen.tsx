@@ -693,7 +693,7 @@ export function ExploreScreen({
               "flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-medium transition-colors duration-150",
               view === "compare"
                 ? "bg-brand-teal text-white shadow-sm"
-                : "bg-brand-teal/20 text-brand-teal hover:bg-brand-teal/30",
+                : "bg-white text-brand-teal hover:bg-brand-teal/10",
               compareLocationIds.length === 0 && "opacity-50",
             )}
           >
@@ -705,7 +705,7 @@ export function ExploreScreen({
                   "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
                   view === "compare"
                     ? "bg-white/25 text-white"
-                    : "bg-brand-teal/25 text-brand-teal",
+                    : "bg-brand-teal/15 text-brand-teal",
                 )}
               >
                 {compareLocationIds.length}
