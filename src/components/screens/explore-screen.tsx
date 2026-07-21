@@ -38,6 +38,7 @@ import {
   GitCompareArrows,
   Heart,
   Megaphone,
+  Music,
   Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -98,6 +99,14 @@ const EXPLORE_CATEGORIES: {
     activeClass:
       "bg-[#E8A54B]/15 text-primary-black shadow-sm ring-1 ring-[#E8A54B]/35",
   },
+  {
+    id: "altri",
+    label: "Altri servizi",
+    icon: Music,
+    iconClass: "text-[#2BB673]",
+    activeClass:
+      "bg-[#2BB673]/15 text-primary-black shadow-sm ring-1 ring-[#2BB673]/35",
+  },
 ];
 
 const SEARCH_PLACEHOLDERS: Record<ExploreCategory, string> = {
@@ -128,7 +137,8 @@ export function parseExploreCategory(value: string | null): ExploreCategory {
     value === "locali" ||
     value === "dj" ||
     value === "fotografo" ||
-    value === "decorazioni"
+    value === "decorazioni" ||
+    value === "altri"
   ) {
     return value;
   }
@@ -583,7 +593,7 @@ export function ExploreScreen({
     <div className="min-w-0 space-y-5 lg:space-y-6">
       <header className="relative min-w-0">
         <div className="rounded-3xl border border-primary-black/10 bg-primary-black/[0.03] p-1.5">
-          <div className="flex min-w-0 flex-nowrap items-stretch gap-1">
+          <div className="-mx-0.5 flex min-w-0 flex-nowrap items-stretch gap-1.5 overflow-x-auto px-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {EXPLORE_CATEGORIES.map((category) => {
               const Icon = category.icon;
               const isActive = activeCategory === category.id;
@@ -593,17 +603,17 @@ export function ExploreScreen({
                   type="button"
                   onClick={() => selectCategory(category.id)}
                   className={cn(
-                    "flex min-w-0 flex-1 items-center justify-center gap-1 rounded-2xl px-1.5 py-2.5 transition-colors duration-150 sm:gap-1.5 sm:px-2",
+                    "flex shrink-0 items-center justify-center gap-1.5 rounded-2xl px-3 py-2.5 transition-colors duration-150",
                     isActive
                       ? category.activeClass
                       : "bg-background text-primary-black/65 hover:text-primary-black",
                   )}
                 >
                   <Icon
-                    className={cn("h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4", category.iconClass)}
+                    className={cn("h-4 w-4 shrink-0", category.iconClass)}
                     aria-hidden
                   />
-                  <span className="truncate text-[10px] font-semibold leading-none sm:text-xs">
+                  <span className="whitespace-nowrap text-xs font-semibold leading-none sm:text-sm">
                     {category.label}
                   </span>
                 </button>
