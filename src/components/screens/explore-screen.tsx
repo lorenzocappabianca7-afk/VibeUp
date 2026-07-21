@@ -63,11 +63,37 @@ const EXPLORE_CATEGORIES: {
   id: ExploreCategory;
   label: string;
   icon: LucideIcon;
+  iconClass: string;
+  activeClass: string;
 }[] = [
-  { id: "locali", label: "Locali", icon: Sparkles },
-  { id: "dj", label: "DJ", icon: Disc3 },
-  { id: "fotografo", label: "Fotografo", icon: Camera },
-  { id: "decorazioni", label: "Decorazioni", icon: Gift },
+  {
+    id: "locali",
+    label: "Locali",
+    icon: Sparkles,
+    iconClass: "text-brand-teal",
+    activeClass: "bg-brand-teal/15 text-primary-black shadow-sm ring-1 ring-brand-teal/35",
+  },
+  {
+    id: "dj",
+    label: "DJ",
+    icon: Disc3,
+    iconClass: "text-brand-pink",
+    activeClass: "bg-brand-pink/15 text-primary-black shadow-sm ring-1 ring-brand-pink/35",
+  },
+  {
+    id: "fotografo",
+    label: "Fotografo",
+    icon: Camera,
+    iconClass: "text-brand-teal",
+    activeClass: "bg-brand-teal/15 text-primary-black shadow-sm ring-1 ring-brand-teal/35",
+  },
+  {
+    id: "decorazioni",
+    label: "Decorazioni",
+    icon: Gift,
+    iconClass: "text-brand-pink",
+    activeClass: "bg-brand-pink/15 text-primary-black shadow-sm ring-1 ring-brand-pink/35",
+  },
 ];
 
 const SEARCH_PLACEHOLDERS: Record<ExploreCategory, string> = {
@@ -552,24 +578,30 @@ export function ExploreScreen({
   return (
     <div className="min-w-0 space-y-5 lg:space-y-6">
       <header className="relative min-w-0">
-        <div className="rounded-3xl border border-primary-black/10 bg-primary-black/[0.03] p-2">
-          <div className="flex flex-wrap justify-center gap-2">
+        <div className="rounded-3xl border border-primary-black/10 bg-primary-black/[0.03] p-1.5">
+          <div className="flex min-w-0 flex-nowrap items-stretch gap-1">
             {EXPLORE_CATEGORIES.map((category) => {
               const Icon = category.icon;
+              const isActive = activeCategory === category.id;
               return (
                 <button
                   key={category.id}
                   type="button"
                   onClick={() => selectCategory(category.id)}
                   className={cn(
-                    "flex items-center gap-1.5 rounded-2xl px-3 py-2 text-xs font-semibold transition-colors duration-150",
-                    activeCategory === category.id
-                      ? "bg-primary-black text-white shadow-sm"
+                    "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2.5 text-center transition-colors duration-150",
+                    isActive
+                      ? category.activeClass
                       : "bg-background text-primary-black/65 hover:text-primary-black",
                   )}
                 >
-                  <Icon className="h-3.5 w-3.5" aria-hidden />
-                  {category.label}
+                  <Icon
+                    className={cn("h-4 w-4 shrink-0", category.iconClass)}
+                    aria-hidden
+                  />
+                  <span className="w-full truncate text-[10px] font-semibold leading-tight sm:text-xs">
+                    {category.label}
+                  </span>
                 </button>
               );
             })}
