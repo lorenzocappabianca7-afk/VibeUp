@@ -4,6 +4,7 @@ import { BookingSummary } from "@/components/location/booking-summary";
 import { LocationGallery } from "@/components/location/location-gallery";
 import { LocationInfo } from "@/components/location/location-info";
 import { SmartLocationDetailsSection } from "@/components/location/smart-location-details-section";
+import { useAccountGate } from "@/context/account-gate-context";
 import { useAppState } from "@/context/app-state-context";
 import {
   calculateBookingQuote,
@@ -119,6 +120,7 @@ export function LocationDetailView({
     toggleCompareLocation,
     toggleFavoriteLocation,
   } = useAppState();
+  const { requireAccount } = useAccountGate();
   const defaultEventTitle = `Festa da ${location.name}`;
   const isFavorite = favoriteLocationIds.includes(location.id);
   const isCompareSelected = compareLocationIds.includes(location.id);
@@ -269,8 +271,13 @@ export function LocationDetailView({
 
   function generateQuote() {
     if (!canGenerateQuote) return;
-    setGeneratedQuote({ key: quoteKey, quote: draftQuote });
-    setCreatedEventId(null);
+    requireAccount(
+      () => {
+        setGeneratedQuote({ key: quoteKey, quote: draftQuote });
+        setCreatedEventId(null);
+      },
+      "Per generare un preventivo crea un account.",
+    );
   }
 
   function toggleExtra(id: ExtraServiceId) {
@@ -286,13 +293,32 @@ export function LocationDetailView({
   }
 
   function toggleCompare() {
-    if (
-      !isCompareSelected &&
-      compareLocationIds.length >= MAX_COMPARE_LOCATIONS
-    ) {
-      removeCompareLocation(compareLocationIds[0]);
+    if (isCompareSelected) {
+      toggleCompareLocation(location.id);
+      return;
     }
-    toggleCompareLocation(location.id);
+
+    requireAccount(
+      () => {
+        if (compareLocationIds.length >= MAX_COMPARE_LOCATIONS) {
+          removeCompareLocation(compareLocationIds[0]);
+        }
+        toggleCompareLocation(location.id);
+      },
+      "Per aggiungere un locale al confronto crea un account.",
+    );
+  }
+
+  function toggleFavorite() {
+    if (isFavorite) {
+      toggleFavoriteLocation(location.id);
+      return;
+    }
+
+    requireAccount(
+      () => toggleFavoriteLocation(location.id),
+      "Per salvare un locale tra i preferiti crea un account.",
+    );
   }
 
   function inferRequiredServices(prompt: string): AiRequiredServiceType[] {
@@ -489,7 +515,7 @@ export function LocationDetailView({
           </button>
           <button
             type="button"
-            onClick={() => toggleFavoriteLocation(location.id)}
+            onClick={toggleFavorite}
             className={`inline-flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-md transition-colors ${
               isFavorite
                 ? "border-brand-pink bg-brand-pink text-white"

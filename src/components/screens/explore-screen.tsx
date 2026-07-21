@@ -5,6 +5,7 @@ import { DiscountInviteBanner } from "@/components/discount-invite-banner";
 import { ExploreFiltersSheet } from "@/components/explore/explore-filters-sheet";
 import { ExploreSearchBar } from "@/components/explore/explore-search-bar";
 import { LocationCard } from "@/components/explore/location-card";
+import { useAccountGate } from "@/context/account-gate-context";
 import { useAppState } from "@/context/app-state-context";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
 import {
@@ -305,6 +306,31 @@ export function ExploreScreen({
     toggleFavoriteLocation,
     toggleFavoriteService,
   } = useAppState();
+  const { requireAccount } = useAccountGate();
+
+  function handleToggleFavoriteLocation(id: string) {
+    if (favoriteLocationIds.includes(id)) {
+      toggleFavoriteLocation(id);
+      return;
+    }
+
+    requireAccount(
+      () => toggleFavoriteLocation(id),
+      "Per salvare un locale tra i preferiti crea un account.",
+    );
+  }
+
+  function handleToggleCompareLocation(id: string) {
+    if (compareLocationIds.includes(id)) {
+      toggleCompareLocation(id);
+      return;
+    }
+
+    requireAccount(
+      () => toggleCompareLocation(id),
+      "Per aggiungere un locale al confronto crea un account.",
+    );
+  }
   const eventContext = eventId ? getEvent(eventId) ?? null : null;
   const [view, setView] = useState<ExploreView>("list");
   const [activeCategory, setActiveCategory] = useState<ExploreCategory>(() =>
@@ -532,13 +558,12 @@ export function ExploreScreen({
       <header className="relative min-w-0">
         <div className="flex min-w-0 items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold text-primary-black">Esplora</h1>
-            <p className="mt-1 text-sm text-primary-black/60">
-              Esplora i servizi per la tua festa
+            <p className="text-sm text-primary-black/60">
+              Scegli una categoria per iniziare
             </p>
           </div>
           {activeCategory === "locali" && (
-            <div className="relative mt-4 shrink-0">
+            <div className="relative shrink-0">
               {discountBannerOpen && (
                 <button
                   type="button"
@@ -775,8 +800,8 @@ export function ExploreScreen({
                     location={location}
                     isFavorite={favoriteLocationIdSet.has(location.id)}
                     isCompareSelected={compareLocationIdSet.has(location.id)}
-                    onToggleFavorite={toggleFavoriteLocation}
-                    onToggleCompare={toggleCompareLocation}
+                    onToggleFavorite={handleToggleFavoriteLocation}
+                    onToggleCompare={handleToggleCompareLocation}
                     href={locationHrefById.get(location.id)}
                   />
                 </li>

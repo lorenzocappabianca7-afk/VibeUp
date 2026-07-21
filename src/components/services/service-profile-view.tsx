@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccountGate } from "@/context/account-gate-context";
 import { useAppState } from "@/context/app-state-context";
 import {
   getServiceProviderById,
@@ -146,6 +147,7 @@ export function ServiceProfileView({
 }: ServiceProfileViewProps) {
   const { addServiceToEvent, events, getEvent, isStorageHydrated, managedListings } =
     useAppState();
+  const { requireAccount } = useAccountGate();
   const service = useMemo(() => {
     const staticService = getServiceProviderById(serviceId);
     if (staticService) return staticService;
@@ -638,8 +640,13 @@ export function ServiceProfileView({
               type="button"
               disabled={!canGenerate}
               onClick={() => {
-                setGeneratedQuote(quotePreview);
-                setServiceAdded(false);
+                requireAccount(
+                  () => {
+                    setGeneratedQuote(quotePreview);
+                    setServiceAdded(false);
+                  },
+                  "Per generare un preventivo crea un account.",
+                );
               }}
               className={cn(
                 "mt-4 w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-black text-white transition-opacity",

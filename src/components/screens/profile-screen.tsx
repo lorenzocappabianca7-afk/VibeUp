@@ -123,6 +123,7 @@ export function ProfileScreen() {
     favoriteLocationIds,
     favoriteServiceIds,
     isBusinessUser,
+    isGuest,
     managedListings,
     removeFavoriteLocation,
     removeFavoriteService,
@@ -373,9 +374,15 @@ export function ProfileScreen() {
           </label>
           <div className="min-w-0 flex-1">
             <p className="truncate font-semibold text-primary-black">{currentUser.name}</p>
-            <p className="truncate text-sm text-primary-black/60">{currentUser.email}</p>
+            <p className="truncate text-sm text-primary-black/60">
+              {isGuest ? "Nessun account creato" : currentUser.email}
+            </p>
             <span className="mt-1 inline-block rounded-full bg-brand-teal/15 px-2.5 py-0.5 text-xs font-medium text-brand-teal">
-              {isBusinessUser ? "Account Business" : "Piano gratuito"}
+              {isGuest
+                ? "Ospite"
+                : isBusinessUser
+                  ? "Account Business"
+                  : "Piano gratuito"}
             </span>
           </div>
           <button
@@ -889,10 +896,12 @@ export function ProfileScreen() {
       <section className="space-y-3 rounded-2xl border border-primary-black/10 bg-background p-4">
         <div>
           <h2 className="text-sm font-bold text-primary-black">
-            Account disponibili
+            {isGuest ? "Crea il tuo account" : "Account disponibili"}
           </h2>
           <p className="mt-1 text-xs text-primary-black/55">
-            Cambia account o aggiungine uno nuovo.
+            {isGuest
+              ? "Crea un account per salvare preferiti, confrontare locali e generare preventivi."
+              : "Cambia account o aggiungine uno nuovo."}
           </p>
         </div>
 
@@ -953,7 +962,7 @@ export function ProfileScreen() {
           onClick={handleCreateAccount}
           className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-semibold text-white"
         >
-          Aggiungi account
+          {isGuest ? "Crea account" : "Aggiungi account"}
         </button>
       </section>
 

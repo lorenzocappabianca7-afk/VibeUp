@@ -10,6 +10,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -40,6 +41,7 @@ interface PaymentState {
 interface AppStateContextValue {
   currentUser: CurrentUser;
   accounts: CurrentUser[];
+  isGuest: boolean;
   businessProfile: BusinessProfile | null;
   isBusinessUser: boolean;
   isStorageHydrated: boolean;
@@ -76,6 +78,12 @@ interface AppStateContextValue {
 
 const AppStateContext = createContext<AppStateContextValue | null>(null);
 
+export const GUEST_USER: CurrentUser = {
+  id: "account-guest",
+  name: "Ospite",
+  email: "",
+};
+
 const MOCK_CURRENT_USER: CurrentUser = {
   id: "account-vibeup-planner",
   name: "VibeUp Planner",
@@ -92,7 +100,7 @@ const MOCK_ACCOUNTS: CurrentUser[] = [
 ];
 
 const MAX_COMPARE_LOCATIONS = 3;
-const STORAGE_KEY = "vibeup-app-state-v1";
+const STORAGE_KEY = "vibeup-app-state-v2";
 
 interface UserScopedState {
   events: UserEvent[];
@@ -126,6 +134,18 @@ function createDefaultUserState(userId: string): UserScopedState {
     favoriteServiceIds: [],
     compareLocationIds: [],
   };
+}
+
+function resolveCurrentUser(
+  accounts: CurrentUser[],
+  currentUserId: string,
+): CurrentUser {
+  if (currentUserId === GUEST_USER.id) return GUEST_USER;
+  return (
+    accounts.find((account) => account.id === currentUserId) ??
+    accounts[0] ??
+    GUEST_USER
+  );
 }
 
 function trimCompareIds(ids: string[]) {
@@ -194,20 +214,24 @@ function writeStoredAppState(state: StoredAppState) {
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [hydratedFromStorage, setHydratedFromStorage] = useState(false);
   const [accounts, setAccounts] = useState<CurrentUser[]>(MOCK_ACCOUNTS);
-  const [currentUserId, setCurrentUserId] = useState(MOCK_CURRENT_USER.id);
+  const [currentUserId, setCurrentUserId] = useState(GUEST_USER.id);
   const [businessProfile, setBusinessProfile] =
     useState<BusinessProfile | null>(null);
   const [userStatesMap, setUserStatesMap] = useState<
     Record<string, UserScopedState>
   >(() =>
-    Object.fromEntries(
-      MOCK_ACCOUNTS.map((account) => [
+    Object.fromEntries([
+      [GUEST_USER.id, createDefaultUserState(GUEST_USER.id)],
+      ...MOCK_ACCOUNTS.map((account) => [
         account.id,
         createDefaultUserState(account.id),
-      ]),
-    ),
+      ] as const),
+    ]),
   );
   const [managedListings, setManagedListings] = useState<ManagedListing[]>([]);
+  const isGuest = currentUserId === GUEST_USER.id;
+  const currentUserIdRef = useRef(currentUserId);
+  currentUserIdRef.current = currentUserId;
 
   const currentUserState =
     userStatesMap[currentUserId] ?? createDefaultUserState(currentUserId);
@@ -219,18 +243,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const updateCurrentUserState = useCallback(
     (updater: (state: UserScopedState) => UserScopedState) => {
+      const userId = currentUserIdRef.current;
       setUserStatesMap((map) => {
-        const current = map[currentUserId] ?? createDefaultUserState(currentUserId);
+        const current = map[userId] ?? createDefaultUserState(userId);
         const next = updater(current);
         if (next === current) return map;
 
         return {
           ...map,
-          [currentUserId]: next,
+          [userId]: next,
         };
       });
     },
-    [currentUserId],
+    [],
   );
 
   useEffect(() => {
@@ -483,13 +508,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const updateCurrentUser = useCallback(
     (updates: Partial<Omit<CurrentUser, "id">>) => {
+      const userId = currentUserIdRef.current;
+      if (userId === GUEST_USER.id) return;
+
       setAccounts((prev) =>
         prev.map((account) =>
-          account.id === currentUserId ? { ...account, ...updates } : account,
+          account.id === userId ? { ...account, ...updates } : account,
         ),
       );
     },
-    [currentUserId],
+    [],
   );
 
   const saveBusinessProfile = useCallback((profile: BusinessProfile) => {
@@ -502,14 +530,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => {
-      const currentUser =
-        accounts.find((account) => account.id === currentUserId) ??
-        accounts[0] ??
-        MOCK_CURRENT_USER;
+      const currentUser = resolveCurrentUser(accounts, currentUserId);
 
       return {
       currentUser,
       accounts,
+      isGuest,
       businessProfile,
       isBusinessUser: businessProfile !== null,
       isStorageHydrated: hydratedFromStorage,
@@ -544,6 +570,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [
       accounts,
       currentUserId,
+      isGuest,
       businessProfile,
       hydratedFromStorage,
       events,
