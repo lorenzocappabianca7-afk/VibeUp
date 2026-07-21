@@ -503,7 +503,7 @@ export function LocationDetailView({
             className={`inline-flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-md transition-colors ${
               isCompareSelected
                 ? "border-brand-teal bg-brand-teal text-white"
-                : "border-primary-black/10 bg-white text-primary-black/65 hover:bg-white/90 hover:text-brand-teal"
+                : "border-brand-teal/30 bg-brand-teal/20 text-brand-teal hover:bg-brand-teal/30"
             }`}
             aria-label={
               isCompareSelected

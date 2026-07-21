@@ -69,7 +69,7 @@ export const LocationCard = memo(function LocationCard({
               "flex h-9 w-9 items-center justify-center rounded-full shadow-md backdrop-blur-md transition-colors duration-150",
               isCompareSelected
                 ? "bg-brand-teal text-white"
-                : "bg-white text-primary-black hover:bg-white/90",
+                : "bg-brand-teal/20 text-brand-teal hover:bg-brand-teal/30",
             )}
           >
             <GitCompareArrows className="h-4 w-4" aria-hidden />
