@@ -18,7 +18,7 @@ import {
   matchesGeoFilter,
   matchesNearMeFilter,
 } from "@/lib/geo";
-import { cn, DISCOUNT_POPOVER_CLASS, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import {
   DEFAULT_EXPLORE_FILTERS,
   DEFAULT_SERVICE_EXPLORE_FILTERS,
@@ -38,7 +38,6 @@ import {
   GitCompareArrows,
   Heart,
   Megaphone,
-  Music,
   Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -69,7 +68,6 @@ const EXPLORE_CATEGORIES: {
   { id: "dj", label: "DJ", icon: Disc3 },
   { id: "fotografo", label: "Fotografo", icon: Camera },
   { id: "decorazioni", label: "Decorazioni", icon: Gift },
-  { id: "altri", label: "Altri servizi", icon: Music },
 ];
 
 const SEARCH_PLACEHOLDERS: Record<ExploreCategory, string> = {
@@ -80,14 +78,19 @@ const SEARCH_PLACEHOLDERS: Record<ExploreCategory, string> = {
   altri: "Cerca altri servizi...",
 };
 
-const SERVICE_INVITE_LABELS: Record<"dj" | "fotografo", string> = {
+const SERVICE_INVITE_LABELS: Record<"dj" | "fotografo" | "decorazioni", string> = {
   dj: "Invita il tuo DJ",
   fotografo: "Invita il tuo fotografo",
+  decorazioni: "Invita le tue decorazioni",
 };
 
-const SERVICE_INVITE_CATEGORY_LABELS: Record<"dj" | "fotografo", string> = {
+const SERVICE_INVITE_CATEGORY_LABELS: Record<
+  "dj" | "fotografo" | "decorazioni",
+  string
+> = {
   dj: "DJ",
   fotografo: "fotografo",
+  decorazioni: "servizio di decorazioni",
 };
 
 export function parseExploreCategory(value: string | null): ExploreCategory {
@@ -95,8 +98,7 @@ export function parseExploreCategory(value: string | null): ExploreCategory {
     value === "locali" ||
     value === "dj" ||
     value === "fotografo" ||
-    value === "decorazioni" ||
-    value === "altri"
+    value === "decorazioni"
   ) {
     return value;
   }
@@ -502,12 +504,6 @@ export function ExploreScreen({
     });
   }, []);
 
-  const closeDiscountBanner = useCallback(() => {
-    setDiscountBannerOpen(false);
-    setInviteContact("");
-    setInviteSent(false);
-  }, []);
-
   const openFilters = useCallback(() => {
     setFiltersOpen(true);
   }, []);
@@ -556,46 +552,7 @@ export function ExploreScreen({
   return (
     <div className="min-w-0 space-y-5 lg:space-y-6">
       <header className="relative min-w-0">
-        <div className="flex min-w-0 items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm text-primary-black/60">
-              Scegli una categoria per iniziare
-            </p>
-          </div>
-          {activeCategory === "locali" && (
-            <div className="relative shrink-0">
-              {discountBannerOpen && (
-                <button
-                  type="button"
-                  className="fixed inset-0 z-40 cursor-default bg-transparent"
-                  onClick={closeDiscountBanner}
-                  aria-label="Chiudi banner sconti"
-                />
-              )}
-              <button
-                type="button"
-                onClick={toggleDiscountBanner}
-                className="relative z-50 rounded-full border border-brand-pink bg-brand-pink/12 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-brand-pink transition-colors hover:bg-brand-pink/20 sm:px-3 sm:py-2 sm:text-[11px] sm:tracking-[0.12em]"
-                aria-expanded={discountBannerOpen}
-              >
-                Ottieni sconti
-              </button>
-              {discountBannerOpen && (
-                <div className={DISCOUNT_POPOVER_CLASS}>
-                  <span className="absolute -top-2 right-8 hidden h-4 w-4 rotate-45 border-l-2 border-t-2 border-brand-pink bg-pink-50 sm:block" />
-                  <DiscountInviteBanner
-                    contact={inviteContact}
-                    sent={inviteSent}
-                    onContactChange={handleInviteContactChange}
-                    onSubmit={handleInviteSubmit}
-                    className="bg-gradient-to-br from-pink-50 via-rose-50 to-pink-50 p-4"
-                  />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="mt-3 rounded-3xl border border-primary-black/10 bg-primary-black/[0.03] p-2">
+        <div className="rounded-3xl border border-primary-black/10 bg-primary-black/[0.03] p-2">
           <div className="flex flex-wrap justify-center gap-2">
             {EXPLORE_CATEGORIES.map((category) => {
               const Icon = category.icon;
@@ -628,7 +585,9 @@ export function ExploreScreen({
         placeholder={SEARCH_PLACEHOLDERS[activeCategory]}
       />
 
-      {(activeCategory === "dj" || activeCategory === "fotografo") && (
+      {(activeCategory === "dj" ||
+        activeCategory === "fotografo" ||
+        activeCategory === "decorazioni") && (
         <div className="relative min-w-0">
           <button
             type="button"
