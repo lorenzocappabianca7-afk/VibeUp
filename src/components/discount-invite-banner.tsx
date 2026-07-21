@@ -21,10 +21,12 @@ export const DiscountInviteBanner = memo(function DiscountInviteBanner({
   onSubmit,
   className,
 }: DiscountInviteBannerProps) {
-  const discountInviteText =
+  const contactTarget =
     categoryLabel === "DJ" || categoryLabel === "fotografo"
-      ? "Se inviti tramite VibeUp un DJ o fotografo che vuoi tu e inizia a usare VibeUp, puoi ottenere sconti sulla location."
-      : "Se inviti tramite VibeUp un servizio che vuoi tu e inizia a usare VibeUp, puoi ottenere sconti sulla location.";
+      ? "il DJ o fotografo"
+      : categoryLabel === "servizio di decorazioni"
+        ? "chi si occupa delle decorazioni"
+        : "il fornitore";
 
   return (
     <div
@@ -45,23 +47,25 @@ export const DiscountInviteBanner = memo(function DiscountInviteBanner({
               Sconto location
             </span>
             <h3 className="mt-1.5 text-lg font-black leading-tight text-primary-black sm:text-xl">
-              Non trovi il tuo {categoryLabel}{" "}
-              <span className="text-primary-black">
-                (es. DJ, fotografo, pasticceria ecc.)
-              </span>
-              ? Invitalo da VibeUp
+              {categoryLabel === "servizio" ? (
+                <>
+                  Non trovi il tuo servizio{" "}
+                  <span className="text-primary-black">
+                    (es. DJ, fotografo, pasticceria ecc.)
+                  </span>
+                  ? Invitalo da VibeUp
+                </>
+              ) : (
+                <>Non trovi il tuo {categoryLabel}? Invitalo da VibeUp</>
+              )}
             </h3>
-            <p className="mt-1 text-sm font-semibold leading-snug text-primary-black/70">
-              {discountInviteText}
+            <p className="mt-1.5 text-sm font-medium leading-snug text-primary-black/60">
+              Inserisci un contatto Instagram, TikTok o numero di telefono e noi
+              contatteremo {contactTarget}. Quando entrerà in VibeUp otterrai uno
+              sconto sul primo evento che organizzi.
             </p>
           </div>
         </div>
-
-        <p className="mt-3 rounded-2xl bg-background px-4 py-2.5 text-sm font-bold leading-snug text-primary-black shadow-sm">
-          Inserisci contatto TikTok, Instagram o numero: prepariamo noi il
-          messaggio per invitarlo a entrare nella piattaforma e collegarlo al
-          tuo evento.
-        </p>
       </div>
       <div className="relative mt-3 flex flex-col gap-2 sm:flex-row">
         <input

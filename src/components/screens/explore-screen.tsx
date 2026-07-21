@@ -31,10 +31,12 @@ import {
 } from "@/types/location";
 import {
   Camera,
+  ChevronDown,
   Disc3,
   Gift,
   GitCompareArrows,
   Heart,
+  Megaphone,
   Music,
   Sparkles,
 } from "lucide-react";
@@ -75,6 +77,16 @@ const SEARCH_PLACEHOLDERS: Record<ExploreCategory, string> = {
   fotografo: "Cerca fotografo...",
   decorazioni: "Cerca decorazioni...",
   altri: "Cerca altri servizi...",
+};
+
+const SERVICE_INVITE_LABELS: Record<"dj" | "fotografo", string> = {
+  dj: "Invita il tuo DJ",
+  fotografo: "Invita il tuo fotografo",
+};
+
+const SERVICE_INVITE_CATEGORY_LABELS: Record<"dj" | "fotografo", string> = {
+  dj: "DJ",
+  fotografo: "fotografo",
 };
 
 export function parseExploreCategory(value: string | null): ExploreCategory {
@@ -591,13 +603,52 @@ export function ExploreScreen({
         placeholder={SEARCH_PLACEHOLDERS[activeCategory]}
       />
 
-      {activeCategory !== "locali" && (
-        <DiscountInviteBanner
-          contact={inviteContact}
-          sent={inviteSent}
-          onContactChange={handleInviteContactChange}
-          onSubmit={handleInviteSubmit}
-        />
+      {(activeCategory === "dj" || activeCategory === "fotografo") && (
+        <div className="relative min-w-0">
+          <button
+            type="button"
+            onClick={toggleDiscountBanner}
+            aria-expanded={discountBannerOpen}
+            className={cn(
+              "flex w-full min-w-0 items-center gap-3 rounded-2xl border-2 border-brand-pink bg-gradient-to-r from-brand-pink/20 via-brand-pink/10 to-brand-teal/15 px-4 py-3 text-left transition-colors",
+              discountBannerOpen
+                ? "rounded-b-none border-b-0 bg-gradient-to-br from-pink-50 via-rose-50 to-pink-50"
+                : "hover:from-brand-pink/25 hover:to-brand-teal/20",
+            )}
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-black text-white">
+              <Megaphone className="h-4 w-4" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-black text-primary-black">
+                {SERVICE_INVITE_LABELS[activeCategory]}
+              </span>
+              <span className="mt-0.5 block truncate text-xs font-medium text-primary-black/55">
+                Ottieni sconti sulla location
+              </span>
+            </span>
+            <ChevronDown
+              className={cn(
+                "h-5 w-5 shrink-0 text-brand-pink transition-transform",
+                discountBannerOpen && "rotate-180",
+              )}
+              aria-hidden
+            />
+          </button>
+
+          {discountBannerOpen && (
+            <div className="overflow-hidden rounded-b-2xl border-2 border-t-0 border-brand-pink">
+              <DiscountInviteBanner
+                categoryLabel={SERVICE_INVITE_CATEGORY_LABELS[activeCategory]}
+                contact={inviteContact}
+                sent={inviteSent}
+                onContactChange={handleInviteContactChange}
+                onSubmit={handleInviteSubmit}
+                className="rounded-none border-0 shadow-none"
+              />
+            </div>
+          )}
+        </div>
       )}
 
       {activeCategory === "locali" && (
