@@ -546,18 +546,20 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
             return (
               <li
                 key={service.id}
-                className="flex min-w-0 items-center gap-2.5 py-3 first:pt-0 last:pb-0"
+                className="flex min-w-0 flex-col gap-2 py-3 first:pt-0 last:pb-0"
               >
-                <span className="w-[4.5rem] shrink-0 text-sm font-semibold tabular-nums text-primary-black">
-                  {formatCurrency(service.amountPaid)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-primary-black">
-                    {service.name}
-                  </p>
-                  <p className="truncate text-xs text-primary-black/50">
-                    {service.providerName}
-                  </p>
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-primary-black">
+                      {service.name}
+                    </p>
+                    <p className="truncate text-xs text-primary-black/50">
+                      {service.providerName}
+                    </p>
+                  </div>
+                  <span className="shrink-0 pt-0.5 text-sm font-semibold tabular-nums text-primary-black">
+                    {formatCurrency(service.amountPaid)}
+                  </span>
                 </div>
                 <button
                   type="button"
@@ -567,7 +569,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                       : onOpenPayment({ event, service })
                   }
                   disabled={payment.paid}
-                  className={`shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  className={`w-full rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
                     payment.paid
                       ? "bg-primary-black text-white"
                       : "border border-primary-black/15 text-primary-black hover:border-primary-black/30"
