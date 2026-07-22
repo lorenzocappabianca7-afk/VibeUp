@@ -141,7 +141,7 @@ export interface ServiceExploreFilters {
   eventAddress: string;
 }
 export const EXPLORE_PRICE_MIN = 0;
-export const EXPLORE_PRICE_MAX = 3000;
+export const EXPLORE_PRICE_MAX = 100_000;
 export const EXPLORE_PRICE_STEP = 50;
 export const EXPLORE_GUEST_MIN = 10;
 export const EXPLORE_GUEST_MAX = 300;

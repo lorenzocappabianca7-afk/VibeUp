@@ -2,7 +2,6 @@
 
 import { cn } from "@/lib/utils";
 import {
-  EXPLORE_PRICE_MAX,
   EXPLORE_PRICE_MIN,
   EXPLORE_PRICE_STEP,
 } from "@/types/location";
@@ -14,18 +13,21 @@ interface PriceRangeInputsProps {
   className?: string;
 }
 
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
+function parseBudget(raw: string) {
+  const digits = raw.replace(/\D/g, "");
+  if (digits === "") return null;
+  const parsed = Number.parseInt(digits, 10);
+  return Number.isNaN(parsed) ? null : parsed;
 }
 
 function normalizeRange(min: number, max: number): [number, number] {
-  const clampedMin = clamp(min, EXPLORE_PRICE_MIN, EXPLORE_PRICE_MAX);
-  const clampedMax = clamp(max, EXPLORE_PRICE_MIN, EXPLORE_PRICE_MAX);
-  return [clampedMin, clampedMax];
+  const safeMin = Math.max(EXPLORE_PRICE_MIN, min);
+  const safeMax = Math.max(safeMin, max);
+  return [safeMin, safeMax];
 }
 
 const inputClassName =
-  "w-full rounded-2xl border border-primary-black/10 bg-background px-3.5 py-3 text-sm text-primary-black placeholder:text-primary-black/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20";
+  "w-full rounded-2xl border border-primary-black/10 bg-background px-3.5 py-3 text-sm text-primary-black placeholder:text-primary-black/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
 export function PriceRangeInputs({
   value,
@@ -35,29 +37,28 @@ export function PriceRangeInputs({
   const [minValue, maxValue] = value;
   const [minDraft, setMinDraft] = useState(String(minValue));
   const [maxDraft, setMaxDraft] = useState(String(maxValue));
+  const [minFocused, setMinFocused] = useState(false);
+  const [maxFocused, setMaxFocused] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (cancelled) return;
-      setMinDraft(String(minValue));
-      setMaxDraft(String(maxValue));
-    });
+    if (minFocused) return;
+    setMinDraft(String(minValue));
+  }, [minFocused, minValue]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [minValue, maxValue]);
+  useEffect(() => {
+    if (maxFocused) return;
+    setMaxDraft(String(maxValue));
+  }, [maxFocused, maxValue]);
 
   const validationError = useMemo(() => {
     if (minDraft.trim() === "" || maxDraft.trim() === "") {
       return "Inserisci sia il prezzo minimo sia quello massimo.";
     }
 
-    const parsedMin = Number.parseInt(minDraft, 10);
-    const parsedMax = Number.parseInt(maxDraft, 10);
+    const parsedMin = parseBudget(minDraft);
+    const parsedMax = parseBudget(maxDraft);
 
-    if (Number.isNaN(parsedMin) || Number.isNaN(parsedMax)) {
+    if (parsedMin === null || parsedMax === null) {
       return "Inserisci solo valori numerici.";
     }
 
@@ -68,37 +69,37 @@ export function PriceRangeInputs({
     return null;
   }, [maxDraft, minDraft]);
 
-  function updateDraft(nextMin: string, nextMax: string) {
-    const parsedMin = Number.parseInt(nextMin, 10);
-    const parsedMax = Number.parseInt(nextMax, 10);
+  function commitDrafts(nextMinDraft: string, nextMaxDraft: string) {
+    const parsedMin = parseBudget(nextMinDraft);
+    const parsedMax = parseBudget(nextMaxDraft);
 
-    if (
-      nextMin.trim() !== "" &&
-      nextMax.trim() !== "" &&
-      !Number.isNaN(parsedMin) &&
-      !Number.isNaN(parsedMax) &&
-      parsedMax >= parsedMin
-    ) {
-      onChange(normalizeRange(parsedMin, parsedMax));
+    if (parsedMin === null || parsedMax === null || parsedMax < parsedMin) {
+      return;
     }
+
+    onChange(normalizeRange(parsedMin, parsedMax));
   }
 
   function handleMinInputChange(raw: string) {
-    setMinDraft(raw);
-    updateDraft(raw, maxDraft);
+    const nextDraft = raw.replace(/\D/g, "");
+    setMinDraft(nextDraft);
   }
 
   function handleMaxInputChange(raw: string) {
-    setMaxDraft(raw);
-    updateDraft(minDraft, raw);
+    const nextDraft = raw.replace(/\D/g, "");
+    setMaxDraft(nextDraft);
   }
 
   function stepMin(delta: number) {
-    onChange(normalizeRange(Math.min(minValue + delta, maxValue), maxValue));
+    const next = normalizeRange(Math.min(minValue + delta, maxValue), maxValue);
+    onChange(next);
+    setMinDraft(String(next[0]));
   }
 
   function stepMax(delta: number) {
-    onChange(normalizeRange(minValue, Math.max(maxValue + delta, minValue)));
+    const next = normalizeRange(minValue, Math.max(maxValue + delta, minValue));
+    onChange(next);
+    setMaxDraft(String(next[1]));
   }
 
   return (
@@ -109,13 +110,16 @@ export function PriceRangeInputs({
             Minimo budget (€)
           </span>
           <input
-            type="number"
+            type="text"
             inputMode="numeric"
-            min={EXPLORE_PRICE_MIN}
-            max={EXPLORE_PRICE_MAX}
-            step={EXPLORE_PRICE_STEP}
+            pattern="[0-9]*"
             value={minDraft}
             onChange={(e) => handleMinInputChange(e.target.value)}
+            onFocus={() => setMinFocused(true)}
+            onBlur={() => {
+              setMinFocused(false);
+              commitDrafts(minDraft, maxDraft);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.currentTarget.blur();
@@ -140,13 +144,16 @@ export function PriceRangeInputs({
             Massimo budget (€)
           </span>
           <input
-            type="number"
+            type="text"
             inputMode="numeric"
-            min={EXPLORE_PRICE_MIN}
-            max={EXPLORE_PRICE_MAX}
-            step={EXPLORE_PRICE_STEP}
+            pattern="[0-9]*"
             value={maxDraft}
             onChange={(e) => handleMaxInputChange(e.target.value)}
+            onFocus={() => setMaxFocused(true)}
+            onBlur={() => {
+              setMaxFocused(false);
+              commitDrafts(minDraft, maxDraft);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.currentTarget.blur();
@@ -161,7 +168,7 @@ export function PriceRangeInputs({
                 stepMax(-EXPLORE_PRICE_STEP);
               }
             }}
-            placeholder={String(EXPLORE_PRICE_MAX)}
+            placeholder="Es. 5000"
             aria-label="Budget massimo location"
             className={inputClassName}
           />
@@ -169,8 +176,8 @@ export function PriceRangeInputs({
       </div>
 
       <p className="text-xs leading-relaxed text-primary-black/50">
-        Fascia da {EXPLORE_PRICE_MIN}€ a {EXPLORE_PRICE_MAX}€ per evento o
-        pacchetto location. Il costo indicato si riferisce alla base della sala e{" "}
+        Inserisci la fascia di budget che preferisci per evento o pacchetto
+        location. Il costo indicato si riferisce alla base della sala e{" "}
         <span className="underline decoration-primary-black/30 underline-offset-2">
           non include eventuali servizi aggiuntivi per la festa
         </span>{" "}
