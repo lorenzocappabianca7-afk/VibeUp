@@ -117,12 +117,6 @@ const SEARCH_PLACEHOLDERS: Record<ExploreCategory, string> = {
   altri: "Cerca altri servizi...",
 };
 
-const SERVICE_INVITE_LABELS: Record<"dj" | "fotografo" | "decorazioni", string> = {
-  dj: "Invita il tuo DJ",
-  fotografo: "Invita il tuo fotografo",
-  decorazioni: "Invita le tue decorazioni",
-};
-
 const SERVICE_INVITE_CATEGORY_LABELS: Record<
   "dj" | "fotografo" | "decorazioni",
   string
@@ -651,10 +645,7 @@ export function ExploreScreen({
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-black text-primary-black">
-                {SERVICE_INVITE_LABELS[activeCategory]}
-              </span>
-              <span className="mt-0.5 block truncate text-xs font-medium text-primary-black/55">
-                Ottieni sconti sulla location
+                Ottieni sconti
               </span>
             </span>
             <ChevronDown
