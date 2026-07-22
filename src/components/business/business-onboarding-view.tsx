@@ -163,19 +163,21 @@ function isValidEmail(value: string) {
 export function BusinessOnboardingView() {
   const router = useRouter();
   const {
+    accounts,
     businessProfile,
     currentUser,
     isBusinessUser,
-    isGuest,
     createBusinessAccount,
     saveBusinessProfile,
     updateCurrentUser,
   } = useAppState();
 
-  const initial = businessProfile
+  const editingExisting = isBusinessUser && Boolean(businessProfile);
+
+  const initial = editingExisting && businessProfile
     ? profileToForms(businessProfile)
     : {
-        category: "" as BusinessCategory | "",
+        category: "locale" as BusinessCategory | "",
         locale: getEmptyLocaleForm(),
         performer: getEmptyPerformerForm(),
         shop: getEmptyShopForm(),
@@ -185,13 +187,14 @@ export function BusinessOnboardingView() {
     initial.category || "locale",
   );
   const [ownerData, setOwnerData] = useState<OwnerFormData>(() =>
-    getEmptyOwnerForm({
-      ownerName: currentUser.name !== "Ospite" ? currentUser.name : "",
-      email: currentUser.email,
-      phoneNumber: currentUser.phoneNumber ?? "",
-    }),
+    editingExisting
+      ? getEmptyOwnerForm({
+          ownerName: currentUser.name !== "Ospite" ? currentUser.name : "",
+          email: currentUser.email,
+          phoneNumber: currentUser.phoneNumber ?? "",
+        })
+      : getEmptyOwnerForm(),
   );
-  const [ownerSyncedFor, setOwnerSyncedFor] = useState(currentUser.id);
   const [localeData, setLocaleData] = useState<LocaleFormData>(initial.locale);
   const [performerData, setPerformerData] =
     useState<PerformerFormData>(initial.performer);
@@ -200,20 +203,6 @@ export function BusinessOnboardingView() {
   const [error, setError] = useState<string | null>(null);
 
   const isLocale = category === "locale";
-  const editingExisting = isBusinessUser && Boolean(businessProfile);
-  const usingExistingAccount = !isGuest;
-
-  // Keep owner fields aligned with the active account after hydration/switch.
-  if (!isGuest && ownerSyncedFor !== currentUser.id) {
-    setOwnerSyncedFor(currentUser.id);
-    setOwnerData(
-      getEmptyOwnerForm({
-        ownerName: currentUser.name !== "Ospite" ? currentUser.name : "",
-        email: currentUser.email,
-        phoneNumber: currentUser.phoneNumber ?? "",
-      }),
-    );
-  }
 
   function handleCategoryChange(value: string) {
     const next = value as BusinessCategory;
@@ -234,22 +223,12 @@ export function BusinessOnboardingView() {
     setError(null);
     if (!category) return;
 
-    const ownerName = (
-      usingExistingAccount ? currentUser.name : ownerData.ownerName
-    ).trim();
-    const email = (
-      usingExistingAccount ? currentUser.email : ownerData.email
-    )
-      .trim()
-      .toLowerCase();
+    const ownerName = ownerData.ownerName.trim();
+    const email = ownerData.email.trim().toLowerCase();
     const phoneNumber = ownerData.phoneNumber.trim();
 
     if (!ownerName || !email) {
-      setError(
-        usingExistingAccount
-          ? "Il tuo account non ha nome o email validi. Aggiornali dal profilo."
-          : "Inserisci nome proprietario ed email.",
-      );
+      setError("Inserisci nome proprietario ed email.");
       return;
     }
     if (!phoneNumber) {
@@ -277,22 +256,44 @@ export function BusinessOnboardingView() {
       return;
     }
 
-    if (usingExistingAccount) {
-      // Already logged in: upgrade this account, never create another.
+    if (editingExisting) {
       updateCurrentUser({
-        phoneNumber,
-        ...(ownerData.ownerName.trim()
-          ? { name: ownerData.ownerName.trim() }
-          : {}),
-      });
-      saveBusinessProfile(profile);
-    } else {
-      createBusinessAccount({
-        ownerName,
+        name: ownerName,
         email,
         phoneNumber,
-        businessProfile: profile,
       });
+      saveBusinessProfile(profile);
+      setSuccess(true);
+      setTimeout(() => {
+        router.push("/?tab=notifications");
+      }, 1400);
+      return;
+    }
+
+    // Creating Pro must always make a NEW account — never convert the current one.
+    const sameIdentity = accounts.some(
+      (account) =>
+        account.email.toLowerCase() === email &&
+        account.name.trim().toLowerCase() === ownerName.toLowerCase(),
+    );
+
+    if (sameIdentity) {
+      setError(
+        "Non puoi trasformare un account normale in Business. Usa una email nuova oppure un nome diverso.",
+      );
+      return;
+    }
+
+    const result = createBusinessAccount({
+      ownerName,
+      email,
+      phoneNumber,
+      businessProfile: profile,
+    });
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
     }
 
     setSuccess(true);
@@ -320,13 +321,11 @@ export function BusinessOnboardingView() {
           {editingExisting ? "Modifica account Business" : "Passa a Business"}
         </h1>
         <p className="mt-2 text-sm text-primary-black/60">
-          {usingExistingAccount
-            ? isLocale
-              ? "Attiva Pro su questo account: aggiungi i dati della location e apri notifiche, calendario e profilo attività."
-              : "Attiva Pro su questo account e completa i dettagli della tua attività."
+          {editingExisting
+            ? "Aggiorna i dati della tua attività Pro."
             : isLocale
-              ? "Crea l'account della tua location: notifiche, calendario eventi confermati e profilo attività."
-              : "Registra la tua attività per gestire prenotazioni e profilo su VibeUp."}
+              ? "Crea un account Pro separato per la location: email nuova oppure un nome diverso rispetto agli account già presenti."
+              : "Crea un account Pro separato per la tua attività: email nuova oppure un nome diverso rispetto agli account già presenti."}
         </p>
       </header>
 
@@ -339,9 +338,7 @@ export function BusinessOnboardingView() {
           <p className="mt-4 font-semibold text-primary-black">
             {editingExisting
               ? "Profilo Business aggiornato!"
-              : usingExistingAccount
-                ? "Account Pro attivato!"
-                : "Account Pro creato!"}
+              : "Account Pro creato!"}
           </p>
           <p className="mt-1 text-sm text-primary-black/60">
             Apertura dello spazio Business...
@@ -365,61 +362,42 @@ export function BusinessOnboardingView() {
           {category && (
             <section className="rounded-2xl border border-primary-black/10 bg-background p-5">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-primary-black/50">
-                {usingExistingAccount ? "Il tuo account" : "Dati proprietario"}
+                Dati proprietario
               </h2>
-              {usingExistingAccount ? (
-                <div className="space-y-4">
-                  <div className="rounded-xl bg-primary-black/[0.03] px-4 py-3">
-                    <p className="text-sm font-semibold text-primary-black">
-                      {currentUser.name}
-                    </p>
-                    <p className="mt-0.5 text-xs text-primary-black/55">
-                      {currentUser.email}
-                    </p>
-                    <p className="mt-2 text-xs text-brand-teal">
-                      Sei già nell&apos;account: non serve crearne uno nuovo.
-                    </p>
-                  </div>
-                  <TextField
-                    id="owner-phone"
-                    label="Contatto telefonico"
-                    type="tel"
-                    value={ownerData.phoneNumber}
-                    onChange={(v) => updateOwner("phoneNumber", v)}
-                    placeholder="Es. +39 333 1234567"
-                    required
-                  />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <TextField
-                    id="owner-name"
-                    label="Nome del proprietario"
-                    value={ownerData.ownerName}
-                    onChange={(v) => updateOwner("ownerName", v)}
-                    placeholder="Es. Marco Rossi"
-                    required
-                  />
-                  <TextField
-                    id="owner-email"
-                    label="Email"
-                    type="email"
-                    value={ownerData.email}
-                    onChange={(v) => updateOwner("email", v)}
-                    placeholder="es. marco@email.com"
-                    required
-                  />
-                  <TextField
-                    id="owner-phone"
-                    label="Contatto telefonico"
-                    type="tel"
-                    value={ownerData.phoneNumber}
-                    onChange={(v) => updateOwner("phoneNumber", v)}
-                    placeholder="Es. +39 333 1234567"
-                    required
-                  />
-                </div>
-              )}
+              <div className="space-y-4">
+                {!editingExisting && (
+                  <p className="rounded-xl bg-amber-400/10 px-3 py-2 text-xs text-amber-900">
+                    L&apos;account Pro è separato da quello normale: inserisci
+                    una email nuova oppure un nome diverso.
+                  </p>
+                )}
+                <TextField
+                  id="owner-name"
+                  label="Nome del proprietario"
+                  value={ownerData.ownerName}
+                  onChange={(v) => updateOwner("ownerName", v)}
+                  placeholder="Es. Marco Rossi"
+                  required
+                />
+                <TextField
+                  id="owner-email"
+                  label="Email"
+                  type="email"
+                  value={ownerData.email}
+                  onChange={(v) => updateOwner("email", v)}
+                  placeholder="es. location@email.com"
+                  required
+                />
+                <TextField
+                  id="owner-phone"
+                  label="Contatto telefonico"
+                  type="tel"
+                  value={ownerData.phoneNumber}
+                  onChange={(v) => updateOwner("phoneNumber", v)}
+                  placeholder="Es. +39 333 1234567"
+                  required
+                />
+              </div>
             </section>
           )}
 
@@ -473,11 +451,7 @@ export function BusinessOnboardingView() {
               type="submit"
               className="w-full rounded-2xl bg-brand-teal py-4 text-sm font-semibold text-white transition-colors hover:bg-brand-teal/90"
             >
-              {editingExisting
-                ? "Salva profilo Business"
-                : usingExistingAccount
-                  ? "Attiva account Pro"
-                  : "Crea account"}
+              {editingExisting ? "Salva profilo Business" : "Crea account Pro"}
             </button>
           )}
         </form>

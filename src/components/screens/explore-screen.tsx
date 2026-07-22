@@ -361,6 +361,18 @@ export function ExploreScreen({
     );
   }
 
+  function handleToggleFavoriteService(id: string) {
+    if (favoriteServiceIds.includes(id)) {
+      toggleFavoriteService(id);
+      return;
+    }
+
+    requireAccount(
+      () => toggleFavoriteService(id),
+      "Per salvare un servizio tra i preferiti crea un account.",
+    );
+  }
+
   function handleToggleCompareLocation(id: string) {
     if (compareLocationIds.includes(id)) {
       toggleCompareLocation(id);
@@ -754,7 +766,7 @@ export function ExploreScreen({
                       service={service}
                       href={buildServiceHref(service)}
                       isFavorite={favoriteServiceIdSet.has(service.id)}
-                      onToggleFavorite={toggleFavoriteService}
+                      onToggleFavorite={handleToggleFavoriteService}
                     />
                   </li>
                 ))}

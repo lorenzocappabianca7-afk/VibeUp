@@ -15,7 +15,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  startTransition,
   useMemo,
   useRef,
   useState,
@@ -47,6 +46,10 @@ export interface CreateBusinessAccountInput {
   phoneNumber: string;
   businessProfile: BusinessProfile;
 }
+
+export type CreateBusinessAccountResult =
+  | { ok: true }
+  | { ok: false; error: string };
 
 interface PaymentState {
   paid: boolean;
@@ -86,7 +89,9 @@ interface AppStateContextValue {
   removeManagedListing: (id: string) => void;
   toggleManagedListingPublication: (id: string) => void;
   createAccount: (account: Omit<CurrentUser, "id">) => void;
-  createBusinessAccount: (input: CreateBusinessAccountInput) => void;
+  createBusinessAccount: (
+    input: CreateBusinessAccountInput,
+  ) => CreateBusinessAccountResult;
   deleteAccount: (id: string) => void;
   switchAccount: (id: string) => void;
   updateCurrentUser: (updates: Partial<Omit<CurrentUser, "id">>) => void;
@@ -288,17 +293,112 @@ function trimCompareIds(ids: string[]) {
   return ids.slice(0, MAX_COMPARE_LOCATIONS);
 }
 
+function uniqueIds(ids: string[]) {
+  return Array.from(new Set(ids));
+}
+
+function isUserScopedStateEmpty(state: UserScopedState) {
+  return (
+    state.events.length === 0 &&
+    Object.keys(state.paymentStates).length === 0 &&
+    state.favoriteLocationIds.length === 0 &&
+    state.favoriteServiceIds.length === 0 &&
+    state.compareLocationIds.length === 0
+  );
+}
+
+/** Preferiti/eventi restano legati all'account: unisce lo stato guest nel target. */
+function mergeUserScopedState(
+  target: UserScopedState,
+  source: UserScopedState,
+): UserScopedState {
+  const existingEventIds = new Set(target.events.map((event) => event.id));
+
+  return {
+    events: [
+      ...target.events,
+      ...source.events.filter((event) => !existingEventIds.has(event.id)),
+    ],
+    paymentStates: {
+      ...source.paymentStates,
+      ...target.paymentStates,
+    },
+    favoriteLocationIds: uniqueIds([
+      ...target.favoriteLocationIds,
+      ...source.favoriteLocationIds,
+    ]),
+    favoriteServiceIds: uniqueIds([
+      ...target.favoriteServiceIds,
+      ...source.favoriteServiceIds,
+    ]),
+    compareLocationIds: trimCompareIds(
+      uniqueIds([
+        ...target.compareLocationIds,
+        ...source.compareLocationIds,
+      ]),
+    ),
+  };
+}
+
+function claimGuestStateInto(
+  map: Record<string, UserScopedState>,
+  targetUserId: string,
+): Record<string, UserScopedState> {
+  const guestState = map[GUEST_USER.id];
+  const base = map[targetUserId] ?? createDefaultUserState(targetUserId);
+
+  if (!guestState || isUserScopedStateEmpty(guestState)) {
+    if (map[targetUserId]) return map;
+    return { ...map, [targetUserId]: base };
+  }
+
+  return {
+    ...map,
+    [targetUserId]: mergeUserScopedState(base, guestState),
+    [GUEST_USER.id]: createDefaultUserState(GUEST_USER.id),
+  };
+}
+
+function ensureAccountStateSlots(
+  map: Record<string, UserScopedState>,
+  accounts: CurrentUser[],
+): Record<string, UserScopedState> {
+  let next = map;
+  let changed = false;
+
+  for (const account of accounts) {
+    if (account.id in next) continue;
+    if (!changed) {
+      next = { ...next };
+      changed = true;
+    }
+    next[account.id] = createDefaultUserState(account.id);
+  }
+
+  if (!(GUEST_USER.id in next)) {
+    if (!changed) {
+      next = { ...next };
+      changed = true;
+    }
+    next[GUEST_USER.id] = createDefaultUserState(GUEST_USER.id);
+  }
+
+  return next;
+}
+
 function hydrateUserStates(stored: StoredAppState): Record<string, UserScopedState> {
+  const accounts = stored.accounts ?? MOCK_ACCOUNTS;
+
   if (stored.userStates && Object.keys(stored.userStates).length > 0) {
-    return Object.fromEntries(
+    const map = Object.fromEntries(
       Object.entries(stored.userStates).map(([userId, state]) => [
         userId,
         normalizeUserScopedState(state, userId),
       ]),
     );
+    return ensureAccountStateSlots(map, accounts);
   }
 
-  const accounts = stored.accounts ?? MOCK_ACCOUNTS;
   const map = Object.fromEntries(
     accounts.map((account) => [account.id, createDefaultUserState(account.id)]),
   );
@@ -398,17 +498,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const updateCurrentUserState = useCallback(
     (updater: (state: UserScopedState) => UserScopedState) => {
       const userId = currentUserIdRef.current;
-      startTransition(() => {
-        setUserStatesMap((map) => {
-          const current = map[userId] ?? createDefaultUserState(userId);
-          const next = updater(current);
-          if (next === current) return map;
+      setUserStatesMap((map) => {
+        const current = map[userId] ?? createDefaultUserState(userId);
+        const next = updater(current);
+        if (next === current) return map;
 
-          return {
-            ...map,
-            [userId]: next,
-          };
-        });
+        return {
+          ...map,
+          [userId]: next,
+        };
       });
     },
     [],
@@ -697,6 +795,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       );
 
       if (existing) {
+        // Preferiti/eventi dell'ospite passano all'account riusato
+        setUserStatesMap((map) => claimGuestStateInto(map, existing.id));
         setCurrentUserId(existing.id);
         return prev.map((item) =>
           item.id === existing.id
@@ -729,10 +829,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             : null,
       });
 
-      setUserStatesMap((map) => ({
-        ...map,
-        [id]: createDefaultUserState(id),
-      }));
+      // Nuovo account eredita preferiti/eventi creati da ospite
+      setUserStatesMap((map) => claimGuestStateInto(map, id));
       setCurrentUserId(id);
 
       return [nextAccount, ...prev];
@@ -740,16 +838,54 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const createBusinessAccount = useCallback(
-    (input: CreateBusinessAccountInput) => {
-      createAccount({
-        name: input.ownerName,
-        email: input.email,
-        phoneNumber: input.phoneNumber,
+    (input: CreateBusinessAccountInput): CreateBusinessAccountResult => {
+      const normalizedEmail = input.email.trim().toLowerCase();
+      const nextName = input.ownerName.trim();
+      const phoneNumber = input.phoneNumber.trim();
+
+      if (!nextName || !normalizedEmail) {
+        return {
+          ok: false,
+          error: "Inserisci nome proprietario ed email.",
+        };
+      }
+
+      // Never convert an existing consumer account: require a distinct identity
+      // (new email OR a different name from any account that already uses that email).
+      const sameIdentity = accounts.some(
+        (account) =>
+          account.email.toLowerCase() === normalizedEmail &&
+          account.name.trim().toLowerCase() === nextName.toLowerCase(),
+      );
+
+      if (sameIdentity) {
+        return {
+          ok: false,
+          error:
+            "Questo account esiste già. Per creare un account Pro usa una email nuova oppure un nome diverso.",
+        };
+      }
+
+      const id = `account-pro-${Date.now()}`;
+      const nextAccount = normalizeAccount({
+        id,
+        name: nextName,
+        email: normalizedEmail,
+        phoneNumber,
         accountType: "business",
         businessProfile: input.businessProfile,
       });
+
+      setAccounts((prev) => [nextAccount, ...prev]);
+      setUserStatesMap((map) => ({
+        ...map,
+        [id]: createDefaultUserState(id),
+      }));
+      setCurrentUserId(id);
+
+      return { ok: true };
     },
-    [createAccount],
+    [accounts],
   );
 
   const deleteAccount = useCallback((id: string) => {
