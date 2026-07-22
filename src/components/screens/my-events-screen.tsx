@@ -465,8 +465,8 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   }, [event.id, event.title]);
 
   return (
-    <article className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-primary-black/10 bg-white shadow-[0_6px_24px_-12px_rgba(15,15,17,0.18)]">
-      <div className="border-b border-primary-black/8 px-4 py-4">
+    <article className="box-border w-full min-w-0 max-w-full overflow-x-clip rounded-2xl border border-primary-black/10 bg-white shadow-[0_6px_24px_-12px_rgba(15,15,17,0.18)]">
+      <div className="border-b border-primary-black/8 px-3 py-4 sm:px-4">
         <div className="flex min-w-0 items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <p className={`text-xs font-medium ${statusColors[event.status]}`}>
@@ -504,19 +504,19 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
 
         <div className="mt-4 space-y-1.5 text-sm text-primary-black/65">
           <p className="flex min-w-0 items-center gap-1.5">
-            <Calendar className="h-4 w-4 shrink-0" aria-hidden />
+            <Calendar className="h-4 w-4 shrink-0 text-brand-teal" aria-hidden />
             <span className="min-w-0 truncate">
               {formatDate(event.date)} · {event.time}
             </span>
           </p>
           <p className="flex min-w-0 items-center gap-1.5">
-            <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+            <MapPin className="h-4 w-4 shrink-0 text-brand-pink" aria-hidden />
             <span className="min-w-0 truncate">
               {event.locationName}, {event.city}
             </span>
           </p>
           <p className="flex min-w-0 items-center gap-1.5">
-            <Users className="h-4 w-4 shrink-0" aria-hidden />
+            <Users className="h-4 w-4 shrink-0 text-[#4A8FE7]" aria-hidden />
             {event.guestCount} ospiti
           </p>
         </div>
@@ -529,7 +529,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
         onPayDeposit={payDeposit}
       />
 
-      <div className="min-w-0 px-4 py-4">
+      <div className="min-w-0 px-3 py-4 sm:px-4">
         <div className="flex min-w-0 items-center justify-between gap-3">
           <h3 className="text-sm font-semibold text-primary-black">Servizi</h3>
           <p className="shrink-0 text-sm text-primary-black/50">
@@ -546,37 +546,37 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
             return (
               <li
                 key={service.id}
-                className="flex min-w-0 flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+                className="flex min-w-0 flex-col gap-2 py-3 first:pt-0 last:pb-0"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-primary-black">
-                    {service.name}
-                  </p>
-                  <p className="truncate text-xs text-primary-black/50">
-                    {service.providerName}
-                  </p>
-                </div>
-                <div className="flex min-w-0 items-center justify-between gap-2 sm:justify-end">
-                  <span className="text-sm font-medium tabular-nums text-primary-black">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="w-[4.75rem] shrink-0 pt-0.5 text-left text-sm font-semibold tabular-nums text-primary-black">
                     {formatCurrency(service.amountPaid)}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      payment.paid
-                        ? undefined
-                        : onOpenPayment({ event, service })
-                    }
-                    disabled={payment.paid}
-                    className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                      payment.paid
-                        ? "bg-primary-black text-white"
-                        : "border border-primary-black/15 text-primary-black hover:border-primary-black/30"
-                    }`}
-                  >
-                    {payment.paid ? "Pagato" : "Da pagare"}
-                  </button>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-primary-black">
+                      {service.name}
+                    </p>
+                    <p className="truncate text-xs text-primary-black/50">
+                      {service.providerName}
+                    </p>
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    payment.paid
+                      ? undefined
+                      : onOpenPayment({ event, service })
+                  }
+                  disabled={payment.paid}
+                  className={`w-full rounded-lg px-3 py-2 text-xs font-medium transition-colors sm:w-auto sm:self-end sm:py-1.5 ${
+                    payment.paid
+                      ? "bg-primary-black text-white"
+                      : "border border-primary-black/15 text-primary-black hover:border-primary-black/30"
+                  }`}
+                >
+                  {payment.paid ? "Pagato" : "Da pagare"}
+                </button>
               </li>
             );
           })}
@@ -599,7 +599,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       </div>
 
       {menuServices.length > 0 && (
-        <section className="min-w-0 border-t border-primary-black/8 px-4 py-4">
+        <section className="min-w-0 border-t border-primary-black/8 px-3 py-4 sm:px-4">
           <div className="flex items-center gap-2">
             <UtensilsCrossed className="h-4 w-4 text-primary-black/45" aria-hidden />
             <h3 className="text-sm font-semibold text-primary-black">Menu</h3>
@@ -652,7 +652,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       )}
 
       {missingSuggestions.length > 0 && (
-        <section className="min-w-0 border-t border-primary-black/8 bg-rose-50/60 px-4 py-4">
+        <section className="min-w-0 border-t border-primary-black/8 bg-rose-50/60 px-3 py-4 sm:px-4">
           <p className="text-sm font-medium text-primary-black">
             Potrebbe mancare
           </p>
@@ -704,7 +704,7 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
   }, [deadline]);
 
   return (
-    <section className="min-w-0 border-b border-primary-black/8 bg-primary-black/[0.02] px-4 py-3">
+    <section className="min-w-0 border-b border-primary-black/8 bg-primary-black/[0.02] px-3 py-3 sm:px-4">
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-medium text-primary-black">
