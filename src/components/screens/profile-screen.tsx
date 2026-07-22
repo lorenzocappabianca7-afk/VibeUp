@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import { SafeImage } from "@/components/ui/safe-image";
 import { ProfileSettingsView } from "@/components/profile/settings/profile-settings-view";
+import { VibeUpDemoReel } from "@/components/profile/vibeup-demo-reel";
 import { GUEST_USER, isProAccount, useAppState } from "@/context/app-state-context";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
@@ -494,6 +495,8 @@ export function ProfileScreen() {
           </div>
         )}
       </div>
+
+      <VibeUpDemoReel />
 
       <section className="space-y-3 rounded-2xl border border-primary-black/10 bg-background p-4">
         <div>
