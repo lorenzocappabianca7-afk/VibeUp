@@ -1,6 +1,5 @@
 "use client";
 
-import { BottomNav } from "@/components/layout/bottom-nav";
 import { ExploreScreen } from "@/components/screens/explore-screen";
 import { MessagesScreen } from "@/components/screens/messages-screen";
 import { MyEventsScreen } from "@/components/screens/my-events-screen";
@@ -75,7 +74,6 @@ export function MobileShell() {
       <main
         className="box-border min-w-0 w-full max-w-full overflow-x-hidden pt-6 lg:pt-8"
         style={{
-          paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))",
           paddingLeft: "max(1rem, env(safe-area-inset-left, 0px))",
           paddingRight: "max(1rem, env(safe-area-inset-right, 0px))",
         }}
@@ -84,8 +82,6 @@ export function MobileShell() {
           {renderActiveScreen()}
         </div>
       </main>
-
-      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AppChrome } from "@/components/layout/app-chrome";
 import { AppProviders } from "@/components/providers/app-providers";
 import { Footer } from "@/components/layout/footer";
 import { getSiteUrl } from "@/lib/site";
@@ -84,7 +85,7 @@ export default function RootLayout({
       <body className="min-h-dvh text-primary-black">
         <AppProviders>
           <div className="flex min-h-dvh min-w-0 max-w-full flex-col overflow-x-hidden">
-            <div className="min-w-0 max-w-full flex-1 overflow-x-hidden">{children}</div>
+            <AppChrome>{children}</AppChrome>
             <Footer />
           </div>
         </AppProviders>
