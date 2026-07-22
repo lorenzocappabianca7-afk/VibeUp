@@ -455,7 +455,7 @@ export function SmartLocationDetailsSection({
               />
             )}
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => togglePicker("start")}
@@ -474,73 +474,75 @@ export function SmartLocationDetailsSection({
                 onClick={() => togglePicker("end")}
                 className="rounded-2xl bg-white p-3 text-left"
               >
-                <span className="text-xs font-semibold text-primary-black/55">
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-primary-black/55">
+                  <Clock className="h-3.5 w-3.5" aria-hidden />
                   Fine
                 </span>
                 <span className="mt-1 block text-lg font-black text-primary-black">
                   {endTime}
                 </span>
               </button>
-              <div className="rounded-2xl bg-white p-3">
-                <span className="text-xs font-semibold text-primary-black/55">
-                  Invitati
-                </span>
-                <div className="mt-1 flex items-center justify-between gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nextValue = clampGuestCount(guestCount - 10, maxGuests);
-                      setGuestCountInput(String(nextValue));
-                      onGuestCountChange(nextValue);
-                    }}
-                    disabled={guestCount <= 1}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-pink/15 text-brand-pink disabled:opacity-40"
-                    aria-label="Diminuisci invitati di 10"
-                  >
-                    <Minus className="h-3.5 w-3.5" aria-hidden />
-                  </button>
-                  <input
-                    type="number"
-                    min={1}
-                    max={maxGuests}
-                    inputMode="numeric"
-                    value={guestCountInput}
-                    onChange={(event) => {
-                      const nextValue = event.target.value;
-                      if (nextValue === "") {
-                        setGuestCountInput("");
-                        return;
-                      }
+            </div>
 
-                      const parsedValue = Number.parseInt(nextValue, 10);
-                      if (!Number.isNaN(parsedValue)) {
-                        const clampedValue = clampGuestCount(parsedValue, maxGuests);
-                        setGuestCountInput(String(clampedValue));
-                        onGuestCountChange(clampedValue);
-                      }
-                    }}
-                    onBlur={() => {
-                      if (guestCountInput === "") {
-                        setGuestCountInput(String(guestCount));
-                      }
-                    }}
-                    className="min-w-0 flex-1 bg-transparent text-center text-lg font-black text-primary-black outline-none"
-                    aria-label="Numero invitati"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nextValue = clampGuestCount(guestCount + 10, maxGuests);
-                      setGuestCountInput(String(nextValue));
-                      onGuestCountChange(nextValue);
-                    }}
-                    disabled={guestCount >= maxGuests}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-teal/15 text-brand-teal disabled:opacity-40"
-                    aria-label="Aumenta invitati di 10"
-                  >
-                    <Plus className="h-3.5 w-3.5" aria-hidden />
-                  </button>
-                </div>
+            <div className="rounded-2xl bg-white p-3">
+              <span className="text-xs font-semibold text-primary-black/55">
+                Invitati
+              </span>
+              <div className="mt-1 flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextValue = clampGuestCount(guestCount - 10, maxGuests);
+                    setGuestCountInput(String(nextValue));
+                    onGuestCountChange(nextValue);
+                  }}
+                  disabled={guestCount <= 1}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-pink/15 text-brand-pink disabled:opacity-40"
+                  aria-label="Diminuisci invitati di 10"
+                >
+                  <Minus className="h-3.5 w-3.5" aria-hidden />
+                </button>
+                <input
+                  type="number"
+                  min={1}
+                  max={maxGuests}
+                  inputMode="numeric"
+                  value={guestCountInput}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    if (nextValue === "") {
+                      setGuestCountInput("");
+                      return;
+                    }
+
+                    const parsedValue = Number.parseInt(nextValue, 10);
+                    if (!Number.isNaN(parsedValue)) {
+                      const clampedValue = clampGuestCount(parsedValue, maxGuests);
+                      setGuestCountInput(String(clampedValue));
+                      onGuestCountChange(clampedValue);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (guestCountInput === "") {
+                      setGuestCountInput(String(guestCount));
+                    }
+                  }}
+                  className="min-w-[3.5rem] flex-1 bg-transparent text-center text-lg font-black tabular-nums text-primary-black outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  aria-label="Numero invitati"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextValue = clampGuestCount(guestCount + 10, maxGuests);
+                    setGuestCountInput(String(nextValue));
+                    onGuestCountChange(nextValue);
+                  }}
+                  disabled={guestCount >= maxGuests}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-teal/15 text-brand-teal disabled:opacity-40"
+                  aria-label="Aumenta invitati di 10"
+                >
+                  <Plus className="h-3.5 w-3.5" aria-hidden />
+                </button>
               </div>
             </div>
 
