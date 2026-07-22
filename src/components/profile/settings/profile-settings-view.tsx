@@ -7,7 +7,6 @@ import { PaymentsSettingsPanel } from "@/components/profile/settings/payments-se
 import { PrivacySettingsPanel } from "@/components/profile/settings/privacy-settings-panel";
 import { SecuritySettingsPanel } from "@/components/profile/settings/security-settings-panel";
 import type { SettingsPanelId } from "@/types/user-settings";
-import { useEffect } from "react";
 
 interface ProfileSettingsViewProps {
   panel: SettingsPanelId;
@@ -18,14 +17,6 @@ export function ProfileSettingsView({
   panel,
   onClose,
 }: ProfileSettingsViewProps) {
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
-
   switch (panel) {
     case "settings":
       return <AccountSettingsPanel onBack={onClose} />;

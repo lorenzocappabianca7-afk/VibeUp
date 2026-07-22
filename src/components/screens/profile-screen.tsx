@@ -103,6 +103,7 @@ export function ProfileScreen() {
   const [settingsPanel, setSettingsPanel] = useState<SettingsPanelId | null>(
     null,
   );
+  const [settingsPanelUserId, setSettingsPanelUserId] = useState(currentUser.id);
   const [profileDraft, setProfileDraft] = useState({
     name: currentUser.name,
     email: currentUser.email,
@@ -113,9 +114,10 @@ export function ProfileScreen() {
   const hasHydratedProfileDraft = useRef(false);
   const canManagePublications = canAccessAdminCatalog(currentUser.email);
 
-  useEffect(() => {
+  if (settingsPanelUserId !== currentUser.id) {
+    setSettingsPanelUserId(currentUser.id);
     setSettingsPanel(null);
-  }, [currentUser.id]);
+  }
 
   useEffect(() => {
     if (!isStorageHydrated) return;
@@ -283,10 +285,65 @@ export function ProfileScreen() {
 
   if (settingsPanel) {
     return (
-      <ProfileSettingsView
-        panel={settingsPanel}
-        onClose={() => setSettingsPanel(null)}
-      />
+      <>
+        <ProfileSettingsView
+          panel={settingsPanel}
+          onClose={() => setSettingsPanel(null)}
+        />
+        {accountPendingDelete && (
+          <div
+            className="vibe-overlay-enter fixed inset-0 z-[70] flex items-center justify-center p-6"
+            data-overlay-open="true"
+          >
+            <button
+              type="button"
+              className="absolute inset-0 bg-primary-black/45"
+              onClick={() => setAccountPendingDelete(null)}
+              aria-label="Annulla eliminazione"
+            />
+            <div
+              className="vibe-sheet-enter relative max-h-[min(90dvh,calc(100dvh-2rem))] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-5 shadow-xl"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-account-title-settings"
+            >
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-pink/15 text-brand-pink">
+                <Trash2 className="h-5 w-5" aria-hidden />
+              </div>
+              <h3
+                id="delete-account-title-settings"
+                className="text-center text-lg font-bold text-primary-black"
+              >
+                Eliminare questo account?
+              </h3>
+              <p className="mt-2 text-center text-sm text-primary-black/60">
+                Stai per rimuovere{" "}
+                <span className="font-semibold text-primary-black">
+                  {accountPendingDelete.name}
+                </span>
+                . Preferiti, eventi e impostazioni di questo account verranno
+                cancellati da questo dispositivo.
+              </p>
+              <div className="mt-5 grid gap-2">
+                <button
+                  type="button"
+                  onClick={confirmDeleteAccount}
+                  className="w-full rounded-2xl bg-brand-pink px-4 py-3 text-sm font-black text-primary-black"
+                >
+                  Elimina account
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAccountPendingDelete(null)}
+                  className="w-full rounded-2xl border border-primary-black/10 px-4 py-3 text-sm font-bold text-primary-black"
+                >
+                  Annulla
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 

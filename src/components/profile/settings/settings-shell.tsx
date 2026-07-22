@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 interface SettingsShellProps {
   title: string;
@@ -18,6 +18,14 @@ export function SettingsShell({
   children,
   footer,
 }: SettingsShellProps) {
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onBack();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onBack]);
+
   return (
     <div className="flex min-h-[min(70dvh,640px)] min-w-0 flex-col">
       <header className="sticky top-0 z-10 -mx-1 mb-4 border-b border-primary-black/8 bg-background/95 px-1 pb-3 pt-1 backdrop-blur-md">
@@ -45,7 +53,9 @@ export function SettingsShell({
 
       <div className="min-w-0 flex-1 space-y-5 pb-4">{children}</div>
 
-      {footer && <div className="mt-auto border-t border-primary-black/8 pt-4">{footer}</div>}
+      {footer && (
+        <div className="mt-auto border-t border-primary-black/8 pt-4">{footer}</div>
+      )}
     </div>
   );
 }

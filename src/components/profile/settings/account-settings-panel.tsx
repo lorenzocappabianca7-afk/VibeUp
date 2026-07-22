@@ -9,38 +9,38 @@ import { SettingsShell } from "@/components/profile/settings/settings-shell";
 import { useAppState } from "@/context/app-state-context";
 import { normalizeUserSettings } from "@/types/user-settings";
 import { AtSign, Globe, Mail, Phone, UserRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface AccountSettingsPanelProps {
   onBack: () => void;
+}
+
+function profileDraftFromUser(user: {
+  name: string;
+  email: string;
+  phoneNumber?: string;
+  instagramHandle?: string;
+}) {
+  return {
+    name: user.name,
+    email: user.email,
+    phoneNumber: user.phoneNumber ?? "",
+    instagramHandle: user.instagramHandle ?? "",
+  };
 }
 
 export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
   const { currentUser, isGuest, updateCurrentUser, updateUserSettings } =
     useAppState();
   const settings = normalizeUserSettings(currentUser.settings);
-  const [draft, setDraft] = useState({
-    name: currentUser.name,
-    email: currentUser.email,
-    phoneNumber: currentUser.phoneNumber ?? "",
-    instagramHandle: currentUser.instagramHandle ?? "",
-  });
+  const [draft, setDraft] = useState(() => profileDraftFromUser(currentUser));
+  const [draftUserId, setDraftUserId] = useState(currentUser.id);
   const [savedFlash, setSavedFlash] = useState(false);
 
-  useEffect(() => {
-    setDraft({
-      name: currentUser.name,
-      email: currentUser.email,
-      phoneNumber: currentUser.phoneNumber ?? "",
-      instagramHandle: currentUser.instagramHandle ?? "",
-    });
-  }, [
-    currentUser.email,
-    currentUser.id,
-    currentUser.instagramHandle,
-    currentUser.name,
-    currentUser.phoneNumber,
-  ]);
+  if (draftUserId !== currentUser.id) {
+    setDraftUserId(currentUser.id);
+    setDraft(profileDraftFromUser(currentUser));
+  }
 
   function saveProfile() {
     if (isGuest) return;

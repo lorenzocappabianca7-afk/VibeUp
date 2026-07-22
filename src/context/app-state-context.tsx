@@ -794,41 +794,45 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const createAccount = useCallback((account: Omit<CurrentUser, "id">) => {
-    const normalizedEmail = account.email.trim().toLowerCase();
-    if (!normalizedEmail) return;
+  const createAccount = useCallback(
+    (account: Omit<CurrentUser, "id">) => {
+      const normalizedEmail = account.email.trim().toLowerCase();
+      if (!normalizedEmail) return;
 
-    const nextName = account.name.trim() || normalizedEmail;
-    const nextAccountType =
-      account.accountType === "business" || account.businessProfile
-        ? ("business" as const)
-        : ("consumer" as const);
+      const nextName = account.name.trim() || normalizedEmail;
+      const nextAccountType =
+        account.accountType === "business" || account.businessProfile
+          ? ("business" as const)
+          : ("consumer" as const);
 
-    setAccounts((prev) => {
-      const existing = prev.find(
+      const existing = accounts.find(
         (item) => item.email.toLowerCase() === normalizedEmail,
       );
 
       if (existing) {
-        // Preferiti/eventi dell'ospite passano all'account riusato
+        setAccounts((prev) =>
+          prev.map((item) =>
+            item.id === existing.id
+              ? normalizeAccount({
+                  ...item,
+                  ...account,
+                  id: existing.id,
+                  email: normalizedEmail,
+                  name: nextName,
+                  accountType: nextAccountType,
+                  businessProfile:
+                    nextAccountType === "business"
+                      ? (account.businessProfile ??
+                        item.businessProfile ??
+                        null)
+                      : null,
+                })
+              : item,
+          ),
+        );
         setUserStatesMap((map) => claimGuestStateInto(map, existing.id));
         setCurrentUserId(existing.id);
-        return prev.map((item) =>
-          item.id === existing.id
-            ? normalizeAccount({
-                ...item,
-                ...account,
-                id: existing.id,
-                email: normalizedEmail,
-                name: nextName,
-                accountType: nextAccountType,
-                businessProfile:
-                  nextAccountType === "business"
-                    ? (account.businessProfile ?? item.businessProfile ?? null)
-                    : null,
-              })
-            : item,
-        );
+        return;
       }
 
       const id = `account-${Date.now()}`;
@@ -844,14 +848,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             : null,
       });
 
-      // Nuovo account eredita preferiti/eventi creati da ospite
+      setAccounts((prev) => [nextAccount, ...prev]);
       setUserStatesMap((map) => claimGuestStateInto(map, id));
       setCurrentUserId(id);
-
-      return [nextAccount, ...prev];
-    });
-  }, []);
-
+    },
+    [accounts],
+  );
   const createBusinessAccount = useCallback(
     (input: CreateBusinessAccountInput): CreateBusinessAccountResult => {
       const normalizedEmail = input.email.trim().toLowerCase();
@@ -892,10 +894,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       });
 
       setAccounts((prev) => [nextAccount, ...prev]);
-      setUserStatesMap((map) => ({
-        ...map,
-        [id]: createDefaultUserState(id),
-      }));
+      setUserStatesMap((map) => claimGuestStateInto(map, id));
       setCurrentUserId(id);
 
       return { ok: true };
