@@ -593,6 +593,13 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
               !depositPayment.paid &&
               !payment.paid;
             const canPay = !payment.paid && !requiresDepositFirst;
+            const payableAmount =
+              service.category === "location" && depositPayment.paid
+                ? Math.max(0, service.amountPaid - depositAmount)
+                : service.amountPaid;
+            const displayAmount = payment.paid
+              ? service.amountPaid
+              : payableAmount;
 
             return (
               <li
@@ -611,6 +618,14 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                       Prima paga la caparra, poi la location
                     </p>
                   )}
+                  {service.category === "location" &&
+                    depositPayment.paid &&
+                    !payment.paid &&
+                    depositAmount > 0 && (
+                      <p className="mt-1 text-[11px] leading-snug text-primary-black/40">
+                        Saldo dopo caparra
+                      </p>
+                    )}
                 </div>
                 <div className="flex w-[6.75rem] shrink-0 flex-col items-end gap-1.5">
                   <span
@@ -622,12 +637,28 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                           : "text-red-500"
                     }`}
                   >
-                    {formatCurrency(service.amountPaid)}
+                    {formatCurrency(displayAmount)}
                   </span>
                   <button
                     type="button"
                     onClick={() =>
-                      canPay ? onOpenPayment({ event, service }) : undefined
+                      canPay
+                        ? onOpenPayment({
+                            event,
+                            service:
+                              service.category === "location" &&
+                              depositPayment.paid
+                                ? {
+                                    ...service,
+                                    amountPaid: payableAmount,
+                                    name:
+                                      payableAmount < service.amountPaid
+                                        ? "Saldo location"
+                                        : service.name,
+                                  }
+                                : service,
+                          })
+                        : undefined
                     }
                     disabled={!canPay}
                     title={
@@ -801,17 +832,17 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
           <span className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-primary-black px-4 py-2.5 text-xs font-medium text-white sm:w-fit">
             Caparra pagata
           </span>
-        ) : countdown.isPast ? (
-          <span className="inline-flex w-full shrink-0 items-center justify-center rounded-lg border border-primary-black/15 px-4 py-2.5 text-xs font-medium text-primary-black/60 sm:w-fit">
-            Scadenza superata
-          </span>
         ) : (
           <button
             type="button"
             onClick={onPayDeposit}
-            className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-primary-black px-4 py-2.5 text-xs font-medium text-white transition-colors hover:bg-primary-black/85 sm:w-fit"
+            className={`inline-flex w-full shrink-0 items-center justify-center rounded-lg px-4 py-2.5 text-xs font-medium transition-colors sm:w-fit ${
+              countdown.isPast
+                ? "border border-brand-pink/40 bg-brand-pink/15 text-primary-black hover:bg-brand-pink/25"
+                : "bg-primary-black text-white hover:bg-primary-black/85"
+            }`}
           >
-            Paga caparra
+            {countdown.isPast ? "Paga caparra in ritardo" : "Paga caparra"}
           </button>
         )}
       </div>

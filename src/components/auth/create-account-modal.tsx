@@ -23,9 +23,11 @@ export function CreateAccountModal({
   useEffect(() => {
     if (!open) return;
 
-    setName("");
-    setEmail("");
-    setError("");
+    queueMicrotask(() => {
+      setName("");
+      setEmail("");
+      setError("");
+    });
     document.body.style.overflow = "hidden";
 
     return () => {

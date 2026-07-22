@@ -121,13 +121,28 @@ function normalizeUserScopedState(
 
   return {
     events: Array.isArray(state.events)
-      ? state.events.filter(
-          (event): event is UserEvent =>
-            Boolean(event) &&
-            typeof event === "object" &&
-            typeof event.id === "string" &&
-            typeof event.date === "string",
-        )
+      ? state.events
+          .filter(
+            (event): event is UserEvent =>
+              Boolean(event) &&
+              typeof event === "object" &&
+              typeof event.id === "string" &&
+              typeof event.date === "string",
+          )
+          .map((event) => ({
+            ...event,
+            title: typeof event.title === "string" ? event.title : "Evento",
+            time: typeof event.time === "string" ? event.time : "20:00",
+            locationName:
+              typeof event.locationName === "string"
+                ? event.locationName
+                : "Location",
+            city: typeof event.city === "string" ? event.city : "",
+            status: event.status ?? "draft",
+            guestCount:
+              typeof event.guestCount === "number" ? event.guestCount : 0,
+            services: Array.isArray(event.services) ? event.services : [],
+          }))
       : fallback.events,
     paymentStates:
       state.paymentStates && typeof state.paymentStates === "object"
@@ -302,10 +317,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [managedListings, setManagedListings] = useState<ManagedListing[]>([]);
   const isGuest = currentUserId === GUEST_USER.id;
   const currentUserIdRef = useRef(currentUserId);
-
-  useEffect(() => {
-    currentUserIdRef.current = currentUserId;
-  }, [currentUserId]);
+  currentUserIdRef.current = currentUserId;
 
   const currentUserState =
     userStatesMap[currentUserId] ?? createDefaultUserState(currentUserId);
@@ -601,23 +613,44 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const normalizedEmail = account.email.trim().toLowerCase();
     if (!normalizedEmail) return;
 
-    const id = `account-${Date.now()}`;
-    const nextAccount: CurrentUser = {
-      ...account,
-      id,
-      email: normalizedEmail,
-      name: account.name.trim() || normalizedEmail,
-    };
+    const nextName = account.name.trim() || normalizedEmail;
 
-    setAccounts((prev) => [
-      nextAccount,
-      ...prev.filter((item) => item.email.toLowerCase() !== normalizedEmail),
-    ]);
-    setUserStatesMap((map) => ({
-      ...map,
-      [id]: createDefaultUserState(id),
-    }));
-    setCurrentUserId(id);
+    setAccounts((prev) => {
+      const existing = prev.find(
+        (item) => item.email.toLowerCase() === normalizedEmail,
+      );
+
+      if (existing) {
+        setCurrentUserId(existing.id);
+        return prev.map((item) =>
+          item.id === existing.id
+            ? {
+                ...item,
+                ...account,
+                id: existing.id,
+                email: normalizedEmail,
+                name: nextName,
+              }
+            : item,
+        );
+      }
+
+      const id = `account-${Date.now()}`;
+      const nextAccount: CurrentUser = {
+        ...account,
+        id,
+        email: normalizedEmail,
+        name: nextName,
+      };
+
+      setUserStatesMap((map) => ({
+        ...map,
+        [id]: createDefaultUserState(id),
+      }));
+      setCurrentUserId(id);
+
+      return [nextAccount, ...prev];
+    });
   }, []);
 
   const deleteAccount = useCallback((id: string) => {

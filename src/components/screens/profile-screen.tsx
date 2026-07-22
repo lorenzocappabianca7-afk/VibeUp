@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { SafeImage } from "@/components/ui/safe-image";
-import { useAppState } from "@/context/app-state-context";
+import { GUEST_USER, useAppState } from "@/context/app-state-context";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
 import {
@@ -1125,6 +1125,7 @@ export function ProfileScreen() {
 
       <button
         type="button"
+        onClick={() => switchAccount(GUEST_USER.id)}
         className="flex w-full items-center justify-center gap-2 rounded-2xl border border-primary-black/10 py-3.5 text-sm font-medium text-primary-black/70 transition-colors hover:bg-primary-black/[0.03]"
       >
         <LogOut className="h-4 w-4" aria-hidden />

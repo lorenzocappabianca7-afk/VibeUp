@@ -23,7 +23,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface EventDashboardViewProps {
   eventId: string;
@@ -235,6 +235,14 @@ function AddServicesModal({
   event: UserEvent;
   onClose: () => void;
 }) {
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   if (!open) return null;
 
   const serviceCategories = [

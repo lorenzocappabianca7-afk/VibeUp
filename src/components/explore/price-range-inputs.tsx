@@ -5,7 +5,7 @@ import {
   EXPLORE_PRICE_MIN,
   EXPLORE_PRICE_STEP,
 } from "@/types/location";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 interface PriceRangeInputsProps {
   value: [number, number];
@@ -40,23 +40,17 @@ export function PriceRangeInputs({
   const [minFocused, setMinFocused] = useState(false);
   const [maxFocused, setMaxFocused] = useState(false);
 
-  useEffect(() => {
-    if (minFocused) return;
-    setMinDraft(String(minValue));
-  }, [minFocused, minValue]);
-
-  useEffect(() => {
-    if (maxFocused) return;
-    setMaxDraft(String(maxValue));
-  }, [maxFocused, maxValue]);
+  // Keep drafts aligned with external value while the field is not being edited.
+  const visibleMinDraft = minFocused ? minDraft : String(minValue);
+  const visibleMaxDraft = maxFocused ? maxDraft : String(maxValue);
 
   const validationError = useMemo(() => {
-    if (minDraft.trim() === "" || maxDraft.trim() === "") {
+    if (visibleMinDraft.trim() === "" || visibleMaxDraft.trim() === "") {
       return "Inserisci sia il prezzo minimo sia quello massimo.";
     }
 
-    const parsedMin = parseBudget(minDraft);
-    const parsedMax = parseBudget(maxDraft);
+    const parsedMin = parseBudget(visibleMinDraft);
+    const parsedMax = parseBudget(visibleMaxDraft);
 
     if (parsedMin === null || parsedMax === null) {
       return "Inserisci solo valori numerici.";
@@ -67,7 +61,7 @@ export function PriceRangeInputs({
     }
 
     return null;
-  }, [maxDraft, minDraft]);
+  }, [visibleMaxDraft, visibleMinDraft]);
 
   function commitDrafts(nextMinDraft: string, nextMaxDraft: string) {
     const parsedMin = parseBudget(nextMinDraft);
@@ -113,12 +107,15 @@ export function PriceRangeInputs({
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
-            value={minDraft}
+            value={visibleMinDraft}
             onChange={(e) => handleMinInputChange(e.target.value)}
-            onFocus={() => setMinFocused(true)}
+            onFocus={() => {
+              setMinDraft(String(minValue));
+              setMinFocused(true);
+            }}
             onBlur={() => {
               setMinFocused(false);
-              commitDrafts(minDraft, maxDraft);
+              commitDrafts(minDraft, maxFocused ? maxDraft : String(maxValue));
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -147,12 +144,15 @@ export function PriceRangeInputs({
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
-            value={maxDraft}
+            value={visibleMaxDraft}
             onChange={(e) => handleMaxInputChange(e.target.value)}
-            onFocus={() => setMaxFocused(true)}
+            onFocus={() => {
+              setMaxDraft(String(maxValue));
+              setMaxFocused(true);
+            }}
             onBlur={() => {
               setMaxFocused(false);
-              commitDrafts(minDraft, maxDraft);
+              commitDrafts(minFocused ? minDraft : String(minValue), maxDraft);
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {

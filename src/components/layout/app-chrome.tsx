@@ -1,6 +1,7 @@
 "use client";
 
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { Footer } from "@/components/layout/footer";
 import { AppWakeRecovery } from "@/components/pwa/app-wake-recovery";
 import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner";
 import { TABS, type TabId } from "@/types/navigation";
@@ -66,6 +67,7 @@ function AppChromeInner({ children }: { children: ReactNode }) {
         <div className="min-w-0 max-w-full flex-1 overflow-x-hidden">
           {children}
         </div>
+        <Footer />
       </div>
       {!hideNav && (
         <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
@@ -79,13 +81,16 @@ export function AppChrome({ children }: { children: ReactNode }) {
     <Suspense
       fallback={
         <div
-          className="min-w-0 max-w-full flex-1 overflow-x-hidden"
+          className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-hidden"
           style={{
             paddingTop: "env(safe-area-inset-top, 0px)",
             paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))",
           }}
         >
-          {children}
+          <div className="min-w-0 max-w-full flex-1 overflow-x-hidden">
+            {children}
+          </div>
+          <Footer />
         </div>
       }
     >
