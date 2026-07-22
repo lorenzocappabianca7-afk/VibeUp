@@ -56,7 +56,7 @@ export function CreateAccountModal({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center p-6"
+      className="vibe-overlay-enter fixed inset-0 z-[70] flex items-center justify-center p-6"
       data-overlay-open="true"
     >
       <button
@@ -67,7 +67,7 @@ export function CreateAccountModal({
       />
 
       <div
-        className="relative max-h-[min(90dvh,calc(100dvh-2rem))] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-6 shadow-xl"
+        className="vibe-sheet-enter relative max-h-[min(90dvh,calc(100dvh-2rem))] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-6 shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-account-title"

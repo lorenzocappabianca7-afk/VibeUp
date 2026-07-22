@@ -6,7 +6,7 @@ import { AppWakeRecovery } from "@/components/pwa/app-wake-recovery";
 import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner";
 import { TABS, type TabId } from "@/types/navigation";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, type ReactNode } from "react";
+import { Suspense, startTransition, useCallback, type ReactNode } from "react";
 
 const VALID_TABS = new Set(TABS.map((tab) => tab.id));
 
@@ -39,11 +39,13 @@ function AppChromeInner({ children }: { children: ReactNode }) {
 
   const handleTabChange = useCallback(
     (tab: TabId) => {
-      if (tab === "explore") {
-        router.push("/");
-        return;
-      }
-      router.push(`/?tab=${tab}`);
+      startTransition(() => {
+        if (tab === "explore") {
+          router.push("/");
+          return;
+        }
+        router.push(`/?tab=${tab}`);
+      });
     },
     [router],
   );

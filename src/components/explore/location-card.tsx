@@ -31,7 +31,7 @@ export const LocationCard = memo(function LocationCard({
   const [contactsOpen, setContactsOpen] = useState(false);
 
   return (
-    <article className="h-full overflow-hidden rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-colors duration-150 hover:border-primary-black">
+    <article className="render-contained h-full overflow-hidden rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-[border-color,transform,box-shadow] duration-150 hover:border-primary-black active:scale-[0.995]">
       <div className="relative aspect-[16/10] w-full">
         <Link
           href={href}

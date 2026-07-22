@@ -274,7 +274,7 @@ function AddServicesModal({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-end justify-center lg:items-center"
+      className="vibe-overlay-enter fixed inset-0 z-[70] flex items-end justify-center lg:items-center"
       data-overlay-open="true"
     >
       <button
@@ -285,7 +285,7 @@ function AddServicesModal({
       />
 
       <div
-        className="smooth-scroll relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-background p-5 shadow-xl lg:rounded-3xl"
+        className="vibe-sheet-enter smooth-scroll relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-background p-5 shadow-xl lg:rounded-3xl"
         style={MODAL_SAFE_BOTTOM_STYLE}
       >
         <div className="mb-5 flex items-center justify-between">

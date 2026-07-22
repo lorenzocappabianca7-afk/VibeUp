@@ -15,6 +15,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  startTransition,
   useMemo,
   useRef,
   useState,
@@ -330,15 +331,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const updateCurrentUserState = useCallback(
     (updater: (state: UserScopedState) => UserScopedState) => {
       const userId = currentUserIdRef.current;
-      setUserStatesMap((map) => {
-        const current = map[userId] ?? createDefaultUserState(userId);
-        const next = updater(current);
-        if (next === current) return map;
+      startTransition(() => {
+        setUserStatesMap((map) => {
+          const current = map[userId] ?? createDefaultUserState(userId);
+          const next = updater(current);
+          if (next === current) return map;
 
-        return {
-          ...map,
-          [userId]: next,
-        };
+          return {
+            ...map,
+            [userId]: next,
+          };
+        });
       });
     },
     [],

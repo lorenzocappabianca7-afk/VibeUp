@@ -7,7 +7,7 @@ import { ProfileScreen } from "@/components/screens/profile-screen";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import { TABS, type TabId } from "@/types/navigation";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useState } from "react";
 
 const VALID_TABS = new Set(TABS.map((tab) => tab.id));
 
@@ -25,10 +25,23 @@ export function MobileShell() {
   const [activeTab, setActiveTab] = useState<TabId>(() =>
     getInitialTab(tabParam),
   );
+  const [visitedTabs, setVisitedTabs] = useState<Set<TabId>>(
+    () => new Set<TabId>([getInitialTab(tabParam)]),
+  );
 
   const handleTabChange = useCallback(
     (tab: TabId) => {
-      setActiveTab(tab);
+      startTransition(() => {
+        setActiveTab(tab);
+        setVisitedTabs((current) => {
+          if (current.has(tab)) return current;
+          const next = new Set(current);
+          next.add(tab);
+          return next;
+        });
+      });
+
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 
       const params = new URLSearchParams(searchParams.toString());
       if (tab === "explore") {
@@ -38,7 +51,9 @@ export function MobileShell() {
       }
 
       const query = params.toString();
-      router.replace(query ? `/?${query}` : "/", { scroll: false });
+      startTransition(() => {
+        router.replace(query ? `/?${query}` : "/", { scroll: false });
+      });
     },
     [router, searchParams],
   );
@@ -46,29 +61,21 @@ export function MobileShell() {
   useEffect(() => {
     let cancelled = false;
     queueMicrotask(() => {
-      if (!cancelled) {
-        setActiveTab(getInitialTab(tabParam));
-      }
+      if (cancelled) return;
+      const nextTab = getInitialTab(tabParam);
+      setActiveTab(nextTab);
+      setVisitedTabs((current) => {
+        if (current.has(nextTab)) return current;
+        const next = new Set(current);
+        next.add(nextTab);
+        return next;
+      });
     });
 
     return () => {
       cancelled = true;
     };
   }, [tabParam]);
-
-  function renderActiveScreen() {
-    switch (activeTab) {
-      case "events":
-        return <MyEventsScreen onCreateEvent={() => handleTabChange("explore")} />;
-      case "messages":
-        return <MessagesScreen />;
-      case "profile":
-        return <ProfileScreen />;
-      case "explore":
-      default:
-        return <ExploreScreen />;
-    }
-  }
 
   return (
     <div
@@ -84,8 +91,54 @@ export function MobileShell() {
           paddingRight: "max(1rem, env(safe-area-inset-right, 0px))",
         }}
       >
-        <div className="screen-enter min-w-0 w-full max-w-full overflow-x-hidden">
-          {renderActiveScreen()}
+        <div className="relative min-w-0 w-full max-w-full overflow-x-hidden">
+          {visitedTabs.has("explore") && (
+            <div
+              className={cn(
+                "min-w-0 w-full max-w-full overflow-x-hidden",
+                activeTab === "explore" ? "screen-enter" : "hidden",
+              )}
+              aria-hidden={activeTab !== "explore"}
+            >
+              <ExploreScreen />
+            </div>
+          )}
+          {visitedTabs.has("events") && (
+            <div
+              className={cn(
+                "min-w-0 w-full max-w-full overflow-x-hidden",
+                activeTab === "events" ? "screen-enter" : "hidden",
+              )}
+              aria-hidden={activeTab !== "events"}
+            >
+              <MyEventsScreen
+                isActive={activeTab === "events"}
+                onCreateEvent={() => handleTabChange("explore")}
+              />
+            </div>
+          )}
+          {visitedTabs.has("messages") && (
+            <div
+              className={cn(
+                "min-w-0 w-full max-w-full overflow-x-hidden",
+                activeTab === "messages" ? "screen-enter" : "hidden",
+              )}
+              aria-hidden={activeTab !== "messages"}
+            >
+              <MessagesScreen />
+            </div>
+          )}
+          {visitedTabs.has("profile") && (
+            <div
+              className={cn(
+                "min-w-0 w-full max-w-full overflow-x-hidden",
+                activeTab === "profile" ? "screen-enter" : "hidden",
+              )}
+              aria-hidden={activeTab !== "profile"}
+            >
+              <ProfileScreen />
+            </div>
+          )}
         </div>
       </main>
     </div>

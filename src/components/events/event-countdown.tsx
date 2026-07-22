@@ -8,18 +8,54 @@ interface EventCountdownProps {
   event: UserEvent;
   /** Flat section style for embedding inside event cards */
   embedded?: boolean;
+  /** Pause ticking when the host screen is not active */
+  active?: boolean;
 }
 
-export function EventCountdown({ event, embedded = false }: EventCountdownProps) {
+export function EventCountdown({
+  event,
+  embedded = false,
+  active = true,
+}: EventCountdownProps) {
   const target = useMemo(() => getEventDateTime(event), [event]);
   const [countdown, setCountdown] = useState(() => getCountdown(target));
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCountdown(getCountdown(target));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [target]);
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    const tick = () => setCountdown(getCountdown(target));
+    const start = () => {
+      tick();
+      interval = setInterval(tick, 1000);
+    };
+    const stop = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const canRun =
+      active &&
+      typeof document !== "undefined" &&
+      document.visibilityState === "visible";
+
+    if (canRun) start();
+
+    const onVisibility = () => {
+      if (active && document.visibilityState === "visible") {
+        if (!interval) start();
+      } else {
+        stop();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [target, active]);
 
   if (countdown.isPast) {
     return (
@@ -69,7 +105,7 @@ export function EventCountdown({ event, embedded = false }: EventCountdownProps)
             : "text-center text-xs font-semibold uppercase tracking-widest text-brand-teal"
         }
       >
-        {embedded ? "Manca all&apos;evento" : "Countdown all&apos;evento"}
+        {embedded ? "Manca all'evento" : "Countdown all'evento"}
       </p>
       {embedded && (
         <p className="mt-0.5 text-xs text-primary-black/55">

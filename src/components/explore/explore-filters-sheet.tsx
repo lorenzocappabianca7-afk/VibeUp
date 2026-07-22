@@ -292,7 +292,7 @@ export function ExploreFiltersSheet({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center lg:items-center"
+      className="vibe-overlay-enter fixed inset-0 z-[60] flex items-end justify-center lg:items-center"
       data-overlay-open="true"
     >
       <button
@@ -303,7 +303,7 @@ export function ExploreFiltersSheet({
       />
 
       <div
-        className="smooth-scroll relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-background px-5 pb-8 pt-4 shadow-xl lg:max-w-lg lg:rounded-3xl"
+        className="vibe-sheet-enter smooth-scroll relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-background px-5 pb-8 pt-4 shadow-xl lg:max-w-lg lg:rounded-3xl"
         style={{
           paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))",
         }}

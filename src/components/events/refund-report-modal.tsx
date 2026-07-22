@@ -56,7 +56,7 @@ export function RefundReportModal({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center"
+      className="vibe-overlay-enter fixed inset-0 z-[70] flex items-end justify-center sm:items-center"
       data-overlay-open="true"
     >
       <button
@@ -67,7 +67,7 @@ export function RefundReportModal({
       />
 
       <div
-        className="relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-background p-6 shadow-xl sm:rounded-3xl"
+        className="vibe-sheet-enter relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-background p-6 shadow-xl sm:rounded-3xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="refund-title"

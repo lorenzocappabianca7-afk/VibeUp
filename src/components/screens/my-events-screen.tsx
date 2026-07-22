@@ -34,10 +34,12 @@ import {
   MODAL_SAFE_BOTTOM_STYLE,
 } from "@/lib/utils";
 import Link from "next/link";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface MyEventsScreenProps {
   onCreateEvent?: () => void;
+  /** False when the tab is mounted but hidden (keep-alive) */
+  isActive?: boolean;
 }
 
 type PaymentMethod = "card" | "apple_pay" | "paypal" | "bank_transfer" | "cash";
@@ -250,6 +252,7 @@ function formatDepositDeadline(deadline: Date) {
 
 export const MyEventsScreen = memo(function MyEventsScreen({
   onCreateEvent,
+  isActive = true,
 }: MyEventsScreenProps) {
   const {
     events,
@@ -281,8 +284,10 @@ export const MyEventsScreen = memo(function MyEventsScreen({
     serviceId: string,
     method?: PaymentMethod,
   ) => {
-    markServicePaidInState(eventId, serviceId, method);
-    setPaymentModal(null);
+    startTransition(() => {
+      markServicePaidInState(eventId, serviceId, method);
+      setPaymentModal(null);
+    });
   }, [markServicePaidInState]);
 
   const closePaymentModal = useCallback(() => {
@@ -406,6 +411,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
               <li key={event.id} className="min-w-0 max-w-full">
                 <ExpandedEventCard
                   event={event}
+                  isActive={isActive}
                   paymentStates={paymentStates}
                   onOpenPayment={setPaymentModal}
                   onOpenDepositPayment={openDepositPayment}
@@ -429,6 +435,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
 
 const ExpandedEventCard = memo(function ExpandedEventCard({
   event,
+  isActive,
   paymentStates,
   onOpenPayment,
   onOpenDepositPayment,
@@ -436,6 +443,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   onMenuSelectionsChange,
 }: {
   event: UserEvent;
+  isActive: boolean;
   paymentStates: Record<string, ServicePaymentState>;
   onOpenPayment: (selection: { event: UserEvent; service: BookedService }) => void;
   onOpenDepositPayment: (event: UserEvent) => void;
@@ -570,6 +578,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
 
       <DepositDeadlineTimer
         event={event}
+        isActive={isActive}
         depositAmount={depositAmount}
         payment={depositPayment}
         onPayDeposit={payDeposit}
@@ -781,18 +790,20 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
         </section>
       )}
 
-      <EventCountdown event={event} embedded />
+      <EventCountdown event={event} embedded active={isActive} />
     </article>
   );
 });
 
 const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
   event,
+  isActive,
   depositAmount,
   payment,
   onPayDeposit,
 }: {
   event: UserEvent;
+  isActive: boolean;
   depositAmount: number;
   payment: ServicePaymentState;
   onPayDeposit: () => void;
@@ -801,12 +812,41 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
   const [countdown, setCountdown] = useState(() => getCountdown(deadline));
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCountdown(getCountdown(deadline));
-    }, 10_000);
+    let interval: ReturnType<typeof setInterval> | null = null;
 
-    return () => clearInterval(interval);
-  }, [deadline]);
+    const tick = () => setCountdown(getCountdown(deadline));
+    const start = () => {
+      tick();
+      interval = setInterval(tick, 10_000);
+    };
+    const stop = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const canRun =
+      isActive &&
+      typeof document !== "undefined" &&
+      document.visibilityState === "visible";
+
+    if (canRun) start();
+
+    const onVisibility = () => {
+      if (isActive && document.visibilityState === "visible") {
+        if (!interval) start();
+      } else {
+        stop();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [deadline, isActive]);
 
   return (
     <section className="min-w-0 overflow-hidden border-b border-primary-black/8 bg-primary-black/[0.02] px-3 py-3 sm:px-4">
@@ -981,7 +1021,7 @@ const PaymentChoiceModal = memo(function PaymentChoiceModal({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-end justify-center lg:items-center"
+      className="vibe-overlay-enter fixed inset-0 z-[70] flex items-end justify-center lg:items-center"
       data-overlay-open="true"
     >
       <button
@@ -991,7 +1031,7 @@ const PaymentChoiceModal = memo(function PaymentChoiceModal({
         aria-label="Chiudi scelta pagamento"
       />
       <div
-        className="smooth-scroll relative max-h-[min(90dvh,calc(100dvh-5.5rem-env(safe-area-inset-bottom,0px)))] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-background p-5 shadow-xl lg:rounded-[2rem]"
+        className="vibe-sheet-enter smooth-scroll relative max-h-[min(90dvh,calc(100dvh-5.5rem-env(safe-area-inset-bottom,0px)))] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-background p-5 shadow-xl lg:rounded-[2rem]"
         style={MODAL_SAFE_BOTTOM_STYLE}
       >
         <div className="flex min-w-0 items-start justify-between gap-3">

@@ -4,6 +4,9 @@
 :root {
   --background: #ffffff;
   --foreground: #0f0f11;
+  --vibe-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --vibe-duration-fast: 140ms;
+  --vibe-duration: 220ms;
 }
 
 @theme inline {
@@ -64,6 +67,16 @@ body::-webkit-scrollbar {
   -webkit-tap-highlight-color: transparent;
 }
 
+button,
+a,
+[role="button"],
+label[for],
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
 input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;
@@ -76,17 +89,70 @@ input[type="number"]::-webkit-outer-spin-button {
   margin: 0;
 }
 
+@keyframes vibe-screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes vibe-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes vibe-sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .screen-enter {
-  animation: none;
+  animation: vibe-screen-in var(--vibe-duration) var(--vibe-ease) both;
 }
 
 .smooth-scroll {
   -webkit-overflow-scrolling: touch;
-  scroll-behavior: auto;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
 }
 
 .content-fade {
-  animation: none;
+  animation: vibe-fade-in var(--vibe-duration) var(--vibe-ease) both;
+}
+
+.vibe-overlay-enter {
+  animation: vibe-fade-in var(--vibe-duration-fast) ease-out both;
+}
+
+.vibe-sheet-enter {
+  animation: vibe-sheet-up var(--vibe-duration) var(--vibe-ease) both;
+}
+
+.touch-feedback {
+  transition:
+    transform var(--vibe-duration-fast) var(--vibe-ease),
+    opacity var(--vibe-duration-fast) ease,
+    background-color var(--vibe-duration-fast) ease,
+    border-color var(--vibe-duration-fast) ease,
+    color var(--vibe-duration-fast) ease;
+}
+
+.touch-feedback:active {
+  transform: scale(0.97);
 }
 
 .render-contained {
@@ -127,7 +193,19 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 
   .screen-enter,
-  .content-fade {
+  .content-fade,
+  .vibe-overlay-enter,
+  .vibe-sheet-enter {
     animation: none;
+  }
+
+  .touch-feedback,
+  .touch-feedback:active {
+    transition: none;
+    transform: none;
+  }
+
+  .smooth-scroll {
+    scroll-behavior: auto;
   }
 }

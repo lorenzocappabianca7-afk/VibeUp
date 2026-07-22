@@ -50,7 +50,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
                 onClick={() => onTabChange(tab.id)}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex w-full min-w-0 flex-col items-center gap-0.5 rounded-xl px-0.5 py-1.5 transition-colors duration-150 sm:gap-1 sm:px-1 sm:py-2",
+                  "touch-feedback flex w-full min-w-0 flex-col items-center gap-0.5 rounded-xl px-0.5 py-1.5 sm:gap-1 sm:px-1 sm:py-2",
                   isActive
                     ? `${ACTIVE_COLORS[tab.id]} bg-primary-black/[0.03]`
                     : "text-primary-black/45 hover:text-primary-black/70",
