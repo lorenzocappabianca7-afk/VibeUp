@@ -10,6 +10,7 @@ import {
   type UserEvent,
 } from "@/types/event";
 import { formatCurrency, formatDate, MODAL_SAFE_BOTTOM_STYLE } from "@/lib/utils";
+import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import {
   ArrowLeft,
   Camera,
@@ -23,7 +24,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface EventDashboardViewProps {
   eventId: string;
@@ -235,13 +236,7 @@ function AddServicesModal({
   event: UserEvent;
   onClose: () => void;
 }) {
-  useEffect(() => {
-    if (!open) return;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [open]);
+  useBodyScrollLock(open);
 
   if (!open) return null;
 

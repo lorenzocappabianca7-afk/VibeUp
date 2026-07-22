@@ -35,6 +35,7 @@ import {
 } from "@/lib/utils";
 import Link from "next/link";
 import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 
 interface MyEventsScreenProps {
   onCreateEvent?: () => void;
@@ -269,6 +270,10 @@ export const MyEventsScreen = memo(function MyEventsScreen({
   const [discountBannerOpen, setDiscountBannerOpen] = useState(false);
   const [inviteContact, setInviteContact] = useState("");
   const [inviteSent, setInviteSent] = useState(false);
+
+  if (!isActive && paymentModal) {
+    setPaymentModal(null);
+  }
 
   useEffect(() => {
     prunePastEvents();
@@ -1006,13 +1011,7 @@ const PaymentChoiceModal = memo(function PaymentChoiceModal({
     setShowMethods(false);
   }, [selectionKey]);
 
-  useEffect(() => {
-    if (!selection) return;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [selection]);
+  useBodyScrollLock(Boolean(selection));
 
   if (!selection) return null;
 

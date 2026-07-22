@@ -1,5 +1,6 @@
 "use client";
 
+import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { useEffect, useState, type FormEvent } from "react";
 import { UserPlus, X } from "lucide-react";
 
@@ -20,6 +21,8 @@ export function CreateAccountModal({
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
 
+  useBodyScrollLock(open);
+
   useEffect(() => {
     if (!open) return;
 
@@ -28,11 +31,6 @@ export function CreateAccountModal({
       setEmail("");
       setError("");
     });
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = "";
-    };
   }, [open]);
 
   if (!open) return null;

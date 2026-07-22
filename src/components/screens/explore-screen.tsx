@@ -156,14 +156,17 @@ function countActiveFilters(filters: ExploreFilters): number {
   if (filters.guestCount > EXPLORE_GUEST_MIN) count++;
   if (filters.dateFrom !== null) count++;
   // "Tipo di festa" non deve contribuire al badge dei filtri attivi.
-  const hasGeoFilter =
-    !filters.allPiemonte ||
-    filters.selectedComune !== null ||
-    filters.geoArea !== null ||
-    filters.district !== null ||
-    filters.zone !== null;
-  if (hasGeoFilter) count++;
-  if (filters.nearMe) count++;
+  if (filters.nearMe) {
+    count++;
+  } else {
+    const hasGeoFilter =
+      !filters.allPiemonte ||
+      filters.selectedComune !== null ||
+      filters.geoArea !== null ||
+      filters.district !== null ||
+      filters.zone !== null;
+    if (hasGeoFilter) count++;
+  }
   return count;
 }
 

@@ -364,18 +364,23 @@ export function SmartLocationDetailsSection({
           </ul>
         </div>
 
-        <div className="rounded-3xl bg-brand-teal p-4 text-white">
+        <div className="relative overflow-hidden rounded-3xl border border-brand-teal/20 bg-gradient-to-br from-brand-teal/18 via-brand-teal/10 to-brand-teal/[0.06] p-4 text-primary-black">
+          <div
+            className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-brand-teal/20 blur-3xl"
+            aria-hidden
+          />
+          <div className="relative">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.18em] text-white/80">
+              <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.18em] text-brand-teal/80">
                 <Wand2 className="h-3.5 w-3.5" aria-hidden />
                 Preventivo Istantaneo IA
               </p>
-              <p className="mt-1 text-3xl font-black">
+              <p className="mt-1 text-3xl font-black text-primary-black">
                 {generatedQuote ? formatCurrency(generatedQuote.total) : "Da generare"}
               </p>
             </div>
-            <div className="rounded-2xl bg-white px-3 py-2 text-right">
+            <div className="rounded-2xl border border-brand-teal/15 bg-white/80 px-3 py-2 text-right backdrop-blur-sm">
               <p className="text-[10px] uppercase tracking-wide text-primary-black/55">
                 Caparra 30% location
               </p>
@@ -388,8 +393,8 @@ export function SmartLocationDetailsSection({
           </div>
 
           {generatedQuote && (
-            <div className="mt-4 grid gap-2 rounded-3xl bg-white p-3 text-primary-black shadow-sm sm:grid-cols-2">
-              <div className="rounded-2xl bg-brand-teal/10 px-4 py-3">
+            <div className="mt-4 grid gap-2 rounded-3xl border border-brand-teal/10 bg-white/85 p-3 text-primary-black shadow-sm backdrop-blur-sm sm:grid-cols-2">
+              <div className="rounded-2xl bg-brand-teal/8 px-4 py-3">
                 <p className="text-[11px] font-black uppercase tracking-[0.16em] text-brand-teal">
                   Prezzo totale evento
                 </p>
@@ -397,7 +402,7 @@ export function SmartLocationDetailsSection({
                   {formatCurrency(generatedQuote.total)}
                 </p>
               </div>
-              <div className="rounded-2xl bg-brand-pink/12 px-4 py-3">
+              <div className="rounded-2xl bg-brand-pink/10 px-4 py-3">
                 <p className="text-[11px] font-black uppercase tracking-[0.16em] text-brand-pink">
                   Caparra da pagare
                 </p>
@@ -412,7 +417,7 @@ export function SmartLocationDetailsSection({
           )}
 
           {(date || dateRangeTo || guestCount) && (
-            <p className="mt-3 rounded-2xl bg-white px-3 py-2 text-xs font-bold text-primary-black/65">
+            <p className="mt-3 rounded-2xl border border-brand-teal/10 bg-white/80 px-3 py-2 text-xs font-bold text-primary-black/65 backdrop-blur-sm">
               Abbiamo precompilato il preventivo con i dati della tua ricerca.
               {dateRangeTo && dateRangeTo !== date
                 ? ` Fascia scelta fino al ${formatDateLabel(dateRangeTo)}.`
@@ -424,7 +429,7 @@ export function SmartLocationDetailsSection({
             <button
               type="button"
               onClick={() => togglePicker("date")}
-              className="w-full rounded-2xl bg-white p-3 text-left"
+              className="w-full rounded-2xl border border-brand-teal/10 bg-white/85 p-3 text-left backdrop-blur-sm"
             >
               <span className="flex items-center gap-1.5 text-xs font-semibold text-primary-black/55">
                 <Calendar className="h-3.5 w-3.5" aria-hidden />
@@ -459,7 +464,7 @@ export function SmartLocationDetailsSection({
               <button
                 type="button"
                 onClick={() => togglePicker("start")}
-                className="rounded-2xl bg-white p-3 text-left"
+                className="rounded-2xl border border-brand-teal/10 bg-white/85 p-3 text-left backdrop-blur-sm"
               >
                 <span className="flex items-center gap-1.5 text-xs font-semibold text-primary-black/55">
                   <Clock className="h-3.5 w-3.5" aria-hidden />
@@ -472,7 +477,7 @@ export function SmartLocationDetailsSection({
               <button
                 type="button"
                 onClick={() => togglePicker("end")}
-                className="rounded-2xl bg-white p-3 text-left"
+                className="rounded-2xl border border-brand-teal/10 bg-white/85 p-3 text-left backdrop-blur-sm"
               >
                 <span className="flex items-center gap-1.5 text-xs font-semibold text-primary-black/55">
                   <Clock className="h-3.5 w-3.5" aria-hidden />
@@ -579,32 +584,33 @@ export function SmartLocationDetailsSection({
 
           {generatedQuote ? (
             <dl className="mt-4 space-y-2 text-sm">
-              <div className="flex justify-between gap-3 text-white/72">
+              <div className="flex justify-between gap-3 text-primary-black/55">
                 <dt className="min-w-0">
                   Location ({generatedQuote.hours || 0}h x{" "}
                   {formatCurrency(hourlyPrice)})
                 </dt>
-                <dd className="shrink-0 font-bold text-white">
+                <dd className="shrink-0 font-bold text-primary-black">
                   {formatCurrency(generatedQuote.locationCost)}
                 </dd>
               </div>
-              <div className="flex justify-between gap-3 text-white/72">
+              <div className="flex justify-between gap-3 text-primary-black/55">
                 <dt className="min-w-0">Servizi selezionati</dt>
-                <dd className="shrink-0 font-bold text-white">
+                <dd className="shrink-0 font-bold text-primary-black">
                   {formatCurrency(generatedQuote.extrasCost)}
                 </dd>
               </div>
             </dl>
           ) : (
-            <p className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-primary-black/70">
+            <p className="mt-3 rounded-xl border border-brand-teal/10 bg-white/80 px-3 py-2 text-xs font-semibold text-primary-black/70 backdrop-blur-sm">
               Il costo apparira&apos; qui solo dopo aver generato il preventivo.
             </p>
           )}
           {hasTimeIssue && (
-            <p className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-primary-black">
+            <p className="mt-3 rounded-xl border border-brand-teal/10 bg-white/80 px-3 py-2 text-xs font-semibold text-primary-black backdrop-blur-sm">
               Durata minima richiesta: {minHours} ore.
             </p>
           )}
+          </div>
         </div>
 
         <div

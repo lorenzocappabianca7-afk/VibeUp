@@ -33,6 +33,7 @@ import {
 import type { ManagedLocationListing, ManagedServiceListing } from "@/types/admin";
 import { BUSINESS_CATEGORY_LABELS } from "@/types/business";
 import { formatCurrency, getLocationPricePresentation } from "@/lib/utils";
+import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import {
   createSavedPaymentCard,
   formatCardNumber,
@@ -94,6 +95,7 @@ export function ProfileScreen() {
     name: string;
     email: string;
   } | null>(null);
+  useBodyScrollLock(Boolean(accountPendingDelete));
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggeredRef = useRef(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);

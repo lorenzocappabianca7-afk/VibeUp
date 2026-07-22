@@ -30,6 +30,25 @@ const TabNavigationContext = createContext<TabNavigationContextValue | null>(
   null,
 );
 
+const TAB_NAVIGATION_FALLBACK: TabNavigationContextValue = {
+  activeTab: "explore",
+  setTab: () => undefined,
+  isBusinessUser: false,
+};
+
+/** Safe provider for Suspense fallbacks / first paint before searchParams resolve */
+export function TabNavigationFallbackProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <TabNavigationContext.Provider value={TAB_NAVIGATION_FALLBACK}>
+      {children}
+    </TabNavigationContext.Provider>
+  );
+}
+
 function resolveTabFromLocation(
   pathname: string,
   tabParam: string | null,

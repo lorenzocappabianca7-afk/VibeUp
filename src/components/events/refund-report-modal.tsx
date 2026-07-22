@@ -7,7 +7,8 @@ import {
   type RefundReason,
 } from "@/types/event";
 import { CheckCircle2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useBodyScrollLock } from "@/lib/body-scroll-lock";
+import { useState } from "react";
 
 interface RefundReportModalProps {
   open: boolean;
@@ -29,16 +30,7 @@ export function RefundReportModal({
   const [description, setDescription] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [open]);
+  useBodyScrollLock(open);
 
   if (!open || !service) return null;
 

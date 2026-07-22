@@ -1,5 +1,6 @@
 "use client";
 
+import { forceUnlockBodyScrollIfIdle } from "@/lib/body-scroll-lock";
 import { useEffect } from "react";
 
 /**
@@ -10,15 +11,7 @@ import { useEffect } from "react";
 export function AppWakeRecovery() {
   useEffect(() => {
     const recover = () => {
-      // Clear leftover modal scroll locks.
-      if (document.body.style.overflow === "hidden") {
-        const openOverlay = document.querySelector(
-          '[data-overlay-open="true"]',
-        );
-        if (!openOverlay) {
-          document.body.style.overflow = "";
-        }
-      }
+      forceUnlockBodyScrollIfIdle();
 
       // Nudge a stale SW to update after the tab wakes up.
       if ("serviceWorker" in navigator) {

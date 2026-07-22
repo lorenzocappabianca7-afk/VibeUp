@@ -33,9 +33,7 @@ export function AccountGateProvider({ children }: { children: ReactNode }) {
   const waitingForHydrationRef = useRef(false);
 
   const hasAccount =
-    !isGuest &&
-    currentUser.id !== GUEST_USER.id &&
-    Boolean(currentUser.email.trim());
+    !isGuest && currentUser.id !== GUEST_USER.id;
 
   // Logged-in users never see the create-account modal.
   if (hasAccount && modalReason !== null) {

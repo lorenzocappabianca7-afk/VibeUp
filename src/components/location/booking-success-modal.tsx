@@ -1,8 +1,8 @@
 "use client";
 
 import { formatCurrency } from "@/lib/utils";
+import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { CheckCircle2, X } from "lucide-react";
-import { useEffect } from "react";
 
 interface BookingSuccessModalProps {
   open: boolean;
@@ -21,16 +21,7 @@ export function BookingSuccessModal({
   primaryLabel = "Perfetto, grazie!",
   onPrimaryAction,
 }: BookingSuccessModalProps) {
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [open]);
+  useBodyScrollLock(open);
 
   if (!open) return null;
 

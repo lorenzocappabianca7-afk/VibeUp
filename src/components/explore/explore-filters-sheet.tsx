@@ -25,6 +25,7 @@ import {
 import { Calendar, ChevronDown, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 
 const PARTY_TYPES = Object.keys(PARTY_TYPE_LABELS) as PartyType[];
 const MUSIC_TYPES = Object.keys(MUSIC_TYPE_LABELS) as MusicType[];
@@ -77,43 +78,38 @@ export function ExploreFiltersSheet({
   const [draftFilters, setDraftFilters] = useState(filters);
   const [draftServiceFilters, setDraftServiceFilters] = useState(serviceFilters);
   const wasOpenRef = useRef(false);
+  const nearMeRequestRef = useRef(0);
   const metroTab = draftFilters.geoArea ?? "torino_citta";
 
-  const torinoActive =
+  // Chip "Torino" = tutta la città (senza quartiere specifico)
+  const torinoCityWide =
     !draftFilters.allPiemonte &&
     draftFilters.geoArea === "torino_citta" &&
+    !draftFilters.district &&
+    !draftFilters.selectedComune &&
+    !draftFilters.nearMe;
+
+  const showMetroSection =
+    !draftFilters.allPiemonte &&
     !draftFilters.selectedComune &&
     !draftFilters.nearMe;
 
   const showTorinoDistricts =
-    !draftFilters.allPiemonte &&
-    !draftFilters.selectedComune &&
-    !draftFilters.nearMe &&
-    !torinoActive &&
-    metroTab === "torino_citta" &&
-    draftFilters.geoArea === "torino_citta";
+    showMetroSection && draftFilters.geoArea === "torino_citta";
+
+  useBodyScrollLock(open);
 
   useEffect(() => {
     const justOpened = open && !wasOpenRef.current;
     wasOpenRef.current = open;
 
-    if (justOpened) {
-      setDraftFilters(filters);
-      setDraftServiceFilters(serviceFilters);
-      setDatePickerOpen(false);
-      setNearMeError(null);
-      setNearMeLoading(false);
-    }
+    if (!justOpened) return;
 
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-
-    return () => {
-      document.body.style.overflow = "";
-    };
+    setDraftFilters(filters);
+    setDraftServiceFilters(serviceFilters);
+    setDatePickerOpen(false);
+    setNearMeError(null);
+    setNearMeLoading(false);
   }, [filters, open, serviceFilters]);
 
   useEffect(() => {
@@ -183,7 +179,7 @@ export function ExploreFiltersSheet({
   }
 
   function toggleTorino() {
-    if (torinoActive) {
+    if (torinoCityWide) {
       setDraftFilters((current) => ({
         ...current,
         geoArea: null,
@@ -206,7 +202,9 @@ export function ExploreFiltersSheet({
 
   function toggleNearMe() {
     if (draftFilters.nearMe) {
+      nearMeRequestRef.current += 1;
       setNearMeError(null);
+      setNearMeLoading(false);
       setDraftFilters((current) => ({
         ...current,
         nearMe: false,
@@ -220,11 +218,14 @@ export function ExploreFiltersSheet({
       return;
     }
 
+    const requestId = nearMeRequestRef.current + 1;
+    nearMeRequestRef.current = requestId;
     setNearMeLoading(true);
     setNearMeError(null);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        if (nearMeRequestRef.current !== requestId) return;
         setNearMeLoading(false);
         setDraftFilters((current) => ({
           ...current,
@@ -241,6 +242,7 @@ export function ExploreFiltersSheet({
         }));
       },
       () => {
+        if (nearMeRequestRef.current !== requestId) return;
         setNearMeLoading(false);
         setNearMeError(
           "Impossibile ottenere la posizione. Controlla i permessi del browser.",
@@ -250,7 +252,7 @@ export function ExploreFiltersSheet({
     );
   }
 
-  const comuneSearchDisabled = torinoActive || draftFilters.nearMe;
+  const comuneSearchDisabled = torinoCityWide || draftFilters.nearMe;
 
   function selectComune(comune: string | null) {
     if (comune) {
@@ -739,7 +741,7 @@ export function ExploreFiltersSheet({
                 onClick={toggleTorino}
                 className={cn(
                   "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                  torinoActive
+                  torinoCityWide
                     ? "bg-brand-teal text-white"
                     : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
                 )}
@@ -803,10 +805,7 @@ export function ExploreFiltersSheet({
             </div>
 
             {/* Opzione 3: Area metropolitana Torino */}
-            {!draftFilters.allPiemonte &&
-              !draftFilters.selectedComune &&
-              !draftFilters.nearMe &&
-              !torinoActive && (
+            {showMetroSection && (
               <div className="rounded-2xl border border-primary-black/10 p-4">
                 <p className="mb-3 text-sm font-semibold text-primary-black">
                   Area metropolitana di Torino
