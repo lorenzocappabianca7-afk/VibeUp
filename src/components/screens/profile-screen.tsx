@@ -558,7 +558,10 @@ export function ProfileScreen() {
             <li key={item.label}>
               <button
                 type="button"
-                onClick={() => setSettingsPanel(item.id)}
+                onClick={() => {
+                  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+                  setSettingsPanel(item.id);
+                }}
                 className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-primary-black/[0.03]"
               >
                 <item.icon
