@@ -6,114 +6,55 @@ import { ExploreScreen } from "@/components/screens/explore-screen";
 import { MessagesScreen } from "@/components/screens/messages-screen";
 import { MyEventsScreen } from "@/components/screens/my-events-screen";
 import { ProfileScreen } from "@/components/screens/profile-screen";
-import { useAppState } from "@/context/app-state-context";
+import { useTabNavigation } from "@/context/tab-navigation-context";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
-import {
-  ALL_TAB_IDS,
-  BUSINESS_TABS,
-  CONSUMER_TABS,
-  type TabId,
-} from "@/types/navigation";
-import { useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useCallback, useEffect, useState } from "react";
+import type { TabId } from "@/types/navigation";
+import { useState } from "react";
 
-function getInitialTab(
-  tabParam: string | null,
-  isBusinessUser: boolean,
-): TabId {
-  if (tabParam && ALL_TAB_IDS.has(tabParam as TabId)) {
-    const tab = tabParam as TabId;
-    if (isBusinessUser) {
-      if (tab === "notifications" || tab === "calendar" || tab === "profile") {
-        return tab;
-      }
-      return "notifications";
-    }
-    if (
-      tab === "explore" ||
-      tab === "events" ||
-      tab === "messages" ||
-      tab === "profile"
-    ) {
-      return tab;
-    }
-    return "explore";
-  }
-  return isBusinessUser ? "notifications" : "explore";
+function TabPanel({
+  tab,
+  activeTab,
+  visited,
+  children,
+}: {
+  tab: TabId;
+  activeTab: TabId;
+  visited: boolean;
+  children: React.ReactNode;
+}) {
+  if (!visited) return null;
+
+  const isActive = activeTab === tab;
+
+  return (
+    <div
+      className={cn(
+        "min-w-0 w-full max-w-full overflow-x-hidden",
+        isActive ? "relative" : "hidden",
+      )}
+      aria-hidden={!isActive}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function MobileShell() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const { isBusinessUser } = useAppState();
-  const [activeTab, setActiveTab] = useState<TabId>(() =>
-    getInitialTab(tabParam, isBusinessUser),
-  );
+  const { activeTab, setTab, isBusinessUser } = useTabNavigation();
   const [visitedTabs, setVisitedTabs] = useState<Set<TabId>>(
-    () => new Set<TabId>([getInitialTab(tabParam, isBusinessUser)]),
+    () => new Set<TabId>([activeTab]),
   );
+  const [mode, setMode] = useState(isBusinessUser);
 
-  const handleTabChange = useCallback(
-    (tab: TabId) => {
-      startTransition(() => {
-        setActiveTab(tab);
-        setVisitedTabs((current) => {
-          if (current.has(tab)) return current;
-          const next = new Set(current);
-          next.add(tab);
-          return next;
-        });
-      });
-
-      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-
-      const params = new URLSearchParams(searchParams.toString());
-      const isDefault =
-        (isBusinessUser && tab === "notifications") ||
-        (!isBusinessUser && tab === "explore");
-
-      if (isDefault) {
-        params.delete("tab");
-      } else {
-        params.set("tab", tab);
-      }
-
-      const query = params.toString();
-      startTransition(() => {
-        router.replace(query ? `/?${query}` : "/", { scroll: false });
-      });
-    },
-    [isBusinessUser, router, searchParams],
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (cancelled) return;
-      const nextTab = getInitialTab(tabParam, isBusinessUser);
-      setActiveTab(nextTab);
-      setVisitedTabs((current) => {
-        if (current.has(nextTab)) return current;
-        const next = new Set(current);
-        next.add(nextTab);
-        return next;
-      });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [tabParam, isBusinessUser]);
-
-  useEffect(() => {
-    const allowed = new Set(
-      (isBusinessUser ? BUSINESS_TABS : CONSUMER_TABS).map((tab) => tab.id),
-    );
-    if (!allowed.has(activeTab)) {
-      handleTabChange(isBusinessUser ? "notifications" : "explore");
-    }
-  }, [activeTab, handleTabChange, isBusinessUser]);
+  // Adjust visited panels during render (no effect cascade / no enter animation).
+  if (mode !== isBusinessUser) {
+    setMode(isBusinessUser);
+    setVisitedTabs(new Set<TabId>([activeTab]));
+  } else if (!visitedTabs.has(activeTab)) {
+    const next = new Set(visitedTabs);
+    next.add(activeTab);
+    setVisitedTabs(next);
+  }
 
   return (
     <div
@@ -132,89 +73,61 @@ export function MobileShell() {
         <div className="relative min-w-0 w-full max-w-full overflow-x-hidden">
           {isBusinessUser ? (
             <>
-              {visitedTabs.has("notifications") && (
-                <div
-                  className={cn(
-                    "min-w-0 w-full max-w-full overflow-x-hidden",
-                    activeTab === "notifications" ? "screen-enter" : "hidden",
-                  )}
-                  aria-hidden={activeTab !== "notifications"}
-                >
-                  <BusinessNotificationsScreen />
-                </div>
-              )}
-              {visitedTabs.has("calendar") && (
-                <div
-                  className={cn(
-                    "min-w-0 w-full max-w-full overflow-x-hidden",
-                    activeTab === "calendar" ? "screen-enter" : "hidden",
-                  )}
-                  aria-hidden={activeTab !== "calendar"}
-                >
-                  <BusinessCalendarScreen />
-                </div>
-              )}
-              {visitedTabs.has("profile") && (
-                <div
-                  className={cn(
-                    "min-w-0 w-full max-w-full overflow-x-hidden",
-                    activeTab === "profile" ? "screen-enter" : "hidden",
-                  )}
-                  aria-hidden={activeTab !== "profile"}
-                >
-                  <ProfileScreen />
-                </div>
-              )}
+              <TabPanel
+                tab="notifications"
+                activeTab={activeTab}
+                visited={visitedTabs.has("notifications")}
+              >
+                <BusinessNotificationsScreen />
+              </TabPanel>
+              <TabPanel
+                tab="calendar"
+                activeTab={activeTab}
+                visited={visitedTabs.has("calendar")}
+              >
+                <BusinessCalendarScreen />
+              </TabPanel>
+              <TabPanel
+                tab="profile"
+                activeTab={activeTab}
+                visited={visitedTabs.has("profile")}
+              >
+                <ProfileScreen />
+              </TabPanel>
             </>
           ) : (
             <>
-              {visitedTabs.has("explore") && (
-                <div
-                  className={cn(
-                    "min-w-0 w-full max-w-full overflow-x-hidden",
-                    activeTab === "explore" ? "screen-enter" : "hidden",
-                  )}
-                  aria-hidden={activeTab !== "explore"}
-                >
-                  <ExploreScreen />
-                </div>
-              )}
-              {visitedTabs.has("events") && (
-                <div
-                  className={cn(
-                    "min-w-0 w-full max-w-full overflow-x-hidden",
-                    activeTab === "events" ? "screen-enter" : "hidden",
-                  )}
-                  aria-hidden={activeTab !== "events"}
-                >
-                  <MyEventsScreen
-                    isActive={activeTab === "events"}
-                    onCreateEvent={() => handleTabChange("explore")}
-                  />
-                </div>
-              )}
-              {visitedTabs.has("messages") && (
-                <div
-                  className={cn(
-                    "min-w-0 w-full max-w-full overflow-x-hidden",
-                    activeTab === "messages" ? "screen-enter" : "hidden",
-                  )}
-                  aria-hidden={activeTab !== "messages"}
-                >
-                  <MessagesScreen />
-                </div>
-              )}
-              {visitedTabs.has("profile") && (
-                <div
-                  className={cn(
-                    "min-w-0 w-full max-w-full overflow-x-hidden",
-                    activeTab === "profile" ? "screen-enter" : "hidden",
-                  )}
-                  aria-hidden={activeTab !== "profile"}
-                >
-                  <ProfileScreen />
-                </div>
-              )}
+              <TabPanel
+                tab="explore"
+                activeTab={activeTab}
+                visited={visitedTabs.has("explore")}
+              >
+                <ExploreScreen />
+              </TabPanel>
+              <TabPanel
+                tab="events"
+                activeTab={activeTab}
+                visited={visitedTabs.has("events")}
+              >
+                <MyEventsScreen
+                  isActive={activeTab === "events"}
+                  onCreateEvent={() => setTab("explore")}
+                />
+              </TabPanel>
+              <TabPanel
+                tab="messages"
+                activeTab={activeTab}
+                visited={visitedTabs.has("messages")}
+              >
+                <MessagesScreen />
+              </TabPanel>
+              <TabPanel
+                tab="profile"
+                activeTab={activeTab}
+                visited={visitedTabs.has("profile")}
+              >
+                <ProfileScreen />
+              </TabPanel>
             </>
           )}
         </div>

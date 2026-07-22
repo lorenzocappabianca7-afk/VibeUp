@@ -1,7 +1,7 @@
 "use client";
 
 import { CreateAccountModal } from "@/components/auth/create-account-modal";
-import { useAppState } from "@/context/app-state-context";
+import { GUEST_USER, useAppState } from "@/context/app-state-context";
 import {
   createContext,
   useCallback,
@@ -24,48 +24,83 @@ const DEFAULT_REASON =
   "Per continuare ti chiediamo di creare un account. Ci vuole un momento.";
 
 export function AccountGateProvider({ children }: { children: ReactNode }) {
-  const { createAccount, isGuest, isStorageHydrated } = useAppState();
-  const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState(DEFAULT_REASON);
+  const { createAccount, currentUser, isGuest, isStorageHydrated } =
+    useAppState();
+  const [modalReason, setModalReason] = useState<string | null>(null);
   const pendingActionRef = useRef<PendingAction | null>(null);
   const runAfterAccountRef = useRef(false);
+  const pendingReasonRef = useRef(DEFAULT_REASON);
+  const waitingForHydrationRef = useRef(false);
 
-  useEffect(() => {
-    if (isGuest || !runAfterAccountRef.current) return;
+  const hasAccount =
+    !isGuest &&
+    currentUser.id !== GUEST_USER.id &&
+    Boolean(currentUser.email.trim());
 
+  // Logged-in users never see the create-account modal.
+  if (hasAccount && modalReason !== null) {
+    setModalReason(null);
+  }
+
+  const open = modalReason !== null && !hasAccount;
+
+  const runPendingAction = useCallback(() => {
     const action = pendingActionRef.current;
     pendingActionRef.current = null;
     runAfterAccountRef.current = false;
+    waitingForHydrationRef.current = false;
     action?.();
-  }, [isGuest]);
+  }, []);
+
+  useEffect(() => {
+    if (!isStorageHydrated) return;
+
+    if (hasAccount) {
+      if (runAfterAccountRef.current || pendingActionRef.current) {
+        runPendingAction();
+      }
+      return;
+    }
+
+    if (waitingForHydrationRef.current && pendingActionRef.current) {
+      waitingForHydrationRef.current = false;
+      setModalReason(pendingReasonRef.current);
+    }
+  }, [hasAccount, isStorageHydrated, runPendingAction]);
 
   const requireAccount = useCallback(
     (action: PendingAction, nextReason = DEFAULT_REASON) => {
-      if (!isStorageHydrated) return false;
+      if (!isStorageHydrated) {
+        pendingActionRef.current = action;
+        pendingReasonRef.current = nextReason;
+        waitingForHydrationRef.current = true;
+        return false;
+      }
 
-      if (!isGuest) {
+      if (hasAccount) {
         action();
         return true;
       }
 
       pendingActionRef.current = action;
-      setReason(nextReason);
-      setOpen(true);
+      pendingReasonRef.current = nextReason;
+      setModalReason(nextReason);
       return false;
     },
-    [isGuest, isStorageHydrated],
+    [hasAccount, isStorageHydrated],
   );
 
   function handleClose() {
-    setOpen(false);
+    setModalReason(null);
     pendingActionRef.current = null;
     runAfterAccountRef.current = false;
+    waitingForHydrationRef.current = false;
   }
 
   function handleSubmit(account: { name: string; email: string }) {
     runAfterAccountRef.current = true;
     createAccount(account);
-    setOpen(false);
+    setModalReason(null);
   }
 
   return (
@@ -73,7 +108,7 @@ export function AccountGateProvider({ children }: { children: ReactNode }) {
       {children}
       <CreateAccountModal
         open={open}
-        reason={reason}
+        reason={modalReason ?? DEFAULT_REASON}
         onClose={handleClose}
         onSubmit={handleSubmit}
       />
