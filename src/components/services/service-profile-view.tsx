@@ -296,7 +296,7 @@ export function ServiceProfileView({
   return (
     <div
       className={cn(
-        "mx-auto min-h-dvh bg-background pt-6 shadow-none sm:shadow-[0_0_60px_-15px_rgba(15,15,17,0.12)] lg:pt-8",
+        "mx-auto min-h-dvh bg-background pt-4 shadow-none sm:shadow-[0_0_60px_-15px_rgba(15,15,17,0.12)] lg:pt-8",
         APP_SHELL_WIDTH_CLASS,
       )}
       style={{
@@ -304,19 +304,19 @@ export function ServiceProfileView({
         paddingRight: "max(1rem, env(safe-area-inset-right, 0px))",
       }}
     >
-      <div className="min-w-0 space-y-6 pb-10">
+      <div className="min-w-0 space-y-4 pb-8">
         <Link
           href={`/?tab=explore&category=${service.category}`}
-          className="inline-flex items-center gap-1.5 text-sm font-bold text-primary-black/60 transition-colors hover:text-primary-black"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-primary-black/60 transition-colors hover:text-primary-black sm:text-sm"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
+          <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden />
           Torna ai servizi
         </Link>
 
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.75fr)]">
-          <div className="space-y-5">
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.75fr)] xl:gap-6">
+          <div className="space-y-3 sm:space-y-4">
             {serviceImages.length > 0 && (
-              <section className="render-contained overflow-hidden rounded-3xl border border-primary-black/10 bg-primary-black/[0.02]">
+              <section className="render-contained overflow-hidden rounded-2xl border border-primary-black/10 bg-primary-black/[0.02] sm:rounded-3xl">
                 <div className="relative aspect-[16/9]">
                   <Image
                     src={serviceImages[0]}
@@ -328,11 +328,11 @@ export function ServiceProfileView({
                   />
                 </div>
                 {serviceImages.length > 1 && (
-                  <div className="grid grid-cols-3 gap-2 p-3">
+                  <div className="grid grid-cols-3 gap-1.5 p-2 sm:gap-2 sm:p-3">
                     {serviceImages.slice(1, 4).map((image, index) => (
                       <div
                         key={image}
-                        className="relative aspect-[4/3] overflow-hidden rounded-2xl"
+                        className="relative aspect-[4/3] overflow-hidden rounded-xl sm:rounded-2xl"
                       >
                         <Image
                           src={image}
@@ -348,31 +348,31 @@ export function ServiceProfileView({
               </section>
             )}
 
-            <div className="render-contained rounded-3xl border border-primary-black/10 bg-primary-black/[0.02] p-5">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-brand-teal">
+            <div className="render-contained rounded-2xl border border-primary-black/10 bg-primary-black/[0.02] p-3.5 sm:rounded-3xl sm:p-5">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-teal sm:text-xs sm:tracking-[0.18em]">
                 {service.category}
               </p>
-              <h1 className="mt-2 text-3xl font-black text-primary-black">
+              <h1 className="mt-1 text-xl font-black text-primary-black sm:mt-2 sm:text-3xl">
                 {service.name}
               </h1>
-              <p className="mt-2 text-base leading-relaxed text-primary-black/70">
+              <p className="mt-1.5 text-sm leading-snug text-primary-black/70 sm:mt-2 sm:text-base sm:leading-relaxed">
                 {service.description}
               </p>
-              <p className="mt-3 flex items-center gap-1.5 text-sm font-bold text-primary-black/55">
-                <MapPin className="h-4 w-4 text-brand-teal" aria-hidden />
+              <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-primary-black/55 sm:mt-3 sm:text-sm">
+                <MapPin className="h-3.5 w-3.5 text-brand-teal sm:h-4 sm:w-4" aria-hidden />
                 {service.providerZone}
               </p>
             </div>
 
-            <section className="render-contained rounded-3xl border border-primary-black/10 bg-background p-5">
-              <h2 className="text-lg font-black text-primary-black">
+            <section className="render-contained rounded-2xl border border-primary-black/10 bg-background p-3.5 sm:rounded-3xl sm:p-5">
+              <h2 className="text-sm font-black text-primary-black sm:text-lg">
                 Preferenze e stile
               </h2>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-2 flex flex-wrap gap-1.5 sm:mt-3 sm:gap-2">
                 {tags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-full bg-brand-teal/10 px-3 py-2 text-sm font-bold text-brand-teal"
+                    className="rounded-full bg-brand-teal/10 px-2.5 py-1 text-xs font-bold text-brand-teal sm:px-3 sm:py-2 sm:text-sm"
                   >
                     {tag}
                   </span>
@@ -380,32 +380,32 @@ export function ServiceProfileView({
               </div>
             </section>
 
-            <section className="render-contained rounded-3xl border border-primary-black/10 bg-background p-5">
-              <h2 className="text-lg font-black text-primary-black">
+            <section className="render-contained rounded-2xl border border-primary-black/10 bg-background p-3.5 sm:rounded-3xl sm:p-5">
+              <h2 className="text-sm font-black text-primary-black sm:text-lg">
                 Recensioni
               </h2>
-              <ul className="mt-3 space-y-3">
+              <ul className="mt-2 space-y-2 sm:mt-3 sm:space-y-3">
                 {REVIEWS.map((review) => (
                   <li
                     key={review.name}
-                    className="rounded-2xl bg-primary-black/[0.03] p-3"
+                    className="rounded-xl bg-primary-black/[0.03] p-2.5 sm:rounded-2xl sm:p-3"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <p className="font-bold text-primary-black">
+                      <p className="text-sm font-bold text-primary-black">
                         {review.name}
                       </p>
                       <span className="flex shrink-0 gap-0.5 text-brand-pink">
                         {STAR_INDICES.map((index) => (
                           <Star
                             key={index}
-                            className="h-3.5 w-3.5"
+                            className="h-3 w-3 sm:h-3.5 sm:w-3.5"
                             fill="currentColor"
                             aria-hidden
                           />
                         ))}
                       </span>
                     </div>
-                    <p className="mt-1 text-sm text-primary-black/60">
+                    <p className="mt-0.5 text-xs leading-snug text-primary-black/60 sm:mt-1 sm:text-sm">
                       {review.text}
                     </p>
                   </li>
@@ -415,11 +415,11 @@ export function ServiceProfileView({
           </div>
 
           {isDecorationShop ? (
-            <aside className="smooth-scroll rounded-3xl bg-brand-teal p-4 text-white xl:sticky xl:top-8 xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-white/80">
+            <aside className="smooth-scroll rounded-2xl bg-brand-teal p-3.5 text-white sm:rounded-3xl sm:p-4 xl:sticky xl:top-8 xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/80 sm:text-xs sm:tracking-[0.18em]">
                 Seleziona negozio
               </p>
-              <h2 className="mt-1 text-2xl font-black">
+              <h2 className="mt-1 text-lg font-black sm:text-2xl">
                 Collega questo negozio a un evento
               </h2>
 
@@ -508,11 +508,11 @@ export function ServiceProfileView({
               )}
             </aside>
           ) : (
-          <aside className="smooth-scroll rounded-3xl bg-brand-teal p-4 text-white xl:sticky xl:top-8 xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-white/80">
+            <aside className="smooth-scroll rounded-2xl bg-brand-teal p-3.5 text-white sm:rounded-3xl sm:p-4 xl:sticky xl:top-8 xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/80 sm:text-xs sm:tracking-[0.18em]">
               Preventivo servizio
             </p>
-            <p className="mt-1 text-3xl font-black">
+            <p className="mt-1 text-2xl font-black sm:text-3xl">
               {generatedQuote ? formatCurrency(generatedQuote) : "Da generare"}
             </p>
 
