@@ -29,7 +29,7 @@ export const CompareFavorites = memo(function CompareFavorites({
     [locations],
   );
   const tableMinWidth = useMemo(
-    () => 160 + locations.length * 184,
+    () => 128 + locations.length * 184,
     [locations.length],
   );
 
@@ -70,7 +70,7 @@ export const CompareFavorites = memo(function CompareFavorites({
           <thead>
             <tr>
               <th
-                className="sticky left-0 z-20 w-40 border-b border-r border-primary-black/10 bg-background px-3 py-3"
+                className="sticky left-0 z-20 w-px border-b border-r border-primary-black/10 bg-background px-2 py-3"
                 aria-label="Spazio vuoto"
               />
               {locations.map((location) => (
@@ -155,7 +155,7 @@ export const CompareFavorites = memo(function CompareFavorites({
             </tr>
             {allServices.map((service) => (
               <tr key={service} className="group">
-                <th className="sticky left-0 z-10 border-b border-r border-primary-black/8 bg-background px-3 py-3 text-left text-xs font-bold text-primary-black/70 group-hover:bg-primary-black/[0.02]">
+                <th className="sticky left-0 z-10 w-px whitespace-nowrap border-b border-r border-primary-black/8 bg-background px-2 py-3 text-left text-[11px] font-bold text-primary-black/70 group-hover:bg-primary-black/[0.02]">
                   {service}
                 </th>
                 {locations.map((loc) => {
@@ -201,7 +201,7 @@ const CompareRow = memo(function CompareRow({
 }: CompareRowProps) {
   return (
     <tr className="group">
-      <th className="sticky left-0 z-10 border-b border-r border-primary-black/8 bg-background px-3 py-3 text-left text-xs font-bold text-primary-black/70 group-hover:bg-primary-black/[0.02]">
+      <th className="sticky left-0 z-10 w-px whitespace-nowrap border-b border-r border-primary-black/8 bg-background px-2 py-3 text-left text-[11px] font-bold text-primary-black/70 group-hover:bg-primary-black/[0.02]">
         {label}
       </th>
       {locations.map((loc) => (
