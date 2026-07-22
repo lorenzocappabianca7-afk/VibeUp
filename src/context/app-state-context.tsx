@@ -3,8 +3,13 @@
 import type { BusinessProfile } from "@/types/business";
 import { isEventPast } from "@/lib/event";
 import { MOCK_EVENTS } from "@/lib/mock/events";
+import {
+  sanitizeAccountPaymentCards,
+  sanitizeSavedPaymentCard,
+} from "@/lib/payments/card-vault";
 import type { ManagedListing } from "@/types/admin";
 import type { BookedService, EventMenuSelection, UserEvent } from "@/types/event";
+import type { SavedPaymentCard } from "@/types/payment";
 import {
   createContext,
   useCallback,
@@ -16,6 +21,8 @@ import {
   type ReactNode,
 } from "react";
 
+export type { SavedPaymentCard };
+
 export interface CurrentUser {
   id: string;
   name: string;
@@ -24,14 +31,6 @@ export interface CurrentUser {
   instagramHandle?: string;
   phoneNumber?: string;
   paymentCard?: SavedPaymentCard;
-}
-
-export interface SavedPaymentCard {
-  id: string;
-  brand: string;
-  last4: string;
-  expiry: string;
-  cardholderName: string;
 }
 
 interface PaymentState {
@@ -113,13 +112,49 @@ interface UserScopedState {
   compareLocationIds: string[];
 }
 
+function normalizeUserScopedState(
+  state: Partial<UserScopedState> | undefined,
+  userId: string,
+): UserScopedState {
+  const fallback = createDefaultUserState(userId);
+  if (!state || typeof state !== "object") return fallback;
+
+  return {
+    events: Array.isArray(state.events)
+      ? state.events.filter(
+          (event): event is UserEvent =>
+            Boolean(event) &&
+            typeof event === "object" &&
+            typeof event.id === "string" &&
+            typeof event.date === "string",
+        )
+      : fallback.events,
+    paymentStates:
+      state.paymentStates && typeof state.paymentStates === "object"
+        ? state.paymentStates
+        : {},
+    favoriteLocationIds: Array.isArray(state.favoriteLocationIds)
+      ? state.favoriteLocationIds.filter((id) => typeof id === "string")
+      : [],
+    favoriteServiceIds: Array.isArray(state.favoriteServiceIds)
+      ? state.favoriteServiceIds.filter((id) => typeof id === "string")
+      : [],
+    compareLocationIds: trimCompareIds(
+      Array.isArray(state.compareLocationIds)
+        ? state.compareLocationIds.filter((id) => typeof id === "string")
+        : [],
+    ),
+  };
+}
+
 function prunePastEventsFromState(state: UserScopedState): UserScopedState {
-  const events = state.events.filter((event) => !isEventPast(event));
-  if (events.length === state.events.length) return state;
+  const sourceEvents = Array.isArray(state.events) ? state.events : [];
+  const events = sourceEvents.filter((event) => !isEventPast(event));
+  if (events.length === sourceEvents.length) return state;
 
   const remainingIds = new Set(events.map((event) => event.id));
   const paymentStates = Object.fromEntries(
-    Object.entries(state.paymentStates).filter(([key]) => {
+    Object.entries(state.paymentStates ?? {}).filter(([key]) => {
       const separator = key.indexOf(":");
       if (separator <= 0) return false;
       return remainingIds.has(key.slice(0, separator));
@@ -180,10 +215,7 @@ function hydrateUserStates(stored: StoredAppState): Record<string, UserScopedSta
     return Object.fromEntries(
       Object.entries(stored.userStates).map(([userId, state]) => [
         userId,
-        {
-          ...state,
-          compareLocationIds: trimCompareIds(state.compareLocationIds ?? []),
-        },
+        normalizeUserScopedState(state, userId),
       ]),
     );
   }
@@ -192,6 +224,8 @@ function hydrateUserStates(stored: StoredAppState): Record<string, UserScopedSta
   const map = Object.fromEntries(
     accounts.map((account) => [account.id, createDefaultUserState(account.id)]),
   );
+  map[GUEST_USER.id] = createDefaultUserState(GUEST_USER.id);
+
   const ownerId = stored.currentUserId ?? MOCK_CURRENT_USER.id;
   const hasLegacyData =
     stored.events ||
@@ -201,13 +235,16 @@ function hydrateUserStates(stored: StoredAppState): Record<string, UserScopedSta
     stored.compareLocationIds;
 
   if (hasLegacyData) {
-    map[ownerId] = {
-      events: stored.events ?? map[ownerId]?.events ?? MOCK_EVENTS,
-      paymentStates: stored.paymentStates ?? {},
-      favoriteLocationIds: stored.favoriteLocationIds ?? [],
-      favoriteServiceIds: stored.favoriteServiceIds ?? [],
-      compareLocationIds: trimCompareIds(stored.compareLocationIds ?? []),
-    };
+    map[ownerId] = normalizeUserScopedState(
+      {
+        events: stored.events ?? map[ownerId]?.events ?? MOCK_EVENTS,
+        paymentStates: stored.paymentStates ?? {},
+        favoriteLocationIds: stored.favoriteLocationIds ?? [],
+        favoriteServiceIds: stored.favoriteServiceIds ?? [],
+        compareLocationIds: stored.compareLocationIds ?? [],
+      },
+      ownerId,
+    );
   }
 
   return map;
@@ -218,7 +255,12 @@ function readStoredAppState(): StoredAppState {
 
   try {
     const rawValue = window.localStorage.getItem(STORAGE_KEY);
-    return rawValue ? (JSON.parse(rawValue) as StoredAppState) : {};
+    if (!rawValue) return {};
+    const parsed = JSON.parse(rawValue) as StoredAppState;
+    if (parsed.accounts) {
+      parsed.accounts = sanitizeAccountPaymentCards(parsed.accounts);
+    }
+    return parsed;
   } catch {
     return {};
   }
@@ -228,7 +270,13 @@ function writeStoredAppState(state: StoredAppState) {
   if (typeof window === "undefined") return;
 
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const safeState: StoredAppState = {
+      ...state,
+      accounts: state.accounts
+        ? sanitizeAccountPaymentCards(state.accounts)
+        : state.accounts,
+    };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(safeState));
   } catch {
     // Storage can be unavailable in private mode; the app should keep working.
   }
@@ -254,7 +302,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [managedListings, setManagedListings] = useState<ManagedListing[]>([]);
   const isGuest = currentUserId === GUEST_USER.id;
   const currentUserIdRef = useRef(currentUserId);
-  currentUserIdRef.current = currentUserId;
+
+  useEffect(() => {
+    currentUserIdRef.current = currentUserId;
+  }, [currentUserId]);
 
   const currentUserState =
     userStatesMap[currentUserId] ?? createDefaultUserState(currentUserId);
@@ -288,9 +339,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
 
       const storedState = readStoredAppState();
+      const nextAccounts = storedState.accounts ?? MOCK_ACCOUNTS;
+      const requestedUserId = storedState.currentUserId;
+      const resolvedUserId =
+        requestedUserId === GUEST_USER.id ||
+        nextAccounts.some((account) => account.id === requestedUserId)
+          ? (requestedUserId ?? GUEST_USER.id)
+          : GUEST_USER.id;
 
       if (storedState.accounts) setAccounts(storedState.accounts);
-      if (storedState.currentUserId) setCurrentUserId(storedState.currentUserId);
+      setCurrentUserId(resolvedUserId);
       if ("businessProfile" in storedState) {
         setBusinessProfile(storedState.businessProfile ?? null);
       }
@@ -579,22 +637,38 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setUserStatesMap((map) => {
       if (!(id in map)) return map;
       const { [id]: _removed, ...rest } = map;
+      void _removed;
       return rest;
     });
   }, []);
 
-  const switchAccount = useCallback((id: string) => {
-    setCurrentUserId((current) => (current === id ? current : id));
-  }, []);
+  const switchAccount = useCallback(
+    (id: string) => {
+      if (id === GUEST_USER.id) {
+        setCurrentUserId(GUEST_USER.id);
+        return;
+      }
+      if (!accounts.some((account) => account.id === id)) return;
+      setCurrentUserId((current) => (current === id ? current : id));
+    },
+    [accounts],
+  );
 
   const updateCurrentUser = useCallback(
     (updates: Partial<Omit<CurrentUser, "id">>) => {
       const userId = currentUserIdRef.current;
       if (userId === GUEST_USER.id) return;
 
+      const safeUpdates = { ...updates };
+      if ("paymentCard" in safeUpdates) {
+        safeUpdates.paymentCard = safeUpdates.paymentCard
+          ? sanitizeSavedPaymentCard(safeUpdates.paymentCard)
+          : undefined;
+      }
+
       setAccounts((prev) =>
         prev.map((account) =>
-          account.id === userId ? { ...account, ...updates } : account,
+          account.id === userId ? { ...account, ...safeUpdates } : account,
         ),
       );
     },

@@ -35,7 +35,10 @@ export function BookingSuccessModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-6">
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center p-6"
+      data-overlay-open="true"
+    >
       <button
         type="button"
         className="absolute inset-0 bg-primary-black/50"
@@ -44,7 +47,7 @@ export function BookingSuccessModal({
       />
 
       <div
-        className="relative w-full max-w-sm rounded-3xl bg-background p-6 text-center shadow-xl"
+        className="relative max-h-[min(90dvh,calc(100dvh-2rem))] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-6 text-center shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="success-title"

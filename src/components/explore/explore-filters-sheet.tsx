@@ -291,7 +291,10 @@ export function ExploreFiltersSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center lg:items-center">
+    <div
+      className="fixed inset-0 z-[60] flex items-end justify-center lg:items-center"
+      data-overlay-open="true"
+    >
       <button
         type="button"
         className="absolute inset-0 bg-primary-black/40"

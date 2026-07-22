@@ -1,24 +1,36 @@
 import type { BookedService, CountdownTime, UserEvent } from "@/types/event";
 
 export function getEventDateTime(event: UserEvent): Date {
-  return new Date(`${event.date}T${event.time}:00`);
+  const value = new Date(`${event.date}T${event.time || "00:00"}:00`);
+  if (Number.isNaN(value.getTime())) {
+    return new Date(0);
+  }
+  return value;
 }
 
 export function getEventEndDateTime(event: UserEvent): Date {
   if (event.endTime) {
-    return new Date(`${event.date}T${event.endTime}:00`);
+    const value = new Date(`${event.date}T${event.endTime}:00`);
+    if (!Number.isNaN(value.getTime())) return value;
   }
   return getEventDateTime(event);
 }
 
 /** True when the event end (or start if no endTime) is in the past. */
 export function isEventPast(event: UserEvent, now: Date = new Date()): boolean {
-  return getEventEndDateTime(event).getTime() <= now.getTime();
+  const end = getEventEndDateTime(event).getTime();
+  if (Number.isNaN(end)) return false;
+  return end <= now.getTime();
 }
 
 export function getCountdown(target: Date): CountdownTime {
   const now = new Date();
-  const diff = target.getTime() - now.getTime();
+  const targetTime = target.getTime();
+  if (Number.isNaN(targetTime)) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true };
+  }
+
+  const diff = targetTime - now.getTime();
 
   if (diff <= 0) {
     return { days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true };
@@ -53,6 +65,10 @@ export function getRefundDisabledReason(
   if (isRefundEligible(event, service)) return "";
 
   const eventDateTime = getEventDateTime(event);
+  if (Number.isNaN(eventDateTime.getTime()) || eventDateTime.getTime() === 0) {
+    return "Disponibile dopo l'evento";
+  }
+
   const formatted = new Intl.DateTimeFormat("it-IT", {
     day: "numeric",
     month: "long",

@@ -33,6 +33,12 @@ import {
 import type { ManagedLocationListing, ManagedServiceListing } from "@/types/admin";
 import { BUSINESS_CATEGORY_LABELS } from "@/types/business";
 import { formatCurrency, getLocationPricePresentation } from "@/lib/utils";
+import {
+  createSavedPaymentCard,
+  formatCardNumber,
+  formatExpiry,
+  getCardBrand,
+} from "@/lib/payments/card-vault";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const menuItems = [
@@ -61,59 +67,6 @@ const menuItems = [
       "Modifica password, autenticazione a due fattori e storico dei feedback lasciati ai fornitori.",
   },
 ];
-
-function getCardBrand(cardNumber: string) {
-  const digits = cardNumber.replace(/\D/g, "");
-  if (/^4/.test(digits)) return "Visa";
-  if (/^(5[1-5]|2[2-7])/.test(digits)) return "Mastercard";
-  if (/^3[47]/.test(digits)) return "American Express";
-  return "Carta";
-}
-
-function formatCardNumber(value: string) {
-  return value
-    .replace(/\D/g, "")
-    .slice(0, 19)
-    .replace(/(.{4})/g, "$1 ")
-    .trim();
-}
-
-function formatExpiry(value: string) {
-  const digits = value.replace(/\D/g, "").slice(0, 4);
-  if (digits.length <= 2) return digits;
-  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-}
-
-function isValidCardNumber(value: string) {
-  const digits = value.replace(/\D/g, "");
-  let sum = 0;
-  let shouldDouble = false;
-
-  for (let index = digits.length - 1; index >= 0; index--) {
-    let digit = Number(digits[index]);
-    if (shouldDouble) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-    shouldDouble = !shouldDouble;
-  }
-
-  return digits.length >= 13 && digits.length <= 19 && sum % 10 === 0;
-}
-
-function isFutureExpiry(value: string) {
-  const match = /^(0[1-9]|1[0-2])\/(\d{2})$/.exec(value);
-  if (!match) return false;
-
-  const month = Number(match[1]);
-  const year = 2000 + Number(match[2]);
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
-
-  return year > currentYear || (year === currentYear && month >= currentMonth);
-}
 
 export function ProfileScreen() {
   const {
@@ -152,6 +105,7 @@ export function ProfileScreen() {
     cvc: "",
   });
   const [cardError, setCardError] = useState<string | null>(null);
+  const [cardSavedFlash, setCardSavedFlash] = useState(false);
   const [profileDraft, setProfileDraft] = useState({
     name: currentUser.name,
     email: currentUser.email,
@@ -339,49 +293,37 @@ export function ProfileScreen() {
   }
 
   function handleSaveCard() {
-    const digits = cardDraft.cardNumber.replace(/\D/g, "");
-    const cvcDigits = cardDraft.cvc.replace(/\D/g, "");
-
-    if (!cardDraft.cardholderName.trim()) {
-      setCardError("Inserisci il nome dell'intestatario della carta.");
+    if (isGuest) {
+      setCardError("Crea un account per salvare in modo sicuro la tua carta.");
       return;
     }
 
-    if (!isValidCardNumber(digits)) {
-      setCardError("Inserisci un numero carta valido.");
+    const result = createSavedPaymentCard(cardDraft);
+    if ("error" in result) {
+      setCardError(result.error);
       return;
     }
 
-    if (!isFutureExpiry(cardDraft.expiry)) {
-      setCardError("Inserisci una scadenza valida nel formato MM/AA.");
-      return;
-    }
-
-    if (cvcDigits.length < 3 || cvcDigits.length > 4) {
-      setCardError("Inserisci un CVC valido.");
-      return;
-    }
-
-    updateCurrentUser({
-      paymentCard: {
-        id: `card-${Date.now()}`,
-        brand: getCardBrand(digits),
-        last4: digits.slice(-4),
-        expiry: cardDraft.expiry,
-        cardholderName: cardDraft.cardholderName.trim(),
-      },
-    });
+    updateCurrentUser({ paymentCard: result.card });
     setCardDraft({
-      cardholderName: cardDraft.cardholderName.trim(),
+      cardholderName: result.card.cardholderName,
       cardNumber: "",
       expiry: "",
       cvc: "",
     });
     setCardError(null);
+    setCardSavedFlash(true);
+    window.setTimeout(() => setCardSavedFlash(false), 2500);
   }
 
   function handleRemoveCard() {
     updateCurrentUser({ paymentCard: undefined });
+    setCardDraft((current) => ({
+      ...current,
+      cardNumber: "",
+      expiry: "",
+      cvc: "",
+    }));
     setCardError(null);
   }
 
@@ -630,148 +572,183 @@ export function ProfileScreen() {
             <div>
               <h2 className="flex items-center gap-2 text-sm font-bold text-primary-black">
                 <CreditCard className="h-4 w-4 text-brand-teal" aria-hidden />
-                Metodo di pagamento
+                Carta di debito o credito
               </h2>
               <p className="mt-1 text-xs leading-relaxed text-primary-black/55">
-                Registra una carta per pagare caparre, servizi e preventivi più
-                velocemente dentro VibeUp.
+                Salva la carta per pagare caparre e servizi più velocemente.
+                Numero completo e CVC non vengono mai memorizzati.
               </p>
             </div>
             {currentUser.paymentCard && (
               <span className="rounded-full bg-brand-teal/12 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-brand-teal">
-                Registrata
+                Salvata
               </span>
             )}
           </div>
 
-          {currentUser.paymentCard && (
-            <div className="rounded-2xl border border-brand-teal/20 bg-brand-teal/8 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-brand-teal">
-                    Carta principale
-                  </p>
-                  <p className="mt-1 text-lg font-black text-primary-black">
-                    {currentUser.paymentCard.brand} ••••{" "}
-                    {currentUser.paymentCard.last4}
-                  </p>
-                  <p className="mt-1 text-xs text-primary-black/55">
-                    {currentUser.paymentCard.cardholderName} · scade{" "}
-                    {currentUser.paymentCard.expiry}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRemoveCard}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background text-primary-black/45 shadow-sm transition-colors hover:text-brand-pink"
-                  aria-label="Rimuovi carta registrata"
-                >
-                  <Trash2 className="h-4 w-4" aria-hidden />
-                </button>
-              </div>
+          {isGuest ? (
+            <div className="rounded-2xl border border-dashed border-primary-black/15 bg-primary-black/[0.02] px-4 py-5 text-center">
+              <LockKeyhole className="mx-auto h-5 w-5 text-primary-black/40" aria-hidden />
+              <p className="mt-2 text-sm font-semibold text-primary-black">
+                Accedi per salvare una carta
+              </p>
+              <p className="mt-1 text-xs text-primary-black/55">
+                Serve un account VibeUp per registrare in sicurezza il metodo di
+                pagamento.
+              </p>
             </div>
+          ) : (
+            <>
+              {currentUser.paymentCard && (
+                <div className="rounded-2xl border border-brand-teal/20 bg-brand-teal/8 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-brand-teal">
+                        Carta salvata in modo sicuro
+                      </p>
+                      <p className="mt-1 text-lg font-black text-primary-black">
+                        {currentUser.paymentCard.brand} ••••{" "}
+                        {currentUser.paymentCard.last4}
+                      </p>
+                      <p className="mt-1 text-xs text-primary-black/55">
+                        {currentUser.paymentCard.cardholderName} · scade{" "}
+                        {currentUser.paymentCard.expiry}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRemoveCard}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background text-primary-black/45 shadow-sm transition-colors hover:text-brand-pink"
+                      aria-label="Rimuovi carta salvata"
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block sm:col-span-2">
+                  <span className="text-xs font-bold text-primary-black/55">
+                    Intestatario
+                  </span>
+                  <input
+                    autoComplete="cc-name"
+                    value={cardDraft.cardholderName}
+                    onChange={(event) =>
+                      setCardDraft((current) => ({
+                        ...current,
+                        cardholderName: event.target.value,
+                      }))
+                    }
+                    placeholder="Nome e cognome"
+                    className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none placeholder:text-primary-black/35 focus:border-brand-teal"
+                  />
+                </label>
+
+                <label className="block sm:col-span-2">
+                  <span className="text-xs font-bold text-primary-black/55">
+                    Numero carta
+                  </span>
+                  <input
+                    inputMode="numeric"
+                    autoComplete="cc-number"
+                    name="cardnumber"
+                    value={cardDraft.cardNumber}
+                    onChange={(event) =>
+                      setCardDraft((current) => ({
+                        ...current,
+                        cardNumber: formatCardNumber(event.target.value),
+                      }))
+                    }
+                    placeholder="1234 5678 9012 3456"
+                    className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none placeholder:text-primary-black/35 focus:border-brand-teal"
+                  />
+                  {cardDraft.cardNumber.replace(/\D/g, "").length >= 4 && (
+                    <span className="mt-1 block text-[11px] text-primary-black/45">
+                      Circuito rilevato: {getCardBrand(cardDraft.cardNumber)}
+                    </span>
+                  )}
+                </label>
+
+                <label className="block">
+                  <span className="text-xs font-bold text-primary-black/55">
+                    Scadenza
+                  </span>
+                  <input
+                    inputMode="numeric"
+                    autoComplete="cc-exp"
+                    value={cardDraft.expiry}
+                    onChange={(event) =>
+                      setCardDraft((current) => ({
+                        ...current,
+                        expiry: formatExpiry(event.target.value),
+                      }))
+                    }
+                    placeholder="MM/AA"
+                    className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none placeholder:text-primary-black/35 focus:border-brand-teal"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-xs font-bold text-primary-black/55">
+                    CVC
+                  </span>
+                  <input
+                    inputMode="numeric"
+                    autoComplete="cc-csc"
+                    type="password"
+                    name="cvc"
+                    value={cardDraft.cvc}
+                    onChange={(event) =>
+                      setCardDraft((current) => ({
+                        ...current,
+                        cvc: event.target.value.replace(/\D/g, "").slice(0, 4),
+                      }))
+                    }
+                    placeholder="•••"
+                    className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none placeholder:text-primary-black/35 focus:border-brand-teal"
+                  />
+                </label>
+              </div>
+
+              {cardError && (
+                <p className="rounded-2xl bg-brand-pink/10 px-3 py-2 text-xs font-semibold text-brand-pink">
+                  {cardError}
+                </p>
+              )}
+
+              {cardSavedFlash && (
+                <p className="rounded-2xl bg-brand-teal/12 px-3 py-2 text-xs font-semibold text-brand-teal">
+                  Carta salvata. Conserviamo solo circuito, scadenza e ultime 4
+                  cifre.
+                </p>
+              )}
+
+              <div className="flex items-start gap-2 rounded-2xl bg-primary-black/[0.03] px-3 py-2.5">
+                <LockKeyhole
+                  className="mt-0.5 h-4 w-4 shrink-0 text-primary-black/45"
+                  aria-hidden
+                />
+                <p className="text-xs leading-relaxed text-primary-black/55">
+                  Per sicurezza il numero completo e il CVC restano solo in
+                  memoria durante l&apos;inserimento e vengono cancellati subito
+                  dopo il salvataggio. Su VibeUp restano solo i dati mascherati
+                  della carta.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSaveCard}
+                className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-black text-white transition-colors hover:bg-primary-black/90"
+              >
+                {currentUser.paymentCard
+                  ? "Aggiorna carta salvata"
+                  : "Salva carta in modo sicuro"}
+              </button>
+            </>
           )}
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block sm:col-span-2">
-              <span className="text-xs font-bold text-primary-black/55">
-                Intestatario
-              </span>
-              <input
-                value={cardDraft.cardholderName}
-                onChange={(event) =>
-                  setCardDraft((current) => ({
-                    ...current,
-                    cardholderName: event.target.value,
-                  }))
-                }
-                placeholder="Nome e cognome"
-                className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none placeholder:text-primary-black/35 focus:border-brand-teal"
-              />
-            </label>
-
-            <label className="block sm:col-span-2">
-              <span className="text-xs font-bold text-primary-black/55">
-                Numero carta
-              </span>
-              <input
-                inputMode="numeric"
-                autoComplete="cc-number"
-                value={cardDraft.cardNumber}
-                onChange={(event) =>
-                  setCardDraft((current) => ({
-                    ...current,
-                    cardNumber: formatCardNumber(event.target.value),
-                  }))
-                }
-                placeholder="1234 5678 9012 3456"
-                className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none placeholder:text-primary-black/35 focus:border-brand-teal"
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-xs font-bold text-primary-black/55">
-                Scadenza
-              </span>
-              <input
-                inputMode="numeric"
-                autoComplete="cc-exp"
-                value={cardDraft.expiry}
-                onChange={(event) =>
-                  setCardDraft((current) => ({
-                    ...current,
-                    expiry: formatExpiry(event.target.value),
-                  }))
-                }
-                placeholder="MM/AA"
-                className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none placeholder:text-primary-black/35 focus:border-brand-teal"
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-xs font-bold text-primary-black/55">
-                CVC
-              </span>
-              <input
-                inputMode="numeric"
-                autoComplete="cc-csc"
-                value={cardDraft.cvc}
-                onChange={(event) =>
-                  setCardDraft((current) => ({
-                    ...current,
-                    cvc: event.target.value.replace(/\D/g, "").slice(0, 4),
-                  }))
-                }
-                placeholder="123"
-                className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none placeholder:text-primary-black/35 focus:border-brand-teal"
-              />
-            </label>
-          </div>
-
-          {cardError && (
-            <p className="rounded-2xl bg-brand-pink/10 px-3 py-2 text-xs font-semibold text-brand-pink">
-              {cardError}
-            </p>
-          )}
-
-          <div className="flex items-start gap-2 rounded-2xl bg-primary-black/[0.03] px-3 py-2.5">
-            <LockKeyhole
-              className="mt-0.5 h-4 w-4 shrink-0 text-primary-black/45"
-              aria-hidden
-            />
-            <p className="text-xs leading-relaxed text-primary-black/55">
-              Per sicurezza VibeUp mostra e conserva solo circuito, scadenza e
-              ultime 4 cifre della carta in questa demo.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleSaveCard}
-            className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-black text-white transition-colors hover:bg-primary-black/90"
-          >
-            {currentUser.paymentCard ? "Aggiorna carta" : "Registra carta"}
-          </button>
         </section>
       )}
 
@@ -1053,7 +1030,10 @@ export function ProfileScreen() {
       </section>
 
       {accountPendingDelete && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-6">
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center p-6"
+          data-overlay-open="true"
+        >
           <button
             type="button"
             className="absolute inset-0 bg-primary-black/45"
@@ -1061,7 +1041,7 @@ export function ProfileScreen() {
             aria-label="Annulla eliminazione"
           />
           <div
-            className="relative w-full max-w-sm rounded-3xl bg-background p-5 shadow-xl"
+            className="relative max-h-[min(90dvh,calc(100dvh-2rem))] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-5 shadow-xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-account-title"

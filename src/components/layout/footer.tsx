@@ -2,7 +2,12 @@ import Image from "next/image";
 
 export function Footer() {
   return (
-    <footer className="hidden shrink-0 bg-primary-black text-white lg:block">
+    <footer
+      className="hidden shrink-0 bg-primary-black text-white lg:block"
+      style={{
+        paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))",
+      }}
+    >
       <div className="mx-auto grid max-w-6xl gap-6 px-8 py-8 lg:grid-cols-[1fr_auto]">
         <div>
           <div className="flex items-center gap-3">

@@ -16,19 +16,23 @@ export const DISCOUNT_POPOVER_CLASS =
   "fixed inset-x-4 top-24 z-50 max-h-[calc(100dvh-7rem-env(safe-area-inset-bottom,0px))] overflow-y-auto sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-3 sm:max-h-none sm:w-[min(100%,42rem)] sm:overflow-visible";
 
 export function formatDate(date: string | Date, locale = "it-IT"): string {
+  const value = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(value.getTime())) return "Data non disponibile";
+
   return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "long",
     year: "numeric",
-  }).format(typeof date === "string" ? new Date(date) : date);
+  }).format(value);
 }
 
 export function formatCurrency(amount: number, locale = "it-IT"): string {
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(safeAmount);
 }
 
 export function getLocationPricePresentation(

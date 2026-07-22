@@ -924,6 +924,8 @@ const PaymentChoiceModal = memo(function PaymentChoiceModal({
     method?: PaymentMethod,
   ) => void;
 }) {
+  const { currentUser, isGuest } = useAppState();
+  const savedCard = currentUser.paymentCard;
   const [showMethods, setShowMethods] = useState(false);
   const selectionKey = selection
     ? `${selection.event.id}:${selection.service.id}`
@@ -933,13 +935,24 @@ const PaymentChoiceModal = memo(function PaymentChoiceModal({
     setShowMethods(false);
   }, [selectionKey]);
 
+  useEffect(() => {
+    if (!selection) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [selection]);
+
   if (!selection) return null;
 
   const { event, service } = selection;
   const isDepositPayment = service.id === `${event.id}-deposit`;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center lg:items-center">
+    <div
+      className="fixed inset-0 z-[70] flex items-end justify-center lg:items-center"
+      data-overlay-open="true"
+    >
       <button
         type="button"
         className="absolute inset-0 bg-primary-black/35"
@@ -973,6 +986,25 @@ const PaymentChoiceModal = memo(function PaymentChoiceModal({
         </div>
 
         <div className="mt-5 space-y-3">
+          {!isGuest && savedCard && (
+            <button
+              type="button"
+              onClick={() => onMarkPaid(event.id, service.id, "card")}
+              className="flex w-full items-center justify-between rounded-2xl border border-brand-teal/25 bg-brand-teal/10 px-4 py-3 text-left transition-colors hover:bg-brand-teal/16"
+            >
+              <span className="min-w-0">
+                <span className="flex items-center gap-2 text-sm font-black text-primary-black">
+                  <CreditCard className="h-4 w-4 text-brand-teal" aria-hidden />
+                  Paga con carta salvata
+                </span>
+                <span className="mt-1 block truncate text-xs text-primary-black/55">
+                  {savedCard.brand} •••• {savedCard.last4} · scade{" "}
+                  {savedCard.expiry}
+                </span>
+              </span>
+            </button>
+          )}
+
           {!isDepositPayment && (
             <button
               type="button"
@@ -993,7 +1025,7 @@ const PaymentChoiceModal = memo(function PaymentChoiceModal({
           >
             <span className="flex items-center gap-2">
               <WalletCards className="h-5 w-5" aria-hidden />
-              Paga con
+              Altri metodi
             </span>
             <ChevronDown
               className={`h-5 w-5 transition-transform ${showMethods ? "rotate-180" : ""}`}
@@ -1017,6 +1049,13 @@ const PaymentChoiceModal = memo(function PaymentChoiceModal({
                 ),
               )}
             </div>
+          )}
+
+          {!savedCard && !isGuest && (
+            <p className="text-center text-[11px] leading-relaxed text-primary-black/45">
+              Puoi salvare una carta in Profilo → Pagamenti per pagare più
+              velocemente.
+            </p>
           )}
         </div>
       </div>

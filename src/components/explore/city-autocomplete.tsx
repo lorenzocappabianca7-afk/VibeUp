@@ -96,7 +96,7 @@ export function CityAutocomplete({
       </div>
 
       {open && !disabled && suggestions.length > 0 && (
-        <ul className="absolute z-20 mt-2 max-h-48 w-full overflow-y-auto rounded-2xl border border-primary-black/10 bg-background py-1 shadow-lg">
+        <ul className="relative z-20 mt-2 max-h-48 w-full overflow-y-auto rounded-2xl border border-primary-black/10 bg-background py-1 shadow-lg">
           {suggestions.map((city) => (
             <li key={city}>
               <button

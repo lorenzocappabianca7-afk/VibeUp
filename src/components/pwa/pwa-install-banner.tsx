@@ -78,9 +78,14 @@ function registerServiceWorker() {
     return;
   }
 
-  void navigator.serviceWorker.register("/sw.js").catch(() => {
-    // iOS Safari still supports Add to Home without a SW
-  });
+  void navigator.serviceWorker
+    .register("/sw.js", { updateViaCache: "none" })
+    .then((registration) => {
+      void registration.update();
+    })
+    .catch(() => {
+      // iOS Safari still supports Add to Home without a SW
+    });
 }
 
 export function PwaInstallBanner() {
@@ -134,7 +139,9 @@ export function PwaInstallBanner() {
     }
 
     const ios = isIosDevice();
-    setIsIos(ios);
+    queueMicrotask(() => {
+      setIsIos(ios);
+    });
 
     const onBeforeInstall = (event: Event) => {
       event.preventDefault();
@@ -191,26 +198,25 @@ export function PwaInstallBanner() {
   return (
     <div
       className="border-b border-white/10 bg-primary-black text-white"
-      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       role="region"
       aria-label="Installa VibeUp"
     >
-      <div className="mx-auto flex max-w-3xl items-center gap-3 px-3 py-3.5 sm:gap-4 sm:px-4 sm:py-4">
+      <div className="mx-auto flex max-w-3xl items-center gap-2.5 px-3 py-3.5 sm:gap-4 sm:px-4 sm:py-4">
         <Image
           src="/vibeup-mark-192.png"
           alt="VibeUp"
           width={48}
           height={48}
-          className="h-12 w-12 shrink-0 rounded-xl"
+          className="h-11 w-11 shrink-0 rounded-xl sm:h-12 sm:w-12"
           priority
         />
-        <p className="min-w-0 flex-1 text-[15px] font-semibold leading-snug text-white sm:text-base">
+        <p className="min-w-0 flex-1 text-[14px] font-semibold leading-snug text-white sm:text-base">
           Aggiungi VibeUp alla home
         </p>
         <button
           type="button"
           onClick={() => void handleInstall()}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brand-teal px-4 py-2.5 text-sm font-bold text-primary-black transition-colors hover:bg-brand-teal/90"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brand-teal px-3.5 py-2.5 text-xs font-bold text-primary-black transition-colors hover:bg-brand-teal/90 sm:px-4 sm:text-sm"
         >
           <Download className="h-4 w-4" aria-hidden />
           Aggiungi
@@ -299,7 +305,7 @@ function InstallGuide({
         <ol className="mt-2 space-y-2 text-xs leading-relaxed text-white/75">
           {children}
         </ol>
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
             onClick={onCloseGuide}
@@ -312,7 +318,7 @@ function InstallGuide({
             onClick={onDone}
             className="flex-1 rounded-full bg-white px-3 py-2 text-xs font-bold text-primary-black"
           >
-            Fatto, non mostrare più
+            Fatto
           </button>
         </div>
       </div>
