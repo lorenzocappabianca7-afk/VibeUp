@@ -39,7 +39,7 @@ export function ExploreSearchBar({
         onClick={onOpenFilters}
         aria-label={`Filtri${activeFilterCount > 0 ? `, ${activeFilterCount} attivi` : ""}`}
         className={cn(
-          "relative flex shrink-0 items-center gap-1.5 rounded-2xl border px-3 py-3 text-sm font-bold transition-colors duration-150 sm:gap-2 sm:px-4 sm:py-3.5 sm:text-[15px]",
+          "relative flex shrink-0 items-center gap-1.5 rounded-2xl border px-3.5 py-3.5 text-sm font-bold transition-colors duration-150 sm:gap-2 sm:px-4 sm:text-[15px]",
           activeFilterCount > 0
             ? "border-brand-teal/30 bg-brand-teal/10 text-brand-teal"
             : "border-primary-black/10 bg-background text-primary-black hover:bg-primary-black/[0.03]",

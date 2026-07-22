@@ -23,7 +23,8 @@ import {
   type ServiceExploreFilters,
 } from "@/types/location";
 import { Calendar, ChevronDown, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const PARTY_TYPES = Object.keys(PARTY_TYPE_LABELS) as PartyType[];
 const MUSIC_TYPES = Object.keys(MUSIC_TYPE_LABELS) as MusicType[];
@@ -75,6 +76,7 @@ export function ExploreFiltersSheet({
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [draftFilters, setDraftFilters] = useState(filters);
   const [draftServiceFilters, setDraftServiceFilters] = useState(serviceFilters);
+  const wasOpenRef = useRef(false);
   const metroTab = draftFilters.geoArea ?? "torino_citta";
 
   const torinoActive =
@@ -92,21 +94,40 @@ export function ExploreFiltersSheet({
     draftFilters.geoArea === "torino_citta";
 
   useEffect(() => {
+    const justOpened = open && !wasOpenRef.current;
+    wasOpenRef.current = open;
+
+    if (justOpened) {
+      setDraftFilters(filters);
+      setDraftServiceFilters(serviceFilters);
+      setDatePickerOpen(false);
+      setNearMeError(null);
+      setNearMeLoading(false);
+    }
+
     if (open) {
       document.body.style.overflow = "hidden";
-      queueMicrotask(() => {
-        setDraftFilters(filters);
-        setDraftServiceFilters(serviceFilters);
-      });
     } else {
       document.body.style.overflow = "";
     }
+
     return () => {
       document.body.style.overflow = "";
     };
   }, [filters, open, serviceFilters]);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!open) return;
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
+  if (!open || typeof document === "undefined") return null;
 
   function updateFilter<K extends keyof ExploreFilters>(
     key: K,
@@ -290,39 +311,48 @@ export function ExploreFiltersSheet({
     }));
   }
 
-  return (
+  return createPortal(
     <div
-      className="vibe-overlay-enter fixed inset-0 z-[60] flex items-end justify-center lg:items-center"
+      className="vibe-overlay-enter fixed inset-0 z-[80] flex items-end justify-center lg:items-center"
       data-overlay-open="true"
     >
       <button
         type="button"
-        className="absolute inset-0 bg-primary-black/40"
+        className="absolute inset-0 bg-primary-black/45"
         onClick={onClose}
         aria-label="Chiudi filtri"
       />
 
       <div
-        className="vibe-sheet-enter smooth-scroll relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-background px-5 pb-8 pt-4 shadow-xl lg:max-w-lg lg:rounded-3xl"
-        style={{
-          paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))",
-        }}
+        className="vibe-sheet-enter relative flex max-h-[min(92dvh,calc(100dvh-0.5rem))] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-background shadow-xl lg:max-w-lg lg:rounded-3xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="explore-filters-title"
+        onClick={(event) => event.stopPropagation()}
       >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-primary-black/15" />
+        <div className="shrink-0 px-5 pt-4">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-primary-black/15" />
 
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-primary-black">Filtri</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-black/5 text-primary-black/60"
-            aria-label="Chiudi"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="mb-4 flex items-center justify-between">
+            <h2
+              id="explore-filters-title"
+              className="text-lg font-bold text-primary-black"
+            >
+              Filtri
+            </h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-black/5 text-primary-black/60"
+              aria-label="Chiudi"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="smooth-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-5">
+          <div className="space-y-6 pb-4">
           {eventContext && activeCategory !== "locali" && (
             <div className="sticky top-0 z-10 rounded-2xl border border-brand-teal/20 bg-background/95 p-3 shadow-sm">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-teal">
@@ -899,41 +929,50 @@ export function ExploreFiltersSheet({
           </fieldset>
             </>
           )}
+          </div>
         </div>
 
-        <div className="mt-8 flex gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              if (activeCategory === "locali") {
-                setDraftFilters(DEFAULT_EXPLORE_FILTERS);
-              } else {
-                setDraftServiceFilters(DEFAULT_SERVICE_EXPLORE_FILTERS);
-                setDraftFilters((current) => ({
-                  ...current,
-                  dateFrom: null,
-                  dateTo: null,
-                }));
-              }
-              setDatePickerOpen(false);
-            }}
-            className="flex-1 rounded-2xl border border-primary-black/10 py-3 text-sm font-medium text-primary-black/70"
-          >
-            Reset
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onApply(draftFilters);
-              onApplyServiceFilters(draftServiceFilters);
-              onClose();
-            }}
-            className="flex-1 rounded-2xl bg-brand-teal py-3 text-sm font-medium text-white"
-          >
-            Applica
-          </button>
+        <div
+          className="shrink-0 border-t border-primary-black/8 bg-background px-5 pt-3"
+          style={{
+            paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
+          }}
+        >
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (activeCategory === "locali") {
+                  setDraftFilters(DEFAULT_EXPLORE_FILTERS);
+                } else {
+                  setDraftServiceFilters(DEFAULT_SERVICE_EXPLORE_FILTERS);
+                  setDraftFilters((current) => ({
+                    ...current,
+                    dateFrom: null,
+                    dateTo: null,
+                  }));
+                }
+                setDatePickerOpen(false);
+              }}
+              className="flex-1 rounded-2xl border border-primary-black/10 py-3 text-sm font-medium text-primary-black/70"
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onApply(draftFilters);
+                onApplyServiceFilters(draftServiceFilters);
+                onClose();
+              }}
+              className="flex-1 rounded-2xl bg-brand-teal py-3 text-sm font-medium text-white"
+            >
+              Applica
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

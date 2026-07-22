@@ -7,6 +7,7 @@ import { ExploreSearchBar } from "@/components/explore/explore-search-bar";
 import { LocationCard } from "@/components/explore/location-card";
 import { useAccountGate } from "@/context/account-gate-context";
 import { useAppState } from "@/context/app-state-context";
+import { useTabNavigation } from "@/context/tab-navigation-context";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
 import {
   SERVICE_PROVIDERS,
@@ -343,6 +344,7 @@ export function ExploreScreen({
     toggleFavoriteService,
   } = useAppState();
   const { requireAccount } = useAccountGate();
+  const { activeTab } = useTabNavigation();
 
   function handleToggleFavoriteLocation(id: string) {
     if (favoriteLocationIds.includes(id)) {
@@ -387,6 +389,10 @@ export function ExploreScreen({
   const [serviceFilters, setServiceFilters] =
     useState<ServiceExploreFilters>(DEFAULT_SERVICE_EXPLORE_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  if (activeTab !== "explore" && filtersOpen) {
+    setFiltersOpen(false);
+  }
 
   useEffect(() => {
     let cancelled = false;
