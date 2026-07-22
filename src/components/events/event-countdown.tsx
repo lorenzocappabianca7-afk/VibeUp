@@ -6,9 +6,11 @@ import { useEffect, useMemo, useState } from "react";
 
 interface EventCountdownProps {
   event: UserEvent;
+  /** Flat section style for embedding inside event cards */
+  embedded?: boolean;
 }
 
-export function EventCountdown({ event }: EventCountdownProps) {
+export function EventCountdown({ event, embedded = false }: EventCountdownProps) {
   const target = useMemo(() => getEventDateTime(event), [event]);
   const [countdown, setCountdown] = useState(() => getCountdown(target));
 
@@ -21,16 +23,26 @@ export function EventCountdown({ event }: EventCountdownProps) {
 
   if (countdown.isPast) {
     return (
-      <section className="rounded-2xl border border-primary-black/10 bg-primary-black/[0.03] p-5 text-center">
+      <section
+        className={
+          embedded
+            ? "min-w-0 overflow-hidden border-t border-primary-black/8 bg-primary-black/[0.03] px-3 py-4 text-center sm:px-4"
+            : "rounded-2xl border border-primary-black/10 bg-primary-black/[0.03] p-5 text-center"
+        }
+      >
         <p className="text-sm font-medium text-primary-black/60">
           L&apos;evento è passato
         </p>
-        <p className="mt-1 text-lg font-bold text-primary-black">
-          {event.title}
-        </p>
-        <p className="mt-2 text-xs text-brand-teal">
-          Puoi richiedere un rimborso per i servizi non soddisfacenti
-        </p>
+        {!embedded && (
+          <>
+            <p className="mt-1 text-lg font-bold text-primary-black">
+              {event.title}
+            </p>
+            <p className="mt-2 text-xs text-brand-teal">
+              Puoi richiedere un rimborso per i servizi non soddisfacenti
+            </p>
+          </>
+        )}
       </section>
     );
   }
@@ -43,12 +55,35 @@ export function EventCountdown({ event }: EventCountdownProps) {
   ];
 
   return (
-    <section className="rounded-2xl border border-brand-teal/20 bg-gradient-to-br from-brand-teal/10 to-brand-pink/10 p-5">
-      <p className="text-center text-xs font-semibold uppercase tracking-widest text-brand-teal">
-        Countdown all&apos;evento
+    <section
+      className={
+        embedded
+          ? "min-w-0 overflow-hidden border-t border-brand-teal/25 bg-gradient-to-br from-brand-teal/10 to-brand-pink/10 px-3 py-4 sm:px-4"
+          : "rounded-2xl border border-brand-teal/20 bg-gradient-to-br from-brand-teal/10 to-brand-pink/10 p-5"
+      }
+    >
+      <p
+        className={
+          embedded
+            ? "text-sm font-medium text-primary-black"
+            : "text-center text-xs font-semibold uppercase tracking-widest text-brand-teal"
+        }
+      >
+        {embedded ? "Manca all&apos;evento" : "Countdown all&apos;evento"}
       </p>
+      {embedded && (
+        <p className="mt-0.5 text-xs text-primary-black/55">
+          Aggiornato in tempo reale
+        </p>
+      )}
 
-      <div className="mt-4 grid grid-cols-4 gap-1.5 sm:gap-2">
+      <div
+        className={
+          embedded
+            ? "mt-3 grid grid-cols-4 gap-1.5 sm:gap-2"
+            : "mt-4 grid grid-cols-4 gap-1.5 sm:gap-2"
+        }
+      >
         {units.map((unit) => (
           <div
             key={unit.label}

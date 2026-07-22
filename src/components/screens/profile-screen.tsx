@@ -11,6 +11,7 @@ import {
   LogOut,
   MapPin,
   Pencil,
+  Plus,
   ShieldCheck,
   Settings,
   Trash2,
@@ -120,6 +121,7 @@ export function ProfileScreen() {
     businessProfile,
     createAccount,
     currentUser,
+    deleteAccount,
     favoriteLocationIds,
     favoriteServiceIds,
     isBusinessUser,
@@ -133,6 +135,14 @@ export function ProfileScreen() {
   } = useAppState();
   const [newAccountName, setNewAccountName] = useState("");
   const [newAccountEmail, setNewAccountEmail] = useState("");
+  const [addAccountOpen, setAddAccountOpen] = useState(false);
+  const [accountPendingDelete, setAccountPendingDelete] = useState<{
+    id: string;
+    name: string;
+    email: string;
+  } | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggeredRef = useRef(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [paymentsOpen, setPaymentsOpen] = useState(false);
   const [cardDraft, setCardDraft] = useState({
@@ -291,6 +301,41 @@ export function ProfileScreen() {
     });
     setNewAccountName("");
     setNewAccountEmail("");
+    setAddAccountOpen(false);
+  }
+
+  function clearLongPressTimer() {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }
+
+  function startAccountLongPress(account: {
+    id: string;
+    name: string;
+    email: string;
+  }) {
+    longPressTriggeredRef.current = false;
+    clearLongPressTimer();
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      setAccountPendingDelete(account);
+    }, 550);
+  }
+
+  function handleAccountClick(accountId: string) {
+    if (longPressTriggeredRef.current) {
+      longPressTriggeredRef.current = false;
+      return;
+    }
+    switchAccount(accountId);
+  }
+
+  function confirmDeleteAccount() {
+    if (!accountPendingDelete) return;
+    deleteAccount(accountPendingDelete.id);
+    setAccountPendingDelete(null);
   }
 
   function handleSaveCard() {
@@ -894,15 +939,33 @@ export function ProfileScreen() {
       </section>
 
       <section className="space-y-3 rounded-2xl border border-primary-black/10 bg-background p-4">
-        <div>
-          <h2 className="text-sm font-bold text-primary-black">
-            {isGuest ? "Crea il tuo account" : "Account disponibili"}
-          </h2>
-          <p className="mt-1 text-xs text-primary-black/55">
-            {isGuest
-              ? "Crea un account per salvare preferiti, confrontare locali e generare preventivi."
-              : "Cambia account o aggiungine uno nuovo."}
-          </p>
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-bold text-primary-black">
+              {isGuest ? "Crea il tuo account" : "Account disponibili"}
+            </h2>
+            <p className="mt-1 text-xs text-primary-black/55">
+              {isGuest
+                ? "Crea un account per salvare preferiti, confrontare locali e generare preventivi."
+                : "Tocca per cambiare account. Tieni premuto per eliminarlo."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setAddAccountOpen((current) => !current);
+              setAccountPendingDelete(null);
+            }}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-black text-white transition-colors hover:bg-primary-black/85"
+            aria-label={addAccountOpen ? "Chiudi form nuovo account" : "Aggiungi account"}
+            aria-expanded={addAccountOpen}
+          >
+            {addAccountOpen ? (
+              <X className="h-4 w-4" aria-hidden />
+            ) : (
+              <Plus className="h-4 w-4" aria-hidden />
+            )}
+          </button>
         </div>
 
         <div className="space-y-2">
@@ -910,8 +973,27 @@ export function ProfileScreen() {
             <button
               key={account.id}
               type="button"
-              onClick={() => switchAccount(account.id)}
-              className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-colors ${
+              onClick={() => handleAccountClick(account.id)}
+              onPointerDown={() =>
+                startAccountLongPress({
+                  id: account.id,
+                  name: account.name,
+                  email: account.email,
+                })
+              }
+              onPointerUp={clearLongPressTimer}
+              onPointerLeave={clearLongPressTimer}
+              onPointerCancel={clearLongPressTimer}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                clearLongPressTimer();
+                setAccountPendingDelete({
+                  id: account.id,
+                  name: account.name,
+                  email: account.email,
+                });
+              }}
+              className={`flex w-full touch-manipulation items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-colors select-none ${
                 account.id === currentUser.id
                   ? "border-brand-teal bg-brand-teal/8"
                   : "border-primary-black/8 bg-primary-black/[0.02]"
@@ -941,30 +1023,84 @@ export function ProfileScreen() {
           ))}
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          <input
-            type="text"
-            value={newAccountName}
-            onChange={(event) => setNewAccountName(event.target.value)}
-            placeholder="Nome account"
-            className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
-          />
-          <input
-            type="email"
-            value={newAccountEmail}
-            onChange={(event) => setNewAccountEmail(event.target.value)}
-            placeholder="Email"
-            className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={handleCreateAccount}
-          className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-semibold text-white"
-        >
-          {isGuest ? "Crea account" : "Aggiungi account"}
-        </button>
+        {addAccountOpen && (
+          <div className="space-y-2 rounded-2xl border border-primary-black/10 bg-primary-black/[0.02] p-3">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <input
+                type="text"
+                value={newAccountName}
+                onChange={(event) => setNewAccountName(event.target.value)}
+                placeholder="Nome account"
+                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
+              />
+              <input
+                type="email"
+                value={newAccountEmail}
+                onChange={(event) => setNewAccountEmail(event.target.value)}
+                placeholder="Email"
+                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleCreateAccount}
+              className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-semibold text-white"
+            >
+              {isGuest ? "Crea account" : "Aggiungi account"}
+            </button>
+          </div>
+        )}
       </section>
+
+      {accountPendingDelete && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-6">
+          <button
+            type="button"
+            className="absolute inset-0 bg-primary-black/45"
+            onClick={() => setAccountPendingDelete(null)}
+            aria-label="Annulla eliminazione"
+          />
+          <div
+            className="relative w-full max-w-sm rounded-3xl bg-background p-5 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-account-title"
+          >
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-pink/15 text-brand-pink">
+              <Trash2 className="h-5 w-5" aria-hidden />
+            </div>
+            <h3
+              id="delete-account-title"
+              className="text-center text-lg font-bold text-primary-black"
+            >
+              Eliminare questo account?
+            </h3>
+            <p className="mt-2 text-center text-sm text-primary-black/60">
+              Stai per rimuovere{" "}
+              <span className="font-semibold text-primary-black">
+                {accountPendingDelete.name}
+              </span>{" "}
+              ({accountPendingDelete.email}). L’azione non si può annullare.
+            </p>
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setAccountPendingDelete(null)}
+                className="rounded-2xl border border-primary-black/10 px-4 py-3 text-sm font-semibold text-primary-black"
+              >
+                Annulla
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteAccount}
+                className="rounded-2xl bg-brand-pink px-4 py-3 text-sm font-semibold text-primary-black"
+              >
+                Elimina
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isBusinessUser && businessProfile && (
         <section className="rounded-2xl border border-brand-teal/20 bg-brand-teal/5 p-4">

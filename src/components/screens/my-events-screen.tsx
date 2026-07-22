@@ -1,6 +1,7 @@
 "use client";
 
 import { DiscountInviteBanner } from "@/components/discount-invite-banner";
+import { EventCountdown } from "@/components/events/event-countdown";
 import { useAppState } from "@/context/app-state-context";
 import {
   Calendar,
@@ -12,6 +13,7 @@ import {
   Gift,
   MapPin,
   Music,
+  Pencil,
   ShieldCheck,
   UtensilsCrossed,
   Users,
@@ -32,7 +34,7 @@ import {
   MODAL_SAFE_BOTTOM_STYLE,
 } from "@/lib/utils";
 import Link from "next/link";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface MyEventsScreenProps {
   onCreateEvent?: () => void;
@@ -75,6 +77,7 @@ const EVENT_SERVICE_SUGGESTIONS = [
     categories: ["menu", "catering"],
     exploreCategory: "altri",
     icon: UtensilsCrossed,
+    iconClass: "text-[#E07A3D]",
   },
   {
     id: "dj",
@@ -83,6 +86,7 @@ const EVENT_SERVICE_SUGGESTIONS = [
     categories: ["dj"],
     exploreCategory: "dj",
     icon: Music,
+    iconClass: "text-brand-pink",
   },
   {
     id: "bakery",
@@ -91,6 +95,7 @@ const EVENT_SERVICE_SUGGESTIONS = [
     categories: ["bakery"],
     exploreCategory: "altri",
     icon: Cake,
+    iconClass: "text-[#E8A54B]",
   },
   {
     id: "photographer",
@@ -99,6 +104,7 @@ const EVENT_SERVICE_SUGGESTIONS = [
     categories: ["photographer"],
     exploreCategory: "fotografo",
     icon: Camera,
+    iconClass: "text-[#4A8FE7]",
   },
   {
     id: "decorations",
@@ -107,6 +113,7 @@ const EVENT_SERVICE_SUGGESTIONS = [
     categories: ["decorations"],
     exploreCategory: "decorazioni",
     icon: Gift,
+    iconClass: "text-[#2BB673]",
   },
   {
     id: "security",
@@ -115,6 +122,7 @@ const EVENT_SERVICE_SUGGESTIONS = [
     categories: ["security"],
     exploreCategory: "altri",
     icon: ShieldCheck,
+    iconClass: "text-brand-teal",
   },
 ] as const;
 
@@ -458,6 +466,8 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   ) => void;
 }) {
   const [titleDraft, setTitleDraft] = useState(event.title);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const totalCost =
     event.totalCost ??
     event.services.reduce((sum, service) => sum + service.amountPaid, 0);
@@ -478,25 +488,36 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
     if (nextTitle !== event.title) {
       onTitleChange(event.id, nextTitle);
     }
+    setTitleDraft(nextTitle);
+    setIsEditingTitle(false);
   }, [event.id, event.title, onTitleChange, titleDraft]);
 
   useEffect(() => {
     queueMicrotask(() => {
       setTitleDraft(event.title);
+      setIsEditingTitle(false);
     });
   }, [event.id, event.title]);
+
+  useEffect(() => {
+    if (!isEditingTitle) return;
+    queueMicrotask(() => {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    });
+  }, [isEditingTitle]);
 
   return (
     <article className="box-border w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-primary-black/10 bg-white shadow-[0_6px_24px_-12px_rgba(15,15,17,0.18)]">
       <div className="min-w-0 border-b border-primary-black/8 px-3 py-4 sm:px-4">
-        <div className="flex min-w-0 items-start justify-between gap-3">
-          <div className="min-w-0 flex-1 overflow-hidden">
-            <p className={`text-xs font-medium ${statusColors[event.status]}`}>
-              {EVENT_STATUS_LABELS[event.status]}
-            </p>
-            <label className="mt-1 block min-w-0 max-w-full">
-              <span className="sr-only">Titolo evento</span>
+        <div className="min-w-0 overflow-hidden">
+          <p className={`text-xs font-medium ${statusColors[event.status]}`}>
+            {EVENT_STATUS_LABELS[event.status]}
+          </p>
+          <div className="mt-1 flex min-w-0 items-center gap-2">
+            {isEditingTitle ? (
               <input
+                ref={titleInputRef}
                 value={titleDraft}
                 onChange={(inputEvent) => setTitleDraft(inputEvent.target.value)}
                 onBlur={commitTitleDraft}
@@ -504,24 +525,47 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                   if (inputEvent.key === "Enter") {
                     inputEvent.currentTarget.blur();
                   }
+                  if (inputEvent.key === "Escape") {
+                    setTitleDraft(event.title);
+                    setIsEditingTitle(false);
+                  }
                 }}
                 placeholder="Nome evento"
-                className="box-border w-full min-w-0 max-w-full bg-transparent text-lg font-semibold leading-snug text-primary-black outline-none placeholder:text-primary-black/35 sm:text-xl"
+                className="box-border min-w-0 flex-1 bg-transparent text-lg font-semibold leading-snug text-primary-black outline-none placeholder:text-primary-black/35 sm:text-xl"
                 aria-label="Titolo evento"
               />
-            </label>
-            {event.description && (
-              <p className="mt-1 line-clamp-2 break-words text-sm text-primary-black/55">
-                {event.description}
-              </p>
+            ) : (
+              <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-snug text-primary-black sm:text-xl">
+                {event.title}
+              </h3>
             )}
+            <button
+              type="button"
+              onClick={() => {
+                if (isEditingTitle) {
+                  commitTitleDraft();
+                  return;
+                }
+                setTitleDraft(event.title);
+                setIsEditingTitle(true);
+              }}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-black/[0.04] text-primary-black/55 transition-colors hover:bg-primary-black/[0.08] hover:text-primary-black"
+              aria-label={
+                isEditingTitle ? "Salva nome evento" : "Modifica nome evento"
+              }
+            >
+              {isEditingTitle ? (
+                <Check className="h-3.5 w-3.5" aria-hidden />
+              ) : (
+                <Pencil className="h-3.5 w-3.5" aria-hidden />
+              )}
+            </button>
           </div>
-          <Link
-            href={`/event/${event.id}`}
-            className="shrink-0 pt-5 text-sm font-medium text-primary-black underline underline-offset-4"
-          >
-            Dettagli
-          </Link>
+          {event.description && (
+            <p className="mt-1 line-clamp-2 break-words text-sm text-primary-black/55">
+              {event.description}
+            </p>
+          )}
         </div>
 
         <div className="mt-4 min-w-0 space-y-1.5 text-sm text-primary-black/65">
@@ -579,7 +623,11 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                   </p>
                 </div>
                 <div className="flex w-[6.75rem] shrink-0 flex-col items-end gap-1.5">
-                  <span className="text-sm font-semibold tabular-nums text-primary-black">
+                  <span
+                    className={`text-sm font-semibold tabular-nums ${
+                      payment.paid ? "text-emerald-600" : "text-red-500"
+                    }`}
+                  >
                     {formatCurrency(service.amountPaid)}
                   </span>
                   <button
@@ -674,11 +722,11 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       )}
 
       {missingSuggestions.length > 0 && (
-        <section className="min-w-0 overflow-hidden border-t border-primary-black/8 bg-rose-50/60 px-3 py-4 sm:px-4">
+        <section className="min-w-0 overflow-hidden border-t border-brand-pink/35 bg-brand-pink/25 px-3 py-4 sm:px-4">
           <p className="text-sm font-medium text-primary-black">
             Potrebbe mancare
           </p>
-          <p className="mt-0.5 text-xs text-primary-black/50">
+          <p className="mt-0.5 text-xs text-primary-black/55">
             Aggiungi altri servizi alla festa
           </p>
           <div className="scrollbar-hidden mt-3 flex max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1">
@@ -691,7 +739,10 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                   href={buildSuggestionHref(event, suggestion.exploreCategory)}
                   className="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary-black/10 bg-white px-3.5 py-2 text-sm font-medium text-primary-black transition-colors hover:border-primary-black/25"
                 >
-                  <Icon className="h-4 w-4 text-primary-black/55" aria-hidden />
+                  <Icon
+                    className={`h-4 w-4 ${suggestion.iconClass}`}
+                    aria-hidden
+                  />
                   {suggestion.label}
                 </Link>
               );
@@ -699,6 +750,8 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
           </div>
         </section>
       )}
+
+      <EventCountdown event={event} embedded />
     </article>
   );
 });

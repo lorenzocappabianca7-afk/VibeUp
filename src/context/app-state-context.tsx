@@ -70,6 +70,7 @@ interface AppStateContextValue {
   removeManagedListing: (id: string) => void;
   toggleManagedListingPublication: (id: string) => void;
   createAccount: (account: Omit<CurrentUser, "id">) => void;
+  deleteAccount: (id: string) => void;
   switchAccount: (id: string) => void;
   updateCurrentUser: (updates: Partial<Omit<CurrentUser, "id">>) => void;
   saveBusinessProfile: (profile: BusinessProfile) => void;
@@ -502,6 +503,27 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setCurrentUserId(id);
   }, []);
 
+  const deleteAccount = useCallback((id: string) => {
+    if (id === GUEST_USER.id) return;
+
+    setAccounts((prev) => {
+      const next = prev.filter((account) => account.id !== id);
+
+      setCurrentUserId((current) => {
+        if (current !== id) return current;
+        return next[0]?.id ?? GUEST_USER.id;
+      });
+
+      return next;
+    });
+
+    setUserStatesMap((map) => {
+      if (!(id in map)) return map;
+      const { [id]: _removed, ...rest } = map;
+      return rest;
+    });
+  }, []);
+
   const switchAccount = useCallback((id: string) => {
     setCurrentUserId((current) => (current === id ? current : id));
   }, []);
@@ -561,6 +583,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       removeManagedListing,
       toggleManagedListingPublication,
       createAccount,
+      deleteAccount,
       switchAccount,
       updateCurrentUser,
       saveBusinessProfile,
@@ -595,6 +618,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       removeManagedListing,
       toggleManagedListingPublication,
       createAccount,
+      deleteAccount,
       switchAccount,
       updateCurrentUser,
       saveBusinessProfile,
