@@ -7,6 +7,7 @@ import {
   type ServiceProvider,
 } from "@/lib/mock/service-providers";
 import { APP_SHELL_WIDTH_CLASS, cn, formatCurrency } from "@/lib/utils";
+import { isEventPast } from "@/lib/event";
 import type { ManagedListing, ManagedServiceListing } from "@/types/admin";
 import type { BookedServiceCategory } from "@/types/event";
 import type { MusicType, PartyType } from "@/types/location";
@@ -164,7 +165,10 @@ export function ServiceProfileView({
     ? getEvent(initialContext.eventId)
     : undefined;
   const availableEvents = useMemo(
-    () => events.filter((item) => item.status !== "completed"),
+    () =>
+      events.filter(
+        (item) => item.status !== "completed" && !isEventPast(item),
+      ),
     [events],
   );
   const [selectedEventId, setSelectedEventId] = useState(event?.id ?? "");

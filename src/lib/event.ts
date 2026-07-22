@@ -4,6 +4,18 @@ export function getEventDateTime(event: UserEvent): Date {
   return new Date(`${event.date}T${event.time}:00`);
 }
 
+export function getEventEndDateTime(event: UserEvent): Date {
+  if (event.endTime) {
+    return new Date(`${event.date}T${event.endTime}:00`);
+  }
+  return getEventDateTime(event);
+}
+
+/** True when the event end (or start if no endTime) is in the past. */
+export function isEventPast(event: UserEvent, now: Date = new Date()): boolean {
+  return getEventEndDateTime(event).getTime() <= now.getTime();
+}
+
 export function getCountdown(target: Date): CountdownTime {
   const now = new Date();
   const diff = target.getTime() - now.getTime();

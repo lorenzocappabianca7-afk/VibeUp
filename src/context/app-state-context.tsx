@@ -1,6 +1,7 @@
 "use client";
 
 import type { BusinessProfile } from "@/types/business";
+import { isEventPast } from "@/lib/event";
 import { MOCK_EVENTS } from "@/lib/mock/events";
 import type { ManagedListing } from "@/types/admin";
 import type { BookedService, EventMenuSelection, UserEvent } from "@/types/event";
@@ -53,6 +54,7 @@ interface AppStateContextValue {
   managedListings: ManagedListing[];
   addEvent: (event: UserEvent) => void;
   getEvent: (id: string) => UserEvent | undefined;
+  prunePastEvents: () => void;
   updateEventTitle: (eventId: string, title: string) => void;
   updateEventMenuSelections: (
     eventId: string,
@@ -109,6 +111,26 @@ interface UserScopedState {
   favoriteLocationIds: string[];
   favoriteServiceIds: string[];
   compareLocationIds: string[];
+}
+
+function prunePastEventsFromState(state: UserScopedState): UserScopedState {
+  const events = state.events.filter((event) => !isEventPast(event));
+  if (events.length === state.events.length) return state;
+
+  const remainingIds = new Set(events.map((event) => event.id));
+  const paymentStates = Object.fromEntries(
+    Object.entries(state.paymentStates).filter(([key]) => {
+      const separator = key.indexOf(":");
+      if (separator <= 0) return false;
+      return remainingIds.has(key.slice(0, separator));
+    }),
+  );
+
+  return {
+    ...state,
+    events,
+    paymentStates,
+  };
 }
 
 interface StoredAppState {
@@ -304,6 +326,39 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     userStatesMap,
   ]);
 
+  useEffect(() => {
+    if (!hydratedFromStorage) return;
+
+    const pruneAllUsers = () => {
+      setUserStatesMap((map) => {
+        let changed = false;
+        const next: Record<string, UserScopedState> = { ...map };
+
+        for (const [userId, state] of Object.entries(map)) {
+          const pruned = prunePastEventsFromState(state);
+          if (pruned !== state) {
+            next[userId] = pruned;
+            changed = true;
+          }
+        }
+
+        return changed ? next : map;
+      });
+    };
+
+    pruneAllUsers();
+    const interval = window.setInterval(pruneAllUsers, 60_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") pruneAllUsers();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [hydratedFromStorage]);
+
   const addEvent = useCallback((event: UserEvent) => {
     updateCurrentUserState((state) => ({
       ...state,
@@ -315,6 +370,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     (id: string) => events.find((event) => event.id === id),
     [events],
   );
+
+  const prunePastEvents = useCallback(() => {
+    updateCurrentUserState((state) => prunePastEventsFromState(state));
+  }, [updateCurrentUserState]);
 
   const updateEventTitle = useCallback((eventId: string, title: string) => {
     updateCurrentUserState((state) => ({
@@ -569,6 +628,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       managedListings,
       addEvent,
       getEvent,
+      prunePastEvents,
       updateEventTitle,
       updateEventMenuSelections,
       addServiceToEvent,
@@ -604,6 +664,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       managedListings,
       addEvent,
       getEvent,
+      prunePastEvents,
       updateEventTitle,
       updateEventMenuSelections,
       addServiceToEvent,

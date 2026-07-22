@@ -20,7 +20,7 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-import { getCountdown, getEventDateTime } from "@/lib/event";
+import { getCountdown, getEventDateTime, isEventPast } from "@/lib/event";
 import {
   EVENT_STATUS_LABELS,
   type BookedService,
@@ -255,6 +255,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
     events,
     markServicePaid: markServicePaidInState,
     paymentStates,
+    prunePastEvents,
     updateEventMenuSelections,
     updateEventTitle,
   } = useAppState();
@@ -265,12 +266,13 @@ export const MyEventsScreen = memo(function MyEventsScreen({
   const [discountBannerOpen, setDiscountBannerOpen] = useState(false);
   const [inviteContact, setInviteContact] = useState("");
   const [inviteSent, setInviteSent] = useState(false);
-  const upcomingEvents = useMemo(
-    () => events.filter((e) => e.status !== "completed"),
-    [events],
-  );
-  const pastEvents = useMemo(
-    () => events.filter((e) => e.status === "completed"),
+
+  useEffect(() => {
+    prunePastEvents();
+  }, [prunePastEvents]);
+
+  const activeEvents = useMemo(
+    () => events.filter((event) => !isEventPast(event)),
     [events],
   );
 
@@ -374,7 +376,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
         </div>
       </header>
 
-      {upcomingEvents.length === 0 && pastEvents.length === 0 && (
+      {activeEvents.length === 0 && (
         <section className="min-w-0 rounded-2xl border border-dashed border-primary-black/15 bg-primary-black/[0.02] px-4 py-8 text-center">
           <p className="text-base font-semibold text-primary-black">
             Nessun evento ancora
@@ -394,35 +396,13 @@ export const MyEventsScreen = memo(function MyEventsScreen({
         </section>
       )}
 
-      {upcomingEvents.length > 0 && (
+      {activeEvents.length > 0 && (
         <section className="min-w-0 space-y-4">
           <h2 className="text-base font-semibold text-primary-black">
             In programma
           </h2>
           <ul className="grid min-w-0 gap-5 sm:gap-6">
-            {upcomingEvents.map((event) => (
-              <li key={event.id} className="min-w-0 max-w-full">
-                <ExpandedEventCard
-                  event={event}
-                  paymentStates={paymentStates}
-                  onOpenPayment={setPaymentModal}
-                  onOpenDepositPayment={openDepositPayment}
-                  onTitleChange={updateEventTitle}
-                  onMenuSelectionsChange={updateEventMenuSelections}
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {pastEvents.length > 0 && (
-        <section className="min-w-0 space-y-4">
-          <h2 className="text-base font-semibold text-primary-black">
-            Passati
-          </h2>
-          <ul className="grid min-w-0 gap-5 sm:gap-6">
-            {pastEvents.map((event) => (
+            {activeEvents.map((event) => (
               <li key={event.id} className="min-w-0 max-w-full">
                 <ExpandedEventCard
                   event={event}
@@ -608,6 +588,11 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
           {event.services.map((service) => {
             const payment =
               paymentStates[`${event.id}:${service.id}`] ?? { paid: false };
+            const requiresDepositFirst =
+              service.category === "location" &&
+              !depositPayment.paid &&
+              !payment.paid;
+            const canPay = !payment.paid && !requiresDepositFirst;
 
             return (
               <li
@@ -621,11 +606,20 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                   <p className="truncate text-xs text-primary-black/50">
                     {service.providerName}
                   </p>
+                  {requiresDepositFirst && (
+                    <p className="mt-1 text-[11px] leading-snug text-primary-black/40">
+                      Prima paga la caparra, poi la location
+                    </p>
+                  )}
                 </div>
                 <div className="flex w-[6.75rem] shrink-0 flex-col items-end gap-1.5">
                   <span
                     className={`text-sm font-semibold tabular-nums ${
-                      payment.paid ? "text-emerald-600" : "text-red-500"
+                      payment.paid
+                        ? "text-emerald-600"
+                        : requiresDepositFirst
+                          ? "text-red-300"
+                          : "text-red-500"
                     }`}
                   >
                     {formatCurrency(service.amountPaid)}
@@ -633,15 +627,20 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                   <button
                     type="button"
                     onClick={() =>
-                      payment.paid
-                        ? undefined
-                        : onOpenPayment({ event, service })
+                      canPay ? onOpenPayment({ event, service }) : undefined
                     }
-                    disabled={payment.paid}
+                    disabled={!canPay}
+                    title={
+                      requiresDepositFirst
+                        ? "Paga prima la caparra per sbloccare il pagamento della location"
+                        : undefined
+                    }
                     className={`w-full rounded-lg px-2 py-1.5 text-center text-[11px] font-medium leading-tight transition-colors ${
                       payment.paid
                         ? "bg-primary-black text-white"
-                        : "border border-primary-black/15 text-primary-black hover:border-primary-black/30"
+                        : requiresDepositFirst
+                          ? "cursor-not-allowed border border-primary-black/10 bg-primary-black/[0.03] text-primary-black/35"
+                          : "border border-primary-black/15 text-primary-black hover:border-primary-black/30"
                     }`}
                   >
                     {payment.paid ? "Pagato" : "Da pagare"}
