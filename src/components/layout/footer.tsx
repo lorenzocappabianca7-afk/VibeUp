@@ -40,7 +40,7 @@ export function Footer() {
               Seguici sui social
             </span>
             <a
-              href="https://www.instagram.com/vibeup.planner"
+              href="https://www.instagram.com/vibe_up2026"
               target="_blank"
               rel="noreferrer"
               className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 text-white transition-colors hover:border-brand-pink hover:bg-brand-pink hover:text-primary-black"
@@ -66,7 +66,7 @@ export function Footer() {
               </svg>
             </a>
             <a
-              href="https://www.tiktok.com/@vibeup.planner"
+              href="https://www.tiktok.com/@vibeup451"
               target="_blank"
               rel="noreferrer"
               className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 text-white transition-colors hover:border-brand-teal hover:bg-brand-teal"
