@@ -11,6 +11,10 @@ import type { ManagedListing } from "@/types/admin";
 import type { BookedService, EventMenuSelection, UserEvent } from "@/types/event";
 import type { SavedPaymentCard } from "@/types/payment";
 import {
+  normalizeUserSettings,
+  type UserSettings,
+} from "@/types/user-settings";
+import {
   createContext,
   useCallback,
   useContext,
@@ -34,7 +38,16 @@ export interface CurrentUser {
   /** Consumer by default; business accounts unlock the Pro shell */
   accountType?: "consumer" | "business";
   businessProfile?: BusinessProfile | null;
+  /** Preferenze impostazioni persistite per account */
+  settings?: UserSettings;
 }
+
+type DeepPartialUserSettings = {
+  privacy?: Partial<UserSettings["privacy"]>;
+  notifications?: Partial<UserSettings["notifications"]>;
+  security?: Partial<UserSettings["security"]>;
+  account?: Partial<UserSettings["account"]>;
+};
 
 export function isProAccount(account: CurrentUser): boolean {
   return account.accountType === "business";
@@ -95,6 +108,7 @@ interface AppStateContextValue {
   deleteAccount: (id: string) => void;
   switchAccount: (id: string) => void;
   updateCurrentUser: (updates: Partial<Omit<CurrentUser, "id">>) => void;
+  updateUserSettings: (patch: DeepPartialUserSettings) => void;
   saveBusinessProfile: (profile: BusinessProfile) => void;
   clearBusinessProfile: () => void;
 }
@@ -255,6 +269,7 @@ function normalizeAccount(account: CurrentUser): CurrentUser {
     accountType,
     businessProfile:
       accountType === "business" ? (account.businessProfile ?? null) : null,
+    settings: normalizeUserSettings(account.settings),
   };
 }
 
@@ -933,6 +948,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           ? sanitizeSavedPaymentCard(safeUpdates.paymentCard)
           : undefined;
       }
+      if ("settings" in safeUpdates) {
+        safeUpdates.settings = normalizeUserSettings(safeUpdates.settings);
+      }
 
       setAccounts((prev) =>
         prev.map((account) =>
@@ -940,6 +958,33 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             ? normalizeAccount({ ...account, ...safeUpdates })
             : account,
         ),
+      );
+    },
+    [],
+  );
+
+  const updateUserSettings = useCallback(
+    (patch: DeepPartialUserSettings) => {
+      const userId = currentUserIdRef.current;
+      if (userId === GUEST_USER.id) return;
+
+      setAccounts((prev) =>
+        prev.map((account) => {
+          if (account.id !== userId) return account;
+          const current = normalizeUserSettings(account.settings);
+          return normalizeAccount({
+            ...account,
+            settings: normalizeUserSettings({
+              privacy: { ...current.privacy, ...patch.privacy },
+              notifications: {
+                ...current.notifications,
+                ...patch.notifications,
+              },
+              security: { ...current.security, ...patch.security },
+              account: { ...current.account, ...patch.account },
+            }),
+          });
+        }),
       );
     },
     [],
@@ -1015,6 +1060,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       deleteAccount,
       switchAccount,
       updateCurrentUser,
+      updateUserSettings,
       saveBusinessProfile,
       clearBusinessProfile,
     };
@@ -1053,6 +1099,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       deleteAccount,
       switchAccount,
       updateCurrentUser,
+      updateUserSettings,
       saveBusinessProfile,
       clearBusinessProfile,
     ],

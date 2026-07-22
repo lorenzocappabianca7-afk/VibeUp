@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { SafeImage } from "@/components/ui/safe-image";
+import { ProfileSettingsView } from "@/components/profile/settings/profile-settings-view";
 import { GUEST_USER, isProAccount, useAppState } from "@/context/app-state-context";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
@@ -32,17 +33,17 @@ import {
 } from "@/lib/mock/service-providers";
 import type { ManagedLocationListing, ManagedServiceListing } from "@/types/admin";
 import { BUSINESS_CATEGORY_LABELS } from "@/types/business";
+import type { SettingsPanelId } from "@/types/user-settings";
 import { formatCurrency, getLocationPricePresentation } from "@/lib/utils";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
-import {
-  createSavedPaymentCard,
-  formatCardNumber,
-  formatExpiry,
-  getCardBrand,
-} from "@/lib/payments/card-vault";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-const menuItems = [
+const menuItems: Array<{
+  id: SettingsPanelId;
+  icon: typeof Settings;
+  label: string;
+  description?: string;
+}> = [
   { id: "settings", icon: Settings, label: "Impostazioni account" },
   { id: "payments", icon: CreditCard, label: "Pagamenti e abbonamento" },
   { id: "help", icon: HelpCircle, label: "Aiuto e supporto" },
@@ -99,15 +100,9 @@ export function ProfileScreen() {
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggeredRef = useRef(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
-  const [paymentsOpen, setPaymentsOpen] = useState(false);
-  const [cardDraft, setCardDraft] = useState({
-    cardholderName: currentUser.name,
-    cardNumber: "",
-    expiry: "",
-    cvc: "",
-  });
-  const [cardError, setCardError] = useState<string | null>(null);
-  const [cardSavedFlash, setCardSavedFlash] = useState(false);
+  const [settingsPanel, setSettingsPanel] = useState<SettingsPanelId | null>(
+    null,
+  );
   const [profileDraft, setProfileDraft] = useState({
     name: currentUser.name,
     email: currentUser.email,
@@ -117,6 +112,10 @@ export function ProfileScreen() {
   const lastSyncedUserId = useRef(currentUser.id);
   const hasHydratedProfileDraft = useRef(false);
   const canManagePublications = canAccessAdminCatalog(currentUser.email);
+
+  useEffect(() => {
+    setSettingsPanel(null);
+  }, [currentUser.id]);
 
   useEffect(() => {
     if (!isStorageHydrated) return;
@@ -132,14 +131,6 @@ export function ProfileScreen() {
           instagramHandle: currentUser.instagramHandle ?? "",
           phoneNumber: currentUser.phoneNumber ?? "",
         });
-        setCardDraft((current) => ({
-          ...current,
-          cardholderName: currentUser.name,
-          cardNumber: "",
-          expiry: "",
-          cvc: "",
-        }));
-        setCardError(null);
       });
       return;
     }
@@ -154,10 +145,6 @@ export function ProfileScreen() {
         instagramHandle: currentUser.instagramHandle ?? "",
         phoneNumber: currentUser.phoneNumber ?? "",
       });
-      setCardDraft((current) => ({
-        ...current,
-        cardholderName: currentUser.name,
-      }));
     });
   }, [
     currentUser.email,
@@ -294,39 +281,13 @@ export function ProfileScreen() {
     setAccountPendingDelete(null);
   }
 
-  function handleSaveCard() {
-    if (isGuest) {
-      setCardError("Crea un account per salvare in modo sicuro la tua carta.");
-      return;
-    }
-
-    const result = createSavedPaymentCard(cardDraft);
-    if ("error" in result) {
-      setCardError(result.error);
-      return;
-    }
-
-    updateCurrentUser({ paymentCard: result.card });
-    setCardDraft({
-      cardholderName: result.card.cardholderName,
-      cardNumber: "",
-      expiry: "",
-      cvc: "",
-    });
-    setCardError(null);
-    setCardSavedFlash(true);
-    window.setTimeout(() => setCardSavedFlash(false), 2500);
-  }
-
-  function handleRemoveCard() {
-    updateCurrentUser({ paymentCard: undefined });
-    setCardDraft((current) => ({
-      ...current,
-      cardNumber: "",
-      expiry: "",
-      cvc: "",
-    }));
-    setCardError(null);
+  if (settingsPanel) {
+    return (
+      <ProfileSettingsView
+        panel={settingsPanel}
+        onClose={() => setSettingsPanel(null)}
+      />
+    );
   }
 
   return (
@@ -540,13 +501,8 @@ export function ProfileScreen() {
             <li key={item.label}>
               <button
                 type="button"
-                onClick={() => {
-                  if (item.id === "payments") {
-                    setPaymentsOpen((current) => !current);
-                  }
-                }}
+                onClick={() => setSettingsPanel(item.id)}
                 className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-primary-black/[0.03]"
-                aria-expanded={item.id === "payments" ? paymentsOpen : undefined}
               >
                 <item.icon
                   className="h-5 w-5 text-primary-black/50"
@@ -556,7 +512,7 @@ export function ProfileScreen() {
                   <span className="block text-sm font-medium text-primary-black">
                     {item.label}
                   </span>
-                  {"description" in item && item.description && (
+                  {item.description && (
                     <span className="mt-0.5 block text-xs leading-snug text-primary-black/50">
                       {item.description}
                     </span>
@@ -571,192 +527,6 @@ export function ProfileScreen() {
           ))}
         </ul>
       </nav>
-
-      {paymentsOpen && (
-        <section className="space-y-4 rounded-2xl border border-primary-black/10 bg-background p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="flex items-center gap-2 text-sm font-bold text-primary-black">
-                <CreditCard className="h-4 w-4 text-brand-teal" aria-hidden />
-                Carta di debito o credito
-              </h2>
-              <p className="mt-1 text-xs leading-relaxed text-primary-black/55">
-                Salva la carta per pagare caparre e servizi più velocemente.
-                Numero completo e CVC non vengono mai memorizzati.
-              </p>
-            </div>
-            {currentUser.paymentCard && (
-              <span className="rounded-full bg-brand-teal/12 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-brand-teal">
-                Salvata
-              </span>
-            )}
-          </div>
-
-          {isGuest ? (
-            <div className="rounded-2xl border border-dashed border-primary-black/15 bg-primary-black/[0.02] px-4 py-5 text-center">
-              <LockKeyhole className="mx-auto h-5 w-5 text-primary-black/40" aria-hidden />
-              <p className="mt-2 text-sm font-semibold text-primary-black">
-                Accedi per salvare una carta
-              </p>
-              <p className="mt-1 text-xs text-primary-black/55">
-                Serve un account VibeUp per registrare in sicurezza il metodo di
-                pagamento.
-              </p>
-            </div>
-          ) : (
-            <>
-              {currentUser.paymentCard && (
-                <div className="rounded-2xl border border-brand-teal/20 bg-brand-teal/8 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-xs font-black uppercase tracking-[0.16em] text-brand-teal">
-                        Carta salvata in modo sicuro
-                      </p>
-                      <p className="mt-1 text-lg font-black text-primary-black">
-                        {currentUser.paymentCard.brand} ••••{" "}
-                        {currentUser.paymentCard.last4}
-                      </p>
-                      <p className="mt-1 text-xs text-primary-black/55">
-                        {currentUser.paymentCard.cardholderName} · scade{" "}
-                        {currentUser.paymentCard.expiry}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleRemoveCard}
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background text-primary-black/45 shadow-sm transition-colors hover:text-brand-pink"
-                      aria-label="Rimuovi carta salvata"
-                    >
-                      <Trash2 className="h-4 w-4" aria-hidden />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block sm:col-span-2">
-                  <span className="text-xs font-bold text-primary-black/55">
-                    Intestatario
-                  </span>
-                  <input
-                    autoComplete="cc-name"
-                    value={cardDraft.cardholderName}
-                    onChange={(event) =>
-                      setCardDraft((current) => ({
-                        ...current,
-                        cardholderName: event.target.value,
-                      }))
-                    }
-                    placeholder="Nome e cognome"
-                    className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none placeholder:text-primary-black/35 focus:border-brand-teal"
-                  />
-                </label>
-
-                <label className="block sm:col-span-2">
-                  <span className="text-xs font-bold text-primary-black/55">
-                    Numero carta
-                  </span>
-                  <input
-                    inputMode="numeric"
-                    autoComplete="cc-number"
-                    name="cardnumber"
-                    value={cardDraft.cardNumber}
-                    onChange={(event) =>
-                      setCardDraft((current) => ({
-                        ...current,
-                        cardNumber: formatCardNumber(event.target.value),
-                      }))
-                    }
-                    placeholder="1234 5678 9012 3456"
-                    className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none placeholder:text-primary-black/35 focus:border-brand-teal"
-                  />
-                  {cardDraft.cardNumber.replace(/\D/g, "").length >= 4 && (
-                    <span className="mt-1 block text-[11px] text-primary-black/45">
-                      Circuito rilevato: {getCardBrand(cardDraft.cardNumber)}
-                    </span>
-                  )}
-                </label>
-
-                <label className="block">
-                  <span className="text-xs font-bold text-primary-black/55">
-                    Scadenza
-                  </span>
-                  <input
-                    inputMode="numeric"
-                    autoComplete="cc-exp"
-                    value={cardDraft.expiry}
-                    onChange={(event) =>
-                      setCardDraft((current) => ({
-                        ...current,
-                        expiry: formatExpiry(event.target.value),
-                      }))
-                    }
-                    placeholder="MM/AA"
-                    className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none placeholder:text-primary-black/35 focus:border-brand-teal"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="text-xs font-bold text-primary-black/55">
-                    CVC
-                  </span>
-                  <input
-                    inputMode="numeric"
-                    autoComplete="cc-csc"
-                    type="password"
-                    name="cvc"
-                    value={cardDraft.cvc}
-                    onChange={(event) =>
-                      setCardDraft((current) => ({
-                        ...current,
-                        cvc: event.target.value.replace(/\D/g, "").slice(0, 4),
-                      }))
-                    }
-                    placeholder="•••"
-                    className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none placeholder:text-primary-black/35 focus:border-brand-teal"
-                  />
-                </label>
-              </div>
-
-              {cardError && (
-                <p className="rounded-2xl bg-brand-pink/10 px-3 py-2 text-xs font-semibold text-brand-pink">
-                  {cardError}
-                </p>
-              )}
-
-              {cardSavedFlash && (
-                <p className="rounded-2xl bg-brand-teal/12 px-3 py-2 text-xs font-semibold text-brand-teal">
-                  Carta salvata. Conserviamo solo circuito, scadenza e ultime 4
-                  cifre.
-                </p>
-              )}
-
-              <div className="flex items-start gap-2 rounded-2xl bg-primary-black/[0.03] px-3 py-2.5">
-                <LockKeyhole
-                  className="mt-0.5 h-4 w-4 shrink-0 text-primary-black/45"
-                  aria-hidden
-                />
-                <p className="text-xs leading-relaxed text-primary-black/55">
-                  Per sicurezza il numero completo e il CVC restano solo in
-                  memoria durante l&apos;inserimento e vengono cancellati subito
-                  dopo il salvataggio. Su VibeUp restano solo i dati mascherati
-                  della carta.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSaveCard}
-                className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-black text-white transition-colors hover:bg-primary-black/90"
-              >
-                {currentUser.paymentCard
-                  ? "Aggiorna carta salvata"
-                  : "Salva carta in modo sicuro"}
-              </button>
-            </>
-          )}
-        </section>
-      )}
 
       <section className="space-y-3 rounded-2xl border border-primary-black/10 bg-background p-4">
         <div className="flex items-start justify-between gap-3">
