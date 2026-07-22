@@ -322,9 +322,9 @@ export const MyEventsScreen = memo(function MyEventsScreen({}: MyEventsScreenPro
   }, []);
 
   return (
-    <div className="min-w-0 w-full max-w-full space-y-6 overflow-x-hidden">
+    <div className="box-border min-w-0 w-full max-w-full space-y-5 overflow-x-hidden sm:space-y-6">
       <header className="flex min-w-0 items-start justify-between gap-2">
-        <div className="min-w-0 flex-1 pr-1">
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold text-primary-black">
             I Miei Eventi
           </h1>
@@ -344,7 +344,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({}: MyEventsScreenPro
           <button
             type="button"
             onClick={toggleDiscountBanner}
-            className="relative z-50 max-w-[9.5rem] truncate rounded-full border border-brand-pink bg-brand-pink/12 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-brand-pink transition-colors hover:bg-brand-pink/20 sm:max-w-none sm:px-3 sm:py-2 sm:text-[11px] sm:tracking-[0.12em]"
+            className="relative z-50 max-w-[8.5rem] truncate rounded-full border border-brand-pink bg-brand-pink/12 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-brand-pink transition-colors hover:bg-brand-pink/20 sm:max-w-none sm:px-3 sm:py-2 sm:text-[11px] sm:tracking-[0.12em]"
             aria-expanded={discountBannerOpen}
           >
             Ottieni sconti
@@ -365,13 +365,13 @@ export const MyEventsScreen = memo(function MyEventsScreen({}: MyEventsScreenPro
       </header>
 
       {upcomingEvents.length > 0 && (
-        <section className="space-y-4">
+        <section className="min-w-0 space-y-4">
           <h2 className="text-base font-semibold text-primary-black">
             In programma
           </h2>
-          <ul className="grid gap-6">
+          <ul className="grid min-w-0 gap-5 sm:gap-6">
             {upcomingEvents.map((event) => (
-              <li key={event.id}>
+              <li key={event.id} className="min-w-0 max-w-full">
                 <ExpandedEventCard
                   event={event}
                   paymentStates={paymentStates}
@@ -387,13 +387,13 @@ export const MyEventsScreen = memo(function MyEventsScreen({}: MyEventsScreenPro
       )}
 
       {pastEvents.length > 0 && (
-        <section className="space-y-4">
+        <section className="min-w-0 space-y-4">
           <h2 className="text-base font-semibold text-primary-black">
             Passati
           </h2>
-          <ul className="grid gap-6">
+          <ul className="grid min-w-0 gap-5 sm:gap-6">
             {pastEvents.map((event) => (
-              <li key={event.id}>
+              <li key={event.id} className="min-w-0 max-w-full">
                 <ExpandedEventCard
                   event={event}
                   paymentStates={paymentStates}
@@ -465,14 +465,14 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   }, [event.id, event.title]);
 
   return (
-    <article className="box-border w-full min-w-0 max-w-full overflow-x-clip rounded-2xl border border-primary-black/10 bg-white shadow-[0_6px_24px_-12px_rgba(15,15,17,0.18)]">
-      <div className="border-b border-primary-black/8 px-3 py-4 sm:px-4">
-        <div className="flex min-w-0 items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
+    <article className="box-border w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-primary-black/10 bg-white shadow-[0_6px_24px_-12px_rgba(15,15,17,0.18)]">
+      <div className="min-w-0 border-b border-primary-black/8 px-3 py-4 sm:px-4">
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 overflow-hidden">
             <p className={`text-xs font-medium ${statusColors[event.status]}`}>
               {EVENT_STATUS_LABELS[event.status]}
             </p>
-            <label className="mt-1 block min-w-0">
+            <label className="mt-1 block min-w-0 max-w-full">
               <span className="sr-only">Titolo evento</span>
               <input
                 value={titleDraft}
@@ -484,12 +484,12 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                   }
                 }}
                 placeholder="Nome evento"
-                className="w-full min-w-0 max-w-full bg-transparent text-xl font-semibold leading-snug text-primary-black outline-none placeholder:text-primary-black/35"
+                className="box-border w-full min-w-0 max-w-full bg-transparent text-lg font-semibold leading-snug text-primary-black outline-none placeholder:text-primary-black/35 sm:text-xl"
                 aria-label="Titolo evento"
               />
             </label>
             {event.description && (
-              <p className="mt-1 line-clamp-2 text-sm text-primary-black/55">
+              <p className="mt-1 line-clamp-2 break-words text-sm text-primary-black/55">
                 {event.description}
               </p>
             )}
@@ -502,7 +502,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
           </Link>
         </div>
 
-        <div className="mt-4 space-y-1.5 text-sm text-primary-black/65">
+        <div className="mt-4 min-w-0 space-y-1.5 text-sm text-primary-black/65">
           <p className="flex min-w-0 items-center gap-1.5">
             <Calendar className="h-4 w-4 shrink-0 text-brand-teal" aria-hidden />
             <span className="min-w-0 truncate">
@@ -517,7 +517,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
           </p>
           <p className="flex min-w-0 items-center gap-1.5">
             <Users className="h-4 w-4 shrink-0 text-[#4A8FE7]" aria-hidden />
-            {event.guestCount} ospiti
+            <span className="min-w-0">{event.guestCount} ospiti</span>
           </p>
         </div>
       </div>
@@ -529,7 +529,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
         onPayDeposit={payDeposit}
       />
 
-      <div className="min-w-0 px-3 py-4 sm:px-4">
+      <div className="min-w-0 overflow-hidden px-3 py-4 sm:px-4">
         <div className="flex min-w-0 items-center justify-between gap-3">
           <h3 className="text-sm font-semibold text-primary-black">Servizi</h3>
           <p className="shrink-0 text-sm text-primary-black/50">
@@ -546,10 +546,10 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
             return (
               <li
                 key={service.id}
-                className="flex min-w-0 flex-col gap-2 py-3 first:pt-0 last:pb-0"
+                className="min-w-0 space-y-2 py-3 first:pt-0 last:pb-0"
               >
                 <div className="flex min-w-0 items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 overflow-hidden">
                     <p className="truncate text-sm font-medium text-primary-black">
                       {service.name}
                     </p>
@@ -569,7 +569,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                       : onOpenPayment({ event, service })
                   }
                   disabled={payment.paid}
-                  className={`w-full rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
+                  className={`box-border w-full max-w-full rounded-lg px-3 py-2.5 text-center text-xs font-medium transition-colors ${
                     payment.paid
                       ? "bg-primary-black text-white"
                       : "border border-primary-black/15 text-primary-black hover:border-primary-black/30"
@@ -582,7 +582,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
           })}
         </ul>
 
-        <dl className="mt-4 space-y-2 border-t border-primary-black/8 pt-4 text-sm">
+        <dl className="mt-4 min-w-0 space-y-2 border-t border-primary-black/8 pt-4 text-sm">
           <div className="flex min-w-0 items-center justify-between gap-3">
             <dt className="min-w-0 text-primary-black/55">Caparra location</dt>
             <dd className="shrink-0 font-medium tabular-nums text-primary-black">
@@ -652,7 +652,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       )}
 
       {missingSuggestions.length > 0 && (
-        <section className="min-w-0 border-t border-primary-black/8 bg-rose-50/60 px-3 py-4 sm:px-4">
+        <section className="min-w-0 overflow-hidden border-t border-primary-black/8 bg-rose-50/60 px-3 py-4 sm:px-4">
           <p className="text-sm font-medium text-primary-black">
             Potrebbe mancare
           </p>

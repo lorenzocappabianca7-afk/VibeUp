@@ -4,6 +4,7 @@ import { ExploreScreen } from "@/components/screens/explore-screen";
 import { MessagesScreen } from "@/components/screens/messages-screen";
 import { MyEventsScreen } from "@/components/screens/my-events-screen";
 import { ProfileScreen } from "@/components/screens/profile-screen";
+import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import { TABS, type TabId } from "@/types/navigation";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -70,7 +71,12 @@ export function MobileShell() {
   }
 
   return (
-    <div className="relative mx-auto box-border min-h-dvh w-full max-w-[100%] overflow-x-hidden bg-background shadow-none sm:max-w-lg sm:shadow-[0_0_60px_-15px_rgba(15,15,17,0.12)] md:max-w-2xl lg:max-w-6xl">
+    <div
+      className={cn(
+        "relative mx-auto box-border min-h-dvh overflow-x-hidden bg-background shadow-none sm:shadow-[0_0_60px_-15px_rgba(15,15,17,0.12)]",
+        APP_SHELL_WIDTH_CLASS,
+      )}
+    >
       <main
         className="box-border min-w-0 w-full max-w-full overflow-x-hidden pt-6 lg:pt-8"
         style={{
