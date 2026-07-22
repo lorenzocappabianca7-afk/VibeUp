@@ -34,6 +34,14 @@ export const metadata: Metadata = {
     "party planner",
   ],
   applicationName: "VibeUp",
+  appleWebApp: {
+    capable: true,
+    title: "VibeUp",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   openGraph: {
     type: "website",
     locale: "it_IT",
@@ -72,6 +80,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#0F0F11" },
+    { media: "(prefers-color-scheme: dark)", color: "#0F0F11" },
+  ],
+  colorScheme: "light",
 };
 
 export default function RootLayout({

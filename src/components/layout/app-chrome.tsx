@@ -1,6 +1,7 @@
 "use client";
 
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner";
 import { TABS, type TabId } from "@/types/navigation";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, type ReactNode } from "react";
@@ -47,6 +48,7 @@ function AppChromeInner({ children }: { children: ReactNode }) {
 
   return (
     <>
+      {!hideNav && <PwaInstallBanner />}
       <div
         className="min-w-0 max-w-full flex-1 overflow-x-hidden"
         style={
