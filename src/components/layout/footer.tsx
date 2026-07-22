@@ -1,9 +1,24 @@
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import Image from "next/image";
 
-export function Footer() {
+interface FooterProps {
+  /** Extends the black background under the fixed bottom nav clearance. */
+  withNavOffset?: boolean;
+}
+
+export function Footer({ withNavOffset = false }: FooterProps) {
   return (
-    <footer className="mt-8 shrink-0 bg-primary-black text-white">
+    <footer
+      className="mt-8 shrink-0 bg-primary-black text-white"
+      style={
+        withNavOffset
+          ? {
+              paddingBottom:
+                "calc(5.5rem + env(safe-area-inset-bottom, 0px))",
+            }
+          : undefined
+      }
+    >
       <div
         className={cn(
           "mx-auto box-border px-4 py-6 sm:px-6 sm:py-8 lg:px-8",

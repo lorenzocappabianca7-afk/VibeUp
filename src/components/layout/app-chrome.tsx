@@ -55,19 +55,13 @@ function AppChromeInner({ children }: { children: ReactNode }) {
         className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-hidden"
         style={{
           paddingTop: "env(safe-area-inset-top, 0px)",
-          ...(hideNav
-            ? {}
-            : {
-                paddingBottom:
-                  "calc(5.5rem + env(safe-area-inset-bottom, 0px))",
-              }),
         }}
       >
         {!hideNav && <PwaInstallBanner />}
         <div className="min-w-0 max-w-full flex-1 overflow-x-hidden">
           {children}
         </div>
-        <Footer />
+        <Footer withNavOffset={!hideNav} />
       </div>
       {!hideNav && (
         <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
@@ -84,13 +78,12 @@ export function AppChrome({ children }: { children: ReactNode }) {
           className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-hidden"
           style={{
             paddingTop: "env(safe-area-inset-top, 0px)",
-            paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))",
           }}
         >
           <div className="min-w-0 max-w-full flex-1 overflow-x-hidden">
             {children}
           </div>
-          <Footer />
+          <Footer withNavOffset />
         </div>
       }
     >
