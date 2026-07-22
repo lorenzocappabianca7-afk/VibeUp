@@ -56,12 +56,14 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/favicon-96.png", sizes: "96x96", type: "image/png" },
       { url: "/vibeup-mark-192.png", sizes: "192x192", type: "image/png" },
       { url: "/vibeup-mark-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
     ],
-    shortcut: "/favicon.ico",
-    apple: "/vibeup-apple.png",
+    shortcut: "/favicon-48.png",
+    apple: [{ url: "/vibeup-apple.png", sizes: "180x180", type: "image/png" }],
   },
 };
 
