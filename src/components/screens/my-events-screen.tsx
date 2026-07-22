@@ -240,7 +240,9 @@ function formatDepositDeadline(deadline: Date) {
   return depositDeadlineFormatter.format(deadline);
 }
 
-export const MyEventsScreen = memo(function MyEventsScreen({}: MyEventsScreenProps) {
+export const MyEventsScreen = memo(function MyEventsScreen({
+  onCreateEvent,
+}: MyEventsScreenProps) {
   const {
     events,
     markServicePaid: markServicePaidInState,
@@ -363,6 +365,26 @@ export const MyEventsScreen = memo(function MyEventsScreen({}: MyEventsScreenPro
           )}
         </div>
       </header>
+
+      {upcomingEvents.length === 0 && pastEvents.length === 0 && (
+        <section className="min-w-0 rounded-2xl border border-dashed border-primary-black/15 bg-primary-black/[0.02] px-4 py-8 text-center">
+          <p className="text-base font-semibold text-primary-black">
+            Nessun evento ancora
+          </p>
+          <p className="mt-1 text-sm text-primary-black/55">
+            Genera un preventivo da una location per salvarlo qui.
+          </p>
+          {onCreateEvent && (
+            <button
+              type="button"
+              onClick={onCreateEvent}
+              className="mt-4 inline-flex rounded-2xl bg-primary-black px-4 py-2.5 text-sm font-semibold text-white"
+            >
+              Esplora location
+            </button>
+          )}
+        </section>
+      )}
 
       {upcomingEvents.length > 0 && (
         <section className="min-w-0 space-y-4">
@@ -546,37 +568,37 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
             return (
               <li
                 key={service.id}
-                className="min-w-0 space-y-2 py-3 first:pt-0 last:pb-0"
+                className="flex min-w-0 items-center gap-3 py-3 first:pt-0 last:pb-0"
               >
-                <div className="flex min-w-0 items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1 overflow-hidden">
-                    <p className="truncate text-sm font-medium text-primary-black">
-                      {service.name}
-                    </p>
-                    <p className="truncate text-xs text-primary-black/50">
-                      {service.providerName}
-                    </p>
-                  </div>
-                  <span className="shrink-0 pt-0.5 text-sm font-semibold tabular-nums text-primary-black">
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <p className="truncate text-sm font-medium text-primary-black">
+                    {service.name}
+                  </p>
+                  <p className="truncate text-xs text-primary-black/50">
+                    {service.providerName}
+                  </p>
+                </div>
+                <div className="flex w-[6.75rem] shrink-0 flex-col items-end gap-1.5">
+                  <span className="text-sm font-semibold tabular-nums text-primary-black">
                     {formatCurrency(service.amountPaid)}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      payment.paid
+                        ? undefined
+                        : onOpenPayment({ event, service })
+                    }
+                    disabled={payment.paid}
+                    className={`w-full rounded-lg px-2 py-1.5 text-center text-[11px] font-medium leading-tight transition-colors ${
+                      payment.paid
+                        ? "bg-primary-black text-white"
+                        : "border border-primary-black/15 text-primary-black hover:border-primary-black/30"
+                    }`}
+                  >
+                    {payment.paid ? "Pagato" : "Da pagare"}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    payment.paid
-                      ? undefined
-                      : onOpenPayment({ event, service })
-                  }
-                  disabled={payment.paid}
-                  className={`box-border w-full max-w-full rounded-lg px-3 py-2.5 text-center text-xs font-medium transition-colors ${
-                    payment.paid
-                      ? "bg-primary-black text-white"
-                      : "border border-primary-black/15 text-primary-black hover:border-primary-black/30"
-                  }`}
-                >
-                  {payment.paid ? "Pagato" : "Da pagare"}
-                </button>
               </li>
             );
           })}
@@ -704,13 +726,13 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
   }, [deadline]);
 
   return (
-    <section className="min-w-0 border-b border-primary-black/8 bg-primary-black/[0.02] px-3 py-3 sm:px-4">
+    <section className="min-w-0 overflow-hidden border-b border-primary-black/8 bg-primary-black/[0.02] px-3 py-3 sm:px-4">
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-primary-black">
             Caparra {formatCurrency(depositAmount)}
           </p>
-          <p className="mt-0.5 text-xs text-primary-black/50">
+          <p className="mt-0.5 break-words text-xs text-primary-black/50">
             Entro {formatDepositDeadline(deadline)}
             {!countdown.isPast && (
               <>
@@ -724,18 +746,18 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
         </div>
 
         {payment.paid ? (
-          <span className="inline-flex w-fit shrink-0 items-center rounded-lg bg-primary-black px-4 py-2 text-xs font-medium text-white">
+          <span className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-primary-black px-4 py-2.5 text-xs font-medium text-white sm:w-fit">
             Caparra pagata
           </span>
         ) : countdown.isPast ? (
-          <span className="inline-flex w-fit shrink-0 items-center rounded-lg border border-primary-black/15 px-4 py-2 text-xs font-medium text-primary-black/60">
+          <span className="inline-flex w-full shrink-0 items-center justify-center rounded-lg border border-primary-black/15 px-4 py-2.5 text-xs font-medium text-primary-black/60 sm:w-fit">
             Scadenza superata
           </span>
         ) : (
           <button
             type="button"
             onClick={onPayDeposit}
-            className="inline-flex w-fit shrink-0 items-center rounded-lg bg-primary-black px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-primary-black/85"
+            className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-primary-black px-4 py-2.5 text-xs font-medium text-white transition-colors hover:bg-primary-black/85 sm:w-fit"
           >
             Paga caparra
           </button>
@@ -873,7 +895,7 @@ const PaymentChoiceModal = memo(function PaymentChoiceModal({
         aria-label="Chiudi scelta pagamento"
       />
       <div
-        className="smooth-scroll relative max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-background p-5 shadow-xl lg:rounded-[2rem]"
+        className="smooth-scroll relative max-h-[min(90dvh,calc(100dvh-5.5rem-env(safe-area-inset-bottom,0px)))] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-background p-5 shadow-xl lg:rounded-[2rem]"
         style={MODAL_SAFE_BOTTOM_STYLE}
       >
         <div className="flex min-w-0 items-start justify-between gap-3">

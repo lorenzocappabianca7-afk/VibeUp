@@ -7,7 +7,7 @@ export interface TabItem {
 
 export const TABS: TabItem[] = [
   { id: "explore", label: "Esplora" },
-  { id: "events", label: "I Miei Eventi" },
+  { id: "events", label: "Eventi" },
   { id: "messages", label: "Messaggi" },
   { id: "profile", label: "Profilo" },
 ];
