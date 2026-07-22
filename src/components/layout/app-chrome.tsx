@@ -4,26 +4,48 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { AppWakeRecovery } from "@/components/pwa/app-wake-recovery";
 import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner";
-import { TABS, type TabId } from "@/types/navigation";
+import { useAppState } from "@/context/app-state-context";
+import { ALL_TAB_IDS, type TabId } from "@/types/navigation";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, startTransition, useCallback, type ReactNode } from "react";
 
-const VALID_TABS = new Set(TABS.map((tab) => tab.id));
-
-function resolveActiveTab(pathname: string, tabParam: string | null): TabId {
+function resolveActiveTab(
+  pathname: string,
+  tabParam: string | null,
+  isBusinessUser: boolean,
+): TabId {
   if (pathname.startsWith("/event")) return "events";
   if (pathname.startsWith("/location") || pathname.startsWith("/service")) {
     return "explore";
   }
 
   if (pathname === "/" || pathname === "") {
-    if (tabParam && VALID_TABS.has(tabParam as TabId)) {
-      return tabParam as TabId;
+    if (tabParam && ALL_TAB_IDS.has(tabParam as TabId)) {
+      const tab = tabParam as TabId;
+      if (isBusinessUser) {
+        if (
+          tab === "notifications" ||
+          tab === "calendar" ||
+          tab === "profile"
+        ) {
+          return tab;
+        }
+        return "notifications";
+      }
+      if (
+        tab === "explore" ||
+        tab === "events" ||
+        tab === "messages" ||
+        tab === "profile"
+      ) {
+        return tab;
+      }
+      return "explore";
     }
-    return "explore";
+    return isBusinessUser ? "notifications" : "explore";
   }
 
-  return "explore";
+  return isBusinessUser ? "notifications" : "explore";
 }
 
 function shouldHideBottomNav(pathname: string) {
@@ -34,20 +56,28 @@ function AppChromeInner({ children }: { children: ReactNode }) {
   const pathname = usePathname() || "/";
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isBusinessUser } = useAppState();
   const hideNav = shouldHideBottomNav(pathname);
-  const activeTab = resolveActiveTab(pathname, searchParams.get("tab"));
+  const activeTab = resolveActiveTab(
+    pathname,
+    searchParams.get("tab"),
+    isBusinessUser,
+  );
 
   const handleTabChange = useCallback(
     (tab: TabId) => {
       startTransition(() => {
-        if (tab === "explore") {
+        const isDefault =
+          (isBusinessUser && tab === "notifications") ||
+          (!isBusinessUser && tab === "explore");
+        if (isDefault) {
           router.push("/");
           return;
         }
         router.push(`/?tab=${tab}`);
       });
     },
-    [router],
+    [isBusinessUser, router],
   );
 
   return (
@@ -66,7 +96,11 @@ function AppChromeInner({ children }: { children: ReactNode }) {
         <Footer withNavOffset={!hideNav} />
       </div>
       {!hideNav && (
-        <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
+        <BottomNav
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          variant={isBusinessUser ? "business" : "consumer"}
+        />
       )}
     </>
   );

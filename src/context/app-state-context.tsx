@@ -32,6 +32,20 @@ export interface CurrentUser {
   instagramHandle?: string;
   phoneNumber?: string;
   paymentCard?: SavedPaymentCard;
+  /** Consumer by default; business accounts unlock the Pro shell */
+  accountType?: "consumer" | "business";
+  businessProfile?: BusinessProfile | null;
+}
+
+export function isProAccount(account: CurrentUser): boolean {
+  return account.accountType === "business";
+}
+
+export interface CreateBusinessAccountInput {
+  ownerName: string;
+  email: string;
+  phoneNumber: string;
+  businessProfile: BusinessProfile;
 }
 
 interface PaymentState {
@@ -72,6 +86,7 @@ interface AppStateContextValue {
   removeManagedListing: (id: string) => void;
   toggleManagedListingPublication: (id: string) => void;
   createAccount: (account: Omit<CurrentUser, "id">) => void;
+  createBusinessAccount: (input: CreateBusinessAccountInput) => void;
   deleteAccount: (id: string) => void;
   switchAccount: (id: string) => void;
   updateCurrentUser: (updates: Partial<Omit<CurrentUser, "id">>) => void;
@@ -222,6 +237,53 @@ function resolveCurrentUser(
   );
 }
 
+function normalizeAccount(account: CurrentUser): CurrentUser {
+  const accountType =
+    account.accountType === "business" || account.businessProfile
+      ? "business"
+      : "consumer";
+
+  return {
+    ...account,
+    email: account.email.trim().toLowerCase(),
+    name: account.name.trim() || account.email,
+    accountType,
+    businessProfile:
+      accountType === "business" ? (account.businessProfile ?? null) : null,
+  };
+}
+
+function migrateAccountsWithLegacyBusiness(
+  accounts: CurrentUser[],
+  legacyProfile: BusinessProfile | null | undefined,
+  currentUserId: string | undefined,
+): CurrentUser[] {
+  const normalized = accounts.map(normalizeAccount);
+  if (!legacyProfile) return normalized;
+  if (normalized.some((account) => account.accountType === "business")) {
+    return normalized;
+  }
+
+  const targetId =
+    currentUserId &&
+    currentUserId !== GUEST_USER.id &&
+    normalized.some((account) => account.id === currentUserId)
+      ? currentUserId
+      : normalized[0]?.id;
+
+  if (!targetId) return normalized;
+
+  return normalized.map((account) =>
+    account.id === targetId
+      ? {
+          ...account,
+          accountType: "business" as const,
+          businessProfile: legacyProfile,
+        }
+      : account,
+  );
+}
+
 function trimCompareIds(ids: string[]) {
   return ids.slice(0, MAX_COMPARE_LOCATIONS);
 }
@@ -302,8 +364,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [hydratedFromStorage, setHydratedFromStorage] = useState(false);
   const [accounts, setAccounts] = useState<CurrentUser[]>(MOCK_ACCOUNTS);
   const [currentUserId, setCurrentUserId] = useState(GUEST_USER.id);
-  const [businessProfile, setBusinessProfile] =
-    useState<BusinessProfile | null>(null);
   const [userStatesMap, setUserStatesMap] = useState<
     Record<string, UserScopedState>
   >(() =>
@@ -319,6 +379,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const isGuest = currentUserId === GUEST_USER.id;
   const currentUserIdRef = useRef(currentUserId);
   currentUserIdRef.current = currentUserId;
+
+  const currentUser = resolveCurrentUser(accounts, currentUserId);
+  const businessProfile =
+    currentUser.accountType === "business"
+      ? (currentUser.businessProfile ?? null)
+      : null;
+  const isBusinessUser = currentUser.accountType === "business";
 
   const currentUserState =
     userStatesMap[currentUserId] ?? createDefaultUserState(currentUserId);
@@ -354,19 +421,20 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
 
       const storedState = readStoredAppState();
-      const nextAccounts = storedState.accounts ?? MOCK_ACCOUNTS;
+      const migratedAccounts = migrateAccountsWithLegacyBusiness(
+        storedState.accounts ?? MOCK_ACCOUNTS,
+        storedState.businessProfile,
+        storedState.currentUserId,
+      );
       const requestedUserId = storedState.currentUserId;
       const resolvedUserId =
         requestedUserId === GUEST_USER.id ||
-        nextAccounts.some((account) => account.id === requestedUserId)
+        migratedAccounts.some((account) => account.id === requestedUserId)
           ? (requestedUserId ?? GUEST_USER.id)
           : GUEST_USER.id;
 
-      if (storedState.accounts) setAccounts(storedState.accounts);
+      setAccounts(migratedAccounts);
       setCurrentUserId(resolvedUserId);
-      if ("businessProfile" in storedState) {
-        setBusinessProfile(storedState.businessProfile ?? null);
-      }
       setUserStatesMap(hydrateUserStates(storedState));
       if (storedState.managedListings) {
         setManagedListings(storedState.managedListings);
@@ -386,6 +454,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     writeStoredAppState({
       accounts,
       currentUserId,
+      // Keep legacy key in sync with the active business account for older builds
       businessProfile,
       userStates: userStatesMap,
       managedListings,
@@ -617,6 +686,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!normalizedEmail) return;
 
     const nextName = account.name.trim() || normalizedEmail;
+    const nextAccountType =
+      account.accountType === "business" || account.businessProfile
+        ? ("business" as const)
+        : ("consumer" as const);
 
     setAccounts((prev) => {
       const existing = prev.find(
@@ -627,24 +700,34 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setCurrentUserId(existing.id);
         return prev.map((item) =>
           item.id === existing.id
-            ? {
+            ? normalizeAccount({
                 ...item,
                 ...account,
                 id: existing.id,
                 email: normalizedEmail,
                 name: nextName,
-              }
+                accountType: nextAccountType,
+                businessProfile:
+                  nextAccountType === "business"
+                    ? (account.businessProfile ?? item.businessProfile ?? null)
+                    : null,
+              })
             : item,
         );
       }
 
       const id = `account-${Date.now()}`;
-      const nextAccount: CurrentUser = {
+      const nextAccount = normalizeAccount({
         ...account,
         id,
         email: normalizedEmail,
         name: nextName,
-      };
+        accountType: nextAccountType,
+        businessProfile:
+          nextAccountType === "business"
+            ? (account.businessProfile ?? null)
+            : null,
+      });
 
       setUserStatesMap((map) => ({
         ...map,
@@ -655,6 +738,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       return [nextAccount, ...prev];
     });
   }, []);
+
+  const createBusinessAccount = useCallback(
+    (input: CreateBusinessAccountInput) => {
+      createAccount({
+        name: input.ownerName,
+        email: input.email,
+        phoneNumber: input.phoneNumber,
+        accountType: "business",
+        businessProfile: input.businessProfile,
+      });
+    },
+    [createAccount],
+  );
 
   const deleteAccount = useCallback((id: string) => {
     if (id === GUEST_USER.id) return;
@@ -704,7 +800,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
       setAccounts((prev) =>
         prev.map((account) =>
-          account.id === userId ? { ...account, ...safeUpdates } : account,
+          account.id === userId
+            ? normalizeAccount({ ...account, ...safeUpdates })
+            : account,
         ),
       );
     },
@@ -712,23 +810,47 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   );
 
   const saveBusinessProfile = useCallback((profile: BusinessProfile) => {
-    setBusinessProfile(profile);
+    const userId = currentUserIdRef.current;
+    if (userId === GUEST_USER.id) return;
+
+    setAccounts((prev) =>
+      prev.map((account) =>
+        account.id === userId
+          ? normalizeAccount({
+              ...account,
+              accountType: "business",
+              businessProfile: profile,
+            })
+          : account,
+      ),
+    );
   }, []);
 
   const clearBusinessProfile = useCallback(() => {
-    setBusinessProfile(null);
+    const userId = currentUserIdRef.current;
+    if (userId === GUEST_USER.id) return;
+
+    setAccounts((prev) =>
+      prev.map((account) =>
+        account.id === userId
+          ? normalizeAccount({
+              ...account,
+              accountType: "consumer",
+              businessProfile: null,
+            })
+          : account,
+      ),
+    );
   }, []);
 
   const value = useMemo(
     () => {
-      const currentUser = resolveCurrentUser(accounts, currentUserId);
-
       return {
       currentUser,
       accounts,
       isGuest,
       businessProfile,
-      isBusinessUser: businessProfile !== null,
+      isBusinessUser,
       isStorageHydrated: hydratedFromStorage,
       events,
       paymentStates,
@@ -753,6 +875,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       removeManagedListing,
       toggleManagedListingPublication,
       createAccount,
+      createBusinessAccount,
       deleteAccount,
       switchAccount,
       updateCurrentUser,
@@ -762,9 +885,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     },
     [
       accounts,
-      currentUserId,
+      currentUser,
       isGuest,
       businessProfile,
+      isBusinessUser,
       hydratedFromStorage,
       events,
       paymentStates,
@@ -789,6 +913,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       removeManagedListing,
       toggleManagedListingPublication,
       createAccount,
+      createBusinessAccount,
       deleteAccount,
       switchAccount,
       updateCurrentUser,

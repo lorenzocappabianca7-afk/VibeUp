@@ -17,9 +17,10 @@ export interface CatalogItem {
 export interface LocaleBusinessProfile {
   category: "locale";
   businessName: string;
-  maxCapacity: number;
-  hourlyPrice: number;
   address: string;
+  /** Optional until the venue completes its full listing */
+  maxCapacity?: number;
+  hourlyPrice?: number;
 }
 
 export interface PerformerBusinessProfile {

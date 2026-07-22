@@ -1,30 +1,45 @@
 "use client";
 
 import { cn, APP_SHELL_WIDTH_CLASS } from "@/lib/utils";
-import { TABS, type TabId } from "@/types/navigation";
-import { Calendar, MessageCircle, Search, User } from "lucide-react";
+import {
+  BUSINESS_TABS,
+  CONSUMER_TABS,
+  type TabId,
+  type TabItem,
+} from "@/types/navigation";
+import {
+  Bell,
+  Calendar,
+  CalendarDays,
+  MessageCircle,
+  Search,
+  User,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 const TAB_ICONS: Record<TabId, LucideIcon> = {
   explore: Search,
   events: Calendar,
   messages: MessageCircle,
+  notifications: Bell,
+  calendar: CalendarDays,
   profile: User,
-};
-
-const ACTIVE_COLORS: Record<TabId, string> = {
-  explore: "text-primary-black",
-  events: "text-primary-black",
-  messages: "text-primary-black",
-  profile: "text-primary-black",
 };
 
 interface BottomNavProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
+  variant?: "consumer" | "business";
 }
 
-export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
+export function BottomNav({
+  activeTab,
+  onTabChange,
+  variant = "consumer",
+}: BottomNavProps) {
+  const tabs: TabItem[] =
+    variant === "business" ? BUSINESS_TABS : CONSUMER_TABS;
+
   return (
     <nav
       className={cn(
@@ -39,7 +54,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
       aria-label="Navigazione principale"
     >
       <ul className="flex items-stretch justify-around px-1 pt-1.5 pb-2">
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = TAB_ICONS[tab.id];
 
@@ -52,14 +67,14 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
                 className={cn(
                   "touch-feedback flex w-full min-w-0 flex-col items-center gap-0.5 rounded-xl px-0.5 py-1.5 sm:gap-1 sm:px-1 sm:py-2",
                   isActive
-                    ? `${ACTIVE_COLORS[tab.id]} bg-primary-black/[0.03]`
+                    ? "bg-primary-black/[0.03] text-primary-black"
                     : "text-primary-black/45 hover:text-primary-black/70",
                 )}
               >
                 <Icon
                   className={cn(
                     "h-5 w-5 transition-colors duration-150",
-                    isActive ? ACTIVE_COLORS[tab.id] : "text-current",
+                    isActive ? "text-primary-black" : "text-current",
                   )}
                   strokeWidth={isActive ? 2.5 : 2}
                   aria-hidden
@@ -67,7 +82,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
                 <span
                   className={cn(
                     "max-w-full truncate px-0.5 text-[9px] font-medium leading-none transition-colors duration-150 sm:text-[10px] sm:leading-tight",
-                    isActive ? ACTIVE_COLORS[tab.id] : "text-current",
+                    isActive ? "text-primary-black" : "text-current",
                   )}
                 >
                   {tab.label}
@@ -76,7 +91,9 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
                   <span
                     className={cn(
                       "h-0.5 w-4 rounded-full",
-                      tab.id === "messages" || tab.id === "profile"
+                      tab.id === "messages" ||
+                        tab.id === "profile" ||
+                        tab.id === "notifications"
                         ? "bg-brand-pink"
                         : "bg-brand-teal",
                     )}

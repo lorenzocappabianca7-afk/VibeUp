@@ -38,9 +38,15 @@ export interface ShopFormData {
 interface LocaleFieldsProps {
   data: LocaleFormData;
   onChange: (data: LocaleFormData) => void;
+  /** Only location name + address (business account signup) */
+  simplified?: boolean;
 }
 
-export function LocaleFields({ data, onChange }: LocaleFieldsProps) {
+export function LocaleFields({
+  data,
+  onChange,
+  simplified = false,
+}: LocaleFieldsProps) {
   function update<K extends keyof LocaleFormData>(
     key: K,
     value: LocaleFormData[K],
@@ -52,38 +58,42 @@ export function LocaleFields({ data, onChange }: LocaleFieldsProps) {
     <div className="space-y-4">
       <TextField
         id="locale-name"
-        label="Nome del locale"
+        label="Nome della location"
         value={data.businessName}
         onChange={(v) => update("businessName", v)}
         placeholder="Es. Villa Aurora"
         required
       />
-      <TextField
-        id="locale-capacity"
-        label="Capacità massima"
-        hint="Numero massimo di ospiti"
-        type="number"
-        min={1}
-        value={data.maxCapacity}
-        onChange={(v) => update("maxCapacity", v)}
-        placeholder="Es. 80"
-        required
-      />
-      <TextField
-        id="locale-price"
-        label="Prezzo base evento"
-        hint="Tariffa indicativa per serata o evento privato"
-        type="number"
-        min={0}
-        step="1"
-        value={data.hourlyPrice}
-        onChange={(v) => update("hourlyPrice", v)}
-        placeholder="Es. 120"
-        required
-      />
+      {!simplified && (
+        <>
+          <TextField
+            id="locale-capacity"
+            label="Capacità massima"
+            hint="Numero massimo di ospiti"
+            type="number"
+            min={1}
+            value={data.maxCapacity}
+            onChange={(v) => update("maxCapacity", v)}
+            placeholder="Es. 80"
+            required
+          />
+          <TextField
+            id="locale-price"
+            label="Prezzo base evento"
+            hint="Tariffa indicativa per serata o evento privato"
+            type="number"
+            min={0}
+            step="1"
+            value={data.hourlyPrice}
+            onChange={(v) => update("hourlyPrice", v)}
+            placeholder="Es. 120"
+            required
+          />
+        </>
+      )}
       <TextField
         id="locale-address"
-        label="Indirizzo"
+        label="Indirizzo location"
         value={data.address}
         onChange={(v) => update("address", v)}
         placeholder="Via, CAP, Città"

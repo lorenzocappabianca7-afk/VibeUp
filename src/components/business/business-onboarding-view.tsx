@@ -14,7 +14,7 @@ import {
   type PerformerFormData,
   type ShopFormData,
 } from "@/components/business/business-form-fields";
-import { SelectField } from "@/components/ui/form-fields";
+import { SelectField, TextField } from "@/components/ui/form-fields";
 import { useAppState } from "@/context/app-state-context";
 import {
   BUSINESS_CATEGORY_LABELS,
@@ -33,6 +33,22 @@ const CATEGORIES = Object.entries(BUSINESS_CATEGORY_LABELS) as [
   string,
 ][];
 
+interface OwnerFormData {
+  ownerName: string;
+  email: string;
+  phoneNumber: string;
+}
+
+function getEmptyOwnerForm(
+  defaults?: Partial<OwnerFormData>,
+): OwnerFormData {
+  return {
+    ownerName: defaults?.ownerName ?? "",
+    email: defaults?.email ?? "",
+    phoneNumber: defaults?.phoneNumber ?? "",
+  };
+}
+
 function buildProfile(
   category: BusinessCategory,
   locale: LocaleFormData,
@@ -40,15 +56,19 @@ function buildProfile(
   shop: ShopFormData,
 ): BusinessProfile | null {
   if (categoryUsesLocaleFields(category)) {
-    if (!locale.businessName || !locale.maxCapacity || !locale.hourlyPrice) {
+    if (!locale.businessName.trim() || !locale.address.trim()) {
       return null;
     }
     return {
       category: "locale",
-      businessName: locale.businessName,
-      maxCapacity: Number(locale.maxCapacity),
-      hourlyPrice: Number(locale.hourlyPrice),
-      address: locale.address,
+      businessName: locale.businessName.trim(),
+      address: locale.address.trim(),
+      ...(locale.maxCapacity
+        ? { maxCapacity: Number(locale.maxCapacity) }
+        : {}),
+      ...(locale.hourlyPrice
+        ? { hourlyPrice: Number(locale.hourlyPrice) }
+        : {}),
     };
   }
 
@@ -86,8 +106,14 @@ function profileToForms(profile: BusinessProfile) {
       category: "locale" as BusinessCategory,
       locale: {
         businessName: profile.businessName,
-        maxCapacity: String(profile.maxCapacity),
-        hourlyPrice: String(profile.hourlyPrice),
+        maxCapacity:
+          typeof profile.maxCapacity === "number"
+            ? String(profile.maxCapacity)
+            : "",
+        hourlyPrice:
+          typeof profile.hourlyPrice === "number"
+            ? String(profile.hourlyPrice)
+            : "",
         address: profile.address,
       },
       performer: getEmptyPerformerForm(),
@@ -123,16 +149,27 @@ function profileToForms(profile: BusinessProfile) {
   }
 
   return {
-    category: "dj" as BusinessCategory,
+    category: "locale" as BusinessCategory,
     locale: getEmptyLocaleForm(),
     performer: getEmptyPerformerForm(),
     shop: getEmptyShopForm(),
   };
 }
 
+function isValidEmail(value: string) {
+  return value.includes("@") && value.includes(".");
+}
+
 export function BusinessOnboardingView() {
   const router = useRouter();
-  const { businessProfile, saveBusinessProfile } = useAppState();
+  const {
+    businessProfile,
+    currentUser,
+    isBusinessUser,
+    createBusinessAccount,
+    saveBusinessProfile,
+    updateCurrentUser,
+  } = useAppState();
 
   const initial = businessProfile
     ? profileToForms(businessProfile)
@@ -144,23 +181,56 @@ export function BusinessOnboardingView() {
       };
 
   const [category, setCategory] = useState<BusinessCategory | "">(
-    initial.category,
+    initial.category || "locale",
+  );
+  const [ownerData, setOwnerData] = useState<OwnerFormData>(() =>
+    getEmptyOwnerForm({
+      ownerName: currentUser.name !== "Ospite" ? currentUser.name : "",
+      email: currentUser.email,
+      phoneNumber: currentUser.phoneNumber ?? "",
+    }),
   );
   const [localeData, setLocaleData] = useState<LocaleFormData>(initial.locale);
   const [performerData, setPerformerData] =
     useState<PerformerFormData>(initial.performer);
   const [shopData, setShopData] = useState<ShopFormData>(initial.shop);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isLocale = category === "locale";
+  const editingExisting = isBusinessUser && Boolean(businessProfile);
 
   function handleCategoryChange(value: string) {
     const next = value as BusinessCategory;
     setCategory(next);
     setSuccess(false);
+    setError(null);
+  }
+
+  function updateOwner<K extends keyof OwnerFormData>(
+    key: K,
+    value: OwnerFormData[K],
+  ) {
+    setOwnerData((current) => ({ ...current, [key]: value }));
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
     if (!category) return;
+
+    const ownerName = ownerData.ownerName.trim();
+    const email = ownerData.email.trim().toLowerCase();
+    const phoneNumber = ownerData.phoneNumber.trim();
+
+    if (!ownerName || !email || !phoneNumber) {
+      setError("Inserisci nome proprietario, email e telefono.");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError("Inserisci un'email valida.");
+      return;
+    }
 
     const profile = buildProfile(
       category,
@@ -169,13 +239,35 @@ export function BusinessOnboardingView() {
       shopData,
     );
 
-    if (!profile) return;
+    if (!profile) {
+      setError(
+        isLocale
+          ? "Inserisci nome e indirizzo della location."
+          : "Compila tutti i campi obbligatori della categoria.",
+      );
+      return;
+    }
 
-    saveBusinessProfile(profile);
+    if (editingExisting) {
+      updateCurrentUser({
+        name: ownerName,
+        email,
+        phoneNumber,
+      });
+      saveBusinessProfile(profile);
+    } else {
+      createBusinessAccount({
+        ownerName,
+        email,
+        phoneNumber,
+        businessProfile: profile,
+      });
+    }
+
     setSuccess(true);
     setTimeout(() => {
-      router.push("/?tab=profile");
-    }, 1800);
+      router.push("/?tab=notifications");
+    }, 1400);
   }
 
   return (
@@ -189,16 +281,17 @@ export function BusinessOnboardingView() {
       </Link>
 
       <header>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-teal/15 px-3 py-1 text-xs font-medium text-brand-teal">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/25 px-3 py-1 text-xs font-semibold text-amber-700">
           <Briefcase className="h-3.5 w-3.5" aria-hidden />
-          Account Business
+          Account Pro
         </span>
         <h1 className="mt-3 text-2xl font-bold text-primary-black">
-          Registrazione Business
+          {editingExisting ? "Modifica account Business" : "Passa a Business"}
         </h1>
         <p className="mt-2 text-sm text-primary-black/60">
-          Scegli la tua categoria e compila i dettagli per comparire su VibeUp.
-          I dati vengono salvati temporaneamente nell&apos;app.
+          {isLocale
+            ? "Crea l'account della tua location: notifiche, calendario eventi confermati e profilo attività."
+            : "Registra la tua attività per gestire prenotazioni e profilo su VibeUp."}
         </p>
       </header>
 
@@ -209,10 +302,12 @@ export function BusinessOnboardingView() {
             aria-hidden
           />
           <p className="mt-4 font-semibold text-primary-black">
-            Profilo Business salvato!
+            {editingExisting
+              ? "Profilo Business aggiornato!"
+              : "Account Pro creato!"}
           </p>
           <p className="mt-1 text-sm text-primary-black/60">
-            Reindirizzamento al profilo...
+            Apertura dello spazio Business...
           </p>
         </div>
       ) : (
@@ -230,12 +325,52 @@ export function BusinessOnboardingView() {
             required
           />
 
+          {category && (
+            <section className="rounded-2xl border border-primary-black/10 bg-background p-5">
+              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-primary-black/50">
+                Dati proprietario
+              </h2>
+              <div className="space-y-4">
+                <TextField
+                  id="owner-name"
+                  label="Nome del proprietario"
+                  value={ownerData.ownerName}
+                  onChange={(v) => updateOwner("ownerName", v)}
+                  placeholder="Es. Marco Rossi"
+                  required
+                />
+                <TextField
+                  id="owner-email"
+                  label="Email"
+                  type="email"
+                  value={ownerData.email}
+                  onChange={(v) => updateOwner("email", v)}
+                  placeholder="es. marco@email.com"
+                  required
+                />
+                <TextField
+                  id="owner-phone"
+                  label="Contatto telefonico"
+                  type="tel"
+                  value={ownerData.phoneNumber}
+                  onChange={(v) => updateOwner("phoneNumber", v)}
+                  placeholder="Es. +39 333 1234567"
+                  required
+                />
+              </div>
+            </section>
+          )}
+
           {category && categoryUsesLocaleFields(category) && (
             <section className="rounded-2xl border border-primary-black/10 bg-background p-5">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-primary-black/50">
-                Dettagli Locale
+                Dettagli Location
               </h2>
-              <LocaleFields data={localeData} onChange={setLocaleData} />
+              <LocaleFields
+                data={localeData}
+                onChange={setLocaleData}
+                simplified
+              />
             </section>
           )}
 
@@ -265,12 +400,18 @@ export function BusinessOnboardingView() {
             </section>
           )}
 
+          {error && (
+            <p className="rounded-2xl border border-brand-pink/30 bg-brand-pink/10 px-4 py-3 text-sm text-primary-black">
+              {error}
+            </p>
+          )}
+
           {category && (
             <button
               type="submit"
               className="w-full rounded-2xl bg-brand-teal py-4 text-sm font-semibold text-white transition-colors hover:bg-brand-teal/90"
             >
-              Salva profilo Business
+              {editingExisting ? "Salva profilo Business" : "Crea account"}
             </button>
           )}
         </form>

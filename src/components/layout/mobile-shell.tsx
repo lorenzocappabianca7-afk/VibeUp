@@ -1,32 +1,57 @@
 "use client";
 
+import { BusinessCalendarScreen } from "@/components/screens/business-calendar-screen";
+import { BusinessNotificationsScreen } from "@/components/screens/business-notifications-screen";
 import { ExploreScreen } from "@/components/screens/explore-screen";
 import { MessagesScreen } from "@/components/screens/messages-screen";
 import { MyEventsScreen } from "@/components/screens/my-events-screen";
 import { ProfileScreen } from "@/components/screens/profile-screen";
+import { useAppState } from "@/context/app-state-context";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
-import { TABS, type TabId } from "@/types/navigation";
+import {
+  ALL_TAB_IDS,
+  BUSINESS_TABS,
+  CONSUMER_TABS,
+  type TabId,
+} from "@/types/navigation";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useCallback, useEffect, useState } from "react";
 
-const VALID_TABS = new Set(TABS.map((tab) => tab.id));
-
-function getInitialTab(tabParam: string | null): TabId {
-  if (tabParam && VALID_TABS.has(tabParam as TabId)) {
-    return tabParam as TabId;
+function getInitialTab(
+  tabParam: string | null,
+  isBusinessUser: boolean,
+): TabId {
+  if (tabParam && ALL_TAB_IDS.has(tabParam as TabId)) {
+    const tab = tabParam as TabId;
+    if (isBusinessUser) {
+      if (tab === "notifications" || tab === "calendar" || tab === "profile") {
+        return tab;
+      }
+      return "notifications";
+    }
+    if (
+      tab === "explore" ||
+      tab === "events" ||
+      tab === "messages" ||
+      tab === "profile"
+    ) {
+      return tab;
+    }
+    return "explore";
   }
-  return "explore";
+  return isBusinessUser ? "notifications" : "explore";
 }
 
 export function MobileShell() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
+  const { isBusinessUser } = useAppState();
   const [activeTab, setActiveTab] = useState<TabId>(() =>
-    getInitialTab(tabParam),
+    getInitialTab(tabParam, isBusinessUser),
   );
   const [visitedTabs, setVisitedTabs] = useState<Set<TabId>>(
-    () => new Set<TabId>([getInitialTab(tabParam)]),
+    () => new Set<TabId>([getInitialTab(tabParam, isBusinessUser)]),
   );
 
   const handleTabChange = useCallback(
@@ -44,7 +69,11 @@ export function MobileShell() {
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 
       const params = new URLSearchParams(searchParams.toString());
-      if (tab === "explore") {
+      const isDefault =
+        (isBusinessUser && tab === "notifications") ||
+        (!isBusinessUser && tab === "explore");
+
+      if (isDefault) {
         params.delete("tab");
       } else {
         params.set("tab", tab);
@@ -55,14 +84,14 @@ export function MobileShell() {
         router.replace(query ? `/?${query}` : "/", { scroll: false });
       });
     },
-    [router, searchParams],
+    [isBusinessUser, router, searchParams],
   );
 
   useEffect(() => {
     let cancelled = false;
     queueMicrotask(() => {
       if (cancelled) return;
-      const nextTab = getInitialTab(tabParam);
+      const nextTab = getInitialTab(tabParam, isBusinessUser);
       setActiveTab(nextTab);
       setVisitedTabs((current) => {
         if (current.has(nextTab)) return current;
@@ -75,7 +104,16 @@ export function MobileShell() {
     return () => {
       cancelled = true;
     };
-  }, [tabParam]);
+  }, [tabParam, isBusinessUser]);
+
+  useEffect(() => {
+    const allowed = new Set(
+      (isBusinessUser ? BUSINESS_TABS : CONSUMER_TABS).map((tab) => tab.id),
+    );
+    if (!allowed.has(activeTab)) {
+      handleTabChange(isBusinessUser ? "notifications" : "explore");
+    }
+  }, [activeTab, handleTabChange, isBusinessUser]);
 
   return (
     <div
@@ -92,52 +130,92 @@ export function MobileShell() {
         }}
       >
         <div className="relative min-w-0 w-full max-w-full overflow-x-hidden">
-          {visitedTabs.has("explore") && (
-            <div
-              className={cn(
-                "min-w-0 w-full max-w-full overflow-x-hidden",
-                activeTab === "explore" ? "screen-enter" : "hidden",
+          {isBusinessUser ? (
+            <>
+              {visitedTabs.has("notifications") && (
+                <div
+                  className={cn(
+                    "min-w-0 w-full max-w-full overflow-x-hidden",
+                    activeTab === "notifications" ? "screen-enter" : "hidden",
+                  )}
+                  aria-hidden={activeTab !== "notifications"}
+                >
+                  <BusinessNotificationsScreen />
+                </div>
               )}
-              aria-hidden={activeTab !== "explore"}
-            >
-              <ExploreScreen />
-            </div>
-          )}
-          {visitedTabs.has("events") && (
-            <div
-              className={cn(
-                "min-w-0 w-full max-w-full overflow-x-hidden",
-                activeTab === "events" ? "screen-enter" : "hidden",
+              {visitedTabs.has("calendar") && (
+                <div
+                  className={cn(
+                    "min-w-0 w-full max-w-full overflow-x-hidden",
+                    activeTab === "calendar" ? "screen-enter" : "hidden",
+                  )}
+                  aria-hidden={activeTab !== "calendar"}
+                >
+                  <BusinessCalendarScreen />
+                </div>
               )}
-              aria-hidden={activeTab !== "events"}
-            >
-              <MyEventsScreen
-                isActive={activeTab === "events"}
-                onCreateEvent={() => handleTabChange("explore")}
-              />
-            </div>
-          )}
-          {visitedTabs.has("messages") && (
-            <div
-              className={cn(
-                "min-w-0 w-full max-w-full overflow-x-hidden",
-                activeTab === "messages" ? "screen-enter" : "hidden",
+              {visitedTabs.has("profile") && (
+                <div
+                  className={cn(
+                    "min-w-0 w-full max-w-full overflow-x-hidden",
+                    activeTab === "profile" ? "screen-enter" : "hidden",
+                  )}
+                  aria-hidden={activeTab !== "profile"}
+                >
+                  <ProfileScreen />
+                </div>
               )}
-              aria-hidden={activeTab !== "messages"}
-            >
-              <MessagesScreen />
-            </div>
-          )}
-          {visitedTabs.has("profile") && (
-            <div
-              className={cn(
-                "min-w-0 w-full max-w-full overflow-x-hidden",
-                activeTab === "profile" ? "screen-enter" : "hidden",
+            </>
+          ) : (
+            <>
+              {visitedTabs.has("explore") && (
+                <div
+                  className={cn(
+                    "min-w-0 w-full max-w-full overflow-x-hidden",
+                    activeTab === "explore" ? "screen-enter" : "hidden",
+                  )}
+                  aria-hidden={activeTab !== "explore"}
+                >
+                  <ExploreScreen />
+                </div>
               )}
-              aria-hidden={activeTab !== "profile"}
-            >
-              <ProfileScreen />
-            </div>
+              {visitedTabs.has("events") && (
+                <div
+                  className={cn(
+                    "min-w-0 w-full max-w-full overflow-x-hidden",
+                    activeTab === "events" ? "screen-enter" : "hidden",
+                  )}
+                  aria-hidden={activeTab !== "events"}
+                >
+                  <MyEventsScreen
+                    isActive={activeTab === "events"}
+                    onCreateEvent={() => handleTabChange("explore")}
+                  />
+                </div>
+              )}
+              {visitedTabs.has("messages") && (
+                <div
+                  className={cn(
+                    "min-w-0 w-full max-w-full overflow-x-hidden",
+                    activeTab === "messages" ? "screen-enter" : "hidden",
+                  )}
+                  aria-hidden={activeTab !== "messages"}
+                >
+                  <MessagesScreen />
+                </div>
+              )}
+              {visitedTabs.has("profile") && (
+                <div
+                  className={cn(
+                    "min-w-0 w-full max-w-full overflow-x-hidden",
+                    activeTab === "profile" ? "screen-enter" : "hidden",
+                  )}
+                  aria-hidden={activeTab !== "profile"}
+                >
+                  <ProfileScreen />
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>

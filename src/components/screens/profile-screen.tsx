@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { SafeImage } from "@/components/ui/safe-image";
-import { GUEST_USER, useAppState } from "@/context/app-state-context";
+import { GUEST_USER, isProAccount, useAppState } from "@/context/app-state-context";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
 import {
@@ -364,12 +364,16 @@ export function ProfileScreen() {
             <p className="truncate text-sm text-primary-black/60">
               {isGuest ? "Nessun account creato" : currentUser.email}
             </p>
-            <span className="mt-1 inline-block rounded-full bg-brand-teal/15 px-2.5 py-0.5 text-xs font-medium text-brand-teal">
-              {isGuest
-                ? "Ospite"
-                : isBusinessUser
-                  ? "Account Business"
-                  : "Piano gratuito"}
+            <span
+              className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                isGuest
+                  ? "bg-primary-black/8 text-primary-black/60"
+                  : isBusinessUser
+                    ? "bg-amber-400/25 font-semibold text-amber-700"
+                    : "bg-brand-teal/15 text-brand-teal"
+              }`}
+            >
+              {isGuest ? "Ospite" : isBusinessUser ? "Pro" : "Piano gratuito"}
             </span>
           </div>
           <button
@@ -988,7 +992,7 @@ export function ProfileScreen() {
                   <User className="h-4 w-4" aria-hidden />
                 )}
               </span>
-              <span className="min-w-0">
+              <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold text-primary-black">
                   {account.name}
                 </span>
@@ -996,6 +1000,11 @@ export function ProfileScreen() {
                   {account.email}
                 </span>
               </span>
+              {isProAccount(account) && (
+                <span className="shrink-0 rounded-md bg-amber-400/25 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                  Pro
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -1083,20 +1092,34 @@ export function ProfileScreen() {
       )}
 
       {isBusinessUser && businessProfile && (
-        <section className="rounded-2xl border border-brand-teal/20 bg-brand-teal/5 p-4">
+        <section className="rounded-2xl border border-amber-400/35 bg-amber-400/10 p-4">
           <div className="flex items-center gap-2">
-            <Briefcase className="h-4 w-4 text-brand-teal" aria-hidden />
+            <Briefcase className="h-4 w-4 text-amber-700" aria-hidden />
             <p className="text-sm font-semibold text-primary-black">
               {businessProfile.businessName}
             </p>
+            <span className="ml-auto rounded-md bg-amber-400/40 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
+              Pro
+            </span>
           </div>
           <p className="mt-1 text-xs text-primary-black/60">
             {BUSINESS_CATEGORY_LABELS[businessProfile.category]}
           </p>
           {businessProfile.category === "locale" && (
             <p className="mt-2 text-xs text-primary-black/50">
-              {businessProfile.maxCapacity} ospiti ·{" "}
-              A partire da {formatCurrency(businessProfile.hourlyPrice * 4)} / Evento
+              {businessProfile.address}
+              {typeof businessProfile.maxCapacity === "number" &&
+                businessProfile.maxCapacity > 0 && (
+                  <> · {businessProfile.maxCapacity} ospiti</>
+                )}
+              {typeof businessProfile.hourlyPrice === "number" &&
+                businessProfile.hourlyPrice > 0 && (
+                  <>
+                    {" "}
+                    · A partire da{" "}
+                    {formatCurrency(businessProfile.hourlyPrice * 4)} / Evento
+                  </>
+                )}
             </p>
           )}
           {(businessProfile.category === "dj" ||
@@ -1115,13 +1138,25 @@ export function ProfileScreen() {
         </section>
       )}
 
-      <Link
-        href="/business/onboarding"
-        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-pink py-3.5 text-sm font-semibold text-primary-black transition-colors hover:bg-brand-pink/90"
-      >
-        <Briefcase className="h-4 w-4" aria-hidden />
-        {isBusinessUser ? "Modifica profilo Business" : "Passa a Business"}
-      </Link>
+      {!isBusinessUser && (
+        <Link
+          href="/business/onboarding"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-pink py-3.5 text-sm font-semibold text-primary-black transition-colors hover:bg-brand-pink/90"
+        >
+          <Briefcase className="h-4 w-4" aria-hidden />
+          Passa a Business
+        </Link>
+      )}
+
+      {isBusinessUser && (
+        <Link
+          href="/business/onboarding"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-400/40 bg-amber-400/15 py-3.5 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-400/25"
+        >
+          <Briefcase className="h-4 w-4" aria-hidden />
+          Modifica profilo Business
+        </Link>
+      )}
 
       <button
         type="button"
