@@ -523,6 +523,25 @@ export function ExploreScreen({
     [favoriteServiceIds],
   );
 
+  const searchSuggestions = useMemo(() => {
+    if (activeCategory === "locali") {
+      return allLocations.slice(0, 10).map((location) => ({
+        id: location.id,
+        label: location.name,
+        subtitle: [location.city, location.zoneLabel].filter(Boolean).join(" · "),
+      }));
+    }
+
+    return allServices
+      .filter((service) => service.category === activeCategory)
+      .slice(0, 10)
+      .map((service) => ({
+        id: service.id,
+        label: service.name,
+        subtitle: service.providerZone,
+      }));
+  }, [activeCategory, allLocations, allServices]);
+
   const activeFilterCount =
     activeCategory === "locali"
       ? countActiveFilters(filters)
@@ -639,11 +658,14 @@ export function ExploreScreen({
       </header>
 
       <ExploreSearchBar
+        key={activeCategory}
         query={query}
         onQueryChange={setQuery}
         activeFilterCount={activeFilterCount}
         onOpenFilters={openFilters}
         placeholder={SEARCH_PLACEHOLDERS[activeCategory]}
+        suggestions={searchSuggestions}
+        storageKey={`vibeup-explore-recent-${activeCategory}`}
       />
 
       {(activeCategory === "dj" || activeCategory === "fotografo") && (
