@@ -11,6 +11,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   createContext,
   startTransition,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
@@ -103,12 +104,23 @@ function getAllowedTabs(isBusinessUser: boolean): Set<TabId> {
   );
 }
 
+/** Isolated so useSearchParams suspension never blanks the whole app shell. */
+function TabParamSync({ onTab }: { onTab: (tab: string | null) => void }) {
+  const searchParams = useSearchParams();
+  const tab = searchParams.get("tab");
+
+  useEffect(() => {
+    onTab(tab);
+  }, [onTab, tab]);
+
+  return null;
+}
+
 export function TabNavigationProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname() || "/";
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { isBusinessUser } = useAppState();
-  const tabParam = searchParams.get("tab");
+  const [tabParam, setTabParam] = useState<string | null>(null);
 
   const urlTab = useMemo(
     () => resolveTabFromLocation(pathname, tabParam, isBusinessUser),
@@ -196,6 +208,9 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
 
   return (
     <TabNavigationContext.Provider value={value}>
+      <Suspense fallback={null}>
+        <TabParamSync onTab={setTabParam} />
+      </Suspense>
       {children}
     </TabNavigationContext.Provider>
   );

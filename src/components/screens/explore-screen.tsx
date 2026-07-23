@@ -45,6 +45,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import {
   memo,
+  Suspense,
   useCallback,
   useDeferredValue,
   useEffect,
@@ -59,6 +60,28 @@ import { useSearchParams } from "next/navigation";
 
 type ExploreView = "list" | "compare";
 
+/**
+ * useSearchParams() suspends. Keep it in a nested boundary so Esplora
+ * paints immediately instead of leaving a blank shell (footer + nav only).
+ */
+function ExploreUrlParamsSync({
+  onCategory,
+  onEventId,
+}: {
+  onCategory: (value: string | null) => void;
+  onEventId: (value: string | null) => void;
+}) {
+  const searchParams = useSearchParams();
+  const category = searchParams.get("category");
+  const eventId = searchParams.get("eventId");
+
+  useEffect(() => {
+    onCategory(category);
+    onEventId(eventId);
+  }, [category, eventId, onCategory, onEventId]);
+
+  return null;
+}
 const MAX_COMPARE_LOCATIONS = 3;
 
 const EXPLORE_CATEGORIES: {
@@ -332,9 +355,15 @@ export function ExploreScreen({
   eventId: eventIdProp,
   initialCategory,
 }: ExploreScreenProps = {}) {
-  const searchParams = useSearchParams();
-  const categoryParam = searchParams.get("category");
-  const eventId = eventIdProp ?? searchParams.get("eventId");
+  const [categoryParam, setCategoryParam] = useState<string | null>(null);
+  const [urlEventId, setUrlEventId] = useState<string | null>(null);
+  const onCategoryParam = useCallback((value: string | null) => {
+    setCategoryParam(value);
+  }, []);
+  const onEventIdParam = useCallback((value: string | null) => {
+    setUrlEventId(value);
+  }, []);
+  const eventId = eventIdProp ?? urlEventId;
   const {
     compareLocationIds,
     favoriteLocationIds,
@@ -625,6 +654,12 @@ export function ExploreScreen({
 
   return (
     <div className="min-w-0 space-y-5 lg:space-y-6">
+      <Suspense fallback={null}>
+        <ExploreUrlParamsSync
+          onCategory={onCategoryParam}
+          onEventId={onEventIdParam}
+        />
+      </Suspense>
       <header className="relative min-w-0">
         <div className="rounded-3xl border border-primary-black/10 bg-primary-black/[0.03] p-1.5">
           <div className="-mx-0.5 flex min-w-0 flex-nowrap items-stretch gap-1.5 overflow-x-auto px-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
