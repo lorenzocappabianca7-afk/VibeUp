@@ -175,7 +175,9 @@ function ConversationThread({
   onSend: (body: string) => void;
 }) {
   const [draft, setDraft] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const el = listRef.current;
@@ -189,6 +191,13 @@ function ConversationThread({
     if (!body) return;
     onSend(body);
     setDraft("");
+    // Close keyboard and restore page scroll — mobile otherwise stays pinned low.
+    inputRef.current?.blur();
+    window.requestAnimationFrame(() => {
+      rootRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+      const list = listRef.current;
+      if (list) list.scrollTop = list.scrollHeight;
+    });
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -199,7 +208,7 @@ function ConversationThread({
   }
 
   return (
-    <div className="flex min-h-[min(70dvh,640px)] flex-col">
+    <div ref={rootRef} className="flex min-h-[min(70dvh,640px)] flex-col">
       <header className="flex items-center gap-2 border-b border-primary-black/8 pb-3">
         <button
           type="button"
@@ -280,6 +289,7 @@ function ConversationThread({
       >
         <div className="flex items-end gap-2 rounded-2xl border border-primary-black/10 bg-white p-2 shadow-[0_2px_12px_rgba(15,15,17,0.06)]">
           <textarea
+            ref={inputRef}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={onKeyDown}
