@@ -17,6 +17,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
+import { flushSync } from "react-dom";
 
 export interface ExploreSearchSuggestion {
   id: string;
@@ -36,6 +37,8 @@ interface ExploreSearchBarProps {
 
 const MAX_RECENT = 8;
 const EXPAND_MS = 400;
+const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+const HEIGHT_TRANSITION = `height ${EXPAND_MS}ms ${EASE}`;
 
 function readRecent(storageKey: string): string[] {
   if (typeof window === "undefined") return [];
@@ -80,8 +83,11 @@ export function ExploreSearchBar({
   const [draft, setDraft] = useState(query);
   const [recent, setRecent] = useState(() => readRecent(storageKey));
   const inputRef = useRef<HTMLInputElement>(null);
+  const panelOuterRef = useRef<HTMLDivElement>(null);
+  const panelInnerRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<number | null>(null);
   const openFrameRef = useRef<number | null>(null);
+  const expandedRef = useRef(false);
 
   useBodyScrollLock(panelMounted);
 
@@ -96,11 +102,29 @@ export function ExploreSearchBar({
     };
   }, []);
 
+  // Keep height in sync while open (suggestion lists change with typing).
+  useEffect(() => {
+    if (!expanded) return;
+    const outer = panelOuterRef.current;
+    const inner = panelInnerRef.current;
+    if (!outer || !inner) return;
+
+    const sync = () => {
+      if (!expandedRef.current) return;
+      outer.style.height = `${inner.scrollHeight}px`;
+    };
+
+    sync();
+    const observer = new ResizeObserver(sync);
+    observer.observe(inner);
+    return () => observer.disconnect();
+  }, [expanded, draft, recent, suggestions]);
+
   useEffect(() => {
     if (!expanded) return;
     const timer = window.setTimeout(
       () => inputRef.current?.focus(),
-      EXPAND_MS * 0.35,
+      EXPAND_MS * 0.28,
     );
     return () => window.clearTimeout(timer);
   }, [expanded]);
@@ -110,20 +134,13 @@ export function ExploreSearchBar({
 
     function onKeyDown(event: Event) {
       if ((event as globalThis.KeyboardEvent).key === "Escape") {
-        setExpanded(false);
-        setDraft(query);
-        if (closeTimerRef.current != null) {
-          window.clearTimeout(closeTimerRef.current);
-        }
-        closeTimerRef.current = window.setTimeout(() => {
-          closeTimerRef.current = null;
-          setPanelMounted(false);
-        }, EXPAND_MS);
+        closeSearch();
       }
     }
 
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- escape while open
   }, [expanded, query]);
 
   const filteredSuggestions = useMemo(() => {
@@ -178,8 +195,26 @@ export function ExploreSearchBar({
     }
   }
 
+  function animatePanelHeight(nextHeight: number) {
+    const outer = panelOuterRef.current;
+    if (!outer) return;
+    outer.style.transition = HEIGHT_TRANSITION;
+    outer.style.height = `${nextHeight}px`;
+  }
+
   function closeSearch(options?: { keepDraft?: boolean }) {
     clearPendingTimers();
+    expandedRef.current = false;
+    const outer = panelOuterRef.current;
+    const inner = panelInnerRef.current;
+    // Lock current height first so the collapse always starts from a known value.
+    if (outer && inner) {
+      outer.style.transition = "none";
+      outer.style.height = `${inner.scrollHeight}px`;
+      void outer.offsetHeight;
+      outer.style.transition = HEIGHT_TRANSITION;
+      outer.style.height = "0px";
+    }
     setExpanded(false);
     if (!options?.keepDraft) setDraft(query);
     closeTimerRef.current = window.setTimeout(() => {
@@ -204,13 +239,26 @@ export function ExploreSearchBar({
   function openSearch() {
     clearPendingTimers();
     setDraft(query);
-    setPanelMounted(true);
-    // Paint the panel at 0fr first, then expand so growth is visible.
+    flushSync(() => {
+      setPanelMounted(true);
+    });
+
+    const outer = panelOuterRef.current;
+    const inner = panelInnerRef.current;
+    if (outer) {
+      outer.style.transition = "none";
+      outer.style.height = "0px";
+      void outer.offsetHeight;
+      outer.style.transition = HEIGHT_TRANSITION;
+    }
+
     openFrameRef.current = window.requestAnimationFrame(() => {
-      openFrameRef.current = window.requestAnimationFrame(() => {
-        openFrameRef.current = null;
-        setExpanded(true);
-      });
+      openFrameRef.current = null;
+      expandedRef.current = true;
+      setExpanded(true);
+      if (inner) {
+        animatePanelHeight(inner.scrollHeight);
+      }
     });
   }
 
@@ -221,6 +269,10 @@ export function ExploreSearchBar({
     }
   }
 
+  const motion = {
+    transition: `opacity ${EXPAND_MS * 0.7}ms ${EASE}, transform ${EXPAND_MS}ms ${EASE}, border-radius ${EXPAND_MS}ms ${EASE}, box-shadow ${EXPAND_MS}ms ${EASE}, border-color ${EXPAND_MS}ms ${EASE}`,
+  } as const;
+
   return (
     <>
       <button
@@ -229,11 +281,12 @@ export function ExploreSearchBar({
         tabIndex={expanded ? 0 : -1}
         aria-hidden={!expanded}
         className={cn(
-          "fixed inset-0 z-[40] bg-primary-black/25 transition-opacity duration-[400ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
+          "fixed inset-0 z-[40] bg-primary-black/25",
           expanded
             ? "pointer-events-auto opacity-100"
             : "pointer-events-none opacity-0",
         )}
+        style={{ transition: `opacity ${EXPAND_MS}ms ${EASE}` }}
         data-overlay-open={expanded ? "true" : undefined}
         onClick={() => closeSearch()}
       />
@@ -246,17 +299,30 @@ export function ExploreSearchBar({
       >
         <div
           className={cn(
-            "min-w-0 flex-1 overflow-hidden border bg-white transition-all duration-[400ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
+            "min-w-0 flex-1 overflow-hidden border bg-white",
             expanded
               ? "rounded-[28px] border-primary-black/8 shadow-[0_16px_40px_rgba(15,15,17,0.18)]"
               : "rounded-full border-primary-black/10 shadow-[0_2px_12px_rgba(15,15,17,0.08)] hover:shadow-[0_4px_18px_rgba(15,15,17,0.12)]",
           )}
+          style={motion}
         >
-          {!panelMounted ? (
+          <div className="relative">
             <button
               type="button"
               onClick={openSearch}
-              className="flex w-full min-w-0 items-center gap-3 px-4 py-3 text-left"
+              tabIndex={expanded ? -1 : 0}
+              aria-hidden={expanded}
+              className={cn(
+                "flex w-full min-w-0 items-center gap-3 px-4 py-3 text-left",
+                expanded && "pointer-events-none absolute inset-x-0 top-0",
+              )}
+              style={{
+                opacity: expanded ? 0 : 1,
+                transform: expanded
+                  ? "translateY(-3px) scale(0.99)"
+                  : "translateY(0) scale(1)",
+                transition: `opacity ${EXPAND_MS * 0.55}ms ${EASE}, transform ${EXPAND_MS}ms ${EASE}`,
+              }}
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-black/[0.04] text-primary-black">
                 <Search className="h-4 w-4" aria-hidden />
@@ -272,8 +338,24 @@ export function ExploreSearchBar({
                 </span>
               </span>
             </button>
-          ) : (
-            <form onSubmit={handleSubmit} className="p-3">
+
+            <form
+              onSubmit={handleSubmit}
+              aria-hidden={!expanded}
+              className={cn(
+                "p-3",
+                expanded
+                  ? "relative"
+                  : "pointer-events-none absolute inset-x-0 top-0",
+              )}
+              style={{
+                opacity: expanded ? 1 : 0,
+                transform: expanded
+                  ? "translateY(0) scale(1)"
+                  : "translateY(4px) scale(0.99)",
+                transition: `opacity ${EXPAND_MS * 0.65}ms ${EASE}, transform ${EXPAND_MS}ms ${EASE}`,
+              }}
+            >
               <div className="flex items-center gap-2 rounded-2xl bg-primary-black/[0.03] px-3 py-2.5">
                 <Search
                   className="h-4 w-4 shrink-0 text-primary-black/45"
@@ -291,12 +373,13 @@ export function ExploreSearchBar({
                   placeholder={placeholder}
                   autoComplete="off"
                   enterKeyHint="search"
-                  // 16px prevents iOS Safari from zooming into the field
+                  tabIndex={expanded ? 0 : -1}
                   className="min-w-0 flex-1 bg-transparent text-base font-medium text-primary-black outline-none placeholder:font-normal placeholder:text-primary-black/40"
                 />
                 {draft ? (
                   <button
                     type="button"
+                    tabIndex={expanded ? 0 : -1}
                     onClick={() => {
                       setDraft("");
                       onQueryChange("");
@@ -310,6 +393,7 @@ export function ExploreSearchBar({
                 ) : (
                   <button
                     type="button"
+                    tabIndex={expanded ? 0 : -1}
                     onClick={() => closeSearch()}
                     className="flex h-8 w-8 items-center justify-center rounded-full text-primary-black/45 transition-colors hover:bg-primary-black/[0.06] hover:text-primary-black/70"
                     aria-label="Chiudi ricerca"
@@ -319,22 +403,24 @@ export function ExploreSearchBar({
                 )}
               </div>
             </form>
-          )}
+          </div>
 
           <div
-            className={cn(
-              "grid transition-[grid-template-rows] duration-[400ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
-              expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-            )}
+            ref={panelOuterRef}
+            className="overflow-hidden"
+            style={{ height: 0, transition: HEIGHT_TRANSITION }}
           >
-            <div className="min-h-0 overflow-hidden">
+            <div
+              ref={panelInnerRef}
+              className="border-t border-primary-black/8"
+              style={{
+                opacity: expanded ? 1 : 0.35,
+                transform: expanded ? "translateY(0)" : "translateY(-6px)",
+                transition: `opacity ${EXPAND_MS}ms ${EASE}, transform ${EXPAND_MS}ms ${EASE}`,
+              }}
+            >
               {panelMounted && (
-                <div
-                  className={cn(
-                    "border-t border-primary-black/8 transition-opacity duration-[400ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
-                    expanded ? "opacity-100" : "opacity-0",
-                  )}
-                >
+                <>
                   <div className="max-h-[min(58dvh,420px)] overflow-y-auto px-2 py-2">
                     {visibleRecent.length > 0 && (
                       <section className="mb-2">
@@ -431,7 +517,7 @@ export function ExploreSearchBar({
                       Cerca
                     </button>
                   </div>
-                </div>
+                </>
               )}
             </div>
           </div>
@@ -444,15 +530,21 @@ export function ExploreSearchBar({
           tabIndex={expanded ? -1 : 0}
           aria-hidden={expanded}
           className={cn(
-            "relative flex shrink-0 items-center justify-center rounded-full border px-3.5 transition-all duration-[400ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
+            "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border",
             expanded
-              ? "pointer-events-none w-0 scale-90 border-transparent px-0 opacity-0"
-              : "opacity-100",
-            !expanded &&
-              (activeFilterCount > 0
+              ? "pointer-events-none border-transparent"
+              : activeFilterCount > 0
                 ? "border-brand-teal/30 bg-brand-teal/10 text-brand-teal"
-                : "border-primary-black/10 bg-white text-primary-black shadow-[0_2px_12px_rgba(15,15,17,0.08)] hover:bg-primary-black/[0.03]"),
+                : "border-primary-black/10 bg-white text-primary-black shadow-[0_2px_12px_rgba(15,15,17,0.08)] hover:bg-primary-black/[0.03]",
           )}
+          style={{
+            width: expanded ? 0 : 52,
+            minWidth: expanded ? 0 : 52,
+            paddingInline: expanded ? 0 : 14,
+            opacity: expanded ? 0 : 1,
+            transform: expanded ? "scale(0.9)" : "scale(1)",
+            transition: `width ${EXPAND_MS}ms ${EASE}, min-width ${EXPAND_MS}ms ${EASE}, padding ${EXPAND_MS}ms ${EASE}, opacity ${EXPAND_MS * 0.65}ms ${EASE}, transform ${EXPAND_MS}ms ${EASE}, border-color ${EXPAND_MS}ms ${EASE}`,
+          }}
         >
           <SlidersHorizontal className="h-5 w-5 shrink-0" aria-hidden />
           {activeFilterCount > 0 && !expanded && (
