@@ -57,7 +57,8 @@ async function derivePbkdf2Hex(
   const bits = await crypto.subtle.deriveBits(
     {
       name: "PBKDF2",
-      salt,
+      // Copy into a plain ArrayBuffer-backed view for TS DOM BufferSource typing.
+      salt: Uint8Array.from(salt),
       iterations,
       hash: "SHA-256",
     },

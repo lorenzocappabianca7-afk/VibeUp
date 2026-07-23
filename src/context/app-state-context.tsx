@@ -1413,6 +1413,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           error: "La nuova password deve avere almeno 8 caratteri.",
         };
       }
+      if (!/[A-Za-z]/.test(nextPassword) || !/[0-9]/.test(nextPassword)) {
+        return {
+          ok: false,
+          error:
+            "La nuova password deve contenere almeno una lettera e un numero.",
+        };
+      }
 
       const passwordHash = await hashPassword(nextPassword);
       setAccounts((prev) =>

@@ -251,6 +251,13 @@ export function BusinessOnboardingView() {
         setError("La password deve avere almeno 8 caratteri.");
         return;
       }
+      if (
+        !/[A-Za-z]/.test(ownerData.password) ||
+        !/[0-9]/.test(ownerData.password)
+      ) {
+        setError("La password deve contenere almeno una lettera e un numero.");
+        return;
+      }
       if (ownerData.password !== ownerData.confirmPassword) {
         setError("Le password non coincidono.");
         return;
@@ -437,7 +444,7 @@ export function BusinessOnboardingView() {
                       type="password"
                       value={ownerData.password}
                       onChange={(v) => updateOwner("password", v)}
-                      placeholder="Almeno 8 caratteri"
+                      placeholder="Lettera + numero, min. 8"
                       required
                     />
                     <TextField

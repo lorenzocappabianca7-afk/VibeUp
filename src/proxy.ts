@@ -14,23 +14,16 @@ const BLOCKED_PATH_PATTERNS = [
   /^\/\.DS_Store$/i,
 ];
 
-function buildCsp(nonce: string, isDev: boolean): string {
-  const scriptSrc = [
-    "'self'",
-    `'nonce-${nonce}'`,
-    "'strict-dynamic'",
-    isDev ? "'unsafe-eval'" : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  // Tailwind and some runtime styles still rely on inline style attributes.
-  const styleSrc = ["'self'", `'nonce-${nonce}'`, "'unsafe-inline'"].join(" ");
-
-  return [
+/**
+ * Practical CSP without per-request nonces.
+ * Nonce+strict-dynamic requires fully dynamic rendering and nullifies
+ * style-src 'unsafe-inline', which breaks React style={{}} across the app.
+ */
+function buildCsp(isDev: boolean): string {
+  const directives = [
     "default-src 'self'",
-    `script-src ${scriptSrc}`,
-    `style-src ${styleSrc}`,
+    `script-src 'self'${isDev ? " 'unsafe-eval'" : ""}`,
+    "style-src 'self' 'unsafe-inline'",
     "img-src 'self' blob: data: https://images.unsplash.com",
     "font-src 'self' data:",
     "connect-src 'self'",
@@ -43,14 +36,16 @@ function buildCsp(nonce: string, isDev: boolean): string {
     "frame-ancestors 'none'",
     "frame-src 'none'",
     "child-src 'none'",
-    "upgrade-insecure-requests",
-  ]
-    .join("; ")
-    .replace(/\s{2,}/g, " ")
-    .trim();
+  ];
+
+  if (!isDev) {
+    directives.push("upgrade-insecure-requests");
+  }
+
+  return directives.join("; ").replace(/\s{2,}/g, " ").trim();
 }
 
-function applySecurityHeaders(response: NextResponse, csp: string) {
+function applySecurityHeaders(response: NextResponse, csp: string, isDev: boolean) {
   response.headers.set("Content-Security-Policy", csp);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
@@ -63,11 +58,12 @@ function applySecurityHeaders(response: NextResponse, csp: string) {
   response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
   response.headers.set("X-DNS-Prefetch-Control", "off");
   response.headers.set("X-Permitted-Cross-Domain-Policies", "none");
-  response.headers.set(
-    "Strict-Transport-Security",
-    "max-age=63072000; includeSubDomains; preload",
-  );
-  // Reduce reverse-engineering surface.
+  if (!isDev) {
+    response.headers.set(
+      "Strict-Transport-Security",
+      "max-age=63072000; includeSubDomains; preload",
+    );
+  }
   response.headers.delete("x-powered-by");
 }
 
@@ -83,12 +79,10 @@ export function proxy(request: NextRequest) {
     return new NextResponse(null, { status: 404 });
   }
 
-  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const isDev = process.env.NODE_ENV === "development";
-  const csp = buildCsp(nonce, isDev);
+  const csp = buildCsp(isDev);
 
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", csp);
 
   const response = NextResponse.next({
@@ -97,7 +91,7 @@ export function proxy(request: NextRequest) {
     },
   });
 
-  applySecurityHeaders(response, csp);
+  applySecurityHeaders(response, csp, isDev);
   return response;
 }
 
