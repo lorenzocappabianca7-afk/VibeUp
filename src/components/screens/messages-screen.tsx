@@ -176,17 +176,12 @@ function ConversationThread({
 }) {
   const [draft, setDraft] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const el = listRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
   }, [messages, conversationId]);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, [conversationId]);
 
   function handleSubmit(event?: FormEvent) {
     event?.preventDefault();
@@ -285,11 +280,11 @@ function ConversationThread({
       >
         <div className="flex items-end gap-2 rounded-2xl border border-primary-black/10 bg-white p-2 shadow-[0_2px_12px_rgba(15,15,17,0.06)]">
           <textarea
-            ref={inputRef}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={onKeyDown}
             rows={1}
+            enterKeyHint="send"
             placeholder="Scrivi un messaggio…"
             className="max-h-28 min-h-[40px] min-w-0 flex-1 resize-none bg-transparent px-2 py-2 text-base text-primary-black outline-none placeholder:text-primary-black/40"
           />
