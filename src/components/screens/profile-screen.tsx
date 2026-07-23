@@ -252,6 +252,15 @@ export function ProfileScreen() {
       setNewAccountError("La password deve avere almeno 8 caratteri.");
       return;
     }
+    if (
+      !/[A-Za-z]/.test(newAccountPassword) ||
+      !/[0-9]/.test(newAccountPassword)
+    ) {
+      setNewAccountError(
+        "La password deve contenere almeno una lettera e un numero.",
+      );
+      return;
+    }
     if (newAccountPassword !== newAccountPasswordConfirm) {
       setNewAccountError("Le password non coincidono.");
       return;

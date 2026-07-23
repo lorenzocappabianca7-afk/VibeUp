@@ -171,7 +171,8 @@ export function CreateAccountModal({
             className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
           />
           <p className="text-[11px] leading-relaxed text-primary-black/45">
-            Ti servirà per accedere se non usi VibeUp da un po&apos;.
+            Almeno 8 caratteri, con una lettera e un numero. Ti servirà se non
+            usi VibeUp da un po&apos;.
           </p>
           {error && (
             <p className="text-xs font-medium text-brand-pink">{error}</p>

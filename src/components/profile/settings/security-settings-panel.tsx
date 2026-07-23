@@ -85,6 +85,15 @@ export function SecuritySettingsPanel({ onBack }: SecuritySettingsPanelProps) {
       setPasswordError("La nuova password deve avere almeno 8 caratteri.");
       return;
     }
+    if (
+      !/[A-Za-z]/.test(passwordDraft.next) ||
+      !/[0-9]/.test(passwordDraft.next)
+    ) {
+      setPasswordError(
+        "La nuova password deve contenere almeno una lettera e un numero.",
+      );
+      return;
+    }
     if (passwordDraft.next !== passwordDraft.confirm) {
       setPasswordError("Le password non coincidono.");
       return;

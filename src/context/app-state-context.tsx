@@ -10,6 +10,7 @@ import {
 import {
   hashPassword,
   isAccountIdle,
+  needsPasswordRehash,
   verifyPassword,
 } from "@/lib/auth/password";
 import { isEventPast } from "@/lib/event";
@@ -18,6 +19,13 @@ import {
   sanitizeAccountPaymentCards,
   sanitizeSavedPaymentCard,
 } from "@/lib/payments/card-vault";
+import {
+  sanitizeEmail,
+  sanitizeHandle,
+  sanitizePlainText,
+  sanitizeUrl,
+} from "@/lib/security/sanitize";
+import { scrubPersistedJson } from "@/lib/security/persist-scrub";
 import type { ManagedListing } from "@/types/admin";
 import type { BookedService, EventMenuSelection, UserEvent } from "@/types/event";
 import type { SavedPaymentCard } from "@/types/payment";
@@ -495,7 +503,9 @@ function readStoredAppState(): StoredAppState {
   try {
     const rawValue = window.localStorage.getItem(STORAGE_KEY);
     if (!rawValue) return {};
-    const parsed = JSON.parse(rawValue) as StoredAppState;
+    const parsed = scrubPersistedJson(
+      JSON.parse(rawValue) as StoredAppState,
+    );
     if (parsed.accounts) {
       parsed.accounts = sanitizeAccountPaymentCards(parsed.accounts);
     }
@@ -951,9 +961,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const createAccount = useCallback(
     async (account: CreateAccountInput): Promise<CreateAccountResult> => {
-      const normalizedEmail = account.email.trim().toLowerCase();
+      const normalizedEmail = sanitizeEmail(account.email);
       const password = account.password;
-      if (!normalizedEmail) {
+      if (!normalizedEmail || !normalizedEmail.includes("@")) {
         return { ok: false, error: "Inserisci un’email valida." };
       }
       if (!password || password.length < 8) {
@@ -962,14 +972,30 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           error: "La password deve avere almeno 8 caratteri.",
         };
       }
+      if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+        return {
+          ok: false,
+          error: "La password deve contenere almeno una lettera e un numero.",
+        };
+      }
 
       const passwordHash = await hashPassword(password);
-      const nextName = account.name.trim() || normalizedEmail;
+      const nextName =
+        sanitizePlainText(account.name, 80) || normalizedEmail;
       const nextAccountType =
         account.accountType === "business" || account.businessProfile
           ? ("business" as const)
           : ("consumer" as const);
       const now = new Date().toISOString();
+      const safePhone = account.phoneNumber
+        ? sanitizePlainText(account.phoneNumber, 32)
+        : undefined;
+      const safeInstagram = account.instagramHandle
+        ? sanitizeHandle(account.instagramHandle)
+        : undefined;
+      const safeAvatar = account.avatarUrl
+        ? sanitizeUrl(account.avatarUrl) ?? undefined
+        : undefined;
 
       const existing = accounts.find(
         (item) => item.email.toLowerCase() === normalizedEmail,
@@ -1014,11 +1040,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
                       item.businessProfile ??
                       null)
                     : (item.businessProfile ?? null),
-                  phoneNumber: item.phoneNumber ?? account.phoneNumber,
-                  avatarUrl: item.avatarUrl ?? account.avatarUrl,
-                  instagramHandle:
-                    item.instagramHandle ?? account.instagramHandle,
-                  passwordHash: existing.passwordHash ?? passwordHash,
+                  phoneNumber: item.phoneNumber ?? safePhone,
+                  avatarUrl: item.avatarUrl ?? safeAvatar,
+                  instagramHandle: item.instagramHandle ?? safeInstagram,
+                  passwordHash: needsPasswordRehash(existing.passwordHash)
+                    ? passwordHash
+                    : (existing.passwordHash ?? passwordHash),
                   lastActiveAt: now,
                 })
               : item,
@@ -1039,9 +1066,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         id,
         name: nextName,
         email: normalizedEmail,
-        phoneNumber: account.phoneNumber,
-        avatarUrl: account.avatarUrl,
-        instagramHandle: account.instagramHandle,
+        phoneNumber: safePhone,
+        avatarUrl: safeAvatar,
+        instagramHandle: safeInstagram,
         accountType: nextAccountType,
         businessProfile:
           nextAccountType === "business"
@@ -1066,9 +1093,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     async (
       input: CreateBusinessAccountInput,
     ): Promise<CreateBusinessAccountResult> => {
-      const normalizedEmail = input.email.trim().toLowerCase();
-      const nextName = input.ownerName.trim();
-      const phoneNumber = input.phoneNumber.trim();
+      const normalizedEmail = sanitizeEmail(input.email);
+      const nextName = sanitizePlainText(input.ownerName, 80);
+      const phoneNumber = sanitizePlainText(input.phoneNumber, 32);
       const password = input.password;
 
       if (!nextName || !normalizedEmail) {
@@ -1081,6 +1108,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         return {
           ok: false,
           error: "La password deve avere almeno 8 caratteri.",
+        };
+      }
+      if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+        return {
+          ok: false,
+          error: "La password deve contenere almeno una lettera e un numero.",
         };
       }
 
@@ -1190,6 +1223,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (!matches) {
         setUnlockError("Password non corretta.");
         return { ok: false, error: "Password non corretta." };
+      }
+
+      if (needsPasswordRehash(account.passwordHash)) {
+        const nextHash = await hashPassword(password);
+        setAccounts((prev) =>
+          prev.map((item) =>
+            item.id === userId
+              ? normalizeAccount({ ...item, passwordHash: nextHash })
+              : item,
+          ),
+        );
       }
 
       markUnlocked(userId);
@@ -1393,6 +1437,33 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (userId === GUEST_USER.id) return;
 
       const safeUpdates = { ...updates };
+      if ("name" in safeUpdates && typeof safeUpdates.name === "string") {
+        safeUpdates.name = sanitizePlainText(safeUpdates.name, 80);
+      }
+      if ("email" in safeUpdates && typeof safeUpdates.email === "string") {
+        safeUpdates.email = sanitizeEmail(safeUpdates.email);
+      }
+      if (
+        "phoneNumber" in safeUpdates &&
+        typeof safeUpdates.phoneNumber === "string"
+      ) {
+        safeUpdates.phoneNumber = sanitizePlainText(
+          safeUpdates.phoneNumber,
+          32,
+        );
+      }
+      if (
+        "instagramHandle" in safeUpdates &&
+        typeof safeUpdates.instagramHandle === "string"
+      ) {
+        safeUpdates.instagramHandle = sanitizeHandle(
+          safeUpdates.instagramHandle,
+        );
+      }
+      if ("avatarUrl" in safeUpdates && typeof safeUpdates.avatarUrl === "string") {
+        safeUpdates.avatarUrl =
+          sanitizeUrl(safeUpdates.avatarUrl) ?? undefined;
+      }
       if ("paymentCard" in safeUpdates) {
         safeUpdates.paymentCard = safeUpdates.paymentCard
           ? sanitizeSavedPaymentCard(safeUpdates.paymentCard)
