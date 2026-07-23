@@ -10,50 +10,23 @@ import {
   type ReactNode,
 } from "react";
 
-/** Seed inbox items used by Messaggi until live chat is wired. */
-export const INBOX_MESSAGE_PREVIEW = [
-  {
-    id: "msg-villa-aurora",
-    sender: "Villa Aurora",
-    message: "Ciao! Abbiamo disponibilita' per la data richiesta.",
-    time: "2 min fa",
-    unread: true,
-  },
-  {
-    id: "msg-dj-marco",
-    sender: "DJ Marco Beats",
-    message: "Posso preparare una playlist per compleanno o laurea.",
-    time: "1 ora fa",
-    unread: true,
-  },
-  {
-    id: "msg-ai",
-    sender: "Assistente IA VibeUp",
-    message: "Ho trovato 3 servizi esterni adatti al tuo evento.",
-    time: "Ieri",
-    unread: false,
-  },
-] as const;
-
 interface InboxBadgeContextValue {
   hasUnreadMessages: boolean;
   hasUnreadNotifications: boolean;
   markMessagesSeen: () => void;
   markNotificationsSeen: () => void;
+  /** Keep the Messaggi tab badge in sync with live chat unread counts. */
+  syncUnreadMessages: (count: number) => void;
 }
 
 const InboxBadgeContext = createContext<InboxBadgeContextValue | null>(null);
-
-const INITIAL_UNREAD_MESSAGES = INBOX_MESSAGE_PREVIEW.filter(
-  (item) => item.unread,
-).length;
 
 const INITIAL_UNREAD_NOTIFICATIONS = MOCK_BUSINESS_NOTIFICATIONS.filter(
   (item) => item.unread,
 ).length;
 
 export function InboxBadgeProvider({ children }: { children: ReactNode }) {
-  const [unreadMessages, setUnreadMessages] = useState(INITIAL_UNREAD_MESSAGES);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(
     INITIAL_UNREAD_NOTIFICATIONS,
   );
@@ -66,18 +39,24 @@ export function InboxBadgeProvider({ children }: { children: ReactNode }) {
     setUnreadNotifications(0);
   }, []);
 
+  const syncUnreadMessages = useCallback((count: number) => {
+    setUnreadMessages(Math.max(0, count));
+  }, []);
+
   const value = useMemo(
     () => ({
       hasUnreadMessages: unreadMessages > 0,
       hasUnreadNotifications: unreadNotifications > 0,
       markMessagesSeen,
       markNotificationsSeen,
+      syncUnreadMessages,
     }),
     [
       unreadMessages,
       unreadNotifications,
       markMessagesSeen,
       markNotificationsSeen,
+      syncUnreadMessages,
     ],
   );
 

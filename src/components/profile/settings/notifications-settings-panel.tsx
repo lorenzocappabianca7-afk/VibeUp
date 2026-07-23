@@ -7,7 +7,9 @@ import {
 import { SettingsShell } from "@/components/profile/settings/settings-shell";
 import { SettingsToggle } from "@/components/profile/settings/settings-toggle";
 import { useAppState } from "@/context/app-state-context";
+import { requestNotificationPermission } from "@/lib/browser-notifications";
 import { normalizeUserSettings } from "@/types/user-settings";
+import { useState } from "react";
 
 interface NotificationsSettingsPanelProps {
   onBack: () => void;
@@ -19,6 +21,35 @@ export function NotificationsSettingsPanel({
   const { currentUser, isGuest, updateUserSettings } = useAppState();
   const settings = normalizeUserSettings(currentUser.settings);
   const notifications = settings.notifications;
+  const [permissionHint, setPermissionHint] = useState<string | null>(null);
+
+  async function handlePushChange(next: boolean) {
+    if (isGuest) return;
+
+    if (next) {
+      const permission = await requestNotificationPermission();
+      if (permission === "denied") {
+        setPermissionHint(
+          "Il browser ha bloccato le notifiche. Abilitale dalle impostazioni del dispositivo.",
+        );
+        updateUserSettings({ notifications: { pushEnabled: false } });
+        return;
+      }
+      if (permission === "unsupported") {
+        setPermissionHint(
+          "Questo browser non supporta le notifiche push locali.",
+        );
+        updateUserSettings({ notifications: { pushEnabled: false } });
+        return;
+      }
+      setPermissionHint(null);
+      updateUserSettings({ notifications: { pushEnabled: true } });
+      return;
+    }
+
+    setPermissionHint(null);
+    updateUserSettings({ notifications: { pushEnabled: false } });
+  }
 
   return (
     <SettingsShell
@@ -34,17 +65,17 @@ export function NotificationsSettingsPanel({
 
       <SettingsSection
         title="Canali"
-        description="Come vuoi ricevere gli aggiornamenti sui preventivi e le prenotazioni."
+        description="Come vuoi ricevere gli aggiornamenti sui preventivi, le prenotazioni e i messaggi."
       >
         <div className="divide-y divide-primary-black/8">
           <SettingsToggle
             label="Notifiche push"
-            description="Avvisi istantanei sull'app."
+            description="Avvisi del browser per nuovi messaggi in chat."
             checked={notifications.pushEnabled}
             disabled={isGuest}
-            onChange={(next) =>
-              updateUserSettings({ notifications: { pushEnabled: next } })
-            }
+            onChange={(next) => {
+              void handlePushChange(next);
+            }}
           />
           <SettingsToggle
             label="Email"
@@ -66,6 +97,10 @@ export function NotificationsSettingsPanel({
           />
         </div>
       </SettingsSection>
+
+      {permissionHint && (
+        <SettingsInfoCard tone="pink">{permissionHint}</SettingsInfoCard>
+      )}
 
       <SettingsSection title="Tipologie di aggiornamento">
         <div className="divide-y divide-primary-black/8">
@@ -109,8 +144,8 @@ export function NotificationsSettingsPanel({
       </SettingsSection>
 
       <SettingsInfoCard>
-        Anche con le notifiche disattivate riceverai sempre messaggi critici su
-        pagamenti e sicurezza dell&apos;account.
+        Disattivando le notifiche push non riceverai avvisi del browser per i
+        nuovi messaggi. I messaggi restano comunque disponibili nella chat.
       </SettingsInfoCard>
     </SettingsShell>
   );
