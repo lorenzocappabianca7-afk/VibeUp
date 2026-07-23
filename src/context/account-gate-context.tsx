@@ -125,6 +125,7 @@ export function AccountGateProvider({ children }: { children: ReactNode }) {
   function handleSubmit(account: {
     name: string;
     email: string;
+    phoneNumber: string;
     password: string;
   }) {
     runAfterAccountRef.current = true;

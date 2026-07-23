@@ -1038,6 +1038,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const safePhone = account.phoneNumber
         ? sanitizePlainText(account.phoneNumber, 32)
         : undefined;
+      const phoneDigits = safePhone?.replace(/\D/g, "") ?? "";
       const safeInstagram = account.instagramHandle
         ? sanitizeHandle(account.instagramHandle)
         : undefined;
@@ -1048,6 +1049,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const existing = accounts.find(
         (item) => item.email.toLowerCase() === normalizedEmail,
       );
+
+      if (!existing && phoneDigits.length < 8) {
+        return {
+          ok: false,
+          error: "Inserisci un numero di telefono valido.",
+        };
+      }
 
       if (existing) {
         if (account.requireNew) {

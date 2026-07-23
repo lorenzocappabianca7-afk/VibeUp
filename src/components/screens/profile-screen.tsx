@@ -91,6 +91,7 @@ export function ProfileScreen() {
   } = useAppState();
   const [newAccountName, setNewAccountName] = useState("");
   const [newAccountEmail, setNewAccountEmail] = useState("");
+  const [newAccountPhone, setNewAccountPhone] = useState("");
   const [newAccountPassword, setNewAccountPassword] = useState("");
   const [newAccountPasswordConfirm, setNewAccountPasswordConfirm] =
     useState("");
@@ -248,6 +249,10 @@ export function ProfileScreen() {
       setNewAccountError("Inserisci un’email valida.");
       return;
     }
+    if (newAccountPhone.replace(/\D/g, "").length < 8) {
+      setNewAccountError("Inserisci un numero di telefono valido.");
+      return;
+    }
     if (newAccountPassword.length < 8) {
       setNewAccountError("La password deve avere almeno 8 caratteri.");
       return;
@@ -271,6 +276,7 @@ export function ProfileScreen() {
     const result = await createAccount({
       name: newAccountName,
       email: newAccountEmail,
+      phoneNumber: newAccountPhone.trim(),
       password: newAccountPassword,
       requireNew: true,
     });
@@ -283,6 +289,7 @@ export function ProfileScreen() {
 
     setNewAccountName("");
     setNewAccountEmail("");
+    setNewAccountPhone("");
     setNewAccountPassword("");
     setNewAccountPasswordConfirm("");
     setNewAccountError(null);
@@ -896,6 +903,18 @@ export function ProfileScreen() {
                 className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
               />
               <input
+                type="tel"
+                value={newAccountPhone}
+                onChange={(event) => {
+                  setNewAccountPhone(event.target.value);
+                  setNewAccountError(null);
+                }}
+                placeholder="Numero di telefono"
+                autoComplete="tel"
+                inputMode="tel"
+                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+              />
+              <input
                 type="password"
                 value={newAccountPassword}
                 onChange={(event) => {
@@ -915,7 +934,7 @@ export function ProfileScreen() {
                 }}
                 placeholder="Conferma password"
                 autoComplete="new-password"
-                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal sm:col-span-2"
               />
             </div>
             {newAccountError && (

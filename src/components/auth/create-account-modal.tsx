@@ -8,6 +8,7 @@ import { UserPlus, X } from "lucide-react";
 export interface CreateAccountFormValues {
   name: string;
   email: string;
+  phoneNumber: string;
   password: string;
 }
 
@@ -26,6 +27,7 @@ export function CreateAccountModal({
 }: CreateAccountModalProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -39,6 +41,7 @@ export function CreateAccountModal({
     queueMicrotask(() => {
       setName("");
       setEmail("");
+      setPhoneNumber("");
       setPassword("");
       setConfirmPassword("");
       setError("");
@@ -53,10 +56,16 @@ export function CreateAccountModal({
 
     const trimmedName = name.trim();
     const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPhone = phoneNumber.trim();
+    const phoneDigits = trimmedPhone.replace(/\D/g, "");
     const passwordError = validateNewPassword(password, confirmPassword);
 
     if (!trimmedEmail || !trimmedEmail.includes("@")) {
       setError("Inserisci un’email valida.");
+      return;
+    }
+    if (phoneDigits.length < 8) {
+      setError("Inserisci un numero di telefono valido.");
       return;
     }
     if (passwordError) {
@@ -70,6 +79,7 @@ export function CreateAccountModal({
       await onSubmit({
         name: trimmedName || trimmedEmail.split("@")[0] || "Utente VibeUp",
         email: trimmedEmail,
+        phoneNumber: trimmedPhone,
         password,
       });
     } catch (err) {
@@ -141,6 +151,19 @@ export function CreateAccountModal({
             }}
             placeholder="Email"
             autoComplete="email"
+            required
+            className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+          />
+          <input
+            type="tel"
+            value={phoneNumber}
+            onChange={(event) => {
+              setPhoneNumber(event.target.value);
+              if (error) setError("");
+            }}
+            placeholder="Numero di telefono"
+            autoComplete="tel"
+            inputMode="tel"
             required
             className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
           />
