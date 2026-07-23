@@ -36,6 +36,7 @@ export function AccountGateProvider({ children }: { children: ReactNode }) {
   const runAfterAccountRef = useRef(false);
   const pendingReasonRef = useRef(DEFAULT_REASON);
   const waitingForHydrationRef = useRef(false);
+  const wasLockedRef = useRef(false);
 
   const hasAccount =
     !isGuest && currentUser.id !== GUEST_USER.id;
@@ -57,20 +58,34 @@ export function AccountGateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (isAccountLocked) {
+      wasLockedRef.current = true;
+    }
+  }, [isAccountLocked]);
+
+  useEffect(() => {
     if (!isStorageHydrated) return;
 
     if (canUseAccount) {
+      wasLockedRef.current = false;
       if (runAfterAccountRef.current || pendingActionRef.current) {
         runPendingAction();
       }
       return;
     }
 
+    // Drop queued actions only when leaving a locked session as guest.
+    if (wasLockedRef.current && isGuest) {
+      pendingActionRef.current = null;
+      runAfterAccountRef.current = false;
+      wasLockedRef.current = false;
+    }
+
     if (waitingForHydrationRef.current && pendingActionRef.current) {
       waitingForHydrationRef.current = false;
       setModalReason(pendingReasonRef.current);
     }
-  }, [canUseAccount, isStorageHydrated, runPendingAction]);
+  }, [canUseAccount, isGuest, isStorageHydrated, runPendingAction]);
 
   const requireAccount = useCallback(
     (action: PendingAction, nextReason = DEFAULT_REASON) => {

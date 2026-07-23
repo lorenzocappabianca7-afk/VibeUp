@@ -48,7 +48,9 @@ export function SecuritySettingsPanel({ onBack }: SecuritySettingsPanelProps) {
   const settings = normalizeUserSettings(currentUser.settings);
   const security = settings.security;
   const biometricLabel = useMemo(() => getBiometricLabel(), []);
-  const biometricActive = Boolean(currentUser.biometricCredentialId);
+  const biometricActive = Boolean(
+    currentUser.biometricCredentialId && security.biometricUnlock,
+  );
   const isFaceLabel = biometricLabel.toLowerCase().includes("face");
   const BiometricIcon = isFaceLabel ? ScanFace : Fingerprint;
   const [view, setView] = useState<SecuritySubview>("home");

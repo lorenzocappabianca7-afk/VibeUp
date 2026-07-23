@@ -1147,7 +1147,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
     const account = accounts.find((item) => item.id === userId);
     const credentialId = account?.biometricCredentialId;
-    if (!credentialId) {
+    if (
+      !credentialId ||
+      !normalizeUserSettings(account.settings).security.biometricUnlock
+    ) {
       return {
         ok: false,
         error: "Sblocco biometrico non attivo su questo account.",
@@ -1179,21 +1182,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       return { ok: false, error: "Account non trovato." };
     }
 
-    const available = await isBiometricAvailable();
-    if (!available) {
-      return {
-        ok: false,
-        error: "Questo dispositivo non supporta Face ID o impronta.",
-      };
-    }
-
-    try {
-      const credentialId = await enrollBiometricCredential({
-        userId: account.id,
-        email: account.email,
-        displayName: account.name,
-      });
-
+    const markBiometricEnabled = (credentialId: string) => {
       setAccounts((prev) =>
         prev.map((item) =>
           item.id === userId
@@ -1212,6 +1201,38 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         ),
       );
       setPendingBiometricSetup(false);
+    };
+
+    // Re-enable an existing platform credential instead of recreating it
+    // (recreate often fails with InvalidStateError on the same device).
+    if (account.biometricCredentialId) {
+      try {
+        await assertBiometricCredential(account.biometricCredentialId);
+        markBiometricEnabled(account.biometricCredentialId);
+        return { ok: true };
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "NotAllowedError") {
+          return { ok: false, error: biometricErrorMessage(error) };
+        }
+        // Stale credential on this device — fall through and enroll fresh.
+      }
+    }
+
+    const available = await isBiometricAvailable();
+    if (!available) {
+      return {
+        ok: false,
+        error: "Questo dispositivo non supporta Face ID o impronta.",
+      };
+    }
+
+    try {
+      const credentialId = await enrollBiometricCredential({
+        userId: account.id,
+        email: account.email,
+        displayName: account.name,
+      });
+      markBiometricEnabled(credentialId);
       return { ok: true };
     } catch (error) {
       return { ok: false, error: biometricErrorMessage(error) };
@@ -1224,12 +1245,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       return { ok: false, error: "Nessun account attivo." };
     }
 
+    // Keep credentialId so re-enable can reuse the platform authenticator.
     setAccounts((prev) =>
       prev.map((item) =>
         item.id === userId
           ? normalizeAccount({
               ...item,
-              biometricCredentialId: undefined,
               settings: {
                 ...normalizeUserSettings(item.settings),
                 security: {
@@ -1481,12 +1502,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           accountName={currentUser.name}
           accountEmail={currentUser.email}
           error={unlockError}
-          biometricEnabled={Boolean(currentUser.biometricCredentialId)}
+          biometricEnabled={Boolean(
+            currentUser.biometricCredentialId &&
+              currentUser.settings?.security.biometricUnlock,
+          )}
           onSubmit={async (password) => {
             await unlockAccount(password);
           }}
           onUnlockBiometric={
-            currentUser.biometricCredentialId
+            currentUser.biometricCredentialId &&
+            currentUser.settings?.security.biometricUnlock
               ? async () => {
                   const result = await unlockAccountWithBiometric();
                   if (!result.ok) {

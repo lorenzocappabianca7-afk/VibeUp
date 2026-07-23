@@ -31,9 +31,12 @@ export function UnlockAccountModal({
   const [localError, setLocalError] = useState<string | null>(null);
   const autoTriedRef = useRef(false);
   const onUnlockBiometricRef = useRef(onUnlockBiometric);
-  onUnlockBiometricRef.current = onUnlockBiometric;
   const label = useMemo(() => getBiometricLabel(), []);
   const isFace = label.toLowerCase().includes("face");
+
+  useEffect(() => {
+    onUnlockBiometricRef.current = onUnlockBiometric;
+  }, [onUnlockBiometric]);
 
   async function handleBiometric() {
     const unlockBiometric = onUnlockBiometricRef.current;
