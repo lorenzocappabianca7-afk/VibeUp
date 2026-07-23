@@ -1,14 +1,21 @@
 "use client";
 
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
+import { validateNewPassword } from "@/lib/auth/password";
 import { useEffect, useState, type FormEvent } from "react";
 import { UserPlus, X } from "lucide-react";
+
+export interface CreateAccountFormValues {
+  name: string;
+  email: string;
+  password: string;
+}
 
 interface CreateAccountModalProps {
   open: boolean;
   reason?: string;
   onClose: () => void;
-  onSubmit: (account: { name: string; email: string }) => void;
+  onSubmit: (account: CreateAccountFormValues) => void | Promise<void>;
 }
 
 export function CreateAccountModal({
@@ -19,7 +26,10 @@ export function CreateAccountModal({
 }: CreateAccountModalProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useBodyScrollLock(open);
 
@@ -29,27 +39,47 @@ export function CreateAccountModal({
     queueMicrotask(() => {
       setName("");
       setEmail("");
+      setPassword("");
+      setConfirmPassword("");
       setError("");
+      setSubmitting(false);
     });
   }, [open]);
 
   if (!open) return null;
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
     const trimmedName = name.trim();
     const trimmedEmail = email.trim().toLowerCase();
+    const passwordError = validateNewPassword(password, confirmPassword);
 
     if (!trimmedEmail || !trimmedEmail.includes("@")) {
       setError("Inserisci un’email valida.");
       return;
     }
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
 
-    onSubmit({
-      name: trimmedName || trimmedEmail.split("@")[0] || "Utente VibeUp",
-      email: trimmedEmail,
-    });
+    setSubmitting(true);
+    setError("");
+    try {
+      await onSubmit({
+        name: trimmedName || trimmedEmail.split("@")[0] || "Utente VibeUp",
+        email: trimmedEmail,
+        password,
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Non riesco a creare l’account. Riprova.",
+      );
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -93,14 +123,14 @@ export function CreateAccountModal({
           {reason}
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-5 space-y-3">
+        <form onSubmit={(event) => void handleSubmit(event)} className="mt-5 space-y-3">
           <input
             type="text"
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="Nome"
             autoComplete="name"
-            className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
+            className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
           />
           <input
             type="email"
@@ -112,16 +142,46 @@ export function CreateAccountModal({
             placeholder="Email"
             autoComplete="email"
             required
-            className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
+            className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
           />
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value);
+              if (error) setError("");
+            }}
+            placeholder="Password"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+          />
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(event) => {
+              setConfirmPassword(event.target.value);
+              if (error) setError("");
+            }}
+            placeholder="Conferma password"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+          />
+          <p className="text-[11px] leading-relaxed text-primary-black/45">
+            Ti servirà per accedere se non usi VibeUp da un po&apos;.
+          </p>
           {error && (
             <p className="text-xs font-medium text-brand-pink">{error}</p>
           )}
           <button
             type="submit"
-            className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-semibold text-white"
+            disabled={submitting}
+            className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
           >
-            Crea account
+            {submitting ? "Creo account…" : "Crea account"}
           </button>
         </form>
       </div>

@@ -8,15 +8,16 @@ import {
 import { SettingsShell } from "@/components/profile/settings/settings-shell";
 import { SettingsToggle } from "@/components/profile/settings/settings-toggle";
 import { useAppState } from "@/context/app-state-context";
+import { getBiometricLabel } from "@/lib/auth/biometric";
 import { normalizeUserSettings } from "@/types/user-settings";
-import { Fingerprint, KeyRound, ShieldCheck, Star } from "lucide-react";
-import { useState } from "react";
+import { Fingerprint, KeyRound, ScanFace, ShieldCheck, Star } from "lucide-react";
+import { useMemo, useState } from "react";
 
 interface SecuritySettingsPanelProps {
   onBack: () => void;
 }
 
-type SecuritySubview = "home" | "password" | "reviews";
+type SecuritySubview = "home" | "password" | "reviews" | "biometric";
 
 const MOCK_REVIEWS = [
   {
@@ -36,9 +37,20 @@ const MOCK_REVIEWS = [
 ];
 
 export function SecuritySettingsPanel({ onBack }: SecuritySettingsPanelProps) {
-  const { currentUser, isGuest, updateUserSettings } = useAppState();
+  const {
+    currentUser,
+    isGuest,
+    updateUserSettings,
+    changePassword,
+    enrollBiometric,
+    disableBiometric,
+  } = useAppState();
   const settings = normalizeUserSettings(currentUser.settings);
   const security = settings.security;
+  const biometricLabel = useMemo(() => getBiometricLabel(), []);
+  const biometricActive = Boolean(currentUser.biometricCredentialId);
+  const isFaceLabel = biometricLabel.toLowerCase().includes("face");
+  const BiometricIcon = isFaceLabel ? ScanFace : Fingerprint;
   const [view, setView] = useState<SecuritySubview>("home");
   const [passwordDraft, setPasswordDraft] = useState({
     current: "",
@@ -47,16 +59,22 @@ export function SecuritySettingsPanel({ onBack }: SecuritySettingsPanelProps) {
   });
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [biometricBusy, setBiometricBusy] = useState(false);
+  const [biometricError, setBiometricError] = useState<string | null>(null);
+  const [biometricMessage, setBiometricMessage] = useState<string | null>(null);
 
   function handleBack() {
     if (view !== "home") {
       setView("home");
+      setBiometricError(null);
+      setBiometricMessage(null);
       return;
     }
     onBack();
   }
 
-  function handleChangePassword() {
+  async function handleChangePassword() {
     if (isGuest) {
       setPasswordError("Crea un account per gestire la password.");
       return;
@@ -70,9 +88,47 @@ export function SecuritySettingsPanel({ onBack }: SecuritySettingsPanelProps) {
       return;
     }
 
+    setSavingPassword(true);
     setPasswordError(null);
-    setPasswordMessage("Password aggiornata. Al prossimo accesso userai quella nuova.");
+    const result = await changePassword(
+      passwordDraft.current,
+      passwordDraft.next,
+    );
+    setSavingPassword(false);
+
+    if (!result.ok) {
+      setPasswordError(result.error);
+      return;
+    }
+
+    setPasswordMessage(
+      "Password aggiornata. Ti servirà per accedere se non usi VibeUp da un po’.",
+    );
     setPasswordDraft({ current: "", next: "", confirm: "" });
+  }
+
+  async function handleEnableBiometric() {
+    if (isGuest || biometricBusy) return;
+    setBiometricBusy(true);
+    setBiometricError(null);
+    setBiometricMessage(null);
+    const result = await enrollBiometric();
+    setBiometricBusy(false);
+    if (!result.ok) {
+      setBiometricError(result.error);
+      return;
+    }
+    setBiometricMessage(`${biometricLabel} attivato su questo dispositivo.`);
+  }
+
+  async function handleDisableBiometric() {
+    if (isGuest || biometricBusy) return;
+    setBiometricBusy(true);
+    setBiometricError(null);
+    setBiometricMessage(null);
+    await disableBiometric();
+    setBiometricBusy(false);
+    setBiometricMessage(`${biometricLabel} disattivato.`);
   }
 
   if (view === "password") {
@@ -148,11 +204,11 @@ export function SecuritySettingsPanel({ onBack }: SecuritySettingsPanelProps) {
 
         <button
           type="button"
-          disabled={isGuest}
-          onClick={handleChangePassword}
+          disabled={isGuest || savingPassword}
+          onClick={() => void handleChangePassword()}
           className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-black text-white transition-colors hover:bg-primary-black/90 disabled:opacity-50"
         >
-          Aggiorna password
+          {savingPassword ? "Aggiorno…" : "Aggiorna password"}
         </button>
       </SettingsShell>
     );
@@ -191,6 +247,56 @@ export function SecuritySettingsPanel({ onBack }: SecuritySettingsPanelProps) {
     );
   }
 
+  if (view === "biometric") {
+    return (
+      <SettingsShell
+        title={biometricLabel}
+        subtitle="Sblocco rapido dell’account"
+        onBack={handleBack}
+      >
+        {isGuest && (
+          <SettingsInfoCard tone="pink">
+            Crea un account per configurare {biometricLabel}.
+          </SettingsInfoCard>
+        )}
+
+        <SettingsInfoCard tone={biometricActive ? "teal" : "neutral"}>
+          {biometricActive
+            ? `${biometricLabel} è attivo su questo dispositivo. Potrai usarlo per sbloccare l’account dopo un periodo di inattività.`
+            : `Non hai ancora configurato ${biometricLabel}. Puoi farlo adesso: ti servirà per accedere più in fretta se non usi VibeUp da un po’.`}
+        </SettingsInfoCard>
+
+        {biometricError && (
+          <SettingsInfoCard tone="pink">{biometricError}</SettingsInfoCard>
+        )}
+        {biometricMessage && (
+          <SettingsInfoCard tone="teal">{biometricMessage}</SettingsInfoCard>
+        )}
+
+        {!biometricActive ? (
+          <button
+            type="button"
+            disabled={isGuest || biometricBusy}
+            onClick={() => void handleEnableBiometric()}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-black px-4 py-3 text-sm font-black text-white transition-colors hover:bg-primary-black/90 disabled:opacity-50"
+          >
+            <BiometricIcon className="h-4 w-4" aria-hidden />
+            {biometricBusy ? "Configuro…" : `Configura ${biometricLabel}`}
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled={isGuest || biometricBusy}
+            onClick={() => void handleDisableBiometric()}
+            className="w-full rounded-2xl border border-brand-pink/30 bg-brand-pink/10 px-4 py-3 text-sm font-black text-brand-pink transition-colors hover:bg-brand-pink/15 disabled:opacity-50"
+          >
+            {biometricBusy ? "Disattivo…" : `Disattiva ${biometricLabel}`}
+          </button>
+        )}
+      </SettingsShell>
+    );
+  }
+
   return (
     <SettingsShell
       title="Sicurezza e Recensioni"
@@ -210,6 +316,22 @@ export function SecuritySettingsPanel({ onBack }: SecuritySettingsPanelProps) {
           description="Cambia la password di accesso all'account."
           onClick={() => setView("password")}
         />
+        <SettingsNavRow
+          icon={BiometricIcon}
+          label={biometricLabel}
+          description={
+            biometricActive
+              ? "Attivo su questo dispositivo."
+              : "Configura Face ID o impronta quando vuoi."
+          }
+          value={biometricActive ? "Attivo" : "Da configurare"}
+          disabled={isGuest}
+          onClick={() => {
+            setBiometricError(null);
+            setBiometricMessage(null);
+            setView("biometric");
+          }}
+        />
         <div className="divide-y divide-primary-black/8 border-t border-primary-black/8">
           <SettingsToggle
             label="Autenticazione a due fattori"
@@ -218,15 +340,6 @@ export function SecuritySettingsPanel({ onBack }: SecuritySettingsPanelProps) {
             disabled={isGuest}
             onChange={(next) =>
               updateUserSettings({ security: { twoFactorEnabled: next } })
-            }
-          />
-          <SettingsToggle
-            label="Sblocco biometrico"
-            description="Face ID / impronta dove supportato dal dispositivo."
-            checked={security.biometricUnlock}
-            disabled={isGuest}
-            onChange={(next) =>
-              updateUserSettings({ security: { biometricUnlock: next } })
             }
           />
           <SettingsToggle
@@ -255,12 +368,14 @@ export function SecuritySettingsPanel({ onBack }: SecuritySettingsPanelProps) {
           icon={ShieldCheck}
           label="Protezione account"
           value={
-            security.twoFactorEnabled ? "Elevata" : "Standard"
+            security.twoFactorEnabled || biometricActive ? "Elevata" : "Standard"
           }
           description={
-            security.twoFactorEnabled
-              ? "2FA attiva sul tuo account."
-              : "Attiva la 2FA per un livello superiore."
+            biometricActive
+              ? `${biometricLabel} attivo sul tuo account.`
+              : security.twoFactorEnabled
+                ? "2FA attiva sul tuo account."
+                : "Attiva Face ID, impronta o 2FA per un livello superiore."
           }
         />
         <SettingsNavRow

@@ -37,6 +37,8 @@ interface OwnerFormData {
   ownerName: string;
   email: string;
   phoneNumber: string;
+  password: string;
+  confirmPassword: string;
 }
 
 function getEmptyOwnerForm(
@@ -46,6 +48,8 @@ function getEmptyOwnerForm(
     ownerName: defaults?.ownerName ?? "",
     email: defaults?.email ?? "",
     phoneNumber: defaults?.phoneNumber ?? "",
+    password: defaults?.password ?? "",
+    confirmPassword: defaults?.confirmPassword ?? "",
   };
 }
 
@@ -240,6 +244,17 @@ export function BusinessOnboardingView() {
       return;
     }
 
+    if (!editingExisting) {
+      if (ownerData.password.length < 8) {
+        setError("La password deve avere almeno 8 caratteri.");
+        return;
+      }
+      if (ownerData.password !== ownerData.confirmPassword) {
+        setError("Le password non coincidono.");
+        return;
+      }
+    }
+
     const profile = buildProfile(
       category,
       localeData,
@@ -284,22 +299,25 @@ export function BusinessOnboardingView() {
       return;
     }
 
-    const result = createBusinessAccount({
-      ownerName,
-      email,
-      phoneNumber,
-      businessProfile: profile,
-    });
+    void (async () => {
+      const result = await createBusinessAccount({
+        ownerName,
+        email,
+        phoneNumber,
+        password: ownerData.password,
+        businessProfile: profile,
+      });
 
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
 
-    setSuccess(true);
-    setTimeout(() => {
-      router.push("/?tab=notifications");
-    }, 1400);
+      setSuccess(true);
+      setTimeout(() => {
+        router.push("/?tab=notifications");
+      }, 1400);
+    })();
   }
 
   return (
@@ -397,6 +415,31 @@ export function BusinessOnboardingView() {
                   placeholder="Es. +39 333 1234567"
                   required
                 />
+                {!editingExisting && (
+                  <>
+                    <TextField
+                      id="owner-password"
+                      label="Password"
+                      type="password"
+                      value={ownerData.password}
+                      onChange={(v) => updateOwner("password", v)}
+                      placeholder="Almeno 8 caratteri"
+                      required
+                    />
+                    <TextField
+                      id="owner-password-confirm"
+                      label="Conferma password"
+                      type="password"
+                      value={ownerData.confirmPassword}
+                      onChange={(v) => updateOwner("confirmPassword", v)}
+                      placeholder="Ripeti la password"
+                      required
+                    />
+                    <p className="text-[11px] leading-relaxed text-primary-black/45">
+                      Ti servirà per accedere se non usi VibeUp da un po&apos;.
+                    </p>
+                  </>
+                )}
               </div>
             </section>
           )}

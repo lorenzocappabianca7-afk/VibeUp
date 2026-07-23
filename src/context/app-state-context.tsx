@@ -1,6 +1,17 @@
 "use client";
 
 import type { BusinessProfile } from "@/types/business";
+import {
+  assertBiometricCredential,
+  biometricErrorMessage,
+  enrollBiometricCredential,
+  isBiometricAvailable,
+} from "@/lib/auth/biometric";
+import {
+  hashPassword,
+  isAccountIdle,
+  verifyPassword,
+} from "@/lib/auth/password";
 import { isEventPast } from "@/lib/event";
 import { MOCK_EVENTS } from "@/lib/mock/events";
 import {
@@ -14,6 +25,8 @@ import {
   normalizeUserSettings,
   type UserSettings,
 } from "@/types/user-settings";
+import { BiometricSetupModal } from "@/components/auth/biometric-setup-modal";
+import { UnlockAccountModal } from "@/components/auth/unlock-account-modal";
 import {
   createContext,
   useCallback,
@@ -40,7 +53,28 @@ export interface CurrentUser {
   businessProfile?: BusinessProfile | null;
   /** Preferenze impostazioni persistite per account */
   settings?: UserSettings;
+  /** SHA-256 hash — never store the plain password */
+  passwordHash?: string;
+  /** ISO timestamp of last unlocked activity */
+  lastActiveAt?: string;
+  /** WebAuthn platform credential id (base64url) for Face ID / fingerprint */
+  biometricCredentialId?: string;
 }
+
+export interface CreateAccountInput {
+  name: string;
+  email: string;
+  password: string;
+  accountType?: "consumer" | "business";
+  businessProfile?: BusinessProfile | null;
+  phoneNumber?: string;
+  avatarUrl?: string;
+  instagramHandle?: string;
+}
+
+export type CreateAccountResult =
+  | { ok: true }
+  | { ok: false; error: string };
 
 type DeepPartialUserSettings = {
   privacy?: Partial<UserSettings["privacy"]>;
@@ -57,6 +91,7 @@ export interface CreateBusinessAccountInput {
   ownerName: string;
   email: string;
   phoneNumber: string;
+  password: string;
   businessProfile: BusinessProfile;
 }
 
@@ -101,14 +136,23 @@ interface AppStateContextValue {
   upsertManagedListing: (listing: ManagedListing) => void;
   removeManagedListing: (id: string) => void;
   toggleManagedListingPublication: (id: string) => void;
-  createAccount: (account: Omit<CurrentUser, "id">) => void;
+  createAccount: (account: CreateAccountInput) => Promise<CreateAccountResult>;
   createBusinessAccount: (
     input: CreateBusinessAccountInput,
-  ) => CreateBusinessAccountResult;
+  ) => Promise<CreateBusinessAccountResult>;
   deleteAccount: (id: string) => void;
   switchAccount: (id: string) => void;
   updateCurrentUser: (updates: Partial<Omit<CurrentUser, "id">>) => void;
   updateUserSettings: (patch: DeepPartialUserSettings) => void;
+  changePassword: (
+    currentPassword: string,
+    nextPassword: string,
+  ) => Promise<CreateAccountResult>;
+  unlockAccount: (password: string) => Promise<CreateAccountResult>;
+  unlockAccountWithBiometric: () => Promise<CreateAccountResult>;
+  enrollBiometric: () => Promise<CreateAccountResult>;
+  disableBiometric: () => Promise<CreateAccountResult>;
+  isAccountLocked: boolean;
   saveBusinessProfile: (profile: BusinessProfile) => void;
   clearBusinessProfile: () => void;
 }
@@ -491,6 +535,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     ]),
   );
   const [managedListings, setManagedListings] = useState<ManagedListing[]>([]);
+  const [isAccountLocked, setIsAccountLocked] = useState(false);
+  const [unlockError, setUnlockError] = useState<string | null>(null);
+  const [pendingBiometricSetup, setPendingBiometricSetup] = useState(false);
   const isGuest = currentUserId === GUEST_USER.id;
   const currentUserIdRef = useRef(currentUserId);
   currentUserIdRef.current = currentUserId;
@@ -553,6 +600,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setManagedListings(storedState.managedListings);
       }
 
+      const activeAccount = migratedAccounts.find(
+        (account) => account.id === resolvedUserId,
+      );
+      if (
+        activeAccount?.passwordHash &&
+        isAccountIdle(activeAccount.lastActiveAt)
+      ) {
+        setIsAccountLocked(true);
+      }
+
       setHydratedFromStorage(true);
     });
 
@@ -560,6 +617,52 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, []);
+
+  const touchAccountActivity = useCallback((userId: string) => {
+    if (!userId || userId === GUEST_USER.id) return;
+    const stamp = new Date().toISOString();
+    setAccounts((prev) =>
+      prev.map((account) =>
+        account.id === userId
+          ? normalizeAccount({ ...account, lastActiveAt: stamp })
+          : account,
+      ),
+    );
+  }, []);
+
+  const markUnlocked = useCallback(
+    (userId: string) => {
+      setIsAccountLocked(false);
+      setUnlockError(null);
+      touchAccountActivity(userId);
+    },
+    [touchAccountActivity],
+  );
+
+  const promptBiometricSetupIfAvailable = useCallback(async () => {
+    const available = await isBiometricAvailable();
+    if (available) {
+      setPendingBiometricSetup(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hydratedFromStorage) return;
+    if (isGuest || isAccountLocked) return;
+
+    touchAccountActivity(currentUserId);
+    const interval = window.setInterval(() => {
+      touchAccountActivity(currentUserIdRef.current);
+    }, 5 * 60_000);
+
+    return () => window.clearInterval(interval);
+  }, [
+    currentUserId,
+    hydratedFromStorage,
+    isAccountLocked,
+    isGuest,
+    touchAccountActivity,
+  ]);
 
   useEffect(() => {
     if (!hydratedFromStorage) return;
@@ -795,70 +898,118 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const createAccount = useCallback(
-    (account: Omit<CurrentUser, "id">) => {
+    async (account: CreateAccountInput): Promise<CreateAccountResult> => {
       const normalizedEmail = account.email.trim().toLowerCase();
-      if (!normalizedEmail) return;
+      const password = account.password;
+      if (!normalizedEmail) {
+        return { ok: false, error: "Inserisci un’email valida." };
+      }
+      if (!password || password.length < 8) {
+        return {
+          ok: false,
+          error: "La password deve avere almeno 8 caratteri.",
+        };
+      }
 
+      const passwordHash = await hashPassword(password);
       const nextName = account.name.trim() || normalizedEmail;
       const nextAccountType =
         account.accountType === "business" || account.businessProfile
           ? ("business" as const)
           : ("consumer" as const);
+      const now = new Date().toISOString();
 
       const existing = accounts.find(
         (item) => item.email.toLowerCase() === normalizedEmail,
       );
 
       if (existing) {
+        if (existing.passwordHash) {
+          const matches = await verifyPassword(password, existing.passwordHash);
+          if (!matches) {
+            return {
+              ok: false,
+              error: "Password non corretta per questo account.",
+            };
+          }
+        }
+
+        // Keep existing account type/profile unless this call explicitly upgrades to business.
+        const upgradedToBusiness = nextAccountType === "business";
+        const resolvedAccountType = upgradedToBusiness
+          ? ("business" as const)
+          : (existing.accountType ?? "consumer");
+        const firstPasswordSet = !existing.passwordHash;
+
         setAccounts((prev) =>
           prev.map((item) =>
             item.id === existing.id
               ? normalizeAccount({
                   ...item,
-                  ...account,
-                  id: existing.id,
-                  email: normalizedEmail,
                   name: nextName,
-                  accountType: nextAccountType,
-                  businessProfile:
-                    nextAccountType === "business"
-                      ? (account.businessProfile ??
-                        item.businessProfile ??
-                        null)
-                      : null,
+                  email: normalizedEmail,
+                  accountType: resolvedAccountType,
+                  businessProfile: upgradedToBusiness
+                    ? (account.businessProfile ??
+                      item.businessProfile ??
+                      null)
+                    : (item.businessProfile ?? null),
+                  phoneNumber: account.phoneNumber ?? item.phoneNumber,
+                  avatarUrl: account.avatarUrl ?? item.avatarUrl,
+                  instagramHandle:
+                    account.instagramHandle ?? item.instagramHandle,
+                  passwordHash: existing.passwordHash ?? passwordHash,
+                  lastActiveAt: now,
                 })
               : item,
           ),
         );
         setUserStatesMap((map) => claimGuestStateInto(map, existing.id));
         setCurrentUserId(existing.id);
-        return;
+        setIsAccountLocked(false);
+        setUnlockError(null);
+        if (firstPasswordSet) {
+          void promptBiometricSetupIfAvailable();
+        }
+        return { ok: true };
       }
 
       const id = `account-${Date.now()}`;
       const nextAccount = normalizeAccount({
-        ...account,
         id,
-        email: normalizedEmail,
         name: nextName,
+        email: normalizedEmail,
+        phoneNumber: account.phoneNumber,
+        avatarUrl: account.avatarUrl,
+        instagramHandle: account.instagramHandle,
         accountType: nextAccountType,
         businessProfile:
           nextAccountType === "business"
             ? (account.businessProfile ?? null)
             : null,
+        passwordHash,
+        lastActiveAt: now,
       });
 
       setAccounts((prev) => [nextAccount, ...prev]);
       setUserStatesMap((map) => claimGuestStateInto(map, id));
       setCurrentUserId(id);
+      setIsAccountLocked(false);
+      setUnlockError(null);
+      void promptBiometricSetupIfAvailable();
+      return { ok: true };
     },
-    [accounts],
+    [accounts, promptBiometricSetupIfAvailable],
   );
+
   const createBusinessAccount = useCallback(
-    (input: CreateBusinessAccountInput): CreateBusinessAccountResult => {
+    async (
+      input: CreateBusinessAccountInput,
+    ): Promise<CreateBusinessAccountResult> => {
       const normalizedEmail = input.email.trim().toLowerCase();
       const nextName = input.ownerName.trim();
       const phoneNumber = input.phoneNumber.trim();
+      const password = input.password;
 
       if (!nextName || !normalizedEmail) {
         return {
@@ -866,9 +1017,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           error: "Inserisci nome proprietario ed email.",
         };
       }
+      if (!password || password.length < 8) {
+        return {
+          ok: false,
+          error: "La password deve avere almeno 8 caratteri.",
+        };
+      }
 
-      // Never convert an existing consumer account: require a distinct identity
-      // (new email OR a different name from any account that already uses that email).
       const sameIdentity = accounts.some(
         (account) =>
           account.email.toLowerCase() === normalizedEmail &&
@@ -883,6 +1038,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         };
       }
 
+      const passwordHash = await hashPassword(password);
       const id = `account-pro-${Date.now()}`;
       const nextAccount = normalizeAccount({
         id,
@@ -891,25 +1047,33 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         phoneNumber,
         accountType: "business",
         businessProfile: input.businessProfile,
+        passwordHash,
+        lastActiveAt: new Date().toISOString(),
       });
 
       setAccounts((prev) => [nextAccount, ...prev]);
       setUserStatesMap((map) => claimGuestStateInto(map, id));
       setCurrentUserId(id);
+      setIsAccountLocked(false);
+      setUnlockError(null);
+      void promptBiometricSetupIfAvailable();
 
       return { ok: true };
     },
-    [accounts],
+    [accounts, promptBiometricSetupIfAvailable],
   );
 
   const deleteAccount = useCallback((id: string) => {
     if (id === GUEST_USER.id) return;
 
+    setPendingBiometricSetup(false);
     setAccounts((prev) => {
       const next = prev.filter((account) => account.id !== id);
 
       setCurrentUserId((current) => {
         if (current !== id) return current;
+        setIsAccountLocked(false);
+        setUnlockError(null);
         return next[0]?.id ?? GUEST_USER.id;
       });
 
@@ -926,12 +1090,205 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const switchAccount = useCallback(
     (id: string) => {
+      setPendingBiometricSetup(false);
       if (id === GUEST_USER.id) {
         setCurrentUserId(GUEST_USER.id);
+        setIsAccountLocked(false);
+        setUnlockError(null);
         return;
       }
-      if (!accounts.some((account) => account.id === id)) return;
+      const target = accounts.find((account) => account.id === id);
+      if (!target) return;
       setCurrentUserId((current) => (current === id ? current : id));
+      if (target.passwordHash && isAccountIdle(target.lastActiveAt)) {
+        setIsAccountLocked(true);
+        setUnlockError(null);
+      } else {
+        setIsAccountLocked(false);
+        setUnlockError(null);
+        if (target.passwordHash) {
+          touchAccountActivity(id);
+        }
+      }
+    },
+    [accounts, touchAccountActivity],
+  );
+
+  const unlockAccount = useCallback(
+    async (password: string): Promise<CreateAccountResult> => {
+      const userId = currentUserIdRef.current;
+      if (userId === GUEST_USER.id) {
+        return { ok: false, error: "Nessun account da sbloccare." };
+      }
+
+      const account = accounts.find((item) => item.id === userId);
+      if (!account?.passwordHash) {
+        markUnlocked(userId);
+        return { ok: true };
+      }
+
+      const matches = await verifyPassword(password, account.passwordHash);
+      if (!matches) {
+        setUnlockError("Password non corretta.");
+        return { ok: false, error: "Password non corretta." };
+      }
+
+      markUnlocked(userId);
+      return { ok: true };
+    },
+    [accounts, markUnlocked],
+  );
+
+  const unlockAccountWithBiometric = useCallback(async (): Promise<CreateAccountResult> => {
+    const userId = currentUserIdRef.current;
+    if (userId === GUEST_USER.id) {
+      return { ok: false, error: "Nessun account da sbloccare." };
+    }
+
+    const account = accounts.find((item) => item.id === userId);
+    const credentialId = account?.biometricCredentialId;
+    if (!credentialId) {
+      return {
+        ok: false,
+        error: "Sblocco biometrico non attivo su questo account.",
+      };
+    }
+
+    try {
+      await assertBiometricCredential(credentialId);
+      markUnlocked(userId);
+      return { ok: true };
+    } catch (error) {
+      const message = biometricErrorMessage(error);
+      setUnlockError(message);
+      return { ok: false, error: message };
+    }
+  }, [accounts, markUnlocked]);
+
+  const enrollBiometric = useCallback(async (): Promise<CreateAccountResult> => {
+    const userId = currentUserIdRef.current;
+    if (userId === GUEST_USER.id) {
+      return {
+        ok: false,
+        error: "Crea un account per attivare Face ID o impronta.",
+      };
+    }
+
+    const account = accounts.find((item) => item.id === userId);
+    if (!account) {
+      return { ok: false, error: "Account non trovato." };
+    }
+
+    const available = await isBiometricAvailable();
+    if (!available) {
+      return {
+        ok: false,
+        error: "Questo dispositivo non supporta Face ID o impronta.",
+      };
+    }
+
+    try {
+      const credentialId = await enrollBiometricCredential({
+        userId: account.id,
+        email: account.email,
+        displayName: account.name,
+      });
+
+      setAccounts((prev) =>
+        prev.map((item) =>
+          item.id === userId
+            ? normalizeAccount({
+                ...item,
+                biometricCredentialId: credentialId,
+                settings: {
+                  ...normalizeUserSettings(item.settings),
+                  security: {
+                    ...normalizeUserSettings(item.settings).security,
+                    biometricUnlock: true,
+                  },
+                },
+              })
+            : item,
+        ),
+      );
+      setPendingBiometricSetup(false);
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error: biometricErrorMessage(error) };
+    }
+  }, [accounts]);
+
+  const disableBiometric = useCallback(async (): Promise<CreateAccountResult> => {
+    const userId = currentUserIdRef.current;
+    if (userId === GUEST_USER.id) {
+      return { ok: false, error: "Nessun account attivo." };
+    }
+
+    setAccounts((prev) =>
+      prev.map((item) =>
+        item.id === userId
+          ? normalizeAccount({
+              ...item,
+              biometricCredentialId: undefined,
+              settings: {
+                ...normalizeUserSettings(item.settings),
+                security: {
+                  ...normalizeUserSettings(item.settings).security,
+                  biometricUnlock: false,
+                },
+              },
+            })
+          : item,
+      ),
+    );
+    return { ok: true };
+  }, []);
+
+  const changePassword = useCallback(
+    async (
+      currentPassword: string,
+      nextPassword: string,
+    ): Promise<CreateAccountResult> => {
+      const userId = currentUserIdRef.current;
+      if (userId === GUEST_USER.id) {
+        return { ok: false, error: "Crea un account per gestire la password." };
+      }
+
+      const account = accounts.find((item) => item.id === userId);
+      if (!account) {
+        return { ok: false, error: "Account non trovato." };
+      }
+
+      if (account.passwordHash) {
+        const matches = await verifyPassword(
+          currentPassword,
+          account.passwordHash,
+        );
+        if (!matches) {
+          return { ok: false, error: "Password attuale non corretta." };
+        }
+      }
+
+      if (nextPassword.length < 8) {
+        return {
+          ok: false,
+          error: "La nuova password deve avere almeno 8 caratteri.",
+        };
+      }
+
+      const passwordHash = await hashPassword(nextPassword);
+      setAccounts((prev) =>
+        prev.map((item) =>
+          item.id === userId
+            ? normalizeAccount({
+                ...item,
+                passwordHash,
+                lastActiveAt: new Date().toISOString(),
+              })
+            : item,
+        ),
+      );
+      return { ok: true };
     },
     [accounts],
   );
@@ -1060,6 +1417,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       switchAccount,
       updateCurrentUser,
       updateUserSettings,
+      changePassword,
+      unlockAccount,
+      unlockAccountWithBiometric,
+      enrollBiometric,
+      disableBiometric,
+      isAccountLocked,
       saveBusinessProfile,
       clearBusinessProfile,
     };
@@ -1099,13 +1462,54 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       switchAccount,
       updateCurrentUser,
       updateUserSettings,
+      changePassword,
+      unlockAccount,
+      unlockAccountWithBiometric,
+      enrollBiometric,
+      disableBiometric,
+      isAccountLocked,
       saveBusinessProfile,
       clearBusinessProfile,
     ],
   );
 
   return (
-    <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>
+    <AppStateContext.Provider value={value}>
+      {children}
+      {isAccountLocked && !isGuest && (
+        <UnlockAccountModal
+          accountName={currentUser.name}
+          accountEmail={currentUser.email}
+          error={unlockError}
+          biometricEnabled={Boolean(currentUser.biometricCredentialId)}
+          onSubmit={async (password) => {
+            await unlockAccount(password);
+          }}
+          onUnlockBiometric={
+            currentUser.biometricCredentialId
+              ? async () => {
+                  const result = await unlockAccountWithBiometric();
+                  if (!result.ok) {
+                    throw new Error(result.error);
+                  }
+                }
+              : undefined
+          }
+          onSwitchGuest={() => switchAccount(GUEST_USER.id)}
+        />
+      )}
+      <BiometricSetupModal
+        open={pendingBiometricSetup && !isGuest && !isAccountLocked}
+        accountName={currentUser.name}
+        onEnable={async () => {
+          const result = await enrollBiometric();
+          if (!result.ok) {
+            throw new Error(result.error);
+          }
+        }}
+        onSkip={() => setPendingBiometricSetup(false)}
+      />
+    </AppStateContext.Provider>
   );
 }
 

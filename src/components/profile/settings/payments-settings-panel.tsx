@@ -14,19 +14,20 @@ import {
   getCardBrand,
 } from "@/lib/payments/card-vault";
 import {
+  Briefcase,
   CreditCard,
   History,
   LockKeyhole,
-  Sparkles,
   Trash2,
 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 interface PaymentsSettingsPanelProps {
   onBack: () => void;
 }
 
-type PaymentsSubview = "home" | "card" | "plan" | "history";
+type PaymentsSubview = "home" | "card" | "history";
 
 const MOCK_HISTORY = [
   {
@@ -286,48 +287,6 @@ export function PaymentsSettingsPanel({ onBack }: PaymentsSettingsPanelProps) {
     );
   }
 
-  if (view === "plan") {
-    return (
-      <SettingsShell
-        title="Abbonamento"
-        subtitle="Il tuo piano VibeUp"
-        onBack={handleBack}
-      >
-        <div className="rounded-2xl border border-primary-black/10 bg-primary-black/[0.02] p-4">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-primary-black/45">
-            Piano attuale
-          </p>
-          <p className="mt-2 text-xl font-black text-primary-black">
-            {isBusinessUser ? "VibeUp Pro" : "Piano gratuito"}
-          </p>
-          <p className="mt-1 text-sm text-primary-black/55">
-            {isBusinessUser
-              ? "Calendario, notifiche business e profilo locale inclusi."
-              : "Esplora locali, salva preferiti e organizza eventi senza costi fissi."}
-          </p>
-        </div>
-
-        {!isBusinessUser && (
-          <SettingsSection title="Passa a Pro">
-            <SettingsNavRow
-              icon={Sparkles}
-              label="Scopri VibeUp Pro"
-              description="Per locali e fornitori: gestione richieste e calendario."
-              onClick={() => {
-                window.location.href = "/business/onboarding";
-              }}
-            />
-          </SettingsSection>
-        )}
-
-        <SettingsInfoCard>
-          I pagamenti delle caparre e dei servizi restano separati dall&apos;abbonamento
-          e vengono addebitati solo quando confermi una prenotazione.
-        </SettingsInfoCard>
-      </SettingsShell>
-    );
-  }
-
   if (view === "history") {
     return (
       <SettingsShell
@@ -366,7 +325,7 @@ export function PaymentsSettingsPanel({ onBack }: PaymentsSettingsPanelProps) {
   return (
     <SettingsShell
       title="Pagamenti e abbonamento"
-      subtitle="Carte, piano e movimenti"
+      subtitle="Carte, business e movimenti"
       onBack={onBack}
     >
       <SettingsSection title="Metodi di pagamento">
@@ -382,13 +341,26 @@ export function PaymentsSettingsPanel({ onBack }: PaymentsSettingsPanelProps) {
         />
       </SettingsSection>
 
-      <SettingsSection title="Abbonamento e storico">
-        <SettingsNavRow
-          icon={Sparkles}
-          label="Piano e abbonamento"
-          value={isBusinessUser ? "Pro" : "Gratuito"}
-          onClick={() => setView("plan")}
-        />
+      <SettingsSection title="Business e storico">
+        <Link
+          href="/business/onboarding"
+          className="flex w-full items-center gap-3 border-b border-primary-black/8 px-4 py-3.5 text-left transition-colors hover:bg-primary-black/[0.03]"
+        >
+          <Briefcase
+            className="h-5 w-5 shrink-0 text-primary-black/45"
+            aria-hidden
+          />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium text-primary-black">
+              {isBusinessUser ? "Modifica profilo Business" : "Passa a Business"}
+            </span>
+            <span className="mt-0.5 block text-xs leading-snug text-primary-black/50">
+              {isBusinessUser
+                ? "Aggiorna i dati del tuo account Pro"
+                : "Per locali e fornitori: richieste, calendario e profilo"}
+            </span>
+          </span>
+        </Link>
         <SettingsNavRow
           icon={History}
           label="Cronologia pagamenti"
