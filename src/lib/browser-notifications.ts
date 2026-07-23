@@ -65,7 +65,6 @@ export function notifyNewChatMessage(options: {
     const notification = new Notification(title, {
       body: body.slice(0, 140),
       tag,
-      renotify: true,
       icon: "/vibeup-mark-192.png",
       badge: "/vibeup-mark-192.png",
     });
