@@ -57,12 +57,19 @@ export function UnlockAccountModal({
   }
 
   useEffect(() => {
-    if (!biometricEnabled || autoTriedRef.current) return;
-    autoTriedRef.current = true;
+    if (!biometricEnabled) return;
+
+    let cancelled = false;
     const timer = window.setTimeout(() => {
+      if (cancelled || autoTriedRef.current) return;
+      autoTriedRef.current = true;
       void handleBiometric();
     }, 350);
-    return () => window.clearTimeout(timer);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
     // Auto-try once when biometric unlock is available for this locked session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [biometricEnabled]);

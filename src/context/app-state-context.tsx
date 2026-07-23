@@ -70,6 +70,8 @@ export interface CreateAccountInput {
   phoneNumber?: string;
   avatarUrl?: string;
   instagramHandle?: string;
+  /** When true, reject if an account with the same email already exists. */
+  requireNew?: boolean;
 }
 
 export type CreateAccountResult =
@@ -538,6 +540,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [isAccountLocked, setIsAccountLocked] = useState(false);
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [pendingBiometricSetup, setPendingBiometricSetup] = useState(false);
+  const unlockSessionRef = useRef(0);
   const isGuest = currentUserId === GUEST_USER.id;
   const currentUserIdRef = useRef(currentUserId);
   currentUserIdRef.current = currentUserId;
@@ -650,12 +653,27 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!hydratedFromStorage) return;
     if (isGuest || isAccountLocked) return;
 
-    touchAccountActivity(currentUserId);
-    const interval = window.setInterval(() => {
-      touchAccountActivity(currentUserIdRef.current);
-    }, 5 * 60_000);
+    const userId = currentUserId;
+    touchAccountActivity(userId);
 
-    return () => window.clearInterval(interval);
+    let lastTouchMs = Date.now();
+    const onUserActivity = () => {
+      const now = Date.now();
+      // Avoid rewriting storage on every click; once a minute is enough for idle.
+      if (now - lastTouchMs < 60_000) return;
+      lastTouchMs = now;
+      touchAccountActivity(currentUserIdRef.current);
+    };
+
+    window.addEventListener("pointerdown", onUserActivity, { passive: true });
+    window.addEventListener("keydown", onUserActivity);
+    window.addEventListener("touchstart", onUserActivity, { passive: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", onUserActivity);
+      window.removeEventListener("keydown", onUserActivity);
+      window.removeEventListener("touchstart", onUserActivity);
+    };
   }, [
     currentUserId,
     hydratedFromStorage,
@@ -663,6 +681,40 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     isGuest,
     touchAccountActivity,
   ]);
+
+  useEffect(() => {
+    if (!hydratedFromStorage) return;
+
+    const recheckIdleLock = () => {
+      const userId = currentUserIdRef.current;
+      if (userId === GUEST_USER.id) return;
+
+      const account = accounts.find((item) => item.id === userId);
+      if (!account?.passwordHash) return;
+
+      if (isAccountIdle(account.lastActiveAt)) {
+        setIsAccountLocked(true);
+        setUnlockError(null);
+        setPendingBiometricSetup(false);
+      }
+    };
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        recheckIdleLock();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", recheckIdleLock);
+    window.addEventListener("focus", recheckIdleLock);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", recheckIdleLock);
+      window.removeEventListener("focus", recheckIdleLock);
+    };
+  }, [accounts, hydratedFromStorage]);
 
   useEffect(() => {
     if (!hydratedFromStorage) return;
@@ -924,6 +976,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       );
 
       if (existing) {
+        if (account.requireNew) {
+          return {
+            ok: false,
+            error: "Esiste già un account con questa email.",
+          };
+        }
+
         if (existing.passwordHash) {
           const matches = await verifyPassword(password, existing.passwordHash);
           if (!matches) {
@@ -946,7 +1005,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             item.id === existing.id
               ? normalizeAccount({
                   ...item,
-                  name: nextName,
+                  // Preserve identity on sign-in; only fill missing profile fields.
+                  name: existing.name || nextName,
                   email: normalizedEmail,
                   accountType: resolvedAccountType,
                   businessProfile: upgradedToBusiness
@@ -954,10 +1014,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
                       item.businessProfile ??
                       null)
                     : (item.businessProfile ?? null),
-                  phoneNumber: account.phoneNumber ?? item.phoneNumber,
-                  avatarUrl: account.avatarUrl ?? item.avatarUrl,
+                  phoneNumber: item.phoneNumber ?? account.phoneNumber,
+                  avatarUrl: item.avatarUrl ?? account.avatarUrl,
                   instagramHandle:
-                    account.instagramHandle ?? item.instagramHandle,
+                    item.instagramHandle ?? account.instagramHandle,
                   passwordHash: existing.passwordHash ?? passwordHash,
                   lastActiveAt: now,
                 })
@@ -1024,17 +1084,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         };
       }
 
-      const sameIdentity = accounts.some(
-        (account) =>
-          account.email.toLowerCase() === normalizedEmail &&
-          account.name.trim().toLowerCase() === nextName.toLowerCase(),
+      const sameEmail = accounts.some(
+        (account) => account.email.toLowerCase() === normalizedEmail,
       );
 
-      if (sameIdentity) {
+      if (sameEmail) {
         return {
           ok: false,
           error:
-            "Questo account esiste già. Per creare un account Pro usa una email nuova oppure un nome diverso.",
+            "Esiste già un account con questa email. Per creare un account Pro usa un’email diversa.",
         };
       }
 
@@ -1091,6 +1149,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const switchAccount = useCallback(
     (id: string) => {
       setPendingBiometricSetup(false);
+      unlockSessionRef.current += 1;
       if (id === GUEST_USER.id) {
         setCurrentUserId(GUEST_USER.id);
         setIsAccountLocked(false);
@@ -1141,6 +1200,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const unlockAccountWithBiometric = useCallback(async (): Promise<CreateAccountResult> => {
     const userId = currentUserIdRef.current;
+    const session = unlockSessionRef.current;
     if (userId === GUEST_USER.id) {
       return { ok: false, error: "Nessun account da sbloccare." };
     }
@@ -1159,9 +1219,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
     try {
       await assertBiometricCredential(credentialId);
+      // Ignore late results if the user switched account/guest mid-prompt.
+      if (
+        unlockSessionRef.current !== session ||
+        currentUserIdRef.current !== userId
+      ) {
+        return { ok: false, error: "Sessione di sblocco annullata." };
+      }
       markUnlocked(userId);
       return { ok: true };
     } catch (error) {
+      if (
+        unlockSessionRef.current !== session ||
+        currentUserIdRef.current !== userId
+      ) {
+        return { ok: false, error: "Sessione di sblocco annullata." };
+      }
       const message = biometricErrorMessage(error);
       setUnlockError(message);
       return { ok: false, error: message };
@@ -1504,14 +1577,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           error={unlockError}
           biometricEnabled={Boolean(
             currentUser.biometricCredentialId &&
-              currentUser.settings?.security.biometricUnlock,
+              normalizeUserSettings(currentUser.settings).security
+                .biometricUnlock,
           )}
           onSubmit={async (password) => {
             await unlockAccount(password);
           }}
           onUnlockBiometric={
             currentUser.biometricCredentialId &&
-            currentUser.settings?.security.biometricUnlock
+            normalizeUserSettings(currentUser.settings).security.biometricUnlock
               ? async () => {
                   const result = await unlockAccountWithBiometric();
                   if (!result.ok) {

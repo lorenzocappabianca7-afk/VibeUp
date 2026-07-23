@@ -95,6 +95,7 @@ export function ProfileScreen() {
   const [newAccountPasswordConfirm, setNewAccountPasswordConfirm] =
     useState("");
   const [newAccountError, setNewAccountError] = useState<string | null>(null);
+  const [creatingAccount, setCreatingAccount] = useState(false);
   const [addAccountOpen, setAddAccountOpen] = useState(false);
   const [accountPendingDelete, setAccountPendingDelete] = useState<{
     id: string;
@@ -242,6 +243,7 @@ export function ProfileScreen() {
   }
 
   async function handleCreateAccount() {
+    if (creatingAccount) return;
     if (!newAccountEmail.trim()) {
       setNewAccountError("Inserisci un’email valida.");
       return;
@@ -255,11 +257,15 @@ export function ProfileScreen() {
       return;
     }
 
+    setCreatingAccount(true);
+    setNewAccountError(null);
     const result = await createAccount({
       name: newAccountName,
       email: newAccountEmail,
       password: newAccountPassword,
+      requireNew: true,
     });
+    setCreatingAccount(false);
 
     if (!result.ok) {
       setNewAccountError(result.error);
@@ -922,10 +928,15 @@ export function ProfileScreen() {
             )}
             <button
               type="button"
+              disabled={creatingAccount}
               onClick={() => void handleCreateAccount()}
-              className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-semibold text-white"
+              className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
             >
-              {isGuest ? "Crea account" : "Aggiungi account"}
+              {creatingAccount
+                ? "Creo account…"
+                : isGuest
+                  ? "Crea account"
+                  : "Aggiungi account"}
             </button>
           </div>
         )}

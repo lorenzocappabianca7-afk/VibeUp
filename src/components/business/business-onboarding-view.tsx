@@ -205,6 +205,7 @@ export function BusinessOnboardingView() {
   const [shopData, setShopData] = useState<ShopFormData>(initial.shop);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const isLocale = category === "locale";
 
@@ -224,6 +225,7 @@ export function BusinessOnboardingView() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting || success) return;
     setError(null);
     if (!category) return;
 
@@ -299,6 +301,17 @@ export function BusinessOnboardingView() {
       return;
     }
 
+    const emailTaken = accounts.some(
+      (account) => account.email.toLowerCase() === email,
+    );
+    if (emailTaken) {
+      setError(
+        "Esiste già un account con questa email. Per Pro usa un’email diversa.",
+      );
+      return;
+    }
+
+    setSubmitting(true);
     void (async () => {
       const result = await createBusinessAccount({
         ownerName,
@@ -310,6 +323,7 @@ export function BusinessOnboardingView() {
 
       if (!result.ok) {
         setError(result.error);
+        setSubmitting(false);
         return;
       }
 
@@ -492,9 +506,14 @@ export function BusinessOnboardingView() {
           {category && (
             <button
               type="submit"
-              className="w-full rounded-2xl bg-brand-teal py-4 text-sm font-semibold text-white transition-colors hover:bg-brand-teal/90"
+              disabled={submitting || success}
+              className="w-full rounded-2xl bg-brand-teal py-4 text-sm font-semibold text-white transition-colors hover:bg-brand-teal/90 disabled:opacity-60"
             >
-              {editingExisting ? "Salva profilo Business" : "Crea account Pro"}
+              {submitting
+                ? "Creo account…"
+                : editingExisting
+                  ? "Salva profilo Business"
+                  : "Crea account Pro"}
             </button>
           )}
         </form>

@@ -3,7 +3,7 @@
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { getBiometricLabel } from "@/lib/auth/biometric";
 import { Fingerprint, ScanFace, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface BiometricSetupModalProps {
   open: boolean;
@@ -24,6 +24,14 @@ export function BiometricSetupModal({
   const label = useMemo(() => getBiometricLabel(), []);
   const isFace = label.toLowerCase().includes("face");
 
+  useEffect(() => {
+    if (!open) return;
+    queueMicrotask(() => {
+      setSubmitting(false);
+      setError(null);
+    });
+  }, [open]);
+
   if (!open) return null;
 
   async function handleEnable() {
@@ -37,6 +45,7 @@ export function BiometricSetupModal({
           ? err.message
           : "Non riesco ad attivare lo sblocco biometrico.",
       );
+    } finally {
       setSubmitting(false);
     }
   }
@@ -57,7 +66,8 @@ export function BiometricSetupModal({
         <button
           type="button"
           onClick={onSkip}
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary-black/5 text-primary-black/50"
+          disabled={submitting}
+          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary-black/5 text-primary-black/50 disabled:opacity-40"
           aria-label="Chiudi"
         >
           <X className="h-4 w-4" />
