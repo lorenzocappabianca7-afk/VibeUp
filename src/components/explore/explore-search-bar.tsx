@@ -47,12 +47,17 @@ const HEADER_PX = 58;
 const FILTER_PX = 52;
 const CLEAR_PX = 36;
 
-/** iOS-like spring — continuous velocity, no mid-curve stall. */
-const SPRING_STIFFNESS = 210;
-const SPRING_DAMPING = 26;
-const SPRING_MASS = 1;
-const SPRING_REST_VELOCITY = 0.35;
-const SPRING_REST_DISTANCE = 0.35;
+/** Fixed-duration ease — springs were stalling mid-close on mobile. */
+const ANIM_MS_OPEN = 340;
+const ANIM_MS_CLOSE = 280;
+
+function easeOutCubic(t: number) {
+  return 1 - (1 - t) ** 3;
+}
+
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+}
 
 function readRecent(storageKey: string): string[] {
   if (typeof window === "undefined") return [];
@@ -258,10 +263,15 @@ export function ExploreSearchBar({
   }
 
   /**
-   * Spring-driven clip reveal. Height is set once; only clip-path changes
-   * each frame (compositor-friendly) → continuous fluid motion.
+   * Duration-based clip reveal/collapse. Always finishes — no asymptotic stall.
    */
-  function springClip(from: number, to: number, onDone?: () => void) {
+  function animateClip(
+    from: number,
+    to: number,
+    durationMs: number,
+    ease: (t: number) => number,
+    onDone?: () => void,
+  ) {
     const panel = panelRef.current;
     if (!panel) {
       onDone?.();
@@ -273,37 +283,33 @@ export function ExploreSearchBar({
     panel.style.willChange = "clip-path";
     setClipBottom(from);
 
-    let position = from;
-    let velocity = 0;
-    let last = performance.now();
+    const start = performance.now();
 
-    const tick = (now: number) => {
-      const dt = Math.min(0.033, (now - last) / 1000);
-      last = now;
-
-      const displacement = position - to;
-      const accel =
-        (-SPRING_STIFFNESS * displacement - SPRING_DAMPING * velocity) /
-        SPRING_MASS;
-      velocity += accel * dt;
-      position += velocity * dt;
-
-      setClipBottom(Math.max(0, position));
-
-      const settled =
-        Math.abs(velocity) < SPRING_REST_VELOCITY &&
-        Math.abs(position - to) < SPRING_REST_DISTANCE;
-
-      if (!settled) {
-        animFrameRef.current = window.requestAnimationFrame(tick);
-        return;
-      }
-
+    const finish = () => {
       setClipBottom(to);
       animFrameRef.current = null;
       animatingRef.current = false;
       panel.style.willChange = "auto";
       onDone?.();
+    };
+
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      // Hard cap so a throttled tab can never leave the panel half-closed.
+      if (elapsed >= durationMs + 80) {
+        finish();
+        return;
+      }
+
+      const t = Math.min(1, elapsed / durationMs);
+      setClipBottom(from + (to - from) * ease(t));
+
+      if (t < 1) {
+        animFrameRef.current = window.requestAnimationFrame(tick);
+        return;
+      }
+
+      finish();
     };
 
     animFrameRef.current = window.requestAnimationFrame(tick);
@@ -312,26 +318,40 @@ export function ExploreSearchBar({
   function closeSearch(options?: { keepDraft?: boolean }) {
     if (!openRef.current && !open) return;
     openRef.current = false;
-    setScrollLocked(false);
     pendingOpenAnimRef.current = false;
+    // Blur first so the keyboard dismisses before we measure/animate.
+    inputRef.current?.blur();
 
     const panel = panelRef.current;
-    const full = fullHeightRef.current;
+    let full = fullHeightRef.current;
+    if (panel) {
+      const measured = panel.getBoundingClientRect().height;
+      if (measured > HEADER_PX + 1) {
+        full = measured;
+        fullHeightRef.current = full;
+      }
+    }
     const hidden = Math.max(0, full - HEADER_PX);
+    const from = clipRef.current > 0.5 ? clipRef.current : 0;
 
     if (panel) {
       panel.style.height = `${full}px`;
-      panel.style.borderRadius = "9999px";
-      panel.style.boxShadow = "0 2px 12px rgba(15,15,17,0.08)";
+      panel.style.overflow = "hidden";
+      // Keep sheet radius during collapse — switching to pill mid-anim causes a hitch.
+      panel.style.borderRadius = "28px";
+      panel.style.boxShadow = "0 16px 40px rgba(15,15,17,0.16)";
     }
 
-    springClip(clipRef.current || 0, hidden, () => {
+    animateClip(from, hidden, ANIM_MS_CLOSE, easeInOutCubic, () => {
       if (panel) {
         panel.style.height = `${HEADER_PX}px`;
         panel.style.clipPath = "none";
+        panel.style.borderRadius = "9999px";
+        panel.style.boxShadow = "0 2px 12px rgba(15,15,17,0.08)";
+        panel.style.overflow = "";
       }
       clipRef.current = 0;
-      inputRef.current?.blur();
+      setScrollLocked(false);
       setOpen(false);
       if (!options?.keepDraft) setDraft(query);
     });
@@ -398,10 +418,9 @@ export function ExploreSearchBar({
     panel.style.boxShadow = "0 16px 40px rgba(15,15,17,0.16)";
     panel.style.overflow = "hidden";
 
-    springClip(hidden, 0, () => {
+    animateClip(hidden, 0, ANIM_MS_OPEN, easeOutCubic, () => {
       if (!openRef.current) return;
       setScrollLocked(true);
-      // Re-focus in case the spring or scroll lock stole it.
       inputRef.current?.focus({ preventScroll: true });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open trigger only
