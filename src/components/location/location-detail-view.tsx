@@ -12,6 +12,13 @@ import {
   getExtraServicePrice,
 } from "@/lib/location";
 import {
+  calculateDrinksCost,
+  clampDrinksPerInvitee,
+  DEFAULT_DRINKS_PER_INVITEE,
+  getDrinkPackageLabel,
+  type DrinkPackageMode,
+} from "@/lib/drinks-quote";
+import {
   getInternalLocationServicePrice,
   getInternalLocationServices,
   type InternalLocationServiceType,
@@ -85,6 +92,7 @@ const EMPTY_QUOTE: BookingQuote = {
   hours: 0,
   locationCost: 0,
   extrasCost: 0,
+  drinksCost: 0,
   total: 0,
   depositAmount: 0,
 };
@@ -143,6 +151,10 @@ export function LocationDetailView({
   >([]);
   const [selectedExtras, setSelectedExtras] = useState<ExtraServiceId[]>([]);
   const [cakeKg, setCakeKg] = useState(3);
+  const [drinkMode, setDrinkMode] = useState<DrinkPackageMode>("none");
+  const [drinksPerInvitee, setDrinksPerInvitee] = useState(
+    DEFAULT_DRINKS_PER_INVITEE,
+  );
   const [isAiPromptOpen, setIsAiPromptOpen] = useState(false);
   const [aiMissingPrompt, setAiMissingPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -198,23 +210,38 @@ export function LocationDetailView({
 
   const draftQuote = useMemo(() => {
     const baseQuote = calculateBookingQuote({
-        hourlyPrice: location.hourlyPrice,
-        startTime,
-        endTime,
-        selectedExtras,
-        cakeKg,
-        guestCount,
-      });
+      hourlyPrice: location.hourlyPrice,
+      startTime,
+      endTime,
+      selectedExtras,
+      cakeKg,
+      guestCount,
+    });
+    const drinksCost = calculateDrinksCost({
+      mode: drinkMode,
+      drinksPerInvitee,
+      guestCount,
+    });
     const internalServicesCost = selectedInternalServices.reduce((sum, id) => {
       const service = internalServices.find((item) => item.id === id);
       if (!service) return sum;
+      // Paid drink package replaces any paid bar line to avoid double counting.
+      if (
+        drinkMode !== "none" &&
+        service.type === "bar" &&
+        service.pricing.type !== "included"
+      ) {
+        return sum;
+      }
       return sum + getInternalLocationServicePrice(service, guestCount);
     }, 0);
-    const total = baseQuote.total + internalServicesCost;
+    const extrasCost = baseQuote.extrasCost + internalServicesCost + drinksCost;
+    const total = baseQuote.locationCost + extrasCost;
 
     return {
       ...baseQuote,
-      extrasCost: baseQuote.extrasCost + internalServicesCost,
+      extrasCost,
+      drinksCost,
       total,
       depositAmount: baseQuote.locationCost * 0.3,
     } satisfies BookingQuote;
@@ -225,6 +252,8 @@ export function LocationDetailView({
     selectedExtras,
     cakeKg,
     guestCount,
+    drinkMode,
+    drinksPerInvitee,
     selectedInternalServices,
     internalServices,
   ]);
@@ -238,6 +267,8 @@ export function LocationDetailView({
         endTime,
         guestCount,
         cakeKg,
+        drinkMode,
+        drinksPerInvitee,
         selectedExtras: [...selectedExtras].sort(),
         selectedInternalServices: [...selectedInternalServices].sort(),
       }),
@@ -247,6 +278,8 @@ export function LocationDetailView({
       endTime,
       guestCount,
       cakeKg,
+      drinkMode,
+      drinksPerInvitee,
       selectedExtras,
       selectedInternalServices,
     ],
@@ -452,6 +485,13 @@ export function LocationDetailView({
       ...selectedInternalServices.flatMap((serviceId) => {
         const service = internalServices.find((item) => item.id === serviceId);
         if (!service) return [];
+        if (
+          drinkMode !== "none" &&
+          service.type === "bar" &&
+          service.pricing.type !== "included"
+        ) {
+          return [];
+        }
 
         return {
           id: `${id}-${serviceId}`,
@@ -463,6 +503,21 @@ export function LocationDetailView({
           allergens: getMenuAllergens(service.name),
         };
       }),
+      ...(quote.drinksCost > 0
+        ? [
+            {
+              id: `${id}-drinks`,
+              category: "catering" as const,
+              name: getDrinkPackageLabel({
+                mode: drinkMode,
+                drinksPerInvitee,
+              }),
+              providerName: location.name,
+              status: "confirmed" as const,
+              amountPaid: quote.drinksCost,
+            },
+          ]
+        : []),
     ];
 
     const event: UserEvent = {
@@ -569,6 +624,8 @@ export function LocationDetailView({
             selectedInternalServices={selectedInternalServices}
             selectedExtras={selectedExtras}
             cakeKg={cakeKg}
+            drinkMode={drinkMode}
+            drinksPerInvitee={drinksPerInvitee}
             isAiPromptOpen={isAiPromptOpen}
             aiMissingPrompt={aiMissingPrompt}
             aiLoading={aiLoading}
@@ -581,6 +638,10 @@ export function LocationDetailView({
             onToggleInternalService={toggleInternalService}
             onToggleExtra={toggleExtra}
             onCakeKgChange={setCakeKg}
+            onDrinkModeChange={setDrinkMode}
+            onDrinksPerInviteeChange={(value) =>
+              setDrinksPerInvitee(clampDrinksPerInvitee(value))
+            }
             onGenerateQuote={generateQuote}
             canGenerateQuote={canGenerateQuote}
             quoteNeedsRefresh={generatedQuote !== null && !quoteIsCurrent}
@@ -714,12 +775,24 @@ function RecommendedDjsCarousel({
             <li key={dj.id} className="w-[15rem] shrink-0 lg:w-[17rem]">
               <Link
                 href={`/service/${dj.id}?category=dj`}
-                className="block h-full rounded-3xl border border-primary-black/10 bg-background p-4 shadow-sm transition-colors duration-150 hover:border-primary-black"
+                className="flex h-full gap-3 rounded-3xl border border-primary-black/10 bg-background p-4 shadow-sm transition-colors duration-150 hover:border-primary-black"
               >
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-teal/12 text-brand-teal">
-                  <Disc3 className="h-6 w-6" aria-hidden />
+                <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border border-primary-black/10 bg-brand-teal/12 text-brand-teal">
+                  {dj.imageUrl ? (
+                    <Image
+                      src={dj.imageUrl}
+                      alt={`Foto profilo di ${dj.name}`}
+                      fill
+                      className="object-cover"
+                      sizes="56px"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center">
+                      <Disc3 className="h-6 w-6" aria-hidden />
+                    </span>
+                  )}
                 </span>
-                <div className="mt-3 space-y-2">
+                <div className="min-w-0 flex-1 space-y-2">
                   <h3 className="truncate text-sm font-black text-primary-black">
                     {dj.name}
                   </h3>

@@ -57,7 +57,7 @@ function formatServicePrice(service: ExtraService): string {
   if (service.pricing.type === "per_kg") {
     return `${formatCurrency(service.pricing.pricePerKg)}/kg`;
   }
-  return `da ${formatCurrency(service.pricing.pricePerPerson)}/persona`;
+  return `da ${formatCurrency(service.pricing.pricePerPerson)}/invitato`;
 }
 
 function formatInternalServicePrice(
@@ -66,7 +66,7 @@ function formatInternalServicePrice(
 ): string {
   if (service.pricing.type === "included") return "Incluso";
   if (service.pricing.type === "per_person") {
-    return `${formatCurrency(service.pricing.pricePerPerson)}/persona`;
+    return `${formatCurrency(service.pricing.pricePerPerson)}/invitato`;
   }
   return formatCurrency(getInternalLocationServicePrice(service, guestCount));
 }

@@ -7,6 +7,7 @@ import {
 } from "@/types/location";
 import { cn } from "@/lib/utils";
 import { Minus, Plus } from "lucide-react";
+import { useState } from "react";
 
 interface GuestCountStepperProps {
   value: number;
@@ -23,27 +24,44 @@ export function GuestCountStepper({
   onChange,
   className,
 }: GuestCountStepperProps) {
+  const [draft, setDraft] = useState(String(value));
+  const [focused, setFocused] = useState(false);
   const atMin = value <= EXPLORE_GUEST_MIN;
   const atMax = value >= EXPLORE_GUEST_MAX;
+  const visible = focused ? draft : String(value);
 
-  function handleInputChange(raw: string) {
-    if (raw.trim() === "") return;
-
-    const parsed = Number.parseInt(raw, 10);
-    if (!Number.isNaN(parsed)) {
-      onChange(clampGuestCount(parsed));
+  function commitDraft(raw: string) {
+    const digits = raw.replace(/\D/g, "");
+    if (digits === "") {
+      onChange(EXPLORE_GUEST_MIN);
+      setDraft(String(EXPLORE_GUEST_MIN));
+      return;
     }
+
+    const parsed = Number.parseInt(digits, 10);
+    if (Number.isNaN(parsed)) {
+      setDraft(String(value));
+      return;
+    }
+
+    const next = clampGuestCount(parsed);
+    onChange(next);
+    setDraft(String(next));
   }
 
   function decrement() {
     if (!atMin) {
-      onChange(Math.max(EXPLORE_GUEST_MIN, value - EXPLORE_GUEST_STEP));
+      const next = Math.max(EXPLORE_GUEST_MIN, value - EXPLORE_GUEST_STEP);
+      onChange(next);
+      setDraft(String(next));
     }
   }
 
   function increment() {
     if (!atMax) {
-      onChange(Math.min(EXPLORE_GUEST_MAX, value + EXPLORE_GUEST_STEP));
+      const next = Math.min(EXPLORE_GUEST_MAX, value + EXPLORE_GUEST_STEP);
+      onChange(next);
+      setDraft(String(next));
     }
   }
 
@@ -73,20 +91,29 @@ export function GuestCountStepper({
         </button>
 
         <input
-          type="number"
+          type="text"
           inputMode="numeric"
-          min={EXPLORE_GUEST_MIN}
-          max={EXPLORE_GUEST_MAX}
-          step={EXPLORE_GUEST_STEP}
-          value={value}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.currentTarget.blur();
+          pattern="[0-9]*"
+          autoComplete="off"
+          value={visible}
+          onFocus={() => {
+            setFocused(true);
+            setDraft(String(value));
+          }}
+          onChange={(event) => {
+            setDraft(event.target.value.replace(/\D/g, ""));
+          }}
+          onBlur={() => {
+            commitDraft(draft);
+            setFocused(false);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.currentTarget.blur();
             }
           }}
           aria-label="Numero invitati"
-          className="min-w-[3.5rem] max-w-[4.5rem] bg-transparent text-center text-lg font-bold tabular-nums text-primary-black focus:outline-none focus:ring-2 focus:ring-brand-teal/20 rounded-lg [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className="min-w-[3.5rem] max-w-[4.5rem] bg-transparent text-center text-lg font-bold tabular-nums text-primary-black focus:outline-none focus:ring-2 focus:ring-brand-teal/20 rounded-lg"
         />
 
         <button

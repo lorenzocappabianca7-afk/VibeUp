@@ -11,12 +11,15 @@ import {
 } from "lucide-react";
 import {
   useEffect,
+  useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type FormEvent,
   type KeyboardEvent,
 } from "react";
+import { flushSync } from "react-dom";
 
 export interface ExploreSearchSuggestion {
   id: string;
@@ -37,8 +40,14 @@ interface ExploreSearchBarProps {
 const MAX_RECENT = 8;
 const HEADER_PX = 58;
 const FILTER_PX = 52;
-const EXPAND_MS = 400;
-const EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+const CLEAR_PX = 36;
+
+/** iOS-like spring — continuous velocity, no mid-curve stall. */
+const SPRING_STIFFNESS = 210;
+const SPRING_DAMPING = 26;
+const SPRING_MASS = 1;
+const SPRING_REST_VELOCITY = 0.35;
+const SPRING_REST_DISTANCE = 0.35;
 
 function readRecent(storageKey: string): string[] {
   if (typeof window === "undefined") return [];
@@ -82,30 +91,30 @@ export function ExploreSearchBar({
   const [scrollLocked, setScrollLocked] = useState(false);
   const [draft, setDraft] = useState(query);
   const [recent, setRecent] = useState(() => readRecent(storageKey));
+  const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const focusTimerRef = useRef<number | null>(null);
-  const lockTimerRef = useRef<number | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const openRef = useRef(false);
+  const animatingRef = useRef(false);
+  const pendingOpenAnimRef = useRef(false);
+  const fullHeightRef = useRef(HEADER_PX);
+  const clipRef = useRef(0);
 
   useBodyScrollLock(scrollLocked);
 
-  // Seed closed chrome once — height/radius stay on the DOM node so React
-  // re-renders never reset them mid-tween.
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
     panel.style.height = `${HEADER_PX}px`;
     panel.style.borderRadius = "9999px";
     panel.style.boxShadow = "0 2px 12px rgba(15,15,17,0.08)";
+    panel.style.clipPath = "none";
   }, []);
 
   useEffect(() => {
     return () => {
-      if (focusTimerRef.current != null) window.clearTimeout(focusTimerRef.current);
-      if (lockTimerRef.current != null) window.clearTimeout(lockTimerRef.current);
       if (animFrameRef.current != null) {
         window.cancelAnimationFrame(animFrameRef.current);
       }
@@ -167,53 +176,103 @@ export function ExploreSearchBar({
     });
   }
 
-  function clearSideTimers() {
-    if (focusTimerRef.current != null) {
-      window.clearTimeout(focusTimerRef.current);
-      focusTimerRef.current = null;
-    }
-    if (lockTimerRef.current != null) {
-      window.clearTimeout(lockTimerRef.current);
-      lockTimerRef.current = null;
-    }
+  function stopSpring() {
     if (animFrameRef.current != null) {
       window.cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = null;
     }
+    animatingRef.current = false;
   }
 
-  function animatePanel(nextOpen: boolean) {
+  function setClipBottom(px: number) {
     const panel = panelRef.current;
-    const body = bodyRef.current;
-    if (!panel || !body) return;
+    if (!panel) return;
+    clipRef.current = px;
+    if (px <= 0.5) {
+      panel.style.clipPath = "none";
+      return;
+    }
+    panel.style.clipPath = `inset(0px 0px ${px}px 0px)`;
+  }
 
-    const bodyHeight = body.scrollHeight;
-    const from = nextOpen ? HEADER_PX : HEADER_PX + bodyHeight;
-    const to = nextOpen ? HEADER_PX + bodyHeight : HEADER_PX;
+  /**
+   * Spring-driven clip reveal. Height is set once; only clip-path changes
+   * each frame (compositor-friendly) → continuous fluid motion.
+   */
+  function springClip(from: number, to: number, onDone?: () => void) {
+    const panel = panelRef.current;
+    if (!panel) {
+      onDone?.();
+      return;
+    }
 
-    panel.style.transition = "none";
-    panel.style.height = `${from}px`;
-    void panel.offsetHeight;
+    stopSpring();
+    animatingRef.current = true;
+    panel.style.willChange = "clip-path";
+    setClipBottom(from);
 
-    panel.style.transition = [
-      `height ${EXPAND_MS}ms ${EASE}`,
-      `border-radius ${EXPAND_MS}ms ${EASE}`,
-      `box-shadow ${EXPAND_MS}ms ${EASE}`,
-    ].join(", ");
-    panel.style.height = `${to}px`;
-    panel.style.borderRadius = nextOpen ? "28px" : "9999px";
-    panel.style.boxShadow = nextOpen
-      ? "0 16px 40px rgba(15,15,17,0.16)"
-      : "0 2px 12px rgba(15,15,17,0.08)";
+    let position = from;
+    let velocity = 0;
+    let last = performance.now();
+
+    const tick = (now: number) => {
+      const dt = Math.min(0.033, (now - last) / 1000);
+      last = now;
+
+      const displacement = position - to;
+      const accel =
+        (-SPRING_STIFFNESS * displacement - SPRING_DAMPING * velocity) /
+        SPRING_MASS;
+      velocity += accel * dt;
+      position += velocity * dt;
+
+      setClipBottom(Math.max(0, position));
+
+      const settled =
+        Math.abs(velocity) < SPRING_REST_VELOCITY &&
+        Math.abs(position - to) < SPRING_REST_DISTANCE;
+
+      if (!settled) {
+        animFrameRef.current = window.requestAnimationFrame(tick);
+        return;
+      }
+
+      setClipBottom(to);
+      animFrameRef.current = null;
+      animatingRef.current = false;
+      panel.style.willChange = "auto";
+      onDone?.();
+    };
+
+    animFrameRef.current = window.requestAnimationFrame(tick);
   }
 
   function closeSearch(options?: { keepDraft?: boolean }) {
-    clearSideTimers();
+    if (!openRef.current && !open) return;
     openRef.current = false;
     setScrollLocked(false);
-    animatePanel(false);
-    setOpen(false);
-    if (!options?.keepDraft) setDraft(query);
+    pendingOpenAnimRef.current = false;
+
+    const panel = panelRef.current;
+    const full = fullHeightRef.current;
+    const hidden = Math.max(0, full - HEADER_PX);
+
+    if (panel) {
+      panel.style.height = `${full}px`;
+      panel.style.borderRadius = "9999px";
+      panel.style.boxShadow = "0 2px 12px rgba(15,15,17,0.08)";
+    }
+
+    springClip(clipRef.current || 0, hidden, () => {
+      if (panel) {
+        panel.style.height = `${HEADER_PX}px`;
+        panel.style.clipPath = "none";
+      }
+      clipRef.current = 0;
+      inputRef.current?.blur();
+      setOpen(false);
+      if (!options?.keepDraft) setDraft(query);
+    });
   }
 
   function commitSearch(term: string) {
@@ -230,29 +289,46 @@ export function ExploreSearchBar({
   }
 
   function openSearch() {
-    if (openRef.current) return;
-    clearSideTimers();
+    if (openRef.current || animatingRef.current) return;
     setDraft(query);
     openRef.current = true;
-    setOpen(true);
-
-    animFrameRef.current = window.requestAnimationFrame(() => {
-      animFrameRef.current = window.requestAnimationFrame(() => {
-        animFrameRef.current = null;
-        animatePanel(true);
-      });
+    pendingOpenAnimRef.current = true;
+    // Flush + focus in the same tap so mobile keyboards open immediately.
+    flushSync(() => {
+      setOpen(true);
     });
-
-    lockTimerRef.current = window.setTimeout(() => {
-      lockTimerRef.current = null;
-      if (openRef.current) setScrollLocked(true);
-    }, EXPAND_MS);
-
-    focusTimerRef.current = window.setTimeout(() => {
-      focusTimerRef.current = null;
-      if (openRef.current) inputRef.current?.focus({ preventScroll: true });
-    }, EXPAND_MS);
+    const input = inputRef.current;
+    if (input && document.activeElement !== input) {
+      input.focus({ preventScroll: true });
+    }
   }
+
+  // Run the spring after React commits open chrome + measurable body.
+  useLayoutEffect(() => {
+    if (!open || !pendingOpenAnimRef.current) return;
+    pendingOpenAnimRef.current = false;
+
+    const panel = panelRef.current;
+    const body = bodyRef.current;
+    if (!panel || !body) return;
+
+    const full = HEADER_PX + body.scrollHeight;
+    fullHeightRef.current = full;
+    const hidden = Math.max(0, full - HEADER_PX);
+
+    panel.style.height = `${full}px`;
+    panel.style.borderRadius = "28px";
+    panel.style.boxShadow = "0 16px 40px rgba(15,15,17,0.16)";
+    panel.style.overflow = "hidden";
+
+    springClip(hidden, 0, () => {
+      if (!openRef.current) return;
+      setScrollLocked(true);
+      // Re-focus in case the spring or scroll lock stole it.
+      inputRef.current?.focus({ preventScroll: true });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open trigger only
+  }, [open]);
 
   function handleInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Escape") {
@@ -260,6 +336,18 @@ export function ExploreSearchBar({
       closeSearch();
     }
   }
+
+  function clearCurrentSearch() {
+    setDraft("");
+    onQueryChange("");
+  }
+
+  const hasQuery = query.trim().length > 0;
+  const closedBannerPadRight = open
+    ? 16
+    : hasQuery
+      ? FILTER_PX + CLEAR_PX + 8
+      : FILTER_PX + 16;
 
   return (
     <>
@@ -269,12 +357,14 @@ export function ExploreSearchBar({
         tabIndex={open ? 0 : -1}
         aria-hidden={!open}
         className={cn(
-          "fixed inset-0 z-[40] bg-primary-black/25",
+          "fixed inset-0 z-[40] bg-primary-black/20",
           open
             ? "pointer-events-auto opacity-100"
             : "pointer-events-none opacity-0",
         )}
-        style={{ transition: `opacity ${EXPAND_MS}ms ${EASE}` }}
+        style={{
+          transition: "opacity 280ms cubic-bezier(0.22, 1, 0.36, 1)",
+        }}
         data-overlay-open={open ? "true" : undefined}
         onClick={() => closeSearch()}
       />
@@ -287,15 +377,17 @@ export function ExploreSearchBar({
           ref={panelRef}
           className="absolute inset-x-0 top-0 overflow-hidden border border-primary-black/10 bg-white"
           style={{
-            // Animated props are set on the DOM node only (see animatePanel).
             transform: "translateZ(0)",
             backfaceVisibility: "hidden",
-            willChange: open ? "height" : "auto",
           }}
         >
           <div className="relative" style={{ height: HEADER_PX }}>
             <button
               type="button"
+              onPointerDown={(event) => {
+                if (event.button !== 0) return;
+                openSearch();
+              }}
               onClick={openSearch}
               tabIndex={open ? -1 : 0}
               aria-hidden={open}
@@ -304,9 +396,8 @@ export function ExploreSearchBar({
                 open && "pointer-events-none",
               )}
               style={{
-                paddingRight: open ? 16 : FILTER_PX + 16,
+                paddingRight: closedBannerPadRight,
                 opacity: open ? 0 : 1,
-                transition: `opacity ${EXPAND_MS * 0.4}ms ${EASE}`,
               }}
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-black/[0.04] text-primary-black">
@@ -324,6 +415,25 @@ export function ExploreSearchBar({
               </span>
             </button>
 
+            {hasQuery && !open && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  clearCurrentSearch();
+                }}
+                onPointerDown={(event) => {
+                  event.stopPropagation();
+                }}
+                className="absolute top-1/2 z-[1] flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-primary-black/10 text-primary-black/55"
+                style={{ right: FILTER_PX + 2 }}
+                aria-label="Cancella ricerca"
+              >
+                <X className="h-3.5 w-3.5" aria-hidden />
+              </button>
+            )}
+
             <form
               onSubmit={handleSubmit}
               aria-hidden={!open}
@@ -331,10 +441,7 @@ export function ExploreSearchBar({
                 "absolute inset-0 flex items-center px-3",
                 !open && "pointer-events-none",
               )}
-              style={{
-                opacity: open ? 1 : 0,
-                transition: `opacity ${EXPAND_MS * 0.4}ms ${EASE}`,
-              }}
+              style={{ opacity: open ? 1 : 0 }}
             >
               <div className="flex w-full items-center gap-2 rounded-2xl bg-primary-black/[0.03] px-3 py-2.5">
                 <Search
@@ -342,6 +449,7 @@ export function ExploreSearchBar({
                   aria-hidden
                 />
                 <input
+                  id={inputId}
                   ref={inputRef}
                   type="search"
                   value={draft}
@@ -361,8 +469,7 @@ export function ExploreSearchBar({
                     type="button"
                     tabIndex={open ? 0 : -1}
                     onClick={() => {
-                      setDraft("");
-                      onQueryChange("");
+                      clearCurrentSearch();
                       inputRef.current?.focus({ preventScroll: true });
                     }}
                     className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-black/10 text-primary-black/55"
@@ -388,11 +495,7 @@ export function ExploreSearchBar({
           <div
             ref={bodyRef}
             aria-hidden={!open}
-            style={{
-              opacity: open ? 1 : 0,
-              transition: `opacity ${EXPAND_MS * 0.5}ms ${EASE}`,
-              pointerEvents: open ? "auto" : "none",
-            }}
+            style={{ pointerEvents: open ? "auto" : "none" }}
           >
             <div className="border-t border-primary-black/8">
               <div className="max-h-[min(52dvh,400px)] overflow-y-auto overscroll-contain px-2 py-2 [-webkit-overflow-scrolling:touch]">
@@ -474,8 +577,7 @@ export function ExploreSearchBar({
                 <button
                   type="button"
                   onClick={() => {
-                    setDraft("");
-                    onQueryChange("");
+                    clearCurrentSearch();
                     inputRef.current?.focus({ preventScroll: true });
                   }}
                   className="text-sm font-semibold text-primary-black/55 underline-offset-2 hover:underline"
@@ -513,7 +615,6 @@ export function ExploreSearchBar({
             right: 0,
             width: FILTER_PX,
             height: HEADER_PX,
-            transition: `opacity ${EXPAND_MS * 0.35}ms ${EASE}`,
           }}
         >
           <SlidersHorizontal className="h-5 w-5 shrink-0" aria-hidden />

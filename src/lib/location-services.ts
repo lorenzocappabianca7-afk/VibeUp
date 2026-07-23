@@ -84,7 +84,6 @@ export function getInternalLocationServices(
     }));
 
   const hasMenu = includedServices.some((service) => service.type === "menu");
-  const hasBar = includedServices.some((service) => service.type === "bar");
   const hasDj = includedServices.some((service) => service.type === "dj");
   const hasPhotographer = includedServices.some(
     (service) => service.type === "photographer",
@@ -121,16 +120,7 @@ export function getInternalLocationServices(
     });
   }
 
-  if (!hasBar) {
-    bookableDefaults.push({
-      id: "internal-open-bar",
-      type: "bar",
-      name: "Open bar del locale",
-      description: "Pacchetto drink gestito dallo staff interno.",
-      pricing: { type: "per_person", pricePerPerson: 14 },
-      available: true,
-    });
-  }
+  // Paid drinks / open bar are chosen in the dedicated Bevande block of the quote.
 
   if (canOfferLocalDj) {
     bookableDefaults.push({

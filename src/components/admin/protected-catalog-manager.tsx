@@ -14,6 +14,7 @@ import type { ExploreCategory, Location } from "@/types/location";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
+  Building2,
   Camera,
   Disc3,
   Eye,
@@ -23,7 +24,6 @@ import {
   Mail,
   Music,
   Plus,
-  Sparkles,
   Trash2,
   UploadCloud,
   Wand2,
@@ -39,7 +39,7 @@ const CATEGORIES: {
   label: string;
   icon: LucideIcon;
 }[] = [
-  { id: "locali", label: "Locali", icon: Sparkles },
+  { id: "locali", label: "Locali", icon: Building2 },
   { id: "dj", label: "DJ", icon: Disc3 },
   { id: "fotografo", label: "Fotografi", icon: Camera },
   { id: "decorazioni", label: "Decorazioni", icon: Gift },

@@ -398,7 +398,7 @@ export function ProfileScreen() {
 
       <div className="rounded-2xl border border-primary-black/10 bg-primary-black/[0.02] p-5">
         <div className="flex min-w-0 items-center gap-4">
-          <label className="group relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-brand-pink/20 text-brand-pink">
+          <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-pink/20 text-brand-pink">
             {currentUser.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -409,19 +409,7 @@ export function ProfileScreen() {
             ) : (
               <User className="h-8 w-8" aria-hidden />
             )}
-            <span className="absolute inset-0 flex items-center justify-center bg-primary-black/45 text-white opacity-0 transition-opacity group-hover:opacity-100">
-              <Camera className="h-5 w-5" aria-hidden />
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={(event) => {
-                handleAvatarFilePick(event.target.files?.[0]);
-                event.target.value = "";
-              }}
-            />
-          </label>
+          </div>
           <div className="min-w-0 flex-1">
             <p className="truncate font-semibold text-primary-black">{currentUser.name}</p>
             <p className="truncate text-sm text-primary-black/60">

@@ -92,7 +92,7 @@ function calculateServiceQuote(
 ) {
   if (days <= 0 || hours <= 0) return 0;
 
-  if (service.priceSuffix === "persona") {
+  if (service.priceSuffix === "persona" || service.priceSuffix === "invitato") {
     return service.price * Math.max(guests, 10) * days;
   }
   if (service.priceSuffix === "kg") {

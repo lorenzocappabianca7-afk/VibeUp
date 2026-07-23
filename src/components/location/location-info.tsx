@@ -137,7 +137,7 @@ export function LocationInfo({ location }: LocationInfoProps) {
 
       <section>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary-black/50">
-          Servizi inclusi
+          Servizi inclusi nel prezzo
         </h2>
         <ul className="flex flex-wrap gap-2">
           {location.includedServices.map((service) => (

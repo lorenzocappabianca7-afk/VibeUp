@@ -32,6 +32,8 @@ export const SERVICE_PROVIDERS: ServiceProvider[] = [
     providerZone: "Torino",
     price: 420,
     priceSuffix: "serata",
+    imageUrl:
+      "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=400&q=80",
     musicTypes: ["commerciale", "house", "anni_90"],
   },
   {
@@ -42,6 +44,8 @@ export const SERVICE_PROVIDERS: ServiceProvider[] = [
     providerZone: "Torino e cintura",
     price: 480,
     priceSuffix: "serata",
+    imageUrl:
+      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&q=80",
     musicTypes: ["latino", "hip_hop", "commerciale"],
   },
   {
@@ -52,6 +56,8 @@ export const SERVICE_PROVIDERS: ServiceProvider[] = [
     providerZone: "Piemonte",
     price: 620,
     priceSuffix: "serata",
+    imageUrl:
+      "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80",
     musicTypes: ["elettronica", "house"],
   },
   {
@@ -62,6 +68,8 @@ export const SERVICE_PROVIDERS: ServiceProvider[] = [
     providerZone: "Torino",
     price: 350,
     priceSuffix: "servizio",
+    imageUrl:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80",
   },
   {
     id: "foto-studio-rovere",
@@ -71,6 +79,8 @@ export const SERVICE_PROVIDERS: ServiceProvider[] = [
     providerZone: "Torino e provincia",
     price: 520,
     priceSuffix: "servizio",
+    imageUrl:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80",
   },
   {
     id: "foto-marta-flash",
@@ -80,6 +90,8 @@ export const SERVICE_PROVIDERS: ServiceProvider[] = [
     providerZone: "Piemonte",
     price: 430,
     priceSuffix: "servizio",
+    imageUrl:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&q=80",
   },
   {
     id: "deco-party-lab",
@@ -124,7 +136,7 @@ export const SERVICE_PROVIDERS: ServiceProvider[] = [
     description: "Buffet piemontese e internazionale per feste dai 15 invitati.",
     providerZone: "Moncalieri",
     price: 25,
-    priceSuffix: "persona",
+    priceSuffix: "invitato",
   },
   {
     id: "service-audio-luci",

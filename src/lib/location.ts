@@ -76,5 +76,12 @@ export function calculateBookingQuote(params: {
   const total = locationCost + extrasCost;
   const depositAmount = locationCost * 0.3;
 
-  return { hours, locationCost, extrasCost, total, depositAmount };
+  return {
+    hours,
+    locationCost,
+    extrasCost,
+    drinksCost: 0,
+    total,
+    depositAmount,
+  };
 }

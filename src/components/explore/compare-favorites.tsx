@@ -150,7 +150,7 @@ export const CompareFavorites = memo(function CompareFavorites({
                 colSpan={locations.length + 1}
                 className="bg-brand-pink/10 px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.18em] text-primary-black"
               >
-                Servizi inclusi
+                Servizi inclusi nel prezzo
               </th>
             </tr>
             {allServices.map((service) => (

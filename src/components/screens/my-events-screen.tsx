@@ -972,15 +972,21 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
       </div>
 
       {selections.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {selections.map((selection) => (
-            <span
-              key={`${selection.courseId}-${selection.itemId}`}
-              className="rounded-full bg-white px-3 py-1 text-xs text-primary-black ring-1 ring-primary-black/10"
-            >
-              {selection.courseLabel}: {selection.itemLabel}
-            </span>
-          ))}
+        <div className="mt-4 rounded-xl bg-primary-black/[0.03] p-3">
+          <p className="text-sm font-semibold text-primary-black">Riepilogo</p>
+          <p className="mt-0.5 text-xs text-primary-black/50">
+            Portate e piatti selezionati per il menu
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {selections.map((selection) => (
+              <span
+                key={`${selection.courseId}-${selection.itemId}`}
+                className="rounded-full bg-white px-3 py-1 text-xs text-primary-black ring-1 ring-primary-black/10"
+              >
+                {selection.courseLabel}: {selection.itemLabel}
+              </span>
+            ))}
+          </div>
         </div>
       )}
     </div>

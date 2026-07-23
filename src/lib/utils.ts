@@ -63,8 +63,8 @@ export function getLocationPricePresentation(
     return {
       eyebrow: "Da",
       price: formatCurrency(estimatedPersonPrice),
-      unit: "/ Persona",
-      badge: location.priceBadge ?? "Prezzo stimato a persona",
+      unit: "/ Invitato",
+      badge: location.priceBadge ?? "Prezzo stimato a invitato",
     };
   }
 

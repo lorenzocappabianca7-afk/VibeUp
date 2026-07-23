@@ -32,6 +32,7 @@ import {
   type ServiceExploreFilters,
 } from "@/types/location";
 import {
+  Building2,
   Camera,
   ChevronDown,
   Disc3,
@@ -40,7 +41,6 @@ import {
   Heart,
   Megaphone,
   Music,
-  Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -94,7 +94,7 @@ const EXPLORE_CATEGORIES: {
   {
     id: "locali",
     label: "Locali",
-    icon: Sparkles,
+    icon: Building2,
     iconClass: "text-brand-teal",
     activeClass:
       "bg-brand-teal/15 text-primary-black shadow-sm ring-1 ring-brand-teal/35",
@@ -945,21 +945,57 @@ const ServiceCard = memo(function ServiceCard({
   isFavorite: boolean;
   onToggleFavorite: (id: string) => void;
 }) {
+  const showProfilePhoto =
+    service.category === "dj" || service.category === "fotografo";
+  const ProfileFallbackIcon =
+    service.category === "fotografo" ? Camera : Disc3;
+
   return (
     <article className="h-full overflow-hidden rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-colors duration-150 hover:border-primary-black">
-      <Link href={href} className="block">
-        {service.imageUrl && (
-          <div className="relative aspect-[16/9] bg-primary-black/[0.03]">
-            <SafeImage
-              src={service.imageUrl}
-              alt={service.name}
-              fill
-              className="object-cover"
-              sizes="(max-width: 448px) 100vw, 360px"
-            />
-          </div>
+      <Link
+        href={href}
+        className={cn(
+          "block",
+          showProfilePhoto && "flex items-start gap-3 p-4",
         )}
-        <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+      >
+        {showProfilePhoto ? (
+          <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-primary-black/10 bg-primary-black/[0.04]">
+            {service.imageUrl ? (
+              <SafeImage
+                src={service.imageUrl}
+                alt={`Foto profilo di ${service.name}`}
+                fill
+                className="object-cover"
+                sizes="64px"
+              />
+            ) : (
+              <span className="flex h-full w-full items-center justify-center text-primary-black/35">
+                <ProfileFallbackIcon className="h-6 w-6" aria-hidden />
+              </span>
+            )}
+          </span>
+        ) : (
+          service.imageUrl && (
+            <div className="relative aspect-[16/9] bg-primary-black/[0.03]">
+              <SafeImage
+                src={service.imageUrl}
+                alt={service.name}
+                fill
+                className="object-cover"
+                sizes="(max-width: 448px) 100vw, 360px"
+              />
+            </div>
+          )
+        )}
+        <div
+          className={cn(
+            "min-w-0 flex-1",
+            showProfilePhoto
+              ? "flex flex-col gap-2"
+              : "flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-3",
+          )}
+        >
           <div className="min-w-0">
             <h3 className="truncate font-semibold text-primary-black">
               {service.name}
@@ -971,12 +1007,12 @@ const ServiceCard = memo(function ServiceCard({
               {service.providerZone}
             </p>
           </div>
-          <span className="shrink-0 self-start rounded-full bg-primary-black px-3 py-1.5 text-xs font-bold text-white sm:self-auto">
+          <span className="shrink-0 self-start rounded-full bg-primary-black px-3 py-1.5 text-xs font-bold text-white">
             {getServicePriceLabel(service)}
           </span>
         </div>
       </Link>
-      <div className="px-4 pb-4">
+      <div className={cn("px-4 pb-4", showProfilePhoto && "pt-0")}>
         <button
           type="button"
           onClick={() => onToggleFavorite(service.id)}

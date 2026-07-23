@@ -44,11 +44,21 @@ export function BookingSummary({
             </dd>
           </div>
         )}
-        {quote.extrasCost > 0 && (
+        {quote.extrasCost - (quote.drinksCost ?? 0) > 0 && (
           <div className="flex justify-between gap-3">
             <dt className="min-w-0 text-primary-black/60">Servizi extra</dt>
             <dd className="shrink-0 font-medium text-primary-black">
-              {formatCurrency(quote.extrasCost)}
+              {formatCurrency(
+                quote.extrasCost - (quote.drinksCost ?? 0),
+              )}
+            </dd>
+          </div>
+        )}
+        {(quote.drinksCost ?? 0) > 0 && (
+          <div className="flex justify-between gap-3">
+            <dt className="min-w-0 text-primary-black/60">Bevande</dt>
+            <dd className="shrink-0 font-medium text-primary-black">
+              {formatCurrency(quote.drinksCost)}
             </dd>
           </div>
         )}

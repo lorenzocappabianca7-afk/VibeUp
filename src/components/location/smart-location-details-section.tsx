@@ -5,6 +5,14 @@ import {
   type InternalLocationService,
   type InternalLocationServiceType,
 } from "@/lib/location-services";
+import {
+  calculateDrinksCost,
+  DRINK_UNIT_PRICE,
+  MAX_DRINKS_PER_INVITEE,
+  MIN_DRINKS_PER_INVITEE,
+  OPEN_BAR_PER_INVITEE,
+  type DrinkPackageMode,
+} from "@/lib/drinks-quote";
 import { getExtraServicePrice } from "@/lib/location";
 import { EXTRA_SERVICES } from "@/lib/mock/extra-services";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -24,6 +32,7 @@ import {
   ChefHat,
   ChevronDown,
   Clock,
+  GlassWater,
   Lightbulb,
   MapPin,
   Minus,
@@ -104,6 +113,8 @@ interface SmartLocationDetailsSectionProps {
   selectedInternalServices: string[];
   selectedExtras: ExtraServiceId[];
   cakeKg: number;
+  drinkMode: DrinkPackageMode;
+  drinksPerInvitee: number;
   isAiPromptOpen: boolean;
   aiMissingPrompt: string;
   aiLoading: boolean;
@@ -116,6 +127,8 @@ interface SmartLocationDetailsSectionProps {
   onToggleInternalService: (id: string) => void;
   onToggleExtra: (id: ExtraServiceId) => void;
   onCakeKgChange: (kg: number) => void;
+  onDrinkModeChange: (mode: DrinkPackageMode) => void;
+  onDrinksPerInviteeChange: (drinks: number) => void;
   onGenerateQuote: () => void;
   canGenerateQuote: boolean;
   quoteNeedsRefresh: boolean;
@@ -130,7 +143,7 @@ function formatInternalServicePrice(
 ): string {
   if (service.pricing.type === "included") return "Incluso";
   if (service.pricing.type === "per_person") {
-    return `${formatCurrency(service.pricing.pricePerPerson)}/persona`;
+    return `${formatCurrency(service.pricing.pricePerPerson)}/invitato`;
   }
   return formatCurrency(getInternalLocationServicePrice(service, guestCount));
 }
@@ -142,7 +155,7 @@ function formatExternalServicePrice(service: ExtraService): string {
   if (service.pricing.type === "per_kg") {
     return `${formatCurrency(service.pricing.pricePerKg)}/kg`;
   }
-  return `da ${formatCurrency(service.pricing.pricePerPerson)}/persona`;
+  return `da ${formatCurrency(service.pricing.pricePerPerson)}/invitato`;
 }
 
 function formatDateLabel(value: string): string {
@@ -239,6 +252,8 @@ export function SmartLocationDetailsSection({
   selectedInternalServices,
   selectedExtras,
   cakeKg,
+  drinkMode,
+  drinksPerInvitee,
   isAiPromptOpen,
   aiMissingPrompt,
   aiLoading,
@@ -251,6 +266,8 @@ export function SmartLocationDetailsSection({
   onToggleInternalService,
   onToggleExtra,
   onCakeKgChange,
+  onDrinkModeChange,
+  onDrinksPerInviteeChange,
   onGenerateQuote,
   canGenerateQuote,
   quoteNeedsRefresh,
@@ -362,6 +379,107 @@ export function SmartLocationDetailsSection({
               );
             })}
           </ul>
+        </div>
+
+        <div className="rounded-3xl border border-primary-black/8 bg-primary-black/[0.02] p-4">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-pink/15 text-brand-pink">
+              <GlassWater className="h-5 w-5" aria-hidden />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-black text-primary-black">Bevande</h3>
+              <p className="text-xs text-primary-black/55">
+                Scegli drink a invitato oppure open bar: il costo entra nel
+                preventivo.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-3 grid grid-cols-3 gap-1.5 rounded-2xl bg-primary-black/[0.04] p-1">
+            {(
+              [
+                { id: "none", label: "Nessuna" },
+                { id: "per_invitee", label: "Drink/invitato" },
+                { id: "open_bar", label: "Open bar" },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => onDrinkModeChange(option.id)}
+                className={cn(
+                  "rounded-xl px-2 py-2.5 text-center text-[11px] font-bold transition-colors sm:text-xs",
+                  drinkMode === option.id
+                    ? "bg-primary-black text-white shadow-sm"
+                    : "text-primary-black/55 hover:text-primary-black",
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
+          {drinkMode === "per_invitee" && (
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-primary-black">
+                  Drink per invitato
+                </p>
+                <p className="text-[11px] text-primary-black/45">
+                  {formatCurrency(DRINK_UNIT_PRICE)} ciascuno
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onDrinksPerInviteeChange(drinksPerInvitee - 1)
+                  }
+                  disabled={drinksPerInvitee <= MIN_DRINKS_PER_INVITEE}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-primary-black/15 text-primary-black disabled:opacity-35"
+                  aria-label="Riduci drink per invitato"
+                >
+                  <Minus className="h-3.5 w-3.5" aria-hidden />
+                </button>
+                <span className="min-w-[2rem] text-center text-lg font-black tabular-nums text-primary-black">
+                  {drinksPerInvitee}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onDrinksPerInviteeChange(drinksPerInvitee + 1)
+                  }
+                  disabled={drinksPerInvitee >= MAX_DRINKS_PER_INVITEE}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-brand-pink/30 bg-brand-pink/10 text-brand-pink disabled:opacity-35"
+                  aria-label="Aumenta drink per invitato"
+                >
+                  <Plus className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {drinkMode === "open_bar" && (
+            <p className="mt-3 rounded-xl bg-brand-teal/8 px-3 py-2 text-xs font-semibold text-primary-black/70">
+              Open bar stimato a {formatCurrency(OPEN_BAR_PER_INVITEE)}/invitato
+              per tutta la serata.
+            </p>
+          )}
+
+          {drinkMode !== "none" && (
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-primary-black/8 pt-3 text-sm">
+              <span className="text-primary-black/55">Costo bevande</span>
+              <span className="font-bold text-primary-black">
+                {formatCurrency(
+                  calculateDrinksCost({
+                    mode: drinkMode,
+                    drinksPerInvitee,
+                    guestCount,
+                  }),
+                )}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="relative overflow-hidden rounded-3xl border border-brand-teal/20 bg-gradient-to-br from-brand-teal/18 via-brand-teal/10 to-brand-teal/[0.06] p-4 text-primary-black">
@@ -596,9 +714,22 @@ export function SmartLocationDetailsSection({
               <div className="flex justify-between gap-3 text-primary-black/55">
                 <dt className="min-w-0">Servizi selezionati</dt>
                 <dd className="shrink-0 font-bold text-primary-black">
-                  {formatCurrency(generatedQuote.extrasCost)}
+                  {formatCurrency(
+                    Math.max(
+                      0,
+                      generatedQuote.extrasCost - generatedQuote.drinksCost,
+                    ),
+                  )}
                 </dd>
               </div>
+              {generatedQuote.drinksCost > 0 && (
+                <div className="flex justify-between gap-3 text-primary-black/55">
+                  <dt className="min-w-0">Bevande</dt>
+                  <dd className="shrink-0 font-bold text-primary-black">
+                    {formatCurrency(generatedQuote.drinksCost)}
+                  </dd>
+                </div>
+              )}
             </dl>
           ) : (
             <p className="mt-3 rounded-xl border border-brand-teal/10 bg-white/80 px-3 py-2 text-xs font-semibold text-primary-black/70 backdrop-blur-sm">

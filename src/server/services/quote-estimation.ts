@@ -173,6 +173,7 @@ export async function generateInstantQuote(
     hours,
     locationCost,
     extrasCost,
+    drinksCost: 0,
     total,
     depositAmount: roundCurrency(locationCost * 0.3),
   };

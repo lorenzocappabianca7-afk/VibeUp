@@ -563,7 +563,7 @@ export const EXTRA_SERVICES: ExtraService[] = [
     providerName: "Menu Partner VibeUp",
     providerZone: "Torino e provincia",
     description:
-      "Menu per persona con buffet, soft drink e opzioni vegetariane personalizzabili.",
+      "Menu per invitato con buffet, soft drink e opzioni vegetariane personalizzabili.",
     pricing: { type: "per_person", pricePerPerson: 32, minGuests: 10 },
   },
   {
