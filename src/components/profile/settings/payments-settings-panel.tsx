@@ -21,7 +21,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface PaymentsSettingsPanelProps {
   onBack: () => void;
@@ -65,6 +65,15 @@ export function PaymentsSettingsPanel({ onBack }: PaymentsSettingsPanelProps) {
   });
   const [cardError, setCardError] = useState<string | null>(null);
   const [cardSavedFlash, setCardSavedFlash] = useState(false);
+  const flashTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (flashTimerRef.current != null) {
+        window.clearTimeout(flashTimerRef.current);
+      }
+    };
+  }, []);
 
   function handleBack() {
     if (view !== "home") {
@@ -95,7 +104,13 @@ export function PaymentsSettingsPanel({ onBack }: PaymentsSettingsPanelProps) {
     });
     setCardError(null);
     setCardSavedFlash(true);
-    window.setTimeout(() => setCardSavedFlash(false), 2500);
+    if (flashTimerRef.current != null) {
+      window.clearTimeout(flashTimerRef.current);
+    }
+    flashTimerRef.current = window.setTimeout(() => {
+      setCardSavedFlash(false);
+      flashTimerRef.current = null;
+    }, 2500);
   }
 
   function handleRemoveCard() {

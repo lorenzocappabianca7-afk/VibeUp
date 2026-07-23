@@ -9,7 +9,7 @@ import { SettingsShell } from "@/components/profile/settings/settings-shell";
 import { useAppState } from "@/context/app-state-context";
 import { normalizeUserSettings } from "@/types/user-settings";
 import { AtSign, Globe, Mail, Phone, UserRound } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface AccountSettingsPanelProps {
   onBack: () => void;
@@ -36,6 +36,15 @@ export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
   const [draft, setDraft] = useState(() => profileDraftFromUser(currentUser));
   const [draftUserId, setDraftUserId] = useState(currentUser.id);
   const [savedFlash, setSavedFlash] = useState(false);
+  const flashTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (flashTimerRef.current != null) {
+        window.clearTimeout(flashTimerRef.current);
+      }
+    };
+  }, []);
 
   if (draftUserId !== currentUser.id) {
     setDraftUserId(currentUser.id);
@@ -51,7 +60,13 @@ export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
       instagramHandle: draft.instagramHandle.replace(/^@+/, "").trim(),
     });
     setSavedFlash(true);
-    window.setTimeout(() => setSavedFlash(false), 2000);
+    if (flashTimerRef.current != null) {
+      window.clearTimeout(flashTimerRef.current);
+    }
+    flashTimerRef.current = window.setTimeout(() => {
+      setSavedFlash(false);
+      flashTimerRef.current = null;
+    }, 2000);
   }
 
   return (

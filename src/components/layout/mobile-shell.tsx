@@ -92,7 +92,7 @@ export function MobileShell() {
                 activeTab={activeTab}
                 visited={visitedTabs.has("profile")}
               >
-                <ProfileScreen />
+                <ProfileScreen isActive={activeTab === "profile"} />
               </TabPanel>
             </>
           ) : (
@@ -126,7 +126,7 @@ export function MobileShell() {
                 activeTab={activeTab}
                 visited={visitedTabs.has("profile")}
               >
-                <ProfileScreen />
+                <ProfileScreen isActive={activeTab === "profile"} />
               </TabPanel>
             </>
           )}

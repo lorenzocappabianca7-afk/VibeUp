@@ -67,12 +67,15 @@ export function useBodyScrollLock(locked: boolean) {
 /**
  * Used by wake-recovery: clear orphan locks after PWA idle / bfcache,
  * ignoring overlays that are only mounted inside hidden tab panels.
+ *
+ * Also resets lockCount when no visible overlay remains — React holders in
+ * hidden tabs may still think they own a lock; zeroing avoids permanent freeze.
+ * Tab-leave teardown (search/profile/events) should clear those holders ASAP.
  */
 export function forceUnlockBodyScrollIfIdle() {
   if (typeof document === "undefined") return;
   if (hasVisibleOverlay()) return;
 
-  // Module lockCount can desync after freezes / interrupted unmounts.
   lockCount = 0;
   document.body.style.overflow = "";
 }

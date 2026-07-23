@@ -72,7 +72,12 @@ const menuItems: Array<{
   },
 ];
 
-export function ProfileScreen() {
+export function ProfileScreen({
+  isActive = true,
+}: {
+  /** When Profile tab is hidden, tear down overlays so scroll stays unlocked. */
+  isActive?: boolean;
+}) {
   const {
     accounts,
     businessProfile,
@@ -131,6 +136,16 @@ export function ProfileScreen() {
   const lastSyncedUserId = useRef(currentUser.id);
   const hasHydratedProfileDraft = useRef(false);
   const canManagePublications = canAccessAdminCatalog(currentUser.email);
+
+  // Render-phase clear (same pattern as Events payment modal) so scroll unlocks
+  // in the same commit as the tab hide — no one-frame freeze window.
+  if (!isActive) {
+    if (accountPendingDelete) setAccountPendingDelete(null);
+    if (avatarCropFile) setAvatarCropFile(null);
+    if (addAccountOpen) setAddAccountOpen(false);
+    if (profileEditOpen) setProfileEditOpen(false);
+    if (settingsPanel) setSettingsPanel(null);
+  }
 
   if (settingsPanelUserId !== currentUser.id) {
     setSettingsPanelUserId(currentUser.id);

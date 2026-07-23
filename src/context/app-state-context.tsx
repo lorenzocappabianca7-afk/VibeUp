@@ -547,32 +547,83 @@ function readStoredAppState(): StoredAppState {
 function writeStoredAppState(state: StoredAppState) {
   if (typeof window === "undefined") return;
 
-  try {
+  const stripHeavyAvatars = (accounts: CurrentUser[] | undefined) =>
+    accounts?.map((account) =>
+      account.avatarUrl?.startsWith("data:")
+        ? { ...account, avatarUrl: undefined }
+        : account,
+    );
+
+  const buildPayload = (
+    aggressive: boolean,
+    dropDataAvatars: boolean,
+  ): StoredAppState => {
     const userStates = state.userStates
       ? Object.fromEntries(
-          Object.entries(state.userStates).map(([userId, userState]) => [
-            userId,
-            {
-              ...userState,
-              // Never persist compare picks — favorites/events stay as-is.
-              compareLocationIds: [],
-            },
-          ]),
+          Object.entries(state.userStates).map(([userId, userState]) => {
+            const pruned = prunePastEventsFromState(userState);
+            return [
+              userId,
+              {
+                ...pruned,
+                // Never persist compare picks — favorites/events stay as-is.
+                compareLocationIds: [],
+                favoriteLocationIds: aggressive
+                  ? pruned.favoriteLocationIds.slice(0, 40)
+                  : pruned.favoriteLocationIds,
+                favoriteServiceIds: aggressive
+                  ? pruned.favoriteServiceIds.slice(0, 40)
+                  : pruned.favoriteServiceIds,
+                events: aggressive ? pruned.events.slice(0, 20) : pruned.events,
+              },
+            ];
+          }),
         )
       : state.userStates;
 
-    const safeState: StoredAppState = {
+    const accounts = dropDataAvatars
+      ? stripHeavyAvatars(state.accounts)
+      : state.accounts
+        ? sanitizeAccountPaymentCards(state.accounts)
+        : state.accounts;
+
+    return {
       ...state,
       userStates,
-      // Drop legacy top-level compare if present.
       compareLocationIds: undefined,
-      accounts: state.accounts
-        ? sanitizeAccountPaymentCards(state.accounts)
-        : state.accounts,
+      managedListings: aggressive
+        ? (state.managedListings ?? []).slice(0, 30)
+        : state.managedListings,
+      accounts: dropDataAvatars
+        ? accounts
+          ? sanitizeAccountPaymentCards(accounts)
+          : accounts
+        : accounts,
     };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(safeState));
+  };
+
+  try {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(buildPayload(false, false)),
+    );
   } catch {
-    // Storage can be unavailable in private mode; the app should keep working.
+    // Quota / private mode: compact, then drop data-URL avatars (main quota hog).
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(buildPayload(true, false)),
+      );
+    } catch {
+      try {
+        window.localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(buildPayload(true, true)),
+        );
+      } catch {
+        // Keep working in memory if storage is unavailable.
+      }
+    }
   }
 }
 

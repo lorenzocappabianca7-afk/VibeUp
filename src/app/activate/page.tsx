@@ -4,7 +4,7 @@ import { useAppState } from "@/context/app-state-context";
 import { CheckCircle2, LoaderCircle, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 function ActivateAccountContent() {
   const { activateAccountWithToken, isStorageHydrated } = useAppState();
@@ -12,6 +12,7 @@ function ActivateAccountContent() {
   const token = searchParams.get("token")?.trim() ?? "";
   const [status, setStatus] = useState<"pending" | "ok" | "error">("pending");
   const [message, setMessage] = useState("Sto attivando il tuo account…");
+  const attemptedTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isStorageHydrated) return;
@@ -21,6 +22,11 @@ function ActivateAccountContent() {
       setMessage("Link di attivazione mancante o incompleto.");
       return;
     }
+
+    // activateAccountWithToken clears the token and recreates the callback —
+    // without this guard the effect re-runs and flips success → “già usato”.
+    if (attemptedTokenRef.current === token) return;
+    attemptedTokenRef.current = token;
 
     const result = activateAccountWithToken(token);
     if (!result.ok) {

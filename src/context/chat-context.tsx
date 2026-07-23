@@ -292,6 +292,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const replyTimers = useRef<number[]>([]);
   const skipFirstPersistRef = useRef(true);
   const chatUserIdRef = useRef(userId);
+  const conversationsRef = useRef(conversations);
+  const messagesByIdRef = useRef(messagesById);
 
   useEffect(() => {
     openConversationIdRef.current = openConversationId;
@@ -301,9 +303,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     pushEnabledRef.current = pushEnabled;
   }, [pushEnabled]);
 
+  useEffect(() => {
+    conversationsRef.current = conversations;
+    messagesByIdRef.current = messagesById;
+  }, [conversations, messagesById]);
+
   // Reload transcript when the signed-in account changes.
   useEffect(() => {
     if (chatUserIdRef.current === userId) return;
+    const previousId = chatUserIdRef.current;
+    writeStoredChat(
+      previousId,
+      conversationsRef.current,
+      messagesByIdRef.current,
+    );
     chatUserIdRef.current = userId;
     for (const timer of replyTimers.current) {
       window.clearTimeout(timer);
@@ -427,7 +440,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         title,
         body,
         tag: `vibeup-chat-${conversationId}`,
-        onlyWhenHidden: false,
       });
     }
   }, []);
