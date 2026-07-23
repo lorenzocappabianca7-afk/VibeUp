@@ -16,6 +16,7 @@ import {
 } from "@/components/business/business-form-fields";
 import { SelectField, TextField } from "@/components/ui/form-fields";
 import { useAppState } from "@/context/app-state-context";
+import { requestActivationEmail } from "@/lib/auth/request-activation-email";
 import {
   BUSINESS_CATEGORY_LABELS,
   isPerformerCategory,
@@ -332,6 +333,18 @@ export function BusinessOnboardingView() {
         setError(result.error);
         setSubmitting(false);
         return;
+      }
+
+      if (
+        result.needsEmailActivation &&
+        result.activationToken &&
+        result.email
+      ) {
+        await requestActivationEmail({
+          email: result.email,
+          name: result.name ?? ownerName,
+          token: result.activationToken,
+        });
       }
 
       setSuccess(true);

@@ -13,6 +13,11 @@ import {
   needsPasswordRehash,
   verifyPassword,
 } from "@/lib/auth/password";
+import {
+  createActivationToken,
+  getActivationExpiryIso,
+  isActivationTokenExpired,
+} from "@/lib/auth/activation";
 import { isEventPast } from "@/lib/event";
 import { MOCK_EVENTS } from "@/lib/mock/events";
 import {
@@ -67,6 +72,10 @@ export interface CurrentUser {
   lastActiveAt?: string;
   /** WebAuthn platform credential id (base64url) for Face ID / fingerprint */
   biometricCredentialId?: string;
+  /** false until the user confirms email via activation link */
+  emailVerified?: boolean;
+  activationToken?: string;
+  activationTokenExpiresAt?: string;
 }
 
 export interface CreateAccountInput {
@@ -83,7 +92,13 @@ export interface CreateAccountInput {
 }
 
 export type CreateAccountResult =
-  | { ok: true }
+  | {
+      ok: true;
+      needsEmailActivation?: boolean;
+      activationToken?: string;
+      email?: string;
+      name?: string;
+    }
   | { ok: false; error: string };
 
 type DeepPartialUserSettings = {
@@ -106,7 +121,13 @@ export interface CreateBusinessAccountInput {
 }
 
 export type CreateBusinessAccountResult =
-  | { ok: true }
+  | {
+      ok: true;
+      needsEmailActivation?: boolean;
+      activationToken?: string;
+      email?: string;
+      name?: string;
+    }
   | { ok: false; error: string };
 
 interface PaymentState {
@@ -150,6 +171,12 @@ interface AppStateContextValue {
   createBusinessAccount: (
     input: CreateBusinessAccountInput,
   ) => Promise<CreateBusinessAccountResult>;
+  activateAccountWithToken: (token: string) => CreateAccountResult;
+  issueActivationToken: (accountId?: string) => CreateAccountResult & {
+    activationToken?: string;
+    email?: string;
+    name?: string;
+  };
   deleteAccount: (id: string) => void;
   switchAccount: (id: string) => void;
   updateCurrentUser: (updates: Partial<Omit<CurrentUser, "id">>) => void;
@@ -173,12 +200,14 @@ export const GUEST_USER: CurrentUser = {
   id: "account-guest",
   name: "Ospite",
   email: "",
+  emailVerified: true,
 };
 
 const MOCK_CURRENT_USER: CurrentUser = {
   id: "account-vibeup-planner",
   name: "VibeUp Planner",
   email: "vibeup.planner@gmail.com",
+  emailVerified: true,
 };
 
 const MOCK_ACCOUNTS: CurrentUser[] = [
@@ -187,6 +216,7 @@ const MOCK_ACCOUNTS: CurrentUser[] = [
     id: "account-demo-user",
     name: "Lorenzo C.",
     email: "lorenzo@email.com",
+    emailVerified: true,
   },
 ];
 
@@ -321,6 +351,8 @@ function normalizeAccount(account: CurrentUser): CurrentUser {
     businessProfile:
       accountType === "business" ? (account.businessProfile ?? null) : null,
     settings: normalizeUserSettings(account.settings),
+    // Legacy accounts without the field stay usable.
+    emailVerified: account.emailVerified !== false,
   };
 }
 
@@ -1118,6 +1150,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       }
 
       const id = `account-${Date.now()}`;
+      const activationToken = createActivationToken();
       const nextAccount = normalizeAccount({
         id,
         name: nextName,
@@ -1132,6 +1165,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             : null,
         passwordHash,
         lastActiveAt: now,
+        emailVerified: false,
+        activationToken,
+        activationTokenExpiresAt: getActivationExpiryIso(),
       });
 
       setAccounts((prev) => [nextAccount, ...prev]);
@@ -1140,7 +1176,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setIsAccountLocked(false);
       setUnlockError(null);
       void promptBiometricSetupIfAvailable();
-      return { ok: true };
+      return {
+        ok: true,
+        needsEmailActivation: true,
+        activationToken,
+        email: normalizedEmail,
+        name: nextName,
+      };
     },
     [accounts, promptBiometricSetupIfAvailable],
   );
@@ -1187,6 +1229,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
       const passwordHash = await hashPassword(password);
       const id = `account-pro-${Date.now()}`;
+      const activationToken = createActivationToken();
       const nextAccount = normalizeAccount({
         id,
         name: nextName,
@@ -1196,6 +1239,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         businessProfile: input.businessProfile,
         passwordHash,
         lastActiveAt: new Date().toISOString(),
+        emailVerified: false,
+        activationToken,
+        activationTokenExpiresAt: getActivationExpiryIso(),
       });
 
       setAccounts((prev) => [nextAccount, ...prev]);
@@ -1205,9 +1251,100 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setUnlockError(null);
       void promptBiometricSetupIfAvailable();
 
-      return { ok: true };
+      return {
+        ok: true,
+        needsEmailActivation: true,
+        activationToken,
+        email: normalizedEmail,
+        name: nextName,
+      };
     },
     [accounts, promptBiometricSetupIfAvailable],
+  );
+
+  const activateAccountWithToken = useCallback(
+    (token: string): CreateAccountResult => {
+      const cleaned = token.trim().toLowerCase();
+      if (cleaned.length < 32) {
+        return { ok: false, error: "Link di attivazione non valido." };
+      }
+
+      const match = accounts.find(
+        (account) => account.activationToken?.toLowerCase() === cleaned,
+      );
+      if (!match) {
+        return {
+          ok: false,
+          error:
+            "Link non valido o già usato. Se hai creato l’account su questo dispositivo, richiedi una nuova email.",
+        };
+      }
+      if (isActivationTokenExpired(match.activationTokenExpiresAt)) {
+        return {
+          ok: false,
+          error: "Questo link è scaduto. Richiedi una nuova email di attivazione.",
+        };
+      }
+
+      setAccounts((prev) =>
+        prev.map((account) =>
+          account.id === match.id
+            ? normalizeAccount({
+                ...account,
+                emailVerified: true,
+                activationToken: undefined,
+                activationTokenExpiresAt: undefined,
+                lastActiveAt: new Date().toISOString(),
+              })
+            : account,
+        ),
+      );
+      setCurrentUserId(match.id);
+      setIsAccountLocked(false);
+      setUnlockError(null);
+      return { ok: true };
+    },
+    [accounts],
+  );
+
+  const issueActivationToken = useCallback(
+    (accountId?: string) => {
+      const targetId = accountId ?? currentUserId;
+      if (!targetId || targetId === GUEST_USER.id) {
+        return { ok: false as const, error: "Nessun account da attivare." };
+      }
+
+      const target = accounts.find((account) => account.id === targetId);
+      if (!target) {
+        return { ok: false as const, error: "Account non trovato." };
+      }
+      if (target.emailVerified !== false) {
+        return { ok: true as const };
+      }
+
+      const activationToken = createActivationToken();
+      setAccounts((prev) =>
+        prev.map((account) =>
+          account.id === targetId
+            ? normalizeAccount({
+                ...account,
+                emailVerified: false,
+                activationToken,
+                activationTokenExpiresAt: getActivationExpiryIso(),
+              })
+            : account,
+        ),
+      );
+
+      return {
+        ok: true as const,
+        needsEmailActivation: true,
+        activationToken,
+        email: target.email,
+        name: target.name,
+      };
+    },
+    [accounts, currentUserId],
   );
 
   const deleteAccount = useCallback((id: string) => {
@@ -1641,6 +1778,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toggleManagedListingPublication,
       createAccount,
       createBusinessAccount,
+      activateAccountWithToken,
+      issueActivationToken,
       deleteAccount,
       switchAccount,
       updateCurrentUser,
@@ -1686,6 +1825,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toggleManagedListingPublication,
       createAccount,
       createBusinessAccount,
+      activateAccountWithToken,
+      issueActivationToken,
       deleteAccount,
       switchAccount,
       updateCurrentUser,

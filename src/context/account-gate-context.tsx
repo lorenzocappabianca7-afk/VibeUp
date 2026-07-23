@@ -2,6 +2,7 @@
 
 import { CreateAccountModal } from "@/components/auth/create-account-modal";
 import { GUEST_USER, useAppState } from "@/context/app-state-context";
+import { requestActivationEmail } from "@/lib/auth/request-activation-email";
 import {
   createContext,
   useCallback,
@@ -134,6 +135,21 @@ export function AccountGateProvider({ children }: { children: ReactNode }) {
       if (!result.ok) {
         runAfterAccountRef.current = false;
         throw new Error(result.error);
+      }
+      if (
+        result.needsEmailActivation &&
+        result.activationToken &&
+        result.email
+      ) {
+        const emailResult = await requestActivationEmail({
+          email: result.email,
+          name: result.name ?? account.name,
+          token: result.activationToken,
+        });
+        if (!emailResult.ok) {
+          // Account is created; surface mail issues without blocking entry.
+          console.warn("[activation-email]", emailResult.error);
+        }
       }
       setModalReason(null);
     })();

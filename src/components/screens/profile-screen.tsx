@@ -37,6 +37,7 @@ import { BUSINESS_CATEGORY_LABELS } from "@/types/business";
 import type { SettingsPanelId } from "@/types/user-settings";
 import { formatCurrency, getLocationPricePresentation } from "@/lib/utils";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
+import { requestActivationEmail } from "@/lib/auth/request-activation-email";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const menuItems: Array<{
@@ -287,12 +288,37 @@ export function ProfileScreen() {
       return;
     }
 
+    if (
+      result.needsEmailActivation &&
+      result.activationToken &&
+      result.email
+    ) {
+      const emailResult = await requestActivationEmail({
+        email: result.email,
+        name: result.name ?? newAccountName,
+        token: result.activationToken,
+      });
+      if (!emailResult.ok) {
+        setNewAccountError(
+          `Account creato, ma l’email di attivazione non è partita: ${emailResult.error}`,
+        );
+      }
+    }
+
     setNewAccountName("");
     setNewAccountEmail("");
     setNewAccountPhone("");
     setNewAccountPassword("");
     setNewAccountPasswordConfirm("");
-    setNewAccountError(null);
+    if (
+      !(
+        result.needsEmailActivation &&
+        result.activationToken &&
+        result.email
+      )
+    ) {
+      setNewAccountError(null);
+    }
     setAddAccountOpen(false);
   }
 

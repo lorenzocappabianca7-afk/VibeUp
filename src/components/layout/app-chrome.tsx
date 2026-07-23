@@ -2,6 +2,7 @@
 
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
+import { EmailActivationBanner } from "@/components/auth/email-activation-banner";
 import { AppWakeRecovery } from "@/components/pwa/app-wake-recovery";
 import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner";
 import { useTabNavigation } from "@/context/tab-navigation-context";
@@ -38,6 +39,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
         }}
       >
         {!hideNav && <PwaInstallBanner />}
+        {!hideNav && <EmailActivationBanner />}
         <div className="min-w-0 max-w-full flex-1 overflow-x-hidden">
           {children}
         </div>
