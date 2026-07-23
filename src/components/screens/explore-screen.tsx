@@ -701,6 +701,7 @@ export function ExploreScreen({
         placeholder={SEARCH_PLACEHOLDERS[activeCategory]}
         suggestions={searchSuggestions}
         storageKey={`vibeup-explore-recent-${activeCategory}`}
+        forceClosed={activeTab !== "explore"}
       />
 
       {(activeCategory === "dj" || activeCategory === "fotografo") && (

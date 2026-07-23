@@ -103,13 +103,20 @@ export function ExploreFiltersSheet({
     const justOpened = open && !wasOpenRef.current;
     wasOpenRef.current = open;
 
-    if (!justOpened) return;
+    if (justOpened) {
+      setDraftFilters(filters);
+      setDraftServiceFilters(serviceFilters);
+      setDatePickerOpen(false);
+      setNearMeError(null);
+      setNearMeLoading(false);
+      return;
+    }
 
-    setDraftFilters(filters);
-    setDraftServiceFilters(serviceFilters);
-    setDatePickerOpen(false);
-    setNearMeError(null);
-    setNearMeLoading(false);
+    if (!open) {
+      // Invalidate in-flight geolocation so a late callback can't mutate closed state.
+      nearMeRequestRef.current += 1;
+      setNearMeLoading(false);
+    }
   }, [filters, open, serviceFilters]);
 
   useEffect(() => {

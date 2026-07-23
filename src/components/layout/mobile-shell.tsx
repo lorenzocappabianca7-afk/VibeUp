@@ -119,7 +119,7 @@ export function MobileShell() {
                 activeTab={activeTab}
                 visited={visitedTabs.has("messages")}
               >
-                <MessagesScreen />
+                <MessagesScreen isActive={activeTab === "messages"} />
               </TabPanel>
               <TabPanel
                 tab="profile"

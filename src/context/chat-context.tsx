@@ -53,7 +53,13 @@ interface ChatContextValue {
 
 const ChatContext = createContext<ChatContextValue | null>(null);
 
-const STORAGE_KEY = "vibeup-chat-v1";
+const STORAGE_KEY_PREFIX = "vibeup-chat-v1";
+const LEGACY_STORAGE_KEY = "vibeup-chat-v1";
+const MAX_MESSAGES_PER_THREAD = 80;
+
+function chatStorageKey(userId: string) {
+  return `${STORAGE_KEY_PREFIX}:${userId}`;
+}
 
 const SEED_CONVERSATIONS: ChatConversation[] = [
   {
@@ -160,13 +166,30 @@ function normalizeMessagesById(
   return next;
 }
 
-function readStoredChat(): {
+function trimMessagesById(
+  messagesById: Record<string, ChatMessage[]>,
+): Record<string, ChatMessage[]> {
+  const next: Record<string, ChatMessage[]> = {};
+  for (const [id, list] of Object.entries(messagesById)) {
+    next[id] =
+      list.length > MAX_MESSAGES_PER_THREAD
+        ? list.slice(-MAX_MESSAGES_PER_THREAD)
+        : list;
+  }
+  return next;
+}
+
+function readStoredChat(userId: string): {
   conversations: ChatConversation[];
   messagesById: Record<string, ChatMessage[]>;
 } | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const scoped = window.localStorage.getItem(chatStorageKey(userId));
+    const raw =
+      scoped ??
+      // One-time migrate legacy unscoped transcript into the active user.
+      (userId ? window.localStorage.getItem(LEGACY_STORAGE_KEY) : null);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as {
       conversations?: ChatConversation[];
@@ -175,9 +198,17 @@ function readStoredChat(): {
     if (!Array.isArray(parsed.conversations) || !parsed.messagesById) {
       return null;
     }
+    if (!scoped && raw) {
+      try {
+        window.localStorage.setItem(chatStorageKey(userId), raw);
+        window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+      } catch {
+        // ignore migrate failure
+      }
+    }
     return {
       conversations: parsed.conversations,
-      messagesById: normalizeMessagesById(parsed.messagesById),
+      messagesById: trimMessagesById(normalizeMessagesById(parsed.messagesById)),
     };
   } catch {
     return null;
@@ -185,17 +216,32 @@ function readStoredChat(): {
 }
 
 function writeStoredChat(
+  userId: string,
   conversations: ChatConversation[],
   messagesById: Record<string, ChatMessage[]>,
 ) {
   if (typeof window === "undefined") return;
+  const key = chatStorageKey(userId);
+  const payload = JSON.stringify({
+    conversations,
+    messagesById: trimMessagesById(messagesById),
+  });
   try {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ conversations, messagesById }),
-    );
+    window.localStorage.setItem(key, payload);
   } catch {
-    // ignore
+    // Quota: drop oldest half of each thread and retry once.
+    try {
+      const trimmed: Record<string, ChatMessage[]> = {};
+      for (const [id, list] of Object.entries(messagesById)) {
+        trimmed[id] = list.slice(-Math.max(20, Math.floor(list.length / 2)));
+      }
+      window.localStorage.setItem(
+        key,
+        JSON.stringify({ conversations, messagesById: trimmed }),
+      );
+    } catch {
+      // private mode / hard quota — keep working in memory
+    }
   }
 }
 
@@ -225,16 +271,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const { syncUnreadMessages } = useInboxBadge();
   const pushEnabled = normalizeUserSettings(currentUser.settings).notifications
     .pushEnabled;
+  const userId = currentUser.id;
 
   const [conversations, setConversations] = useState<ChatConversation[]>(() => {
     if (typeof window === "undefined") return SEED_CONVERSATIONS;
-    return readStoredChat()?.conversations ?? SEED_CONVERSATIONS;
+    return readStoredChat(userId)?.conversations ?? SEED_CONVERSATIONS;
   });
   const [messagesById, setMessagesById] = useState<
     Record<string, ChatMessage[]>
   >(() => {
     if (typeof window === "undefined") return SEED_MESSAGES;
-    return readStoredChat()?.messagesById ?? SEED_MESSAGES;
+    return readStoredChat(userId)?.messagesById ?? SEED_MESSAGES;
   });
   const [openConversationId, setOpenConversationId] = useState<string | null>(
     null,
@@ -244,6 +291,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const pushEnabledRef = useRef(pushEnabled);
   const replyTimers = useRef<number[]>([]);
   const skipFirstPersistRef = useRef(true);
+  const chatUserIdRef = useRef(userId);
 
   useEffect(() => {
     openConversationIdRef.current = openConversationId;
@@ -253,13 +301,28 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     pushEnabledRef.current = pushEnabled;
   }, [pushEnabled]);
 
+  // Reload transcript when the signed-in account changes.
+  useEffect(() => {
+    if (chatUserIdRef.current === userId) return;
+    chatUserIdRef.current = userId;
+    for (const timer of replyTimers.current) {
+      window.clearTimeout(timer);
+    }
+    replyTimers.current = [];
+    skipFirstPersistRef.current = true;
+    setOpenConversationId(null);
+    const stored = readStoredChat(userId);
+    setConversations(stored?.conversations ?? SEED_CONVERSATIONS);
+    setMessagesById(stored?.messagesById ?? SEED_MESSAGES);
+  }, [userId]);
+
   useEffect(() => {
     if (skipFirstPersistRef.current) {
       skipFirstPersistRef.current = false;
       return;
     }
-    writeStoredChat(conversations, messagesById);
-  }, [conversations, messagesById]);
+    writeStoredChat(userId, conversations, messagesById);
+  }, [conversations, messagesById, userId]);
 
   useEffect(() => {
     const total = conversations.reduce(
@@ -276,6 +339,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         window.clearTimeout(timer);
       }
     };
+  }, []);
+
+  const releaseTimer = useCallback((timer: number) => {
+    replyTimers.current = replyTimers.current.filter((id) => id !== timer);
   }, []);
 
   const getMessages = useCallback(
@@ -323,9 +390,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           ? { ...item, status: "read" as const }
           : item,
       );
+      const next = [...marked, message];
       return {
         ...prev,
-        [conversationId]: [...marked, message],
+        [conversationId]:
+          next.length > MAX_MESSAGES_PER_THREAD
+            ? next.slice(-MAX_MESSAGES_PER_THREAD)
+            : next,
       };
     });
 
@@ -377,10 +448,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         status: "sent",
       };
 
-      setMessagesById((prev) => ({
-        ...prev,
-        [conversationId]: [...(prev[conversationId] ?? []), message],
-      }));
+      setMessagesById((prev) => {
+        const list = [...(prev[conversationId] ?? []), message];
+        return {
+          ...prev,
+          [conversationId]:
+            list.length > MAX_MESSAGES_PER_THREAD
+              ? list.slice(-MAX_MESSAGES_PER_THREAD)
+              : list,
+        };
+      });
 
       setConversations((prev) =>
         prev
@@ -401,6 +478,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       );
 
       const deliveredTimer = window.setTimeout(() => {
+        releaseTimer(deliveredTimer);
         setMessagesById((prev) => {
           const list = prev[conversationId];
           if (!list) return prev;
@@ -422,11 +500,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const reply = replies[Math.floor(Math.random() * replies.length)]!;
       const delay = 1800 + Math.floor(Math.random() * 2200);
       const timer = window.setTimeout(() => {
+        releaseTimer(timer);
         receiveIncoming(conversationId, reply);
       }, delay);
       replyTimers.current.push(timer);
     },
-    [receiveIncoming],
+    [receiveIncoming, releaseTimer],
   );
 
   const value = useMemo(

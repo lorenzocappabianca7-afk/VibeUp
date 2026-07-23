@@ -1,6 +1,7 @@
 "use client";
 
 import { useAppState } from "@/context/app-state-context";
+import { isBodyScrollLocked } from "@/lib/body-scroll-lock";
 import {
   ALL_TAB_IDS,
   BUSINESS_TABS,
@@ -161,7 +162,10 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (previousTabRef.current === activeTab) return;
 
-    scrollByTabRef.current[previousTabRef.current] = window.scrollY;
+    // Under body scroll lock, scrollY is often 0 / wrong — keep last good value.
+    if (!isBodyScrollLocked()) {
+      scrollByTabRef.current[previousTabRef.current] = window.scrollY;
+    }
     previousTabRef.current = activeTab;
 
     if (skipNextScrollRestoreRef.current) {

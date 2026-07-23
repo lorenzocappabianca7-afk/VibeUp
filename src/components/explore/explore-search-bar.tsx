@@ -35,6 +35,11 @@ interface ExploreSearchBarProps {
   placeholder?: string;
   suggestions?: ExploreSearchSuggestion[];
   storageKey?: string;
+  /**
+   * When the Explore tab is hidden, force-close immediately.
+   * Otherwise the panel stays mounted (hidden) with scroll still locked.
+   */
+  forceClosed?: boolean;
 }
 
 const MAX_RECENT = 8;
@@ -86,6 +91,7 @@ export function ExploreSearchBar({
   placeholder = "Cerca location...",
   suggestions = [],
   storageKey = "vibeup-explore-recent-searches-v1",
+  forceClosed = false,
 }: ExploreSearchBarProps) {
   const [open, setOpen] = useState(false);
   const [scrollLocked, setScrollLocked] = useState(false);
@@ -101,18 +107,26 @@ export function ExploreSearchBar({
   const pendingOpenAnimRef = useRef(false);
   /** Blocks open after tapping clear — the X unmounts and the click hits the banner. */
   const suppressOpenRef = useRef(false);
+  const suppressTimerRef = useRef<number | null>(null);
   const fullHeightRef = useRef(HEADER_PX);
   const clipRef = useRef(0);
 
   useBodyScrollLock(scrollLocked);
 
-  useEffect(() => {
+  function resetPanelChrome() {
     const panel = panelRef.current;
     if (!panel) return;
     panel.style.height = `${HEADER_PX}px`;
     panel.style.borderRadius = "9999px";
     panel.style.boxShadow = "0 2px 12px rgba(15,15,17,0.08)";
     panel.style.clipPath = "none";
+    panel.style.willChange = "auto";
+    panel.style.overflow = "";
+  }
+
+  useEffect(() => {
+    resetPanelChrome();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
   }, []);
 
   useEffect(() => {
@@ -120,6 +134,52 @@ export function ExploreSearchBar({
       if (animFrameRef.current != null) {
         window.cancelAnimationFrame(animFrameRef.current);
       }
+      if (suppressTimerRef.current != null) {
+        window.clearTimeout(suppressTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Leaving Explore (or waking from a frozen spring) must never leave scroll locked.
+  useEffect(() => {
+    if (!forceClosed) return;
+    if (!openRef.current && !open && !scrollLocked && !animatingRef.current) {
+      return;
+    }
+
+    if (animFrameRef.current != null) {
+      window.cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    animatingRef.current = false;
+    pendingOpenAnimRef.current = false;
+    openRef.current = false;
+    clipRef.current = 0;
+    inputRef.current?.blur();
+    resetPanelChrome();
+    setScrollLocked(false);
+    setOpen(false);
+    setDraft(query);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync close when tab hides
+  }, [forceClosed]);
+
+  useEffect(() => {
+    const recoverStuckSpring = () => {
+      if (document.visibilityState !== "visible") return;
+      // Safari can drop pending rAF after long background → openSearch forever blocked.
+      if (animatingRef.current && animFrameRef.current == null) {
+        animatingRef.current = false;
+      }
+      if (!openRef.current) {
+        setScrollLocked(false);
+      }
+    };
+
+    document.addEventListener("visibilitychange", recoverStuckSpring);
+    window.addEventListener("pageshow", recoverStuckSpring);
+    return () => {
+      document.removeEventListener("visibilitychange", recoverStuckSpring);
+      window.removeEventListener("pageshow", recoverStuckSpring);
     };
   }, []);
 
@@ -291,6 +351,7 @@ export function ExploreSearchBar({
   }
 
   function openSearch() {
+    if (forceClosed) return;
     if (suppressOpenRef.current) return;
     if (openRef.current || animatingRef.current) return;
     setDraft(query);
@@ -310,8 +371,12 @@ export function ExploreSearchBar({
     suppressOpenRef.current = true;
     setDraft("");
     onQueryChange("");
-    window.setTimeout(() => {
+    if (suppressTimerRef.current != null) {
+      window.clearTimeout(suppressTimerRef.current);
+    }
+    suppressTimerRef.current = window.setTimeout(() => {
       suppressOpenRef.current = false;
+      suppressTimerRef.current = null;
     }, 400);
   }
 

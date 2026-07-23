@@ -54,7 +54,12 @@ function MessageReceipt({ status }: { status: ChatDeliveryStatus }) {
   );
 }
 
-export const MessagesScreen = memo(function MessagesScreen() {
+export const MessagesScreen = memo(function MessagesScreen({
+  isActive = true,
+}: {
+  /** False when another tab is showing — close open threads so unread/badges stay correct. */
+  isActive?: boolean;
+}) {
   const {
     conversations,
     getMessages,
@@ -63,6 +68,12 @@ export const MessagesScreen = memo(function MessagesScreen() {
     closeConversation,
     sendMessage,
   } = useChat();
+
+  useEffect(() => {
+    if (!isActive && openConversationId) {
+      closeConversation();
+    }
+  }, [isActive, openConversationId, closeConversation]);
 
   const active = conversations.find((item) => item.id === openConversationId);
 

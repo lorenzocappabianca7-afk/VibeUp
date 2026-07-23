@@ -107,6 +107,15 @@ export function ProfileScreen() {
   useBodyScrollLock(Boolean(accountPendingDelete));
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+    };
+  }, []);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [avatarCropFile, setAvatarCropFile] = useState<File | null>(null);
   const [settingsPanel, setSettingsPanel] = useState<SettingsPanelId | null>(
