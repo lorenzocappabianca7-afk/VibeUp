@@ -35,9 +35,10 @@ interface ExploreSearchBarProps {
 }
 
 const MAX_RECENT = 8;
-/** Keep in sync with CSS transition below. */
-const EXPAND_MS = 420;
-const EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
+const HEADER_PX = 58;
+const FILTER_PX = 52;
+const EXPAND_MS = 400;
+const EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
 
 function readRecent(storageKey: string): string[] {
   if (typeof window === "undefined") return [];
@@ -82,16 +83,32 @@ export function ExploreSearchBar({
   const [draft, setDraft] = useState(query);
   const [recent, setRecent] = useState(() => readRecent(storageKey));
   const inputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const focusTimerRef = useRef<number | null>(null);
   const lockTimerRef = useRef<number | null>(null);
+  const animFrameRef = useRef<number | null>(null);
   const openRef = useRef(false);
 
   useBodyScrollLock(scrollLocked);
+
+  // Seed closed chrome once — height/radius stay on the DOM node so React
+  // re-renders never reset them mid-tween.
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    panel.style.height = `${HEADER_PX}px`;
+    panel.style.borderRadius = "9999px";
+    panel.style.boxShadow = "0 2px 12px rgba(15,15,17,0.08)";
+  }, []);
 
   useEffect(() => {
     return () => {
       if (focusTimerRef.current != null) window.clearTimeout(focusTimerRef.current);
       if (lockTimerRef.current != null) window.clearTimeout(lockTimerRef.current);
+      if (animFrameRef.current != null) {
+        window.cancelAnimationFrame(animFrameRef.current);
+      }
     };
   }, []);
 
@@ -159,12 +176,42 @@ export function ExploreSearchBar({
       window.clearTimeout(lockTimerRef.current);
       lockTimerRef.current = null;
     }
+    if (animFrameRef.current != null) {
+      window.cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+  }
+
+  function animatePanel(nextOpen: boolean) {
+    const panel = panelRef.current;
+    const body = bodyRef.current;
+    if (!panel || !body) return;
+
+    const bodyHeight = body.scrollHeight;
+    const from = nextOpen ? HEADER_PX : HEADER_PX + bodyHeight;
+    const to = nextOpen ? HEADER_PX + bodyHeight : HEADER_PX;
+
+    panel.style.transition = "none";
+    panel.style.height = `${from}px`;
+    void panel.offsetHeight;
+
+    panel.style.transition = [
+      `height ${EXPAND_MS}ms ${EASE}`,
+      `border-radius ${EXPAND_MS}ms ${EASE}`,
+      `box-shadow ${EXPAND_MS}ms ${EASE}`,
+    ].join(", ");
+    panel.style.height = `${to}px`;
+    panel.style.borderRadius = nextOpen ? "28px" : "9999px";
+    panel.style.boxShadow = nextOpen
+      ? "0 16px 40px rgba(15,15,17,0.16)"
+      : "0 2px 12px rgba(15,15,17,0.08)";
   }
 
   function closeSearch(options?: { keepDraft?: boolean }) {
     clearSideTimers();
     openRef.current = false;
     setScrollLocked(false);
+    animatePanel(false);
     setOpen(false);
     if (!options?.keepDraft) setDraft(query);
   }
@@ -187,10 +234,15 @@ export function ExploreSearchBar({
     clearSideTimers();
     setDraft(query);
     openRef.current = true;
-    // Single state flip — CSS grid-rows does the continuous expand (no JS height tween).
     setOpen(true);
 
-    // Defer side-effects until after the expand finishes so nothing hits mid-tween.
+    animFrameRef.current = window.requestAnimationFrame(() => {
+      animFrameRef.current = window.requestAnimationFrame(() => {
+        animFrameRef.current = null;
+        animatePanel(true);
+      });
+    });
+
     lockTimerRef.current = window.setTimeout(() => {
       lockTimerRef.current = null;
       if (openRef.current) setScrollLocked(true);
@@ -198,7 +250,7 @@ export function ExploreSearchBar({
 
     focusTimerRef.current = window.setTimeout(() => {
       focusTimerRef.current = null;
-      if (openRef.current) inputRef.current?.focus();
+      if (openRef.current) inputRef.current?.focus({ preventScroll: true });
     }, EXPAND_MS);
   }
 
@@ -217,7 +269,7 @@ export function ExploreSearchBar({
         tabIndex={open ? 0 : -1}
         aria-hidden={!open}
         className={cn(
-          "fixed inset-0 z-[40] bg-primary-black/20",
+          "fixed inset-0 z-[40] bg-primary-black/25",
           open
             ? "pointer-events-auto opacity-100"
             : "pointer-events-none opacity-0",
@@ -228,25 +280,20 @@ export function ExploreSearchBar({
       />
 
       <div
-        className={cn("relative flex min-w-0 items-start gap-2", open ? "z-[50]" : "z-[45]")}
+        className={cn("relative", open ? "z-[50]" : "z-[45]")}
+        style={{ height: HEADER_PX }}
       >
         <div
-          className={cn(
-            "min-w-0 flex-1 overflow-hidden border bg-white",
-            open
-              ? "rounded-[28px] border-primary-black/8 shadow-[0_16px_40px_rgba(15,15,17,0.16)]"
-              : "rounded-full border-primary-black/10 shadow-[0_2px_12px_rgba(15,15,17,0.08)]",
-          )}
+          ref={panelRef}
+          className="absolute inset-x-0 top-0 overflow-hidden border border-primary-black/10 bg-white"
           style={{
-            transition: [
-              `border-radius ${EXPAND_MS}ms ${EASE}`,
-              `box-shadow ${EXPAND_MS}ms ${EASE}`,
-              `border-color ${EXPAND_MS}ms ${EASE}`,
-            ].join(", "),
+            // Animated props are set on the DOM node only (see animatePanel).
+            transform: "translateZ(0)",
+            backfaceVisibility: "hidden",
+            willChange: open ? "height" : "auto",
           }}
         >
-          {/* Fixed header slot — crossfade only, no layout swap */}
-          <div className="relative h-[58px]">
+          <div className="relative" style={{ height: HEADER_PX }}>
             <button
               type="button"
               onClick={openSearch}
@@ -257,8 +304,9 @@ export function ExploreSearchBar({
                 open && "pointer-events-none",
               )}
               style={{
+                paddingRight: open ? 16 : FILTER_PX + 16,
                 opacity: open ? 0 : 1,
-                transition: `opacity ${EXPAND_MS * 0.5}ms ${EASE}`,
+                transition: `opacity ${EXPAND_MS * 0.4}ms ${EASE}`,
               }}
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-black/[0.04] text-primary-black">
@@ -285,7 +333,7 @@ export function ExploreSearchBar({
               )}
               style={{
                 opacity: open ? 1 : 0,
-                transition: `opacity ${EXPAND_MS * 0.5}ms ${EASE}`,
+                transition: `opacity ${EXPAND_MS * 0.4}ms ${EASE}`,
               }}
             >
               <div className="flex w-full items-center gap-2 rounded-2xl bg-primary-black/[0.03] px-3 py-2.5">
@@ -315,7 +363,7 @@ export function ExploreSearchBar({
                     onClick={() => {
                       setDraft("");
                       onQueryChange("");
-                      inputRef.current?.focus();
+                      inputRef.current?.focus({ preventScroll: true });
                     }}
                     className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-black/10 text-primary-black/55"
                     aria-label="Cancella testo"
@@ -337,127 +385,116 @@ export function ExploreSearchBar({
             </form>
           </div>
 
-          {/*
-            Pure CSS expand: grid 0fr → 1fr is interpolated as one continuous
-            motion. Avoids JS height / WAAPI (those force layout each frame and hitch).
-          */}
           <div
-            className="grid"
+            ref={bodyRef}
+            aria-hidden={!open}
             style={{
-              gridTemplateRows: open ? "1fr" : "0fr",
-              transition: `grid-template-rows ${EXPAND_MS}ms ${EASE}`,
+              opacity: open ? 1 : 0,
+              transition: `opacity ${EXPAND_MS * 0.5}ms ${EASE}`,
+              pointerEvents: open ? "auto" : "none",
             }}
           >
-            <div className="min-h-0 overflow-hidden">
-              <div
-                className="border-t border-primary-black/8"
-                style={{
-                  opacity: open ? 1 : 0,
-                  transition: `opacity ${EXPAND_MS * 0.75}ms ${EASE}`,
-                }}
-              >
-                <div className="max-h-[min(58dvh,420px)] overflow-y-auto overscroll-contain px-2 py-2">
-                  {visibleRecent.length > 0 && (
-                    <section className="mb-2">
-                      <p className="px-3 pb-1.5 pt-2 text-[11px] font-bold uppercase tracking-[0.14em] text-primary-black/40">
-                        Ricerche recenti
-                      </p>
-                      <ul>
-                        {visibleRecent.map((term) => (
-                          <li key={term}>
-                            <div className="flex items-center gap-1 rounded-2xl hover:bg-primary-black/[0.03]">
-                              <button
-                                type="button"
-                                onClick={() => commitSearch(term)}
-                                className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left"
-                              >
-                                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-black/[0.05] text-primary-black/55">
-                                  <Clock3 className="h-4 w-4" aria-hidden />
-                                </span>
-                                <span className="truncate text-[15px] font-medium text-primary-black">
-                                  {term}
-                                </span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => removeRecent(term)}
-                                className="mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-primary-black/35"
-                                aria-label={`Elimina ricerca ${term}`}
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                  )}
-
-                  <section>
+            <div className="border-t border-primary-black/8">
+              <div className="max-h-[min(52dvh,400px)] overflow-y-auto overscroll-contain px-2 py-2 [-webkit-overflow-scrolling:touch]">
+                {visibleRecent.length > 0 && (
+                  <section className="mb-2">
                     <p className="px-3 pb-1.5 pt-2 text-[11px] font-bold uppercase tracking-[0.14em] text-primary-black/40">
-                      Suggeriti per te
+                      Ricerche recenti
                     </p>
-                    {filteredSuggestions.length > 0 ? (
-                      <ul>
-                        {filteredSuggestions.map((item) => (
-                          <li key={item.id}>
+                    <ul>
+                      {visibleRecent.map((term) => (
+                        <li key={term}>
+                          <div className="flex items-center gap-1 rounded-2xl hover:bg-primary-black/[0.03]">
                             <button
                               type="button"
-                              onClick={() => commitSearch(item.label)}
-                              className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-primary-black/[0.03]"
+                              onClick={() => commitSearch(term)}
+                              className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left"
                             >
                               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-black/[0.05] text-primary-black/55">
-                                <MapPin className="h-4 w-4" aria-hidden />
+                                <Clock3 className="h-4 w-4" aria-hidden />
                               </span>
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-[15px] font-semibold text-primary-black">
-                                  {item.label}
-                                </span>
-                                {item.subtitle && (
-                                  <span className="mt-0.5 block truncate text-xs text-primary-black/45">
-                                    {item.subtitle}
-                                  </span>
-                                )}
+                              <span className="truncate text-[15px] font-medium text-primary-black">
+                                {term}
                               </span>
                             </button>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="px-3 py-4 text-sm text-primary-black/45">
-                        Nessun suggerimento per questa ricerca.
-                      </p>
-                    )}
+                            <button
+                              type="button"
+                              onClick={() => removeRecent(term)}
+                              className="mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-primary-black/35"
+                              aria-label={`Elimina ricerca ${term}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
                   </section>
-                </div>
+                )}
 
-                <div className="flex items-center justify-between gap-3 border-t border-primary-black/8 px-3 py-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDraft("");
-                      onQueryChange("");
-                      inputRef.current?.focus();
-                    }}
-                    className="text-sm font-semibold text-primary-black/55 underline-offset-2 hover:underline"
-                  >
-                    Cancella
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => commitSearch(draft)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-primary-black px-4 py-2.5 text-sm font-semibold text-white"
-                  >
-                    <Search className="h-4 w-4" aria-hidden />
-                    Cerca
-                  </button>
-                </div>
+                <section>
+                  <p className="px-3 pb-1.5 pt-2 text-[11px] font-bold uppercase tracking-[0.14em] text-primary-black/40">
+                    Suggeriti per te
+                  </p>
+                  {filteredSuggestions.length > 0 ? (
+                    <ul>
+                      {filteredSuggestions.map((item) => (
+                        <li key={item.id}>
+                          <button
+                            type="button"
+                            onClick={() => commitSearch(item.label)}
+                            className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-primary-black/[0.03]"
+                          >
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-black/[0.05] text-primary-black/55">
+                              <MapPin className="h-4 w-4" aria-hidden />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-[15px] font-semibold text-primary-black">
+                                {item.label}
+                              </span>
+                              {item.subtitle && (
+                                <span className="mt-0.5 block truncate text-xs text-primary-black/45">
+                                  {item.subtitle}
+                                </span>
+                              )}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="px-3 py-4 text-sm text-primary-black/45">
+                      Nessun suggerimento per questa ricerca.
+                    </p>
+                  )}
+                </section>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 border-t border-primary-black/8 px-3 py-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraft("");
+                    onQueryChange("");
+                    inputRef.current?.focus({ preventScroll: true });
+                  }}
+                  className="text-sm font-semibold text-primary-black/55 underline-offset-2 hover:underline"
+                >
+                  Cancella
+                </button>
+                <button
+                  type="button"
+                  onClick={() => commitSearch(draft)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary-black px-4 py-2.5 text-sm font-semibold text-white"
+                >
+                  <Search className="h-4 w-4" aria-hidden />
+                  Cerca
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Filters: leave layout only at open start (not mid-tween) via absolute */}
         <button
           type="button"
           onClick={onOpenFilters}
@@ -465,18 +502,18 @@ export function ExploreSearchBar({
           tabIndex={open ? -1 : 0}
           aria-hidden={open}
           className={cn(
-            "flex h-[58px] w-[52px] shrink-0 items-center justify-center rounded-full border",
+            "absolute top-0 flex items-center justify-center rounded-full border",
             open
-              ? "pointer-events-none absolute right-0 top-0 border-transparent opacity-0"
-              : cn(
-                  "relative opacity-100",
-                  activeFilterCount > 0
-                    ? "border-brand-teal/30 bg-brand-teal/10 text-brand-teal"
-                    : "border-primary-black/10 bg-white text-primary-black shadow-[0_2px_12px_rgba(15,15,17,0.08)]",
-                ),
+              ? "pointer-events-none border-transparent opacity-0"
+              : activeFilterCount > 0
+                ? "border-brand-teal/30 bg-brand-teal/10 text-brand-teal opacity-100"
+                : "border-primary-black/10 bg-white text-primary-black opacity-100 shadow-[0_2px_12px_rgba(15,15,17,0.08)]",
           )}
           style={{
-            transition: `opacity ${EXPAND_MS * 0.4}ms ${EASE}`,
+            right: 0,
+            width: FILTER_PX,
+            height: HEADER_PX,
+            transition: `opacity ${EXPAND_MS * 0.35}ms ${EASE}`,
           }}
         >
           <SlidersHorizontal className="h-5 w-5 shrink-0" aria-hidden />
