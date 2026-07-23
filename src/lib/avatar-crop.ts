@@ -2,6 +2,7 @@
 
 export const AVATAR_OUTPUT_SIZE = 512;
 
+/** Uniform cover scale — one factor for both axes (never stretches). */
 export function coverScale(
   imageWidth: number,
   imageHeight: number,
@@ -18,6 +19,7 @@ export function clampOffset(
   viewport: number,
   zoom: number,
 ) {
+  // zoom is a uniform multiplier on top of coverScale
   const scale = coverScale(imageWidth, imageHeight, viewport) * zoom;
   const drawnW = imageWidth * scale;
   const drawnH = imageHeight * scale;
@@ -32,8 +34,7 @@ export function clampOffset(
 
 /**
  * Renders the circular crop from the interactive editor into a PNG data URL.
- * The editor shows a circular viewport of `viewport` CSS pixels; the exported
- * image is a square PNG with transparent corners outside the circle.
+ * Width/height always share one scale so the photo never deforms.
  */
 export async function exportCircularAvatar(options: {
   image: HTMLImageElement;
@@ -52,9 +53,10 @@ export async function exportCircularAvatar(options: {
     outputSize = AVATAR_OUTPUT_SIZE,
   } = options;
 
-  const scale = coverScale(image.naturalWidth, image.naturalHeight, viewport) * zoom;
-  const drawnW = image.naturalWidth * scale;
-  const drawnH = image.naturalHeight * scale;
+  const uniformScale =
+    coverScale(image.naturalWidth, image.naturalHeight, viewport) * zoom;
+  const drawnW = image.naturalWidth * uniformScale;
+  const drawnH = image.naturalHeight * uniformScale;
   const left = viewport / 2 - drawnW / 2 + offsetX;
   const top = viewport / 2 - drawnH / 2 + offsetY;
 
@@ -74,6 +76,7 @@ export async function exportCircularAvatar(options: {
   ctx.closePath();
   ctx.clip();
 
+  // drawImage with proportional destination size preserves aspect ratio.
   ctx.drawImage(
     image,
     left * ratio,

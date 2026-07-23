@@ -9,13 +9,14 @@ import {
 } from "@/lib/avatar-crop";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { cn } from "@/lib/utils";
-import { Minus, Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 import {
   useCallback,
   useEffect,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
 } from "react";
 
 const VIEWPORT = 280;
@@ -42,6 +43,17 @@ export function AvatarCropModal({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const zoomRef = useRef(zoom);
+  const offsetRef = useRef(offset);
+
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
+  useEffect(() => {
+    offsetRef.current = offset;
+  }, [offset]);
+
   const dragRef = useRef<{
     pointerId: number;
     startX: number;
@@ -54,7 +66,6 @@ export function AvatarCropModal({
     zoom: number;
   } | null>(null);
   const activePointers = useRef(new Map<number, { x: number; y: number }>());
-  const stageRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,29 +93,30 @@ export function AvatarCropModal({
   }, [file]);
 
   const applyOffset = useCallback(
-    (nextX: number, nextY: number, nextZoom = zoom) => {
+    (nextX: number, nextY: number, nextZoom = zoomRef.current) => {
       if (!imageSize.width || !imageSize.height) return;
-      setOffset(
-        clampOffset(
-          nextX,
-          nextY,
-          imageSize.width,
-          imageSize.height,
-          VIEWPORT,
-          nextZoom,
-        ),
+      const clamped = clampOffset(
+        nextX,
+        nextY,
+        imageSize.width,
+        imageSize.height,
+        VIEWPORT,
+        nextZoom,
       );
+      offsetRef.current = clamped;
+      setOffset(clamped);
     },
-    [imageSize.height, imageSize.width, zoom],
+    [imageSize.height, imageSize.width],
   );
 
   const applyZoom = useCallback(
     (nextZoom: number) => {
       const clamped = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZoom));
+      zoomRef.current = clamped;
       setZoom(clamped);
-      applyOffset(offset.x, offset.y, clamped);
+      applyOffset(offsetRef.current.x, offsetRef.current.y, clamped);
     },
-    [applyOffset, offset.x, offset.y],
+    [applyOffset],
   );
 
   function pointerDistance() {
@@ -126,8 +138,8 @@ export function AvatarCropModal({
         pointerId: event.pointerId,
         startX: event.clientX,
         startY: event.clientY,
-        originX: offset.x,
-        originY: offset.y,
+        originX: offsetRef.current.x,
+        originY: offsetRef.current.y,
       };
       pinchRef.current = null;
       return;
@@ -137,7 +149,7 @@ export function AvatarCropModal({
       dragRef.current = null;
       pinchRef.current = {
         distance: pointerDistance(),
-        zoom,
+        zoom: zoomRef.current,
       };
     }
   }
@@ -182,11 +194,17 @@ export function AvatarCropModal({
           pointerId,
           startX: point.x,
           startY: point.y,
-          originX: offset.x,
-          originY: offset.y,
+          originX: offsetRef.current.x,
+          originY: offsetRef.current.y,
         };
       }
     }
+  }
+
+  function onWheel(event: ReactWheelEvent<HTMLDivElement>) {
+    event.preventDefault();
+    const delta = event.deltaY > 0 ? -0.08 : 0.08;
+    applyZoom(zoomRef.current + delta);
   }
 
   async function handleConfirm() {
@@ -199,9 +217,9 @@ export function AvatarCropModal({
       const dataUrl = await exportCircularAvatar({
         image,
         viewport: VIEWPORT,
-        zoom,
-        offsetX: offset.x,
-        offsetY: offset.y,
+        zoom: zoomRef.current,
+        offsetX: offsetRef.current.x,
+        offsetY: offsetRef.current.y,
       });
       onConfirm(dataUrl);
     } catch {
@@ -210,12 +228,13 @@ export function AvatarCropModal({
     }
   }
 
-  const scale =
+  // Uniform base fit (cover). Zoom is a single scale() — never stretches X≠Y.
+  const baseScale =
     imageSize.width && imageSize.height
-      ? coverScale(imageSize.width, imageSize.height, VIEWPORT) * zoom
+      ? coverScale(imageSize.width, imageSize.height, VIEWPORT)
       : 1;
-  const drawnW = imageSize.width * scale;
-  const drawnH = imageSize.height * scale;
+  const baseW = imageSize.width * baseScale;
+  const baseH = imageSize.height * baseScale;
 
   return (
     <div
@@ -244,7 +263,7 @@ export function AvatarCropModal({
               Ritaglia la foto
             </h2>
             <p className="mt-0.5 text-xs text-white/55">
-              Sposta e ingrandisci come su WhatsApp
+              Zoom uniforme · proporzioni invariate
             </p>
           </div>
           <button
@@ -259,13 +278,13 @@ export function AvatarCropModal({
 
         <div className="flex flex-1 flex-col items-center justify-center px-4 py-3">
           <div
-            ref={stageRef}
             className="relative touch-none overflow-hidden rounded-[2rem] bg-black"
             style={{ width: VIEWPORT + 48, height: VIEWPORT + 48 }}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
+            onWheel={onWheel}
           >
             <div
               className="absolute left-1/2 top-1/2 overflow-hidden rounded-full bg-primary-black/40"
@@ -284,10 +303,15 @@ export function AvatarCropModal({
                   draggable={false}
                   className="absolute max-w-none select-none"
                   style={{
-                    width: drawnW,
-                    height: drawnH,
-                    left: VIEWPORT / 2 - drawnW / 2 + offset.x,
-                    top: VIEWPORT / 2 - drawnH / 2 + offset.y,
+                    width: baseW,
+                    // Height follows natural aspect ratio — never set a mismatched pair.
+                    height: baseH,
+                    aspectRatio: `${imageSize.width} / ${imageSize.height}`,
+                    objectFit: "fill",
+                    left: VIEWPORT / 2 - baseW / 2,
+                    top: VIEWPORT / 2 - baseH / 2,
+                    transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+                    transformOrigin: "center center",
                   }}
                 />
               )}
@@ -303,37 +327,8 @@ export function AvatarCropModal({
           </div>
 
           <p className="mt-3 text-center text-[11px] font-medium text-white/50">
-            Trascina per spostare · pizzica o usa lo slider per lo zoom
+            Trascina per spostare · pizzica con due dita per lo zoom
           </p>
-
-          <div className="mt-4 flex w-full max-w-[280px] items-center gap-3">
-            <button
-              type="button"
-              onClick={() => applyZoom(zoom - 0.15)}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white"
-              aria-label="Rimpicciolisci"
-            >
-              <Minus className="h-4 w-4" aria-hidden />
-            </button>
-            <input
-              type="range"
-              min={MIN_ZOOM}
-              max={MAX_ZOOM}
-              step={0.01}
-              value={zoom}
-              onChange={(event) => applyZoom(Number(event.target.value))}
-              className="h-1.5 w-full accent-brand-teal"
-              aria-label="Zoom foto"
-            />
-            <button
-              type="button"
-              onClick={() => applyZoom(zoom + 0.15)}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white"
-              aria-label="Ingrandisci"
-            >
-              <Plus className="h-4 w-4" aria-hidden />
-            </button>
-          </div>
 
           {error && (
             <p className="mt-3 rounded-2xl bg-brand-pink/20 px-3 py-2 text-center text-xs font-semibold text-brand-pink">
