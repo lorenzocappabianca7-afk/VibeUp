@@ -15,14 +15,15 @@ const BLOCKED_PATH_PATTERNS = [
 ];
 
 /**
- * Practical CSP without per-request nonces.
- * Nonce+strict-dynamic requires fully dynamic rendering and nullifies
- * style-src 'unsafe-inline', which breaks React style={{}} across the app.
+ * Practical CSP for Next.js App Router.
+ * Next injects inline RSC flight scripts (`self.__next_f.push(...)`) that MUST
+ * be allowed — `script-src 'self'` alone blanks the client UI after SSR chrome.
  */
 function buildCsp(isDev: boolean): string {
   const directives = [
     "default-src 'self'",
-    `script-src 'self'${isDev ? " 'unsafe-eval'" : ""}`,
+    // 'unsafe-inline' is required for Next.js flight/hydration scripts without a nonce pipeline.
+    `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' blob: data: https://images.unsplash.com",
     "font-src 'self' data:",
