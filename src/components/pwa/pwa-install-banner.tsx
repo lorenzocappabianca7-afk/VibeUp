@@ -245,6 +245,10 @@ export function PwaInstallBanner() {
           onDone={handleClaimInstalled}
         >
           <GuideStep index={1}>
+            Premi i tre puntini{" "}
+            <span className="font-semibold text-white">⋯</span>
+          </GuideStep>
+          <GuideStep index={2}>
             Tocca{" "}
             <Share
               className="mx-0.5 inline h-3.5 w-3.5 text-brand-teal"
@@ -252,11 +256,11 @@ export function PwaInstallBanner() {
             />{" "}
             <span className="font-semibold text-white">Condividi</span> in Safari
           </GuideStep>
-          <GuideStep index={2}>
+          <GuideStep index={3}>
             Scorri giù e scegli{" "}
             <span className="font-semibold text-white">Aggiungi a Home</span>
           </GuideStep>
-          <GuideStep index={3}>
+          <GuideStep index={4}>
             Conferma con{" "}
             <span className="font-semibold text-white">Aggiungi</span>
           </GuideStep>
