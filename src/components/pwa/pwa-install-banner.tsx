@@ -14,6 +14,10 @@ const SESSION_DISMISS_KEY = "vibeup-pwa-install-session-dismissed";
 /** Legacy key from the previous forever-dismiss behavior. */
 const LEGACY_DISMISS_KEY = "vibeup-pwa-install-dismissed";
 
+/** Matches the installed banner row so reserved space does not jump. */
+const BANNER_SLOT_CLASS =
+  "max-[900px]:min-h-[3.75rem] sm:max-[900px]:min-h-[4rem]";
+
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
@@ -88,18 +92,42 @@ function registerServiceWorker() {
     });
 }
 
+function resolveBannerPhase(): {
+  phase: "show" | "hide";
+  isIos: boolean;
+} {
+  const ios = isIosDevice();
+  if (isStandaloneDisplay() || readSessionDismissed()) {
+    return { phase: "hide", isIos: ios };
+  }
+  if (ios || isMobileViewport()) {
+    return { phase: "show", isIos: ios };
+  }
+  return { phase: "hide", isIos: ios };
+}
+
+type BannerPhase = "pending" | "show" | "hide";
+
 export function PwaInstallBanner() {
-  const [visible, setVisible] = useState(false);
+  const [phase, setPhase] = useState<BannerPhase>("pending");
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [guide, setGuide] = useState<"ios" | "android" | null>(null);
   const [isIos, setIsIos] = useState(false);
   const [verifyHint, setVerifyHint] = useState(false);
 
+  // Resolve on the client during render (before paint) so the banner does not
+  // pop in ~1s later and shove the whole page down.
+  if (phase === "pending" && typeof window !== "undefined") {
+    const resolved = resolveBannerPhase();
+    setPhase(resolved.phase);
+    setIsIos(resolved.isIos);
+  }
+
   /** Hide only for this visit unless the app is really on the Home screen. */
   const dismissForSession = useCallback(() => {
     persistSessionDismissed();
-    setVisible(false);
+    setPhase("hide");
     setGuide(null);
     setVerifyHint(false);
   }, []);
@@ -110,7 +138,7 @@ export function PwaInstallBanner() {
    */
   const handleClaimInstalled = useCallback(() => {
     if (isStandaloneDisplay()) {
-      setVisible(false);
+      setPhase("hide");
       setGuide(null);
       setVerifyHint(false);
       return;
@@ -119,7 +147,7 @@ export function PwaInstallBanner() {
     setVerifyHint(true);
     persistSessionDismissed();
     window.setTimeout(() => {
-      setVisible(false);
+      setPhase("hide");
       setGuide(null);
       setVerifyHint(false);
     }, 2200);
@@ -129,30 +157,16 @@ export function PwaInstallBanner() {
     registerServiceWorker();
     clearLegacyForeverDismiss();
 
-    // Real install check: only skip forever when opened from the Home icon.
-    if (isStandaloneDisplay()) {
-      return;
-    }
-
-    if (readSessionDismissed()) {
-      return;
-    }
-
-    const ios = isIosDevice();
-    queueMicrotask(() => {
-      setIsIos(ios);
-    });
-
     const onBeforeInstall = (event: Event) => {
       event.preventDefault();
       setDeferredPrompt(event as BeforeInstallPromptEvent);
-      if (isMobileViewport() || ios) {
-        setVisible(true);
+      if (isMobileViewport() || isIosDevice()) {
+        setPhase("show");
       }
     };
 
     const onInstalled = () => {
-      setVisible(false);
+      setPhase("hide");
       setDeferredPrompt(null);
       setGuide(null);
       setVerifyHint(false);
@@ -161,15 +175,7 @@ export function PwaInstallBanner() {
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
     window.addEventListener("appinstalled", onInstalled);
 
-    const timer = window.setTimeout(() => {
-      if (isStandaloneDisplay() || readSessionDismissed()) return;
-      if (ios || isMobileViewport()) {
-        setVisible(true);
-      }
-    }, 900);
-
     return () => {
-      window.clearTimeout(timer);
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
       window.removeEventListener("appinstalled", onInstalled);
     };
@@ -181,10 +187,8 @@ export function PwaInstallBanner() {
       const choice = await deferredPrompt.userChoice;
       setDeferredPrompt(null);
       if (choice.outcome === "accepted") {
-        // Chrome will usually fire `appinstalled`; until then stay hidden
-        // for this session. Next open in the browser still re-checks standalone.
         persistSessionDismissed();
-        setVisible(false);
+        setPhase("hide");
         setGuide(null);
       }
       return;
@@ -193,11 +197,17 @@ export function PwaInstallBanner() {
     setGuide(isIos ? "ios" : "android");
   }, [deferredPrompt, isIos]);
 
-  if (!visible) return null;
+  // Keep a mobile-sized slot during SSR/hydration so content does not jump
+  // when we switch pending → show. Collapse immediately when hidden.
+  if (phase === "hide") return null;
+
+  if (phase === "pending") {
+    return <div className={BANNER_SLOT_CLASS} aria-hidden />;
+  }
 
   return (
     <div
-      className="border-b border-white/10 bg-primary-black text-white"
+      className={`border-b border-white/10 bg-primary-black text-white ${BANNER_SLOT_CLASS}`}
       role="region"
       aria-label="Installa VibeUp"
     >
