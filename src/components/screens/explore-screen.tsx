@@ -646,9 +646,7 @@ export function ExploreScreen({
         placeholder={SEARCH_PLACEHOLDERS[activeCategory]}
       />
 
-      {(activeCategory === "dj" ||
-        activeCategory === "fotografo" ||
-        activeCategory === "decorazioni") && (
+      {(activeCategory === "dj" || activeCategory === "fotografo") && (
         <div className="relative min-w-0">
           <button
             type="button"
