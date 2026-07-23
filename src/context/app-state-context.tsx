@@ -243,11 +243,8 @@ function normalizeUserScopedState(
     favoriteServiceIds: Array.isArray(state.favoriteServiceIds)
       ? state.favoriteServiceIds.filter((id) => typeof id === "string")
       : [],
-    compareLocationIds: trimCompareIds(
-      Array.isArray(state.compareLocationIds)
-        ? state.compareLocationIds.filter((id) => typeof id === "string")
-        : [],
-    ),
+    // Compare is session-only: never restore selections from previous visits.
+    compareLocationIds: [],
   };
 }
 
@@ -519,8 +516,24 @@ function writeStoredAppState(state: StoredAppState) {
   if (typeof window === "undefined") return;
 
   try {
+    const userStates = state.userStates
+      ? Object.fromEntries(
+          Object.entries(state.userStates).map(([userId, userState]) => [
+            userId,
+            {
+              ...userState,
+              // Never persist compare picks — favorites/events stay as-is.
+              compareLocationIds: [],
+            },
+          ]),
+        )
+      : state.userStates;
+
     const safeState: StoredAppState = {
       ...state,
+      userStates,
+      // Drop legacy top-level compare if present.
+      compareLocationIds: undefined,
       accounts: state.accounts
         ? sanitizeAccountPaymentCards(state.accounts)
         : state.accounts,
@@ -745,6 +758,41 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     managedListings,
     userStatesMap,
   ]);
+
+  // Leaving the site (or restoring from bfcache) clears compare; favorites stay.
+  useEffect(() => {
+    if (!hydratedFromStorage) return;
+
+    const clearCompareSelections = () => {
+      setUserStatesMap((map) => {
+        let changed = false;
+        const next: Record<string, UserScopedState> = { ...map };
+
+        for (const [userId, state] of Object.entries(map)) {
+          if (state.compareLocationIds.length === 0) continue;
+          next[userId] = { ...state, compareLocationIds: [] };
+          changed = true;
+        }
+
+        return changed ? next : map;
+      });
+    };
+
+    const onPageHide = () => {
+      clearCompareSelections();
+    };
+
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) clearCompareSelections();
+    };
+
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [hydratedFromStorage]);
 
   useEffect(() => {
     if (!hydratedFromStorage) return;
