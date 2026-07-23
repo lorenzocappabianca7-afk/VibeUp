@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { SafeImage } from "@/components/ui/safe-image";
+import { AvatarCropModal } from "@/components/profile/avatar-crop-modal";
 import { ProfileSettingsView } from "@/components/profile/settings/profile-settings-view";
 import { GUEST_USER, isProAccount, useAppState } from "@/context/app-state-context";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
@@ -90,6 +91,10 @@ export function ProfileScreen() {
   } = useAppState();
   const [newAccountName, setNewAccountName] = useState("");
   const [newAccountEmail, setNewAccountEmail] = useState("");
+  const [newAccountPassword, setNewAccountPassword] = useState("");
+  const [newAccountPasswordConfirm, setNewAccountPasswordConfirm] =
+    useState("");
+  const [newAccountError, setNewAccountError] = useState<string | null>(null);
   const [addAccountOpen, setAddAccountOpen] = useState(false);
   const [accountPendingDelete, setAccountPendingDelete] = useState<{
     id: string;
@@ -100,6 +105,7 @@ export function ProfileScreen() {
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggeredRef = useRef(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
+  const [avatarCropFile, setAvatarCropFile] = useState<File | null>(null);
   const [settingsPanel, setSettingsPanel] = useState<SettingsPanelId | null>(
     null,
   );
@@ -209,16 +215,14 @@ export function ProfileScreen() {
       .filter((service): service is ServiceProvider => Boolean(service));
   }, [favoriteServiceIds, managedListings]);
 
-  function handleAvatarUpload(file: File | undefined) {
-    if (!file) return;
+  function handleAvatarFilePick(file: File | undefined) {
+    if (!file || !file.type.startsWith("image/")) return;
+    setAvatarCropFile(file);
+  }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        updateCurrentUser({ avatarUrl: reader.result });
-      }
-    };
-    reader.readAsDataURL(file);
+  function handleAvatarCropConfirm(dataUrl: string) {
+    updateCurrentUser({ avatarUrl: dataUrl });
+    setAvatarCropFile(null);
   }
 
   function updateProfileDraft<K extends keyof typeof profileDraft>(
@@ -237,15 +241,36 @@ export function ProfileScreen() {
     });
   }
 
-  function handleCreateAccount() {
-    if (!newAccountEmail.trim()) return;
+  async function handleCreateAccount() {
+    if (!newAccountEmail.trim()) {
+      setNewAccountError("Inserisci un’email valida.");
+      return;
+    }
+    if (newAccountPassword.length < 8) {
+      setNewAccountError("La password deve avere almeno 8 caratteri.");
+      return;
+    }
+    if (newAccountPassword !== newAccountPasswordConfirm) {
+      setNewAccountError("Le password non coincidono.");
+      return;
+    }
 
-    createAccount({
+    const result = await createAccount({
       name: newAccountName,
       email: newAccountEmail,
+      password: newAccountPassword,
     });
+
+    if (!result.ok) {
+      setNewAccountError(result.error);
+      return;
+    }
+
     setNewAccountName("");
     setNewAccountEmail("");
+    setNewAccountPassword("");
+    setNewAccountPasswordConfirm("");
+    setNewAccountError(null);
     setAddAccountOpen(false);
   }
 
@@ -376,7 +401,10 @@ export function ProfileScreen() {
               type="file"
               accept="image/*"
               className="sr-only"
-              onChange={(event) => handleAvatarUpload(event.target.files?.[0])}
+              onChange={(event) => {
+                handleAvatarFilePick(event.target.files?.[0]);
+                event.target.value = "";
+              }}
             />
           </label>
           <div className="min-w-0 flex-1">
@@ -425,7 +453,10 @@ export function ProfileScreen() {
                   type="file"
                   accept="image/*"
                   className="sr-only"
-                  onChange={(event) => handleAvatarUpload(event.target.files?.[0])}
+                  onChange={(event) => {
+                    handleAvatarFilePick(event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
                 />
               </label>
             </div>
@@ -849,19 +880,49 @@ export function ProfileScreen() {
                 value={newAccountName}
                 onChange={(event) => setNewAccountName(event.target.value)}
                 placeholder="Nome account"
-                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
+                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
               />
               <input
                 type="email"
                 value={newAccountEmail}
-                onChange={(event) => setNewAccountEmail(event.target.value)}
+                onChange={(event) => {
+                  setNewAccountEmail(event.target.value);
+                  setNewAccountError(null);
+                }}
                 placeholder="Email"
-                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
+                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+              />
+              <input
+                type="password"
+                value={newAccountPassword}
+                onChange={(event) => {
+                  setNewAccountPassword(event.target.value);
+                  setNewAccountError(null);
+                }}
+                placeholder="Password"
+                autoComplete="new-password"
+                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+              />
+              <input
+                type="password"
+                value={newAccountPasswordConfirm}
+                onChange={(event) => {
+                  setNewAccountPasswordConfirm(event.target.value);
+                  setNewAccountError(null);
+                }}
+                placeholder="Conferma password"
+                autoComplete="new-password"
+                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
               />
             </div>
+            {newAccountError && (
+              <p className="text-xs font-semibold text-brand-pink">
+                {newAccountError}
+              </p>
+            )}
             <button
               type="button"
-              onClick={handleCreateAccount}
+              onClick={() => void handleCreateAccount()}
               className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-semibold text-white"
             >
               {isGuest ? "Crea account" : "Aggiungi account"}
@@ -1006,6 +1067,14 @@ export function ProfileScreen() {
         >
           Area gestione pubblicazioni
         </Link>
+      )}
+
+      {avatarCropFile && (
+        <AvatarCropModal
+          file={avatarCropFile}
+          onCancel={() => setAvatarCropFile(null)}
+          onConfirm={handleAvatarCropConfirm}
+        />
       )}
     </div>
   );
