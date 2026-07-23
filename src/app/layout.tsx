@@ -96,7 +96,7 @@ export default function RootLayout({
       lang="it"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-dvh text-primary-black">
+      <body className="min-h-dvh bg-background text-primary-black">
         <AppProviders>
           <div className="flex min-h-dvh min-w-0 max-w-full flex-col overflow-x-hidden">
             <AppChrome>{children}</AppChrome>

@@ -5,6 +5,7 @@ import Image from "next/image";
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useState,
   type ReactNode,
 } from "react";
@@ -13,10 +14,6 @@ import {
 const SESSION_DISMISS_KEY = "vibeup-pwa-install-session-dismissed";
 /** Legacy key from the previous forever-dismiss behavior. */
 const LEGACY_DISMISS_KEY = "vibeup-pwa-install-dismissed";
-
-/** Matches the installed banner row so reserved space does not jump. */
-const BANNER_SLOT_CLASS =
-  "max-[900px]:min-h-[3.75rem] sm:max-[900px]:min-h-[4rem]";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -92,42 +89,36 @@ function registerServiceWorker() {
     });
 }
 
-function resolveBannerPhase(): {
-  phase: "show" | "hide";
-  isIos: boolean;
-} {
-  const ios = isIosDevice();
-  if (isStandaloneDisplay() || readSessionDismissed()) {
-    return { phase: "hide", isIos: ios };
-  }
-  if (ios || isMobileViewport()) {
-    return { phase: "show", isIos: ios };
-  }
-  return { phase: "hide", isIos: ios };
+function shouldOfferInstall() {
+  if (isStandaloneDisplay() || readSessionDismissed()) return false;
+  return isIosDevice() || isMobileViewport();
 }
 
-type BannerPhase = "pending" | "show" | "hide";
-
 export function PwaInstallBanner() {
-  const [phase, setPhase] = useState<BannerPhase>("pending");
+  // Stay null through SSR + first hydrate so we never paint an empty white strip.
+  const [ready, setReady] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [forcedShow, setForcedShow] = useState(false);
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [guide, setGuide] = useState<"ios" | "android" | null>(null);
-  const [isIos, setIsIos] = useState(false);
   const [verifyHint, setVerifyHint] = useState(false);
 
-  // Resolve on the client during render (before paint) so the banner does not
-  // pop in ~1s later and shove the whole page down.
-  if (phase === "pending" && typeof window !== "undefined") {
-    const resolved = resolveBannerPhase();
-    setPhase(resolved.phase);
-    setIsIos(resolved.isIos);
-  }
+  useLayoutEffect(() => {
+    // Client-only mount gate: must run before paint to avoid a blank flash.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional hydration gate
+    setReady(true);
+  }, []);
+
+  const isIos = ready ? isIosDevice() : false;
+  const visible =
+    ready && !hidden && (forcedShow || shouldOfferInstall());
 
   /** Hide only for this visit unless the app is really on the Home screen. */
   const dismissForSession = useCallback(() => {
     persistSessionDismissed();
-    setPhase("hide");
+    setHidden(true);
+    setForcedShow(false);
     setGuide(null);
     setVerifyHint(false);
   }, []);
@@ -138,7 +129,8 @@ export function PwaInstallBanner() {
    */
   const handleClaimInstalled = useCallback(() => {
     if (isStandaloneDisplay()) {
-      setPhase("hide");
+      setHidden(true);
+      setForcedShow(false);
       setGuide(null);
       setVerifyHint(false);
       return;
@@ -147,7 +139,8 @@ export function PwaInstallBanner() {
     setVerifyHint(true);
     persistSessionDismissed();
     window.setTimeout(() => {
-      setPhase("hide");
+      setHidden(true);
+      setForcedShow(false);
       setGuide(null);
       setVerifyHint(false);
     }, 2200);
@@ -160,13 +153,15 @@ export function PwaInstallBanner() {
     const onBeforeInstall = (event: Event) => {
       event.preventDefault();
       setDeferredPrompt(event as BeforeInstallPromptEvent);
-      if (isMobileViewport() || isIosDevice()) {
-        setPhase("show");
+      if (shouldOfferInstall()) {
+        setForcedShow(true);
+        setHidden(false);
       }
     };
 
     const onInstalled = () => {
-      setPhase("hide");
+      setHidden(true);
+      setForcedShow(false);
       setDeferredPrompt(null);
       setGuide(null);
       setVerifyHint(false);
@@ -188,7 +183,8 @@ export function PwaInstallBanner() {
       setDeferredPrompt(null);
       if (choice.outcome === "accepted") {
         persistSessionDismissed();
-        setPhase("hide");
+        setHidden(true);
+        setForcedShow(false);
         setGuide(null);
       }
       return;
@@ -197,17 +193,11 @@ export function PwaInstallBanner() {
     setGuide(isIos ? "ios" : "android");
   }, [deferredPrompt, isIos]);
 
-  // Keep a mobile-sized slot during SSR/hydration so content does not jump
-  // when we switch pending → show. Collapse immediately when hidden.
-  if (phase === "hide") return null;
-
-  if (phase === "pending") {
-    return <div className={BANNER_SLOT_CLASS} aria-hidden />;
-  }
+  if (!visible) return null;
 
   return (
     <div
-      className={`border-b border-white/10 bg-primary-black text-white ${BANNER_SLOT_CLASS}`}
+      className="border-b border-white/10 bg-primary-black text-white"
       role="region"
       aria-label="Installa VibeUp"
     >
