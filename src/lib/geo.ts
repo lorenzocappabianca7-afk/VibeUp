@@ -1,6 +1,6 @@
 import type { ExploreFilters, Location, UserPosition } from "@/types/location";
 
-export const NEAR_ME_RADIUS_METERS = 30_000;
+export const NEAR_ME_RADIUS_METERS = 20_000;
 
 const EARTH_RADIUS_METERS = 6_371_000;
 

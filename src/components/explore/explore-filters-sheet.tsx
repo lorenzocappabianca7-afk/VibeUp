@@ -768,7 +768,7 @@ export function ExploreFiltersSheet({
             )}
             {draftFilters.nearMe && (
               <p className="text-xs text-brand-teal">
-                Location entro 30 km dalla tua posizione
+                Location entro 20 km dalla tua posizione
               </p>
             )}
 
