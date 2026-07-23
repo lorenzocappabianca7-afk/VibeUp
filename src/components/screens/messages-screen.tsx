@@ -1,28 +1,19 @@
-import { MessageCircle, Sparkles } from "lucide-react";
-import { memo } from "react";
+"use client";
 
-const placeholderMessages = [
-  {
-    sender: "Villa Aurora",
-    message: "Ciao! Abbiamo disponibilita' per la data richiesta.",
-    time: "2 min fa",
-    unread: true,
-  },
-  {
-    sender: "DJ Marco Beats",
-    message: "Posso preparare una playlist per compleanno o laurea.",
-    time: "1 ora fa",
-    unread: true,
-  },
-  {
-    sender: "Assistente IA VibeUp",
-    message: "Ho trovato 3 servizi esterni adatti al tuo evento.",
-    time: "Ieri",
-    unread: false,
-  },
-];
+import {
+  INBOX_MESSAGE_PREVIEW,
+  useInboxBadge,
+} from "@/context/inbox-badge-context";
+import { MessageCircle, Sparkles } from "lucide-react";
+import { memo, useEffect } from "react";
 
 export const MessagesScreen = memo(function MessagesScreen() {
+  const { markMessagesSeen } = useInboxBadge();
+
+  useEffect(() => {
+    markMessagesSeen();
+  }, [markMessagesSeen]);
+
   return (
     <div className="min-w-0 space-y-6">
       <header>
@@ -33,22 +24,12 @@ export const MessagesScreen = memo(function MessagesScreen() {
       </header>
 
       <ul className="space-y-2">
-        {placeholderMessages.map((message) => (
+        {INBOX_MESSAGE_PREVIEW.map((message) => (
           <li
-            key={message.sender}
-            className={`flex gap-3 rounded-2xl border p-4 transition-colors ${
-              message.unread
-                ? "border-brand-teal/20 bg-brand-teal/5"
-                : "border-primary-black/8 bg-background"
-            }`}
+            key={message.id}
+            className="flex gap-3 rounded-2xl border border-primary-black/8 bg-background p-4 transition-colors"
           >
-            <span
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                message.unread
-                  ? "bg-brand-teal/15 text-brand-teal"
-                  : "bg-primary-black/5 text-primary-black/50"
-              }`}
-            >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-black/5 text-primary-black/50">
               {message.sender.includes("IA") ? (
                 <Sparkles className="h-5 w-5" aria-hidden />
               ) : (
@@ -60,12 +41,6 @@ export const MessagesScreen = memo(function MessagesScreen() {
                 <p className="min-w-0 truncate text-sm font-semibold text-primary-black">
                   {message.sender}
                 </p>
-                {message.unread && (
-                  <span
-                    className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-pink"
-                    aria-label="Non letta"
-                  />
-                )}
               </div>
               <p className="mt-0.5 line-clamp-2 text-sm text-primary-black/60">
                 {message.message}

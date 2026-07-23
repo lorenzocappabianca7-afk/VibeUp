@@ -1,5 +1,6 @@
 "use client";
 
+import { useInboxBadge } from "@/context/inbox-badge-context";
 import { cn, APP_SHELL_WIDTH_CLASS } from "@/lib/utils";
 import {
   BUSINESS_TABS,
@@ -37,6 +38,7 @@ export function BottomNav({
   onTabChange,
   variant = "consumer",
 }: BottomNavProps) {
+  const { hasUnreadMessages, hasUnreadNotifications } = useInboxBadge();
   const tabs: TabItem[] =
     variant === "business" ? BUSINESS_TABS : CONSUMER_TABS;
 
@@ -57,6 +59,9 @@ export function BottomNav({
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = TAB_ICONS[tab.id];
+          const showBadge =
+            (tab.id === "messages" && hasUnreadMessages) ||
+            (tab.id === "notifications" && hasUnreadNotifications);
 
           return (
             <li key={tab.id} className="flex-1">
@@ -64,6 +69,11 @@ export function BottomNav({
                 type="button"
                 onClick={() => onTabChange(tab.id)}
                 aria-current={isActive ? "page" : undefined}
+                aria-label={
+                  showBadge
+                    ? `${tab.label}, nuove notifiche`
+                    : tab.label
+                }
                 className={cn(
                   "flex w-full min-w-0 flex-col items-center gap-0.5 rounded-xl px-0.5 py-1.5 transition-colors duration-100 sm:gap-1 sm:px-1 sm:py-2",
                   isActive
@@ -71,14 +81,22 @@ export function BottomNav({
                     : "text-primary-black/45 hover:text-primary-black/70",
                 )}
               >
-                <Icon
-                  className={cn(
-                    "h-5 w-5 transition-colors duration-150",
-                    isActive ? "text-primary-black" : "text-current",
+                <span className="relative inline-flex">
+                  <Icon
+                    className={cn(
+                      "h-5 w-5 transition-colors duration-150",
+                      isActive ? "text-primary-black" : "text-current",
+                    )}
+                    strokeWidth={isActive ? 2.5 : 2}
+                    aria-hidden
+                  />
+                  {showBadge && (
+                    <span
+                      className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[#FF3B30] ring-2 ring-background"
+                      aria-hidden
+                    />
                   )}
-                  strokeWidth={isActive ? 2.5 : 2}
-                  aria-hidden
-                />
+                </span>
                 <span
                   className={cn(
                     "max-w-full truncate px-0.5 text-[9px] font-medium leading-none transition-colors duration-150 sm:text-[10px] sm:leading-tight",

@@ -5,6 +5,7 @@ import {
   type BusinessNotification,
 } from "@/lib/mock/business-inbox";
 import { useAppState } from "@/context/app-state-context";
+import { useInboxBadge } from "@/context/inbox-badge-context";
 import {
   Bell,
   CalendarCheck2,
@@ -12,7 +13,7 @@ import {
   MessageCircle,
   Sparkles,
 } from "lucide-react";
-import { memo } from "react";
+import { memo, useEffect } from "react";
 
 const KIND_ICON = {
   booking: CalendarCheck2,
@@ -65,9 +66,12 @@ function NotificationRow({ item }: { item: BusinessNotification }) {
 export const BusinessNotificationsScreen = memo(
   function BusinessNotificationsScreen() {
     const { businessProfile, currentUser } = useAppState();
-    const unreadCount = MOCK_BUSINESS_NOTIFICATIONS.filter(
-      (item) => item.unread,
-    ).length;
+    const { hasUnreadNotifications, markNotificationsSeen } = useInboxBadge();
+
+    useEffect(() => {
+      markNotificationsSeen();
+    }, [markNotificationsSeen]);
+
     const locationName =
       businessProfile?.businessName ?? currentUser.name ?? "la tua location";
 
@@ -84,10 +88,10 @@ export const BusinessNotificationsScreen = memo(
             Aggiornamenti su prenotazioni, pagamenti e messaggi per{" "}
             <span className="font-medium text-primary-black">{locationName}</span>
           </p>
-          {unreadCount > 0 && (
+          {hasUnreadNotifications && (
             <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-pink/15 px-2.5 py-1 text-xs font-medium text-brand-pink">
               <Bell className="h-3.5 w-3.5" aria-hidden />
-              {unreadCount} non {unreadCount === 1 ? "letta" : "lette"}
+              Nuove notifiche
             </p>
           )}
         </header>
