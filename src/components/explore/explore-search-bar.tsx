@@ -99,6 +99,8 @@ export function ExploreSearchBar({
   const openRef = useRef(false);
   const animatingRef = useRef(false);
   const pendingOpenAnimRef = useRef(false);
+  /** Blocks open after tapping clear — the X unmounts and the click hits the banner. */
+  const suppressOpenRef = useRef(false);
   const fullHeightRef = useRef(HEADER_PX);
   const clipRef = useRef(0);
 
@@ -289,6 +291,7 @@ export function ExploreSearchBar({
   }
 
   function openSearch() {
+    if (suppressOpenRef.current) return;
     if (openRef.current || animatingRef.current) return;
     setDraft(query);
     openRef.current = true;
@@ -301,6 +304,15 @@ export function ExploreSearchBar({
     if (input && document.activeElement !== input) {
       input.focus({ preventScroll: true });
     }
+  }
+
+  function clearCurrentSearch() {
+    suppressOpenRef.current = true;
+    setDraft("");
+    onQueryChange("");
+    window.setTimeout(() => {
+      suppressOpenRef.current = false;
+    }, 400);
   }
 
   // Run the spring after React commits open chrome + measurable body.
@@ -335,11 +347,6 @@ export function ExploreSearchBar({
       event.preventDefault();
       closeSearch();
     }
-  }
-
-  function clearCurrentSearch() {
-    setDraft("");
-    onQueryChange("");
   }
 
   const hasQuery = query.trim().length > 0;
@@ -386,9 +393,13 @@ export function ExploreSearchBar({
               type="button"
               onPointerDown={(event) => {
                 if (event.button !== 0) return;
+                if (suppressOpenRef.current) return;
                 openSearch();
               }}
-              onClick={openSearch}
+              onClick={() => {
+                if (suppressOpenRef.current) return;
+                openSearch();
+              }}
               tabIndex={open ? -1 : 0}
               aria-hidden={open}
               className={cn(
@@ -418,15 +429,17 @@ export function ExploreSearchBar({
             {hasQuery && !open && (
               <button
                 type="button"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  suppressOpenRef.current = true;
+                }}
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
                   clearCurrentSearch();
                 }}
-                onPointerDown={(event) => {
-                  event.stopPropagation();
-                }}
-                className="absolute top-1/2 z-[1] flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-primary-black/10 text-primary-black/55"
+                className="absolute top-1/2 z-[2] flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-primary-black/10 text-primary-black/55"
                 style={{ right: FILTER_PX + 2 }}
                 aria-label="Cancella ricerca"
               >
