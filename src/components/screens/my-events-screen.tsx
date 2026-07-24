@@ -589,7 +589,60 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
         onPayDeposit={payDeposit}
       />
 
-      <div className="min-w-0 overflow-hidden px-3 py-4 sm:px-4">
+      {menuServices.length > 0 && (
+        <section className="min-w-0 border-t border-primary-black/8 px-3 py-4 sm:px-4">
+          <div className="flex items-center gap-2">
+            <UtensilsCrossed className="h-4 w-4 text-primary-black/45" aria-hidden />
+            <h3 className="text-sm font-semibold text-primary-black">Menu</h3>
+          </div>
+
+          <div className="mt-3 space-y-3">
+            {menuServices.map((service) => {
+              const allergens = inferMenuAllergens(service);
+
+              return (
+                <div
+                  key={service.id}
+                  className="min-w-0 rounded-xl bg-primary-black/[0.03] p-3"
+                >
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-primary-black">
+                        {service.name}
+                      </p>
+                      <p className="truncate text-xs text-primary-black/50">
+                        {service.providerName}
+                      </p>
+                    </div>
+                    <p className="shrink-0 text-sm font-medium tabular-nums text-primary-black">
+                      {formatCurrency(service.amountPaid)}
+                    </p>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {allergens.map((allergen) => (
+                      <span
+                        key={allergen}
+                        className="rounded-full bg-white px-2.5 py-0.5 text-[11px] text-primary-black/65 ring-1 ring-primary-black/10"
+                      >
+                        {allergen}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <MenuCoursePicker
+            selections={event.menuSelections ?? []}
+            onChange={(selections) =>
+              onMenuSelectionsChange(event.id, selections)
+            }
+          />
+        </section>
+      )}
+
+      <div className="min-w-0 overflow-hidden border-t border-primary-black/8 px-3 py-4 sm:px-4">
         <div className="flex min-w-0 items-center justify-between gap-3">
           <h3 className="text-sm font-semibold text-primary-black">Servizi</h3>
           <p className="shrink-0 text-sm text-primary-black/50">
@@ -711,59 +764,6 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
           </div>
         </dl>
       </div>
-
-      {menuServices.length > 0 && (
-        <section className="min-w-0 border-t border-primary-black/8 px-3 py-4 sm:px-4">
-          <div className="flex items-center gap-2">
-            <UtensilsCrossed className="h-4 w-4 text-primary-black/45" aria-hidden />
-            <h3 className="text-sm font-semibold text-primary-black">Menu</h3>
-          </div>
-
-          <div className="mt-3 space-y-3">
-            {menuServices.map((service) => {
-              const allergens = inferMenuAllergens(service);
-
-              return (
-                <div
-                  key={service.id}
-                  className="min-w-0 rounded-xl bg-primary-black/[0.03] p-3"
-                >
-                  <div className="flex min-w-0 items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-primary-black">
-                        {service.name}
-                      </p>
-                      <p className="truncate text-xs text-primary-black/50">
-                        {service.providerName}
-                      </p>
-                    </div>
-                    <p className="shrink-0 text-sm font-medium tabular-nums text-primary-black">
-                      {formatCurrency(service.amountPaid)}
-                    </p>
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {allergens.map((allergen) => (
-                      <span
-                        key={allergen}
-                        className="rounded-full bg-white px-2.5 py-0.5 text-[11px] text-primary-black/65 ring-1 ring-primary-black/10"
-                      >
-                        {allergen}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <MenuCoursePicker
-            selections={event.menuSelections ?? []}
-            onChange={(selections) =>
-              onMenuSelectionsChange(event.id, selections)
-            }
-          />
-        </section>
-      )}
 
       {missingSuggestions.length > 0 && (
         <section className="min-w-0 overflow-hidden border-t border-brand-pink/35 bg-brand-pink/25 px-3 py-4 sm:px-4">
@@ -902,6 +902,8 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
   selections: EventMenuSelection[];
   onChange: (selections: EventMenuSelection[]) => void;
 }) {
+  const [open, setOpen] = useState(false);
+
   function isSelected(courseId: string, itemId: string) {
     return selections.some(
       (selection) =>
@@ -936,57 +938,88 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
 
   return (
     <div className="mt-4 border-t border-primary-black/8 pt-4">
-      <p className="text-sm font-medium text-primary-black">Portate</p>
-      <p className="mt-0.5 text-xs text-primary-black/50">
-        Seleziona cosa includere nel menu
-      </p>
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 rounded-2xl border border-primary-black/10 bg-white px-3.5 py-3 text-left transition-colors hover:border-primary-black/20"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-primary-black">
+            Scegli i piatti
+          </span>
+          <span className="mt-0.5 block text-xs text-primary-black/50">
+            {selections.length === 0
+              ? "Apri per selezionare le portate"
+              : `${selections.length} ${
+                  selections.length === 1
+                    ? "piatto selezionato"
+                    : "piatti selezionati"
+                }`}
+          </span>
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-primary-black/45 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+          aria-hidden
+        />
+      </button>
 
-      <div className="mt-3 space-y-3">
-        {MENU_COURSES.map((course) => (
-          <div key={course.id}>
-            <p className="text-xs font-medium text-primary-black/70">
-              {course.label}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {course.items.map((item) => {
-                const selected = isSelected(course.id, item.id);
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => toggleSelection(course, item)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                      selected
-                        ? "bg-primary-black text-white"
-                        : "bg-white text-primary-black ring-1 ring-primary-black/12 hover:ring-primary-black/25"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {selections.length > 0 && (
-        <div className="mt-4 rounded-xl bg-primary-black/[0.03] p-3">
-          <p className="text-sm font-semibold text-primary-black">Riepilogo</p>
-          <p className="mt-0.5 text-xs text-primary-black/50">
-            Portate e piatti selezionati per il menu
+      {open && (
+        <div className="mt-3 space-y-3 rounded-2xl border border-primary-black/8 bg-primary-black/[0.02] p-3">
+          <p className="text-xs text-primary-black/50">
+            Seleziona cosa includere nel menu
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {selections.map((selection) => (
-              <span
-                key={`${selection.courseId}-${selection.itemId}`}
-                className="rounded-full bg-white px-3 py-1 text-xs text-primary-black ring-1 ring-primary-black/10"
-              >
-                {selection.courseLabel}: {selection.itemLabel}
-              </span>
-            ))}
-          </div>
+
+          {MENU_COURSES.map((course) => (
+            <div key={course.id}>
+              <p className="text-xs font-medium text-primary-black/70">
+                {course.label}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {course.items.map((item) => {
+                  const selected = isSelected(course.id, item.id);
+
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => toggleSelection(course, item)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                        selected
+                          ? "bg-primary-black text-white"
+                          : "bg-white text-primary-black ring-1 ring-primary-black/12 hover:ring-primary-black/25"
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          {selections.length > 0 && (
+            <div className="rounded-xl bg-white p-3 ring-1 ring-primary-black/8">
+              <p className="text-sm font-semibold text-primary-black">
+                Riepilogo
+              </p>
+              <p className="mt-0.5 text-xs text-primary-black/50">
+                Portate e piatti selezionati per il menu
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {selections.map((selection) => (
+                  <span
+                    key={`${selection.courseId}-${selection.itemId}`}
+                    className="rounded-full bg-primary-black/[0.04] px-3 py-1 text-xs text-primary-black ring-1 ring-primary-black/10"
+                  >
+                    {selection.courseLabel}: {selection.itemLabel}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
