@@ -37,28 +37,19 @@ export function BookingSummary({
         {quote.hours > 0 && (
           <div className="flex justify-between gap-3">
             <dt className="min-w-0 text-primary-black/60">
-              Location ({quote.hours} ore × {formatCurrency(hourlyPrice)})
+              Location ({quote.hours} ore × {formatCurrency(hourlyPrice)}
+              {(quote.drinksCost ?? 0) > 0 ? " + bevande" : ""})
             </dt>
             <dd className="shrink-0 font-medium text-primary-black">
               {formatCurrency(quote.locationCost)}
             </dd>
           </div>
         )}
-        {quote.extrasCost - (quote.drinksCost ?? 0) > 0 && (
+        {(quote.extrasCost ?? 0) > 0 && (
           <div className="flex justify-between gap-3">
             <dt className="min-w-0 text-primary-black/60">Servizi extra</dt>
             <dd className="shrink-0 font-medium text-primary-black">
-              {formatCurrency(
-                quote.extrasCost - (quote.drinksCost ?? 0),
-              )}
-            </dd>
-          </div>
-        )}
-        {(quote.drinksCost ?? 0) > 0 && (
-          <div className="flex justify-between gap-3">
-            <dt className="min-w-0 text-primary-black/60">Bevande</dt>
-            <dd className="shrink-0 font-medium text-primary-black">
-              {formatCurrency(quote.drinksCost)}
+              {formatCurrency(quote.extrasCost)}
             </dd>
           </div>
         )}

@@ -222,7 +222,7 @@ export interface BookingQuote {
   hours: number;
   locationCost: number;
   extrasCost: number;
-  /** Cost of selected drink package (per-invitee drinks or open bar). */
+  /** Drink package cost folded into locationCost (not billed separately). */
   drinksCost: number;
   total: number;
   depositAmount: number;

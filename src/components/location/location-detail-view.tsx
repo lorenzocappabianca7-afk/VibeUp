@@ -235,15 +235,18 @@ export function LocationDetailView({
       }
       return sum + getInternalLocationServicePrice(service, guestCount);
     }, 0);
-    const extrasCost = baseQuote.extrasCost + internalServicesCost + drinksCost;
-    const total = baseQuote.locationCost + extrasCost;
+    // Drinks are part of the venue package — paid with location, not as a separate line.
+    const locationCost = baseQuote.locationCost + drinksCost;
+    const extrasCost = baseQuote.extrasCost + internalServicesCost;
+    const total = locationCost + extrasCost;
 
     return {
       ...baseQuote,
+      locationCost,
       extrasCost,
       drinksCost,
       total,
-      depositAmount: baseQuote.locationCost * 0.3,
+      depositAmount: locationCost * 0.3,
     } satisfies BookingQuote;
   }, [
     location.hourlyPrice,
@@ -463,7 +466,13 @@ export function LocationDetailView({
       {
         id: `${id}-location`,
         category: "location" as const,
-        name: "Location",
+        name:
+          quote.drinksCost > 0
+            ? `Location · ${getDrinkPackageLabel({
+                mode: drinkMode,
+                drinksPerInvitee,
+              })}`
+            : "Location",
         providerName: location.name,
         status: "confirmed" as const,
         amountPaid: quote.locationCost,
@@ -503,21 +512,6 @@ export function LocationDetailView({
           allergens: getMenuAllergens(service.name),
         };
       }),
-      ...(quote.drinksCost > 0
-        ? [
-            {
-              id: `${id}-drinks`,
-              category: "catering" as const,
-              name: getDrinkPackageLabel({
-                mode: drinkMode,
-                drinksPerInvitee,
-              }),
-              providerName: location.name,
-              status: "confirmed" as const,
-              amountPaid: quote.drinksCost,
-            },
-          ]
-        : []),
     ];
 
     const event: UserEvent = {

@@ -389,8 +389,8 @@ export function SmartLocationDetailsSection({
             <div className="min-w-0 flex-1">
               <h3 className="text-sm font-black text-primary-black">Bevande</h3>
               <p className="text-xs text-primary-black/55">
-                Scegli drink a invitato oppure open bar: il costo entra nel
-                preventivo.
+                Scegli drink a invitato oppure open bar: il costo è compreso nel
+                prezzo del locale.
               </p>
             </div>
           </div>
@@ -468,7 +468,9 @@ export function SmartLocationDetailsSection({
 
           {drinkMode !== "none" && (
             <div className="mt-3 flex items-center justify-between gap-3 border-t border-primary-black/8 pt-3 text-sm">
-              <span className="text-primary-black/55">Costo bevande</span>
+              <span className="text-primary-black/55">
+                Incluso nel costo locale
+              </span>
               <span className="font-bold text-primary-black">
                 {formatCurrency(
                   calculateDrinksCost({
@@ -705,28 +707,18 @@ export function SmartLocationDetailsSection({
               <div className="flex justify-between gap-3 text-primary-black/55">
                 <dt className="min-w-0">
                   Location ({generatedQuote.hours || 0}h x{" "}
-                  {formatCurrency(hourlyPrice)})
+                  {formatCurrency(hourlyPrice)}
+                  {generatedQuote.drinksCost > 0 ? " + bevande" : ""})
                 </dt>
                 <dd className="shrink-0 font-bold text-primary-black">
                   {formatCurrency(generatedQuote.locationCost)}
                 </dd>
               </div>
-              <div className="flex justify-between gap-3 text-primary-black/55">
-                <dt className="min-w-0">Servizi selezionati</dt>
-                <dd className="shrink-0 font-bold text-primary-black">
-                  {formatCurrency(
-                    Math.max(
-                      0,
-                      generatedQuote.extrasCost - generatedQuote.drinksCost,
-                    ),
-                  )}
-                </dd>
-              </div>
-              {generatedQuote.drinksCost > 0 && (
+              {generatedQuote.extrasCost > 0 && (
                 <div className="flex justify-between gap-3 text-primary-black/55">
-                  <dt className="min-w-0">Bevande</dt>
+                  <dt className="min-w-0">Servizi selezionati</dt>
                   <dd className="shrink-0 font-bold text-primary-black">
-                    {formatCurrency(generatedQuote.drinksCost)}
+                    {formatCurrency(generatedQuote.extrasCost)}
                   </dd>
                 </div>
               )}
