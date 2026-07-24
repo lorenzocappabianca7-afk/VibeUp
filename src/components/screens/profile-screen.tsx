@@ -4,6 +4,7 @@ import {
   Camera,
   Bell,
   AtSign,
+  Check,
   ChevronRight,
   CreditCard,
   HelpCircle,
@@ -268,6 +269,11 @@ export function ProfileScreen({
     });
   }
 
+  function confirmProfileEdit() {
+    commitProfileDraft();
+    setProfileEditOpen(false);
+  }
+
   async function handleCreateAccount() {
     if (creatingAccount) return;
     if (!newAccountEmail.trim()) {
@@ -484,15 +490,26 @@ export function ProfileScreen({
               {isGuest ? "Ospite" : isBusinessUser ? "Pro" : "Piano gratuito"}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => setProfileEditOpen((current) => !current)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary-black/10 bg-background text-primary-black/65 transition-colors hover:border-primary-black/25 hover:text-primary-black"
-            aria-label="Modifica profilo"
-            aria-expanded={profileEditOpen}
-          >
-            <Pencil className="h-4 w-4" aria-hidden />
-          </button>
+          {profileEditOpen ? (
+            <button
+              type="button"
+              onClick={confirmProfileEdit}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-teal/30 bg-brand-teal/15 text-brand-teal transition-colors hover:bg-brand-teal/25"
+              aria-label="Conferma modifiche profilo"
+            >
+              <Check className="h-4 w-4" aria-hidden />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setProfileEditOpen(true)}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary-black/10 bg-background text-primary-black/65 transition-colors hover:border-primary-black/25 hover:text-primary-black"
+              aria-label="Modifica profilo"
+              aria-expanded={false}
+            >
+              <Pencil className="h-4 w-4" aria-hidden />
+            </button>
+          )}
         </div>
 
         {profileEditOpen && (
@@ -531,7 +548,6 @@ export function ProfileScreen({
                   onChange={(event) =>
                     updateProfileDraft("name", event.target.value)
                   }
-                  onBlur={commitProfileDraft}
                   className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none focus:border-brand-teal"
                 />
               </label>
@@ -546,7 +562,6 @@ export function ProfileScreen({
                   onChange={(event) =>
                     updateProfileDraft("email", event.target.value)
                   }
-                  onBlur={commitProfileDraft}
                   className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none focus:border-brand-teal"
                 />
               </label>
@@ -560,7 +575,6 @@ export function ProfileScreen({
                   onChange={(event) =>
                     updateProfileDraft("instagramHandle", event.target.value)
                   }
-                  onBlur={commitProfileDraft}
                   placeholder="@profilo"
                   className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none placeholder:text-primary-black/35 focus:border-brand-teal"
                 />
@@ -576,7 +590,6 @@ export function ProfileScreen({
                   onChange={(event) =>
                     updateProfileDraft("phoneNumber", event.target.value)
                   }
-                  onBlur={commitProfileDraft}
                   placeholder="+39 333 000 0000"
                   className="mt-1 w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm font-semibold text-primary-black outline-none placeholder:text-primary-black/35 focus:border-brand-teal"
                 />
