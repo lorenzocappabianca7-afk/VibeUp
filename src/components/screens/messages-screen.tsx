@@ -17,6 +17,7 @@ import {
 import {
   memo,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type FormEvent,
@@ -175,15 +176,26 @@ function ConversationThread({
   onSend: (body: string) => void;
 }) {
   const [draft, setDraft] = useState("");
-  const rootRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const el = listRef.current;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
-  }, [messages, conversationId]);
+  function scrollToLatest(behavior: ScrollBehavior = "auto") {
+    const list = listRef.current;
+    if (list) {
+      list.scrollTo({ top: list.scrollHeight, behavior });
+    }
+    bottomRef.current?.scrollIntoView({ block: "end", behavior });
+  }
+
+  // Entering a chat: jump straight to the latest message + composer (WhatsApp-style).
+  useLayoutEffect(() => {
+    scrollToLatest("auto");
+  }, [conversationId]);
+
+  useLayoutEffect(() => {
+    scrollToLatest("auto");
+  }, [messages]);
 
   function handleSubmit(event?: FormEvent) {
     event?.preventDefault();
@@ -191,12 +203,9 @@ function ConversationThread({
     if (!body) return;
     onSend(body);
     setDraft("");
-    // Close keyboard and restore page scroll — mobile otherwise stays pinned low.
-    inputRef.current?.blur();
     window.requestAnimationFrame(() => {
-      rootRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
-      const list = listRef.current;
-      if (list) list.scrollTop = list.scrollHeight;
+      scrollToLatest("auto");
+      inputRef.current?.focus({ preventScroll: true });
     });
   }
 
@@ -208,8 +217,8 @@ function ConversationThread({
   }
 
   return (
-    <div ref={rootRef} className="flex min-h-[min(70dvh,640px)] flex-col">
-      <header className="flex items-center gap-2 border-b border-primary-black/8 pb-3">
+    <div className="flex h-[calc(100dvh-9.75rem)] flex-col overflow-hidden sm:h-[min(70dvh,640px)]">
+      <header className="flex shrink-0 items-center gap-2 border-b border-primary-black/8 pb-3">
         <button
           type="button"
           onClick={onBack}
@@ -241,51 +250,56 @@ function ConversationThread({
 
       <div
         ref={listRef}
-        className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain py-4"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-0.5"
       >
-        {messages.map((message) => {
-          const mine = message.sender === "me";
-          return (
-            <div
-              key={message.id}
-              className={cn("flex", mine ? "justify-end" : "justify-start")}
-            >
+        <div className="flex min-h-full flex-col justify-end gap-2.5 py-4">
+          {messages.map((message) => {
+            const mine = message.sender === "me";
+            return (
               <div
-                className={cn(
-                  "max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
-                  mine
-                    ? "rounded-br-md bg-primary-black text-white"
-                    : "rounded-bl-md bg-primary-black/[0.05] text-primary-black",
-                )}
+                key={message.id}
+                className={cn("flex", mine ? "justify-end" : "justify-start")}
               >
-                <p className="whitespace-pre-wrap break-words">{message.body}</p>
                 <div
                   className={cn(
-                    "mt-1 flex items-center gap-1.5",
-                    mine ? "justify-end" : "justify-start",
+                    "max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+                    mine
+                      ? "rounded-br-md bg-primary-black text-white"
+                      : "rounded-bl-md bg-primary-black/[0.05] text-primary-black",
                   )}
                 >
-                  <span
+                  <p className="whitespace-pre-wrap break-words">
+                    {message.body}
+                  </p>
+                  <div
                     className={cn(
-                      "text-[10px]",
-                      mine ? "text-white/55" : "text-primary-black/40",
+                      "mt-1 flex items-center gap-1.5",
+                      mine ? "justify-end" : "justify-start",
                     )}
                   >
-                    {formatChatTime(message.createdAt)}
-                  </span>
-                  {mine && (
-                    <MessageReceipt status={message.status ?? "sent"} />
-                  )}
+                    <span
+                      className={cn(
+                        "text-[10px]",
+                        mine ? "text-white/55" : "text-primary-black/40",
+                      )}
+                    >
+                      {formatChatTime(message.createdAt)}
+                    </span>
+                    {mine && (
+                      <MessageReceipt status={message.status ?? "sent"} />
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+          <div ref={bottomRef} aria-hidden className="h-px w-full shrink-0" />
+        </div>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="sticky bottom-0 border-t border-primary-black/8 bg-background pt-3"
+        className="shrink-0 border-t border-primary-black/8 bg-background pt-3 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
       >
         <div className="flex items-end gap-2 rounded-2xl border border-primary-black/10 bg-white p-2 shadow-[0_2px_12px_rgba(15,15,17,0.06)]">
           <textarea
@@ -307,9 +321,6 @@ function ConversationThread({
             <SendHorizontal className="h-4 w-4" aria-hidden />
           </button>
         </div>
-        <p className="mt-2 px-1 text-[10px] text-primary-black/40">
-          Invio per mandare · Maiusc+Invio per andare a capo
-        </p>
       </form>
     </div>
   );
