@@ -26,6 +26,7 @@ import { SafeImage } from "@/components/ui/safe-image";
 import { AvatarCropModal } from "@/components/profile/avatar-crop-modal";
 import { ProfileSettingsView } from "@/components/profile/settings/profile-settings-view";
 import { GUEST_USER, isProAccount, useAppState } from "@/context/app-state-context";
+import { useProfileCommunications } from "@/context/profile-communications-context";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
 import {
@@ -100,6 +101,12 @@ export function ProfileScreen({
     updateCurrentUser,
     isStorageHydrated,
   } = useAppState();
+  const {
+    communications,
+    hasUnread: hasUnreadProfileComms,
+    markAllSeen: markProfileCommsSeen,
+  } = useProfileCommunications();
+  const [commsOpen, setCommsOpen] = useState(false);
   const [newAccountName, setNewAccountName] = useState("");
   const [newAccountEmail, setNewAccountEmail] = useState("");
   const [newAccountPhone, setNewAccountPhone] = useState("");
@@ -114,7 +121,7 @@ export function ProfileScreen({
     name: string;
     email: string;
   } | null>(null);
-  useBodyScrollLock(Boolean(accountPendingDelete));
+  useBodyScrollLock(Boolean(accountPendingDelete) || commsOpen);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggeredRef = useRef(false);
 
@@ -150,6 +157,7 @@ export function ProfileScreen({
     if (addAccountOpen) setAddAccountOpen(false);
     if (profileEditOpen) setProfileEditOpen(false);
     if (settingsPanel) setSettingsPanel(null);
+    if (commsOpen) setCommsOpen(false);
   }
 
   if (settingsPanelUserId !== currentUser.id) {
@@ -456,12 +464,109 @@ export function ProfileScreen({
 
   return (
     <div className="min-w-0 space-y-6">
-      <header>
-        <h1 className="text-2xl font-bold text-primary-black">Profilo</h1>
-        <p className="mt-1 text-sm text-primary-black/60">
-          Impostazioni e gestione account
-        </p>
+      <header className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-primary-black">Profilo</h1>
+          <p className="mt-1 text-sm text-primary-black/60">
+            Impostazioni e gestione account
+          </p>
+        </div>
+        {!isBusinessUser && (
+          <button
+            type="button"
+            onClick={() => {
+              setCommsOpen(true);
+              markProfileCommsSeen();
+            }}
+            className="relative mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary-black/10 bg-background text-primary-black/70 transition-colors hover:border-primary-black/25 hover:text-primary-black"
+            aria-label={
+              hasUnreadProfileComms
+                ? "Comunicazioni VibeUp, nuove notifiche"
+                : "Comunicazioni VibeUp"
+            }
+            aria-expanded={commsOpen}
+          >
+            <Bell className="h-5 w-5" aria-hidden />
+            {hasUnreadProfileComms && (
+              <span
+                className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#FF3B30] ring-2 ring-background"
+                aria-hidden
+              />
+            )}
+          </button>
+        )}
       </header>
+
+      {commsOpen && !isBusinessUser && (
+        <div
+          className="vibe-overlay-enter fixed inset-0 z-[85] flex items-end justify-center p-4 sm:items-center"
+          data-overlay-open="true"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-primary-black/55"
+            aria-label="Chiudi comunicazioni"
+            onClick={() => setCommsOpen(false)}
+          />
+          <div
+            className="vibe-sheet-enter relative flex max-h-[80vh] w-full max-w-md flex-col rounded-3xl bg-background shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-comms-title"
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-primary-black/8 px-5 py-4">
+              <div className="min-w-0">
+                <h2
+                  id="profile-comms-title"
+                  className="text-lg font-bold text-primary-black"
+                >
+                  Comunicazioni VibeUp
+                </h2>
+                <p className="mt-0.5 text-xs text-primary-black/50">
+                  Avvisi importanti sul tuo account e sugli eventi
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCommsOpen(false)}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary-black/10 text-primary-black/55"
+                aria-label="Chiudi"
+              >
+                <X className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
+
+            <ul className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4">
+              {communications.length === 0 ? (
+                <li className="rounded-2xl border border-dashed border-primary-black/12 px-4 py-6 text-center text-sm text-primary-black/55">
+                  Nessuna comunicazione al momento.
+                </li>
+              ) : (
+                communications.map((item) => (
+                  <li
+                    key={item.id}
+                    className="rounded-2xl border border-primary-black/8 bg-primary-black/[0.02] p-4"
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-pink/15 text-brand-pink">
+                        <Bell className="h-4 w-4" aria-hidden />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-primary-black">
+                          {item.title}
+                        </p>
+                        <p className="mt-1 text-sm leading-relaxed text-primary-black/65">
+                          {item.body}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-primary-black/10 bg-primary-black/[0.02] p-5">
         <div className="flex min-w-0 items-center gap-4">

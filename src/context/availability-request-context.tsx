@@ -290,6 +290,7 @@ export function AvailabilityRequestProvider({
         })),
         totalCost: payload.totalCost,
         depositAmount: payload.depositAmount,
+        createdAt: new Date().toISOString(),
       };
 
       addEvent(event);

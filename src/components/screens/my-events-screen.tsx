@@ -20,7 +20,7 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-import { getCountdown, getEventDateTime, isEventPast } from "@/lib/event";
+import { getCountdown, isEventPast } from "@/lib/event";
 import {
   EVENT_STATUS_LABELS,
   type BookedService,
@@ -268,18 +268,18 @@ function buildSuggestionHref(
 }
 
 function getDepositDeadline(event: UserEvent) {
-  const deadline = getEventDateTime(event);
-  let businessDaysToSubtract = 2;
-
-  while (businessDaysToSubtract > 0) {
-    deadline.setDate(deadline.getDate() - 1);
-    const day = deadline.getDay();
-    if (day !== 0 && day !== 6) {
-      businessDaysToSubtract--;
+  const THIRTY_SIX_HOURS_MS = 36 * 60 * 60 * 1000;
+  if (event.createdAt) {
+    const created = Date.parse(event.createdAt);
+    if (!Number.isNaN(created)) {
+      return new Date(created + THIRTY_SIX_HOURS_MS);
     }
   }
-
-  return deadline;
+  const idStamp = /^evt-(\d+)/.exec(event.id);
+  if (idStamp) {
+    return new Date(Number(idStamp[1]) + THIRTY_SIX_HOURS_MS);
+  }
+  return new Date(Date.now() + THIRTY_SIX_HOURS_MS);
 }
 
 function formatDepositDeadline(deadline: Date) {
@@ -846,8 +846,8 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
         <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-auto sm:max-w-[14rem] sm:items-end">
           {!payment.paid && (
             <p className="text-[11px] leading-snug text-primary-black/55 sm:text-right">
-              Serve a bloccare {event.locationName} per il{" "}
-              {formatDate(event.date)}.
+              Entro 36 ore dalla creazione: blocca {event.locationName} per il{" "}
+              {formatDate(event.date)}. Se non la paghi, perdi la priorità.
             </p>
           )}
           {payment.paid ? (

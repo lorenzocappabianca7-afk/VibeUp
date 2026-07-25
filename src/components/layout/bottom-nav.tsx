@@ -38,7 +38,11 @@ export function BottomNav({
   onTabChange,
   variant = "consumer",
 }: BottomNavProps) {
-  const { hasUnreadMessages, hasUnreadNotifications } = useInboxBadge();
+  const {
+    hasUnreadMessages,
+    hasUnreadNotifications,
+    hasUnreadProfileComms,
+  } = useInboxBadge();
   const tabs: TabItem[] =
     variant === "business" ? BUSINESS_TABS : CONSUMER_TABS;
 
@@ -61,7 +65,10 @@ export function BottomNav({
           const Icon = TAB_ICONS[tab.id];
           const showBadge =
             (tab.id === "messages" && hasUnreadMessages) ||
-            (tab.id === "notifications" && hasUnreadNotifications);
+            (tab.id === "notifications" && hasUnreadNotifications) ||
+            (tab.id === "profile" &&
+              variant === "consumer" &&
+              hasUnreadProfileComms);
 
           return (
             <li key={tab.id} className="flex-1">

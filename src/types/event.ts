@@ -45,6 +45,8 @@ export interface UserEvent {
   services: BookedService[];
   totalCost?: number;
   depositAmount?: number;
+  /** ISO timestamp when the event was confirmed/created (deposit window start). */
+  createdAt?: string;
   menuSelections?: EventMenuSelection[];
 }
 

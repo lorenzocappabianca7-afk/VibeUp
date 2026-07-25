@@ -1,6 +1,7 @@
 "use client";
 
 import { useAvailabilityRequests } from "@/context/availability-request-context";
+import { useProfileCommunications } from "@/context/profile-communications-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { CalendarCheck2, MapPin, Users } from "lucide-react";
@@ -14,6 +15,7 @@ export function ConfirmAvailabilityModal() {
     confirmAvailabilityRequest,
     cancelAvailabilityRequest,
   } = useAvailabilityRequests();
+  const { addDepositReminder } = useProfileCommunications();
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const request = pendingUserConfirms[0] ?? null;
 
@@ -28,6 +30,12 @@ export function ConfirmAvailabilityModal() {
     const result = confirmAvailabilityRequest(request.id);
     setSubmittingId(null);
     if (result.ok) {
+      addDepositReminder({
+        eventId: result.eventId,
+        eventTitle: payload.title,
+        locationName: payload.locationName,
+        date: formatDate(payload.date),
+      });
       router.push("/?tab=events");
     }
   }
