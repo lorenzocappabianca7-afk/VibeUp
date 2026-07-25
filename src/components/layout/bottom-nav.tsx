@@ -82,15 +82,13 @@ export function BottomNav({
                     : tab.label
                 }
                 className={cn(
-                  "flex w-full min-w-0 flex-col items-center gap-0.5 rounded-2xl px-0.5 py-1.5 transition-colors duration-150 sm:gap-1 sm:px-1 sm:py-2",
-                  isActive
-                    ? "bg-white/12 text-primary-black"
-                    : "text-primary-black/45 hover:text-primary-black/75",
+                  "flex w-full min-w-0 flex-col items-center gap-0.5 rounded-2xl px-0.5 py-1.5 text-white transition-colors duration-150 sm:gap-1 sm:px-1 sm:py-2",
+                  isActive ? "bg-white/12" : "hover:bg-white/[0.04]",
                 )}
               >
                 <span className="relative inline-flex">
                   <Icon
-                    className="h-5 w-5 text-current"
+                    className="h-5 w-5 text-white"
                     strokeWidth={isActive ? 2.4 : 2}
                     aria-hidden
                   />
