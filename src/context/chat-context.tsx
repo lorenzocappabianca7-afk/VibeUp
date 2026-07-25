@@ -39,6 +39,8 @@ export interface ChatConversation {
   kind: ChatPeerKind;
   updatedAt: string;
   unreadCount: number;
+  /** Peer profile photo (vendor / AI). */
+  avatarUrl?: string;
 }
 
 interface ChatContextValue {
@@ -61,6 +63,13 @@ function chatStorageKey(userId: string) {
   return `${STORAGE_KEY_PREFIX}:${userId}`;
 }
 
+const SEED_AVATARS: Record<string, string> = {
+  "msg-villa-aurora":
+    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&q=80",
+  "msg-dj-marco":
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&q=80",
+};
+
 const SEED_CONVERSATIONS: ChatConversation[] = [
   {
     id: "msg-villa-aurora",
@@ -69,6 +78,7 @@ const SEED_CONVERSATIONS: ChatConversation[] = [
     kind: "vendor",
     updatedAt: new Date(Date.now() - 2 * 60_000).toISOString(),
     unreadCount: 1,
+    avatarUrl: SEED_AVATARS["msg-villa-aurora"],
   },
   {
     id: "msg-dj-marco",
@@ -77,6 +87,7 @@ const SEED_CONVERSATIONS: ChatConversation[] = [
     kind: "vendor",
     updatedAt: new Date(Date.now() - 60 * 60_000).toISOString(),
     unreadCount: 1,
+    avatarUrl: SEED_AVATARS["msg-dj-marco"],
   },
   {
     id: "msg-ai",
@@ -179,6 +190,23 @@ function trimMessagesById(
   return next;
 }
 
+function normalizeConversations(
+  conversations: ChatConversation[],
+): ChatConversation[] {
+  const seedById = new Map(SEED_CONVERSATIONS.map((item) => [item.id, item]));
+  return conversations.map((item) => {
+    const seed = seedById.get(item.id);
+    return {
+      ...item,
+      avatarUrl:
+        item.avatarUrl ||
+        seed?.avatarUrl ||
+        SEED_AVATARS[item.id] ||
+        undefined,
+    };
+  });
+}
+
 function readStoredChat(userId: string): {
   conversations: ChatConversation[];
   messagesById: Record<string, ChatMessage[]>;
@@ -207,7 +235,7 @@ function readStoredChat(userId: string): {
       }
     }
     return {
-      conversations: parsed.conversations,
+      conversations: normalizeConversations(parsed.conversations),
       messagesById: trimMessagesById(normalizeMessagesById(parsed.messagesById)),
     };
   } catch {

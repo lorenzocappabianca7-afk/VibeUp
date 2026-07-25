@@ -6,6 +6,7 @@ import {
   useChat,
   type ChatDeliveryStatus,
   type ChatMessage,
+  type ChatPeerKind,
 } from "@/context/chat-context";
 import { cn } from "@/lib/utils";
 import {
@@ -13,6 +14,7 @@ import {
   MessageCircle,
   SendHorizontal,
   Sparkles,
+  User,
 } from "lucide-react";
 import {
   memo,
@@ -55,6 +57,59 @@ function MessageReceipt({ status }: { status: ChatDeliveryStatus }) {
   );
 }
 
+function PeerAvatar({
+  title,
+  kind,
+  avatarUrl,
+  size = "md",
+}: {
+  title: string;
+  kind: ChatPeerKind;
+  avatarUrl?: string;
+  size?: "sm" | "md" | "lg";
+}) {
+  const sizeClass =
+    size === "sm" ? "h-8 w-8" : size === "lg" ? "h-11 w-11" : "h-9 w-9";
+  const initials = title
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatarUrl}
+        alt=""
+        className={cn(
+          "shrink-0 rounded-full object-cover ring-1 ring-white/10",
+          sizeClass,
+        )}
+      />
+    );
+  }
+
+  return (
+    <span
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full bg-surface-2 text-primary-black/70 ring-1 ring-white/10",
+        sizeClass,
+      )}
+      aria-hidden
+    >
+      {kind === "ai" ? (
+        <Sparkles className={size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"} />
+      ) : initials ? (
+        <span className="text-[11px] font-bold">{initials}</span>
+      ) : (
+        <User className={size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"} />
+      )}
+    </span>
+  );
+}
+
 export const MessagesScreen = memo(function MessagesScreen({
   isActive = true,
 }: {
@@ -84,6 +139,7 @@ export const MessagesScreen = memo(function MessagesScreen({
         conversationId={active.id}
         title={active.title}
         kind={active.kind}
+        avatarUrl={active.avatarUrl}
         messages={getMessages(active.id)}
         onBack={closeConversation}
         onSend={(body) => sendMessage(active.id, body)}
@@ -94,7 +150,7 @@ export const MessagesScreen = memo(function MessagesScreen({
   return (
     <div className="min-w-0 space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-primary-black">Messaggi</h1>
+        <h1 className="text-2xl font-bold text-primary-black">Chat</h1>
         <p className="mt-1 text-sm text-primary-black/60">
           Apri una chat, scrivi e ricevi risposte in tempo reale
         </p>
@@ -119,13 +175,12 @@ export const MessagesScreen = memo(function MessagesScreen({
                     : "border-primary-black/8 bg-background hover:bg-primary-black/[0.02]",
                 )}
               >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-black/5 text-primary-black/55">
-                  {conversation.kind === "ai" ? (
-                    <Sparkles className="h-5 w-5" aria-hidden />
-                  ) : (
-                    <MessageCircle className="h-5 w-5" aria-hidden />
-                  )}
-                </span>
+                <PeerAvatar
+                  title={conversation.title}
+                  kind={conversation.kind}
+                  avatarUrl={conversation.avatarUrl}
+                  size="lg"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <p className="min-w-0 truncate text-sm font-semibold text-primary-black">
@@ -147,7 +202,7 @@ export const MessagesScreen = memo(function MessagesScreen({
                   </p>
                 </div>
                 {conversation.unreadCount > 0 && (
-                  <span className="mt-1 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-brand-pink px-1.5 text-[10px] font-bold text-white">
+                  <span className="mt-1 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-brand-pink px-1.5 text-[10px] font-bold text-ink-inverse">
                     {conversation.unreadCount}
                   </span>
                 )}
@@ -164,13 +219,15 @@ function ConversationThread({
   conversationId,
   title,
   kind,
+  avatarUrl,
   messages,
   onBack,
   onSend,
 }: {
   conversationId: string;
   title: string;
-  kind: "vendor" | "ai";
+  kind: ChatPeerKind;
+  avatarUrl?: string;
   messages: ChatMessage[];
   onBack: () => void;
   onSend: (body: string) => void;
@@ -223,19 +280,18 @@ function ConversationThread({
           type="button"
           onClick={onBack}
           className="flex h-10 w-10 items-center justify-center rounded-full text-primary-black/70 transition-colors hover:bg-primary-black/[0.05]"
-          aria-label="Torna ai messaggi"
+          aria-label="Torna alle chat"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden />
         </button>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-black/5 text-primary-black/55">
-              {kind === "ai" ? (
-                <Sparkles className="h-4 w-4" aria-hidden />
-              ) : (
-                <MessageCircle className="h-4 w-4" aria-hidden />
-              )}
-            </span>
+          <div className="flex items-center gap-2.5">
+            <PeerAvatar
+              title={title}
+              kind={kind}
+              avatarUrl={avatarUrl}
+              size="md"
+            />
             <div className="min-w-0">
               <h1 className="truncate text-base font-bold text-primary-black">
                 {title}
@@ -258,8 +314,19 @@ function ConversationThread({
             return (
               <div
                 key={message.id}
-                className={cn("flex", mine ? "justify-end" : "justify-start")}
+                className={cn(
+                  "flex items-end gap-2",
+                  mine ? "justify-end" : "justify-start",
+                )}
               >
+                {!mine && (
+                  <PeerAvatar
+                    title={title}
+                    kind={kind}
+                    avatarUrl={avatarUrl}
+                    size="sm"
+                  />
+                )}
                 <div
                   className={cn(
                     "max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
@@ -301,7 +368,7 @@ function ConversationThread({
         onSubmit={handleSubmit}
         className="shrink-0 border-t border-primary-black/8 bg-background pt-3 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
       >
-        <div className="flex items-end gap-2 rounded-2xl border border-primary-black/10 bg-surface p-2 shadow-[0_2px_12px_rgba(15,15,17,0.06)]">
+        <div className="flex items-end gap-2 rounded-2xl border border-primary-black/10 bg-surface p-2 shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
           <textarea
             ref={inputRef}
             value={draft}
@@ -315,8 +382,8 @@ function ConversationThread({
           <button
             type="submit"
             disabled={!draft.trim()}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-teal text-primary-black transition-opacity disabled:opacity-40"
-            aria-label="Invia messaggio"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-teal text-ink-inverse transition-opacity disabled:opacity-40"
+            aria-label="Invia"
           >
             <SendHorizontal className="h-4 w-4" aria-hidden />
           </button>

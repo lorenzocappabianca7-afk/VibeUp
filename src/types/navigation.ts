@@ -10,7 +10,7 @@ export interface TabItem {
 export const CONSUMER_TABS: TabItem[] = [
   { id: "explore", label: "Esplora" },
   { id: "events", label: "Eventi" },
-  { id: "messages", label: "Messaggi" },
+  { id: "messages", label: "Chat" },
   { id: "profile", label: "Profilo" },
 ];
 

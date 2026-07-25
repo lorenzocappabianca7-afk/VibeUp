@@ -91,7 +91,7 @@ export function HelpSettingsPanel({ onBack }: HelpSettingsPanelProps) {
           <SettingsNavRow
             icon={MessageCircle}
             label="Chat in-app"
-            description="Scrivici dalla tab Messaggi"
+            description="Scrivici dalla tab Chat"
             onClick={() => {
               window.location.href = "/?tab=messages";
             }}
