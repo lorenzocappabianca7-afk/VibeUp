@@ -202,21 +202,7 @@ input[type="number"]::-webkit-outer-spin-button {
   display: none;
 }
 
-/* —— Splash helpers (boot splash styles are inlined in BootSplash) —— */
-html.vibeup-splash-skip .vibeup-splash {
-  display: none !important;
-}
-
-@keyframes vibeup-splash-tagline-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* Splash keyframes / overlay live in SplashScreen (scoped <style>) */
 
 @media (prefers-reduced-motion: reduce) {
   html {

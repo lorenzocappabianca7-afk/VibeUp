@@ -1,10 +1,14 @@
-/** Shared between the HTML boot splash and the React splash. */
+/** Splash timing — single source of truth */
 export const SPLASH_STORAGE_KEY = "vibeup-splash-seen";
 
-/** Tagline appears shortly after the logo bounce starts */
-export const TAGLINE_DELAY_MS = 520;
+/** Logo bounce duration (smoother Just Eat–style spring) */
+export const LOGO_BOUNCE_MS = 1200;
+
+/** Tagline appears while the bounce is settling */
+export const TAGLINE_DELAY_MS = 780;
 
 /** Hold after the tagline is visible, then open Explore */
 export const HOLD_AFTER_TAGLINE_MS = 2100;
 
-export const BOOT_SPLASH_ID = "vibeup-boot-splash";
+/** Soft fade-out before revealing Explore */
+export const SPLASH_EXIT_MS = 320;

@@ -1,15 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-  BOOT_SPLASH_ID,
   HOLD_AFTER_TAGLINE_MS,
+  LOGO_BOUNCE_MS,
+  SPLASH_EXIT_MS,
   SPLASH_STORAGE_KEY,
   TAGLINE_DELAY_MS,
 } from "@/lib/splash";
+import { SPLASH_LOGO_DATA_URI } from "@/lib/splash-logo-data";
+
+/** True after the first bounce has started — Strict Mode remount must not replay it. */
+let splashBounceAlreadyPlayed = false;
+
+type Phase = "enter" | "exit" | "gone";
 
 function shouldSkipSplash() {
-  if (typeof window === "undefined") return true;
   try {
     if (sessionStorage.getItem(SPLASH_STORAGE_KEY) === "1") return true;
   } catch {
@@ -21,51 +27,35 @@ function shouldSkipSplash() {
   return false;
 }
 
-function removeBootSplash() {
-  document.getElementById(BOOT_SPLASH_ID)?.remove();
-  document.getElementById("vibeup-boot-splash-style")?.remove();
-}
-
 /**
- * Orchestrates the server-rendered boot splash only.
- * The logo lives in the first HTML (data-URI) and never remounts —
- * this client layer only adds the tagline, then dismisses.
+ * Single splash layer:
+ * - Tagline always in the layout (opacity 0) → logo never jumps
+ * - Bounce runs once (Strict Mode remount keeps settled logo)
+ * - bounce → tagline → hold 2.1s → soft exit → Explore
  */
 export function SplashScreen() {
+  const [phase, setPhase] = useState<Phase>("enter");
+  const [showTagline, setShowTagline] = useState(false);
+  const [bounceDone] = useState(() => splashBounceAlreadyPlayed);
+
   useEffect(() => {
     if (shouldSkipSplash()) {
-      removeBootSplash();
+      setPhase("gone");
       return;
     }
+
+    splashBounceAlreadyPlayed = true;
 
     const previousOverflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = "hidden";
 
-    const boot = document.getElementById(BOOT_SPLASH_ID);
-    const stage = boot?.querySelector(".vibeup-boot-stage");
-
-    let taglineEl: HTMLParagraphElement | null = null;
-
     const taglineTimer = window.setTimeout(() => {
-      if (!stage) return;
-      taglineEl = document.createElement("p");
-      taglineEl.textContent = "VibeUp your life";
-      taglineEl.setAttribute("aria-hidden", "true");
-      taglineEl.style.cssText = [
-        "margin:0",
-        "font-family:var(--font-brand),system-ui,sans-serif",
-        "font-size:1.75rem",
-        "font-weight:700",
-        "letter-spacing:-0.025em",
-        "color:#fff",
-        "text-align:center",
-        "line-height:1.15",
-        "opacity:0",
-        "transform:translateY(10px)",
-        "animation:vibeup-splash-tagline-in 380ms cubic-bezier(0.22,1,0.36,1) both",
-      ].join(";");
-      stage.appendChild(taglineEl);
+      setShowTagline(true);
     }, TAGLINE_DELAY_MS);
+
+    const exitTimer = window.setTimeout(() => {
+      setPhase("exit");
+    }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS);
 
     const doneTimer = window.setTimeout(() => {
       try {
@@ -74,16 +64,111 @@ export function SplashScreen() {
         /* ignore */
       }
       document.documentElement.style.overflow = previousOverflow;
-      removeBootSplash();
-    }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS);
+      setPhase("gone");
+    }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS + SPLASH_EXIT_MS);
 
     return () => {
       window.clearTimeout(taglineTimer);
+      window.clearTimeout(exitTimer);
       window.clearTimeout(doneTimer);
       document.documentElement.style.overflow = previousOverflow;
-      taglineEl?.remove();
     };
   }, []);
 
-  return null;
+  if (phase === "gone") return null;
+
+  return (
+    <div
+      className={`vibeup-splash${phase === "exit" ? " vibeup-splash--exit" : ""}`}
+      role="presentation"
+      aria-hidden
+      suppressHydrationWarning
+    >
+      <style>{SPLASH_CSS}</style>
+      <div className="vibeup-splash__stage">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={SPLASH_LOGO_DATA_URI}
+          alt=""
+          width={256}
+          height={256}
+          className={
+            bounceDone
+              ? "vibeup-splash__logo vibeup-splash__logo--settled"
+              : "vibeup-splash__logo"
+          }
+          draggable={false}
+          decoding="sync"
+          fetchPriority="high"
+        />
+        <p
+          className={`vibeup-splash__tagline${showTagline ? " vibeup-splash__tagline--in" : ""}`}
+        >
+          VibeUp your life
+        </p>
+      </div>
+    </div>
+  );
 }
+
+const SPLASH_CSS = `
+.vibeup-splash{
+  position:fixed;inset:0;z-index:10000;
+  display:flex;align-items:center;justify-content:center;
+  background:#000;pointer-events:none;
+  opacity:1;
+  transition:opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.22,1,0.36,1);
+}
+.vibeup-splash--exit{opacity:0}
+.vibeup-splash__stage{
+  box-sizing:border-box;
+  display:flex;flex-direction:column;align-items:center;
+  transform:translateY(-7vh);
+}
+.vibeup-splash__logo{
+  display:block;
+  width:min(52vw,11.5rem);
+  height:auto;
+  aspect-ratio:1;object-fit:contain;
+  transform-origin:center center;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  animation:vibeup-splash-bounce ${LOGO_BOUNCE_MS}ms cubic-bezier(0.22,1,0.36,1) both;
+  will-change:transform,opacity;
+}
+.vibeup-splash__logo--settled{
+  animation:none!important;
+  opacity:1!important;
+  transform:none!important;
+}
+.vibeup-splash__tagline{
+  margin:1.15rem 0 0;
+  min-height:1.15em;
+  padding:0 0.5rem;
+  font-family:var(--font-brand),system-ui,sans-serif;
+  font-size:1.75rem;font-weight:700;
+  letter-spacing:-0.025em;line-height:1.15;
+  color:#fff;text-align:center;white-space:nowrap;
+  opacity:0;
+  transform:translate3d(0,12px,0);
+}
+.vibeup-splash__tagline--in{
+  animation:vibeup-splash-tagline-in 520ms cubic-bezier(0.22,1,0.36,1) both;
+}
+@keyframes vibeup-splash-bounce{
+  0%{opacity:0;transform:translate3d(0,0,0) scale(0.35)}
+  40%{opacity:1;transform:translate3d(0,0,0) scale(1.12)}
+  58%{transform:translate3d(0,0,0) scale(0.94)}
+  76%{transform:translate3d(0,0,0) scale(1.04)}
+  100%{opacity:1;transform:translate3d(0,0,0) scale(1)}
+}
+@keyframes vibeup-splash-tagline-in{
+  from{opacity:0;transform:translate3d(0,12px,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+@media (prefers-reduced-motion:reduce){
+  .vibeup-splash__logo,.vibeup-splash__tagline--in{
+    animation:none!important;opacity:1;transform:none
+  }
+}
+`.replace(/\n/g, "");

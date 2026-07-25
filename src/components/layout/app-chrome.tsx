@@ -5,7 +5,6 @@ import { Footer } from "@/components/layout/footer";
 import { EmailActivationBanner } from "@/components/auth/email-activation-banner";
 import { AppWakeRecovery } from "@/components/pwa/app-wake-recovery";
 import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner";
-import { SplashScreen } from "@/components/splash/splash-screen";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
@@ -32,7 +31,6 @@ export function AppChrome({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <SplashScreen />
       <AppWakeRecovery />
       <div
         className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-hidden"

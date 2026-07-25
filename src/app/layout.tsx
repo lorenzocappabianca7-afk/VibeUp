@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Montserrat } from "next/font/google";
 import { AppChrome } from "@/components/layout/app-chrome";
 import { AppProviders } from "@/components/providers/app-providers";
-import { BootSplash } from "@/components/splash/boot-splash";
+import { SplashScreen } from "@/components/splash/splash-screen";
 import { getSiteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -109,8 +109,8 @@ export default function RootLayout({
         className="min-h-dvh text-primary-black"
         style={{ background: "#000000" }}
       >
-        {/* First paint: black + inlined logo (before CSS/JS chunks) */}
-        <BootSplash />
+        {/* Single splash layer — logo+slot reserved, no boot handoff flicker */}
+        <SplashScreen />
         <AppProviders>
           <div className="flex min-h-dvh min-w-0 max-w-full flex-col overflow-x-hidden bg-background">
             <AppChrome>{children}</AppChrome>
