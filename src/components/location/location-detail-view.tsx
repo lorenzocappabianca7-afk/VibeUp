@@ -27,6 +27,10 @@ import {
 import { EXTRA_SERVICES } from "@/lib/mock/extra-services";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
 import { SERVICE_PROVIDERS } from "@/lib/mock/service-providers";
+import {
+  readQuoteSessionDraft,
+  writeQuoteSessionDraft,
+} from "@/lib/quote-session-draft";
 import { getLocationPricePresentation } from "@/lib/utils";
 import type { ManagedLocationListing } from "@/types/admin";
 import type { BookedServiceCategory } from "@/types/event";
@@ -41,7 +45,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface LocationDetailViewProps {
   location: Location;
@@ -135,6 +139,55 @@ export function LocationDetailView({
     key: string;
     quote: BookingQuote;
   } | null>(null);
+  const [quoteSessionReady, setQuoteSessionReady] = useState(false);
+  const [persistQuoteSession, setPersistQuoteSession] = useState(false);
+
+  // Restore shared quote inputs for this browser tab only (sessionStorage).
+  useEffect(() => {
+    const draft = readQuoteSessionDraft();
+    if (draft) {
+      if (!initialQuoteContext?.dateFrom && draft.date) {
+        setDate(draft.date);
+      }
+      if (!initialQuoteContext?.guestCount) {
+        setGuestCount(
+          Math.min(Math.max(draft.guestCount, 1), MAX_QUOTE_GUESTS),
+        );
+      }
+      setStartTime(draft.startTime);
+      setEndTime(draft.endTime);
+      setDrinkMode(draft.drinkMode);
+      setDrinksPerInvitee(clampDrinksPerInvitee(draft.drinksPerInvitee));
+      setCakeKg(Math.max(1, draft.cakeKg));
+      setPersistQuoteSession(true);
+    }
+    setQuoteSessionReady(true);
+    // Only hydrate once per location mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount hydrate
+  }, []);
+
+  useEffect(() => {
+    if (!quoteSessionReady || !persistQuoteSession) return;
+    writeQuoteSessionDraft({
+      date,
+      startTime,
+      endTime,
+      guestCount,
+      drinkMode,
+      drinksPerInvitee,
+      cakeKg,
+    });
+  }, [
+    quoteSessionReady,
+    persistQuoteSession,
+    date,
+    startTime,
+    endTime,
+    guestCount,
+    drinkMode,
+    drinksPerInvitee,
+    cakeKg,
+  ]);
   const activeRequest = useMemo(() => {
     const mine = requests.filter(
       (item) =>
@@ -298,6 +351,16 @@ export function LocationDetailView({
       () => {
         setGeneratedQuote({ key: quoteKey, quote: draftQuote });
         setRequestError(null);
+        setPersistQuoteSession(true);
+        writeQuoteSessionDraft({
+          date,
+          startTime,
+          endTime,
+          guestCount,
+          drinkMode,
+          drinksPerInvitee,
+          cakeKg,
+        });
       },
       "Per generare un preventivo crea un account.",
     );
