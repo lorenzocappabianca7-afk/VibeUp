@@ -495,7 +495,7 @@ export function ExploreSearchBar({
                 opacity: open ? 0 : 1,
               }}
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-black/[0.04] text-primary-black">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-teal text-ink-inverse">
                 <Search className="h-4 w-4" aria-hidden />
               </span>
               <span className="min-w-0 flex-1">
