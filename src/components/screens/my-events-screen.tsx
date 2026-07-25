@@ -540,8 +540,8 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   }, [isEditingTitle]);
 
   return (
-    <article className="box-border w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-primary-black/10 bg-surface shadow-[0_6px_24px_-12px_rgba(15,15,17,0.18)]">
-      <div className="min-w-0 border-b border-primary-black/8 px-3 py-4 sm:px-4">
+    <article className="box-border w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-brand-teal/30 bg-surface-2 shadow-[0_8px_28px_-16px_rgba(0,0,0,0.55)]">
+      <div className="min-w-0 border-b border-brand-teal/15 bg-gradient-to-br from-brand-teal/[0.12] via-surface-2 to-surface-2 px-3 py-4 sm:px-4">
         <div className="min-w-0 overflow-hidden">
           <p className={`text-xs font-medium ${statusColors[event.status]}`}>
             {EVENT_STATUS_LABELS[event.status]}
@@ -581,7 +581,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                 setTitleDraft(event.title);
                 setIsEditingTitle(true);
               }}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-black/[0.04] text-primary-black/55 transition-colors hover:bg-primary-black/[0.08] hover:text-primary-black"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background/50 text-primary-black/55 transition-colors hover:bg-background hover:text-primary-black"
               aria-label={
                 isEditingTitle ? "Salva nome evento" : "Modifica nome evento"
               }
@@ -629,7 +629,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       />
 
       {showMenuSection && (
-        <section className="min-w-0 border-t border-primary-black/8 px-3 py-4 sm:px-4">
+        <section className="min-w-0 border-t border-primary-black/8 bg-surface px-3 py-4 sm:px-4">
           <div className="flex items-center gap-2">
             <UtensilsCrossed className="h-4 w-4 text-primary-black/45" aria-hidden />
             <h3 className="text-sm font-semibold text-primary-black">Menu</h3>
@@ -642,7 +642,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
               return (
                 <div
                   key={service.id}
-                  className="min-w-0 rounded-xl bg-primary-black/[0.03] p-3"
+                  className="min-w-0 rounded-xl bg-background/70 p-3 ring-1 ring-primary-black/8"
                 >
                   <div className="flex min-w-0 items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -661,7 +661,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                     {allergens.map((allergen) => (
                       <span
                         key={allergen}
-                        className="rounded-full bg-surface px-2.5 py-0.5 text-[11px] text-primary-black/65 ring-1 ring-primary-black/10"
+                        className="rounded-full bg-surface-2 px-2.5 py-0.5 text-[11px] text-primary-black/65 ring-1 ring-primary-black/10"
                       >
                         {allergen}
                       </span>
@@ -672,7 +672,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
             })}
 
             {menuServices.length === 0 && venueMenuAllergens.length > 0 && (
-              <div className="min-w-0 rounded-xl bg-primary-black/[0.03] p-3">
+              <div className="min-w-0 rounded-xl bg-background/70 p-3 ring-1 ring-primary-black/8">
                 <p className="text-sm font-medium text-primary-black">
                   Menu incluso nella location
                 </p>
@@ -683,7 +683,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                   {venueMenuAllergens.map((allergen) => (
                     <span
                       key={allergen}
-                      className="rounded-full bg-surface px-2.5 py-0.5 text-[11px] text-primary-black/65 ring-1 ring-primary-black/10"
+                      className="rounded-full bg-surface-2 px-2.5 py-0.5 text-[11px] text-primary-black/65 ring-1 ring-primary-black/10"
                     >
                       {allergen}
                     </span>
@@ -702,7 +702,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
         </section>
       )}
 
-      <div className="min-w-0 overflow-hidden border-t border-primary-black/8 px-3 py-4 sm:px-4">
+      <div className="min-w-0 overflow-hidden border-t border-primary-black/8 bg-surface-2 px-3 py-4 sm:px-4">
         <h3 className="text-sm font-semibold text-primary-black">Da pagare</h3>
 
         <ul className="mt-3 min-w-0 space-y-2">
@@ -751,7 +751,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                 <Link
                   key={suggestion.id}
                   href={buildSuggestionHref(event, suggestion.exploreCategory)}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary-black/10 bg-surface px-3.5 py-2 text-sm font-medium text-primary-black transition-colors hover:border-primary-black/25"
+                  className="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary-black/10 bg-surface-2 px-3.5 py-2 text-sm font-medium text-primary-black transition-colors hover:border-primary-black/25"
                 >
                   <Icon
                     className={`h-4 w-4 ${suggestion.iconClass}`}
@@ -918,7 +918,7 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
         type="button"
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
-        className="flex w-full items-center gap-3 rounded-2xl border border-primary-black/10 bg-surface px-3.5 py-3 text-left transition-colors hover:border-primary-black/20"
+        className="flex w-full items-center gap-3 rounded-2xl border border-primary-black/10 bg-background/60 px-3.5 py-3 text-left transition-colors hover:border-primary-black/20"
       >
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-primary-black">
