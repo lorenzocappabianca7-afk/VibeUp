@@ -4,7 +4,10 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 
 const SPLASH_STORAGE_KEY = "vibeup-splash-seen";
-const SPLASH_MS = 1400;
+/** Text appears shortly after the logo bounce starts */
+const TAGLINE_DELAY_MS = 520;
+/** Hold after the tagline is visible, then open Explore */
+const HOLD_AFTER_TAGLINE_MS = 1700;
 
 function shouldSkipSplash() {
   if (typeof window === "undefined") return true;
@@ -13,11 +16,15 @@ function shouldSkipSplash() {
   } catch {
     /* ignore */
   }
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return true;
+  }
   return false;
 }
 
 export function SplashScreen() {
   const [visible, setVisible] = useState(true);
+  const [showTagline, setShowTagline] = useState(false);
 
   useEffect(() => {
     if (shouldSkipSplash()) {
@@ -28,6 +35,10 @@ export function SplashScreen() {
     const previousOverflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = "hidden";
 
+    const taglineTimer = window.setTimeout(() => {
+      setShowTagline(true);
+    }, TAGLINE_DELAY_MS);
+
     const doneTimer = window.setTimeout(() => {
       try {
         sessionStorage.setItem(SPLASH_STORAGE_KEY, "1");
@@ -36,9 +47,10 @@ export function SplashScreen() {
       }
       document.documentElement.style.overflow = previousOverflow;
       setVisible(false);
-    }, SPLASH_MS);
+    }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS);
 
     return () => {
+      window.clearTimeout(taglineTimer);
       window.clearTimeout(doneTimer);
       document.documentElement.style.overflow = previousOverflow;
     };
@@ -58,9 +70,10 @@ export function SplashScreen() {
           className="vibeup-splash__logo"
           draggable={false}
         />
-        <p className="vibeup-splash__tagline">
-          <span className="text-brand-teal">V</span>ibe
-          <span className="text-brand-pink">U</span>p your life
+        <p
+          className={`vibeup-splash__tagline${showTagline ? " vibeup-splash__tagline--in" : ""}`}
+        >
+          VibeUp your life
         </p>
       </div>
     </div>
