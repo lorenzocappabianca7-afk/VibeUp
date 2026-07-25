@@ -1,4 +1,4 @@
-/** Browser Notification helpers for new chat messages. */
+/** Browser Notification helpers for chat and availability requests. */
 
 export type NotificationPermissionState =
   | "unsupported"
@@ -36,23 +36,18 @@ export function canShowBrowserNotification(pushEnabled: boolean) {
   );
 }
 
-/**
- * Shows a browser notification for a new chat message when allowed.
- * Skips when the document is focused and the caller opts out via `force`.
- */
-export function notifyNewChatMessage(options: {
+function showBrowserNotification(options: {
   pushEnabled: boolean;
   title: string;
   body: string;
   tag?: string;
-  /** When false, skip if the tab is visible/focused. Default true = respect focus. */
   onlyWhenHidden?: boolean;
 }) {
   const {
     pushEnabled,
     title,
     body,
-    tag = "vibeup-chat",
+    tag = "vibeup",
     onlyWhenHidden = true,
   } = options;
 
@@ -63,7 +58,7 @@ export function notifyNewChatMessage(options: {
 
   try {
     const notification = new Notification(title, {
-      body: body.slice(0, 140),
+      body: body.slice(0, 160),
       tag,
       icon: "/vibeup-mark-192.png",
       badge: "/vibeup-mark-192.png",
@@ -76,4 +71,36 @@ export function notifyNewChatMessage(options: {
   } catch {
     return false;
   }
+}
+
+/**
+ * Shows a browser notification for a new chat message when allowed.
+ * Skips when the document is focused and the caller opts out via `force`.
+ */
+export function notifyNewChatMessage(options: {
+  pushEnabled: boolean;
+  title: string;
+  body: string;
+  tag?: string;
+  /** When false, skip if the tab is visible/focused. Default true = respect focus. */
+  onlyWhenHidden?: boolean;
+}) {
+  return showBrowserNotification({
+    ...options,
+    tag: options.tag ?? "vibeup-chat",
+  });
+}
+
+export function notifyAvailabilityUpdate(options: {
+  pushEnabled: boolean;
+  title: string;
+  body: string;
+  tag?: string;
+  onlyWhenHidden?: boolean;
+}) {
+  return showBrowserNotification({
+    ...options,
+    tag: options.tag ?? "vibeup-availability",
+    onlyWhenHidden: options.onlyWhenHidden ?? false,
+  });
 }

@@ -2,33 +2,44 @@
 
 import { Button } from "@/components/ui/button";
 import { cn, formatCurrency } from "@/lib/utils";
+import type { AvailabilityRequestStatus } from "@/types/availability-request";
 import type { BookingQuote } from "@/types/location";
-import { Check, ShieldCheck } from "lucide-react";
+import { Check, Clock3, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 interface BookingSummaryProps {
   quote: BookingQuote;
   hourlyPrice: number;
   isReady: boolean;
-  isSaved?: boolean;
+  requestStatus?: AvailabilityRequestStatus | null;
+  requestError?: string | null;
   savedEventHref?: string;
   eventTitle: string;
   eventTitlePlaceholder: string;
   onEventTitleChange: (title: string) => void;
-  onBook: () => void;
+  onSendRequest: () => void;
 }
 
 export function BookingSummary({
   quote,
   hourlyPrice,
   isReady,
-  isSaved = false,
+  requestStatus = null,
+  requestError = null,
   savedEventHref,
   eventTitle,
   eventTitlePlaceholder,
   onEventTitleChange,
-  onBook,
+  onSendRequest,
 }: BookingSummaryProps) {
+  const isPendingManager = requestStatus === "pending_manager";
+  const isPendingUserConfirm = requestStatus === "pending_user_confirm";
+  const isConfirmed = requestStatus === "confirmed";
+  const isLocked =
+    isPendingManager || isPendingUserConfirm || isConfirmed;
+  const canRetry =
+    requestStatus === "declined" || requestStatus === "cancelled";
+
   return (
     <section className="space-y-4 rounded-2xl border border-primary-black/10 bg-primary-black/[0.02] p-5">
       <h2 className="text-base font-bold text-primary-black">Riepilogo</h2>
@@ -78,10 +89,10 @@ export function BookingSummary({
         />
         <p className="text-xs leading-relaxed text-primary-black/70">
           <span className="font-semibold text-primary-black">
-            Traccia tutto nei tuoi eventi
+            Prima la disponibilità
           </span>{" "}
-          Salva questo preventivo per ritrovare location, servizi, costi e
-          dettagli nella sezione I Miei Eventi.
+          Invia la richiesta al gestore. Se accetta, potrai confermare e solo
+          allora l&apos;evento verrà aggiunto ai tuoi eventi.
         </p>
       </div>
 
@@ -92,32 +103,83 @@ export function BookingSummary({
         <input
           value={eventTitle}
           onChange={(event) => onEventTitleChange(event.target.value)}
-          disabled={isSaved}
+          disabled={isLocked}
           placeholder={eventTitlePlaceholder}
           className="mt-1 w-full bg-transparent text-base font-black text-primary-black outline-none placeholder:text-primary-black/35 disabled:opacity-70"
           aria-label="Nome evento"
         />
       </label>
 
-      <Button
-        className={cn(
-          "w-full rounded-2xl py-4 text-base font-semibold",
-          isSaved && "bg-emerald-500 hover:bg-emerald-500 disabled:opacity-100",
+      <div className="space-y-2">
+        {!isConfirmed && (
+          <p className="text-center text-xs text-primary-black/45">
+            Sei interessato?
+          </p>
         )}
-        disabled={!isReady || quote.total <= 0 || isSaved}
-        onClick={onBook}
-      >
-        {isSaved ? (
-          <span className="inline-flex items-center gap-2">
-            <Check className="h-4 w-4" aria-hidden />
-            Salvato nei miei eventi
-          </span>
-        ) : (
-          "Salva nei miei eventi"
-        )}
-      </Button>
 
-      {isSaved && savedEventHref && (
+        <Button
+          className={cn(
+            "w-full rounded-2xl py-4 text-base font-semibold",
+            isConfirmed &&
+              "bg-emerald-500 hover:bg-emerald-500 disabled:opacity-100",
+            isPendingManager &&
+              "bg-primary-black/70 hover:bg-primary-black/70 disabled:opacity-100",
+            isPendingUserConfirm &&
+              "bg-brand-teal hover:bg-brand-teal disabled:opacity-100",
+          )}
+          disabled={
+            !isReady ||
+            quote.total <= 0 ||
+            isPendingManager ||
+            isPendingUserConfirm ||
+            isConfirmed
+          }
+          onClick={onSendRequest}
+        >
+          {isConfirmed ? (
+            <span className="inline-flex items-center gap-2">
+              <Check className="h-4 w-4" aria-hidden />
+              Evento creato nei miei eventi
+            </span>
+          ) : isPendingUserConfirm ? (
+            <span className="inline-flex items-center gap-2">
+              <Check className="h-4 w-4" aria-hidden />
+              Gestore ha accettato — conferma
+            </span>
+          ) : isPendingManager ? (
+            <span className="inline-flex items-center gap-2">
+              <Clock3 className="h-4 w-4" aria-hidden />
+              Richiesta inviata al gestore
+            </span>
+          ) : canRetry ? (
+            "Invia di nuovo la richiesta"
+          ) : (
+            "Invia richiesta di disponibilità a gestore"
+          )}
+        </Button>
+
+        {isPendingManager && (
+          <p className="text-center text-xs text-primary-black/50">
+            Il gestore riceverà data e dettagli. Ti avviseremo se accetta.
+          </p>
+        )}
+        {isPendingUserConfirm && (
+          <p className="text-center text-xs text-brand-teal">
+            Il gestore ha accettato. Conferma nel messaggio per creare
+            l&apos;evento.
+          </p>
+        )}
+        {requestStatus === "declined" && (
+          <p className="text-center text-xs text-brand-pink">
+            Il gestore non ha accettato. Puoi inviare una nuova richiesta.
+          </p>
+        )}
+        {requestError && (
+          <p className="text-center text-xs text-brand-pink">{requestError}</p>
+        )}
+      </div>
+
+      {isConfirmed && savedEventHref && (
         <Link
           href={savedEventHref}
           className="flex w-full items-center justify-center rounded-2xl border border-brand-teal/25 bg-brand-teal/10 px-4 py-3 text-sm font-black text-brand-teal transition-colors hover:bg-brand-teal/18"

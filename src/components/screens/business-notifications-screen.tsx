@@ -1,19 +1,25 @@
 "use client";
 
 import {
+  formatAvailabilityRequestTime,
+  useAvailabilityRequests,
+} from "@/context/availability-request-context";
+import { useAppState } from "@/context/app-state-context";
+import {
   MOCK_BUSINESS_NOTIFICATIONS,
   type BusinessNotification,
 } from "@/lib/mock/business-inbox";
-import { useAppState } from "@/context/app-state-context";
-import { useInboxBadge } from "@/context/inbox-badge-context";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import type { AvailabilityRequest } from "@/types/availability-request";
 import {
   Bell,
   CalendarCheck2,
   CreditCard,
   MessageCircle,
   Sparkles,
+  Users,
 } from "lucide-react";
-import { memo, useEffect } from "react";
+import { memo } from "react";
 
 const KIND_ICON = {
   booking: CalendarCheck2,
@@ -63,14 +69,87 @@ function NotificationRow({ item }: { item: BusinessNotification }) {
   );
 }
 
+function AvailabilityRequestCard({
+  request,
+  onAccept,
+  onDecline,
+}: {
+  request: AvailabilityRequest;
+  onAccept: () => void;
+  onDecline: () => void;
+}) {
+  const payload = request.eventPayload;
+
+  return (
+    <li className="rounded-2xl border border-brand-teal/25 bg-brand-teal/5 p-4">
+      <div className="flex gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-teal/15 text-brand-teal">
+          <CalendarCheck2 className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-semibold text-primary-black">
+              Richiesta di disponibilità
+            </p>
+            <span
+              className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-pink"
+              aria-label="Da gestire"
+            />
+          </div>
+          <p className="mt-0.5 text-sm text-primary-black/70">
+            <span className="font-semibold text-primary-black">
+              {request.requesterName}
+            </span>{" "}
+            vuole festeggiare a{" "}
+            <span className="font-semibold text-primary-black">
+              {request.locationName}
+            </span>
+            .
+          </p>
+          <div className="mt-2 space-y-1 rounded-xl bg-background/70 px-3 py-2 text-xs text-primary-black/65">
+            <p className="font-medium text-primary-black">{payload.title}</p>
+            <p>
+              {formatDate(payload.date)} · {payload.time}–{payload.endTime}
+            </p>
+            <p className="inline-flex items-center gap-1">
+              <Users className="h-3.5 w-3.5" aria-hidden />
+              {payload.guestCount} invitati · Totale{" "}
+              {formatCurrency(payload.totalCost)}
+            </p>
+          </div>
+          <p className="mt-1.5 text-xs text-primary-black/40">
+            {formatAvailabilityRequestTime(request.createdAt)}
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={onDecline}
+              className="flex-1 rounded-xl border border-primary-black/12 px-3 py-2.5 text-sm font-semibold text-primary-black/70"
+            >
+              Rifiuta
+            </button>
+            <button
+              type="button"
+              onClick={onAccept}
+              className="flex-1 rounded-xl bg-brand-teal px-3 py-2.5 text-sm font-bold text-primary-black"
+            >
+              Accetta
+            </button>
+          </div>
+        </div>
+      </div>
+    </li>
+  );
+}
+
 export const BusinessNotificationsScreen = memo(
   function BusinessNotificationsScreen() {
     const { businessProfile, currentUser } = useAppState();
-    const { hasUnreadNotifications, markNotificationsSeen } = useInboxBadge();
-
-    useEffect(() => {
-      markNotificationsSeen();
-    }, [markNotificationsSeen]);
+    const {
+      pendingManagerRequests,
+      acceptAvailabilityRequest,
+      declineAvailabilityRequest,
+    } = useAvailabilityRequests();
 
     const locationName =
       businessProfile?.businessName ?? currentUser.name ?? "la tua location";
@@ -88,19 +167,44 @@ export const BusinessNotificationsScreen = memo(
             Aggiornamenti su prenotazioni, pagamenti e messaggi per{" "}
             <span className="font-medium text-primary-black">{locationName}</span>
           </p>
-          {hasUnreadNotifications && (
+          {pendingManagerRequests.length > 0 && (
             <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-pink/15 px-2.5 py-1 text-xs font-medium text-brand-pink">
               <Bell className="h-3.5 w-3.5" aria-hidden />
-              Nuove notifiche
+              {pendingManagerRequests.length} richieste da gestire
             </p>
           )}
         </header>
 
-        <ul className="space-y-2">
-          {MOCK_BUSINESS_NOTIFICATIONS.map((item) => (
-            <NotificationRow key={item.id} item={item} />
-          ))}
-        </ul>
+        {pendingManagerRequests.length > 0 && (
+          <section className="space-y-2">
+            <h2 className="text-sm font-bold text-primary-black">
+              Richieste di disponibilità
+            </h2>
+            <ul className="space-y-2">
+              {pendingManagerRequests.map((request) => (
+                <AvailabilityRequestCard
+                  key={request.id}
+                  request={request}
+                  onAccept={() => acceptAvailabilityRequest(request.id)}
+                  onDecline={() => declineAvailabilityRequest(request.id)}
+                />
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <section className="space-y-2">
+          {pendingManagerRequests.length > 0 && (
+            <h2 className="text-sm font-bold text-primary-black">
+              Altre notifiche
+            </h2>
+          )}
+          <ul className="space-y-2">
+            {MOCK_BUSINESS_NOTIFICATIONS.map((item) => (
+              <NotificationRow key={item.id} item={item} />
+            ))}
+          </ul>
+        </section>
       </div>
     );
   },

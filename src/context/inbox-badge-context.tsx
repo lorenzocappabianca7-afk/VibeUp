@@ -1,6 +1,5 @@
 "use client";
 
-import { MOCK_BUSINESS_NOTIFICATIONS } from "@/lib/mock/business-inbox";
 import {
   createContext,
   useCallback,
@@ -17,19 +16,15 @@ interface InboxBadgeContextValue {
   markNotificationsSeen: () => void;
   /** Keep the Messaggi tab badge in sync with live chat unread counts. */
   syncUnreadMessages: (count: number) => void;
+  /** Keep business Notifiche badge in sync with pending availability requests. */
+  syncUnreadNotifications: (count: number) => void;
 }
 
 const InboxBadgeContext = createContext<InboxBadgeContextValue | null>(null);
 
-const INITIAL_UNREAD_NOTIFICATIONS = MOCK_BUSINESS_NOTIFICATIONS.filter(
-  (item) => item.unread,
-).length;
-
 export function InboxBadgeProvider({ children }: { children: ReactNode }) {
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const [unreadNotifications, setUnreadNotifications] = useState(
-    INITIAL_UNREAD_NOTIFICATIONS,
-  );
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   const markMessagesSeen = useCallback(() => {
     setUnreadMessages(0);
@@ -43,6 +38,10 @@ export function InboxBadgeProvider({ children }: { children: ReactNode }) {
     setUnreadMessages(Math.max(0, count));
   }, []);
 
+  const syncUnreadNotifications = useCallback((count: number) => {
+    setUnreadNotifications(Math.max(0, count));
+  }, []);
+
   const value = useMemo(
     () => ({
       hasUnreadMessages: unreadMessages > 0,
@@ -50,6 +49,7 @@ export function InboxBadgeProvider({ children }: { children: ReactNode }) {
       markMessagesSeen,
       markNotificationsSeen,
       syncUnreadMessages,
+      syncUnreadNotifications,
     }),
     [
       unreadMessages,
@@ -57,6 +57,7 @@ export function InboxBadgeProvider({ children }: { children: ReactNode }) {
       markMessagesSeen,
       markNotificationsSeen,
       syncUnreadMessages,
+      syncUnreadNotifications,
     ],
   );
 

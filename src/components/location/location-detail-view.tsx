@@ -6,6 +6,8 @@ import { LocationInfo, LocationReviewsSection } from "@/components/location/loca
 import { SmartLocationDetailsSection } from "@/components/location/smart-location-details-section";
 import { useAccountGate } from "@/context/account-gate-context";
 import { useAppState } from "@/context/app-state-context";
+import { useAvailabilityRequests } from "@/context/availability-request-context";
+import type { AvailabilityEventPayload } from "@/types/availability-request";
 import {
   calculateBookingQuote,
   calculateHours,
@@ -28,7 +30,7 @@ import { MOCK_LOCATIONS } from "@/lib/mock/locations";
 import { SERVICE_PROVIDERS } from "@/lib/mock/service-providers";
 import { getLocationPricePresentation } from "@/lib/utils";
 import type { ManagedLocationListing } from "@/types/admin";
-import type { BookedServiceCategory, UserEvent } from "@/types/event";
+import type { BookedServiceCategory } from "@/types/event";
 import type { BookingQuote, ExtraServiceId, Location } from "@/types/location";
 import {
   ArrowDown,
@@ -105,8 +107,8 @@ export function LocationDetailView({
   initialQuoteContext,
 }: LocationDetailViewProps) {
   const {
-    addEvent,
     compareLocationIds,
+    currentUser,
     favoriteLocationIds,
     managedListings,
     removeCompareLocation,
@@ -114,10 +116,12 @@ export function LocationDetailView({
     toggleFavoriteLocation,
   } = useAppState();
   const { requireAccount } = useAccountGate();
+  const { requests, sendAvailabilityRequest } = useAvailabilityRequests();
   const defaultEventTitle = `Festa da ${location.name}`;
   const isFavorite = favoriteLocationIds.includes(location.id);
   const isCompareSelected = compareLocationIds.includes(location.id);
   const [eventTitle, setEventTitle] = useState(defaultEventTitle);
+  const [requestError, setRequestError] = useState<string | null>(null);
   const [date, setDate] = useState(initialQuoteContext?.dateFrom ?? "");
   const [startTime, setStartTime] = useState("18:00");
   const [endTime, setEndTime] = useState("23:00");
@@ -144,7 +148,23 @@ export function LocationDetailView({
     key: string;
     quote: BookingQuote;
   } | null>(null);
-  const [createdEventId, setCreatedEventId] = useState<string | null>(null);
+  const activeRequest = useMemo(() => {
+    const mine = requests.filter(
+      (item) =>
+        item.locationId === location.id &&
+        item.requesterUserId === currentUser.id,
+    );
+    return (
+      mine.find(
+        (item) =>
+          item.status === "pending_manager" ||
+          item.status === "pending_user_confirm",
+      ) ??
+      mine.find((item) => item.status === "confirmed") ??
+      mine[0] ??
+      null
+    );
+  }, [currentUser.id, location.id, requests]);
   const similarLocations = useMemo(() => {
     const managedLocations = managedListings
       .filter(
@@ -288,7 +308,7 @@ export function LocationDetailView({
     requireAccount(
       () => {
         setGeneratedQuote({ key: quoteKey, quote: draftQuote });
-        setCreatedEventId(null);
+        setRequestError(null);
       },
       "Per generare un preventivo crea un account.",
     );
@@ -335,81 +355,97 @@ export function LocationDetailView({
     );
   }
 
-  function createEventFromBooking() {
+  function sendRequestFromBooking() {
     if (!quote) return;
 
-    const id = `evt-${Date.now()}`;
-    const services = [
-      {
-        id: `${id}-location`,
-        category: "location" as const,
-        name:
-          quote.drinksCost > 0
-            ? `Location · ${getDrinkPackageLabel({
-                mode: drinkMode,
-                drinksPerInvitee,
-              })}`
-            : "Location",
-        providerName: location.name,
-        status: "confirmed" as const,
-        amountPaid: quote.locationCost,
-      },
-      ...selectedExtras.flatMap((extraId) => {
-        const service = EXTRA_SERVICES.find((item) => item.id === extraId);
-        if (!service) return [];
+    requireAccount(
+      () => {
+        const services = [
+          {
+            id: "draft-location",
+            category: "location" as const,
+            name:
+              quote.drinksCost > 0
+                ? `Location · ${getDrinkPackageLabel({
+                    mode: drinkMode,
+                    drinksPerInvitee,
+                  })}`
+                : "Location",
+            providerName: location.name,
+            status: "confirmed" as const,
+            amountPaid: quote.locationCost,
+          },
+          ...selectedExtras.flatMap((extraId) => {
+            const service = EXTRA_SERVICES.find((item) => item.id === extraId);
+            if (!service) return [];
 
-        return {
-          id: `${id}-${extraId}`,
-          category: EXTRA_SERVICE_CATEGORY[extraId],
-          name: service.name,
-          providerName: service.providerName ?? service.name,
-          status: "pending" as const,
-          amountPaid: getExtraServicePrice(service, { cakeKg, guestCount }),
-          allergens: getMenuAllergens(service.name),
+            return {
+              id: `draft-${extraId}`,
+              category: EXTRA_SERVICE_CATEGORY[extraId],
+              name: service.name,
+              providerName: service.providerName ?? service.name,
+              status: "pending" as const,
+              amountPaid: getExtraServicePrice(service, {
+                cakeKg,
+                guestCount,
+              }),
+              allergens: getMenuAllergens(service.name),
+            };
+          }),
+          ...selectedInternalServices.flatMap((serviceId) => {
+            const service = internalServices.find(
+              (item) => item.id === serviceId,
+            );
+            if (!service) return [];
+            if (
+              drinkMode !== "none" &&
+              service.type === "bar" &&
+              service.pricing.type !== "included"
+            ) {
+              return [];
+            }
+
+            return {
+              id: `draft-${serviceId}`,
+              category: INTERNAL_SERVICE_CATEGORY[service.type],
+              name: service.name,
+              providerName: location.name,
+              status: "confirmed" as const,
+              amountPaid: getInternalLocationServicePrice(service, guestCount),
+              allergens: getMenuAllergens(service.name),
+            };
+          }),
+        ];
+
+        const eventPayload: AvailabilityEventPayload = {
+          title: eventTitle.trim() || defaultEventTitle,
+          description: "Preventivo richiesto dalla scheda location.",
+          date,
+          time: startTime,
+          endTime,
+          locationId: location.id,
+          locationName: location.name,
+          city: location.city,
+          guestCount,
+          services,
+          totalCost: quote.total,
+          depositAmount: quote.depositAmount,
         };
-      }),
-      ...selectedInternalServices.flatMap((serviceId) => {
-        const service = internalServices.find((item) => item.id === serviceId);
-        if (!service) return [];
-        if (
-          drinkMode !== "none" &&
-          service.type === "bar" &&
-          service.pricing.type !== "included"
-        ) {
-          return [];
+
+        const result = sendAvailabilityRequest({
+          locationId: location.id,
+          locationName: location.name,
+          eventPayload,
+        });
+
+        if (!result.ok) {
+          setRequestError(result.error);
+          return;
         }
-
-        return {
-          id: `${id}-${serviceId}`,
-          category: INTERNAL_SERVICE_CATEGORY[service.type],
-          name: service.name,
-          providerName: location.name,
-          status: "confirmed" as const,
-          amountPaid: getInternalLocationServicePrice(service, guestCount),
-          allergens: getMenuAllergens(service.name),
-        };
-      }),
-    ];
-
-    const event: UserEvent = {
-      id,
-      title: eventTitle.trim() || defaultEventTitle,
-      description: "Preventivo salvato dalla scheda location.",
-      date,
-      time: startTime,
-      endTime,
-      locationId: location.id,
-      locationName: location.name,
-      city: location.city,
-      status: "organizing",
-      guestCount,
-      services,
-      totalCost: quote.total,
-      depositAmount: quote.depositAmount,
-    };
-
-    addEvent(event);
-    setCreatedEventId(id);
+        setRequestError(null);
+      },
+      "Per inviare una richiesta di disponibilità crea un account.",
+    );
   }
 
   return (
@@ -512,15 +548,16 @@ export function LocationDetailView({
             quote={quote ?? EMPTY_QUOTE}
             hourlyPrice={location.hourlyPrice}
             isReady={isReady}
-            isSaved={Boolean(createdEventId)}
+            requestStatus={activeRequest?.status ?? null}
+            requestError={requestError}
             savedEventHref="/?tab=events"
             eventTitle={eventTitle}
             eventTitlePlaceholder={defaultEventTitle}
             onEventTitleChange={(title) => {
               setEventTitle(title);
-              setCreatedEventId(null);
+              setRequestError(null);
             }}
-            onBook={createEventFromBooking}
+            onSendRequest={sendRequestFromBooking}
           />
         </aside>
       </div>
