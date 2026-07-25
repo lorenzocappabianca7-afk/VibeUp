@@ -117,9 +117,17 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_SCRIPT }}
         />
-        {/* 2) Inline CSS before any stylesheet link */}
+        {/* 2) Inline CSS before any stylesheet link (black + constrained logo size) */}
         <style
           dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_CSS }}
+        />
+        {/* 3) Fetch splash mark in parallel with HTML — avoids blank→logo gap */}
+        <link
+          rel="preload"
+          href="/vibeup-splash-logo-boot.png"
+          as="image"
+          type="image/png"
+          fetchPriority="high"
         />
       </head>
       <body

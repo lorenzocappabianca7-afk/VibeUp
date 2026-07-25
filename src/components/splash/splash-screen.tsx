@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useState } from "react";
-import { CRITICAL_PAINT_ID } from "@/lib/critical-paint";
+import {
+  CRITICAL_PAINT_ID,
+  SPLASH_LOGO_SRC,
+} from "@/lib/critical-paint";
 import {
   HOLD_AFTER_TAGLINE_MS,
   LOGO_BOUNCE_MS,
@@ -9,7 +12,6 @@ import {
   SPLASH_STORAGE_KEY,
   TAGLINE_DELAY_MS,
 } from "@/lib/splash";
-import { SPLASH_LOGO_DATA_URI } from "@/lib/splash-logo-data";
 
 /** True after the first bounce has started — Strict Mode remount must not replay it. */
 let splashBounceAlreadyPlayed = false;
@@ -34,7 +36,11 @@ function removeCriticalPaint() {
 
 /**
  * Splash over a black safety net (CriticalPaint sits UNDER this layer).
- * Bug fixed: critical paint was z-index 99998 > splash 10000 → logo/tagline invisible.
+ *
+ * FOUC fixes:
+ * - Logo uses a preloaded PNG URL (not a 250KB data-URI that delayed first paint).
+ * - Bounce never starts at opacity:0 (that left a blank frame before the mark).
+ * - Width is inline + in critical CSS so a 640px bitmap cannot flash full-screen.
  */
 export function SplashScreen() {
   const [phase, setPhase] = useState<Phase>("enter");
@@ -46,8 +52,6 @@ export function SplashScreen() {
       removeCriticalPaint();
       setPhase("gone");
     }
-    // Do NOT remove CriticalPaint here on enter — it stays under the splash
-    // as a black safety net until phase === "gone".
   }, []);
 
   useEffect(() => {
@@ -81,7 +85,6 @@ export function SplashScreen() {
         /* ignore */
       }
       document.documentElement.style.overflow = previousOverflow;
-      // Remove black shell only after splash has faded — no white gap.
       removeCriticalPaint();
       setPhase("gone");
     }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS + SPLASH_EXIT_MS);
@@ -121,7 +124,7 @@ export function SplashScreen() {
       <div className="vibeup-splash__stage">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={SPLASH_LOGO_DATA_URI}
+          src={SPLASH_LOGO_SRC}
           alt=""
           width={640}
           height={640}
@@ -130,8 +133,14 @@ export function SplashScreen() {
               ? "vibeup-splash__logo vibeup-splash__logo--settled"
               : "vibeup-splash__logo"
           }
+          style={{
+            width: "7rem",
+            maxWidth: "7rem",
+            height: "auto",
+            opacity: 1,
+          }}
           draggable={false}
-          decoding="sync"
+          decoding="async"
           fetchPriority="high"
           onAnimationEnd={(event) => {
             if (!event.animationName.includes("vibeup-splash-bounce")) return;
@@ -170,6 +179,7 @@ const SPLASH_CSS = `
   transform-origin:center center;
   image-rendering:auto;
   -webkit-user-drag:none;
+  opacity:1;
   animation:vibeup-splash-bounce ${LOGO_BOUNCE_MS}ms cubic-bezier(0.16,1,0.3,1) both;
 }
 .vibeup-splash__logo--settled{
@@ -194,8 +204,7 @@ const SPLASH_CSS = `
   animation:vibeup-splash-tagline-in 640ms cubic-bezier(0.16,1,0.3,1) both;
 }
 @keyframes vibeup-splash-bounce{
-  0%{opacity:0;transform:translate3d(0,6px,0) scale(0.62)}
-  18%{opacity:1}
+  0%{opacity:1;transform:translate3d(0,6px,0) scale(0.62)}
   45%{transform:translate3d(0,0,0) scale(1.05)}
   62%{transform:translate3d(0,0,0) scale(0.98)}
   78%{transform:translate3d(0,0,0) scale(1.015)}
