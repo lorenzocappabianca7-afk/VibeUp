@@ -655,7 +655,10 @@ export function ExploreScreen({
           onEventId={onEventIdParam}
         />
       </Suspense>
-      <header className="relative min-w-0">
+      <header className="relative min-w-0 space-y-4">
+        <h1 className="text-center text-[1.65rem] font-semibold italic tracking-tight text-white">
+          VibeUp
+        </h1>
         <div className="rounded-3xl border border-primary-black/10 bg-primary-black/[0.03] p-1.5">
           <div className="-mx-0.5 flex min-w-0 flex-nowrap items-stretch gap-1.5 overflow-x-auto px-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {EXPLORE_CATEGORIES.map((category) => {

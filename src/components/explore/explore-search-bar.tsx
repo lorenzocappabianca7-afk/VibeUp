@@ -448,7 +448,7 @@ export function ExploreSearchBar({
         tabIndex={open ? 0 : -1}
         aria-hidden={!open}
         className={cn(
-          "fixed inset-0 z-[40] bg-primary-black/20",
+          "fixed inset-0 z-[40] bg-transparent",
           open
             ? "pointer-events-auto opacity-100"
             : "pointer-events-none opacity-0",
@@ -540,7 +540,7 @@ export function ExploreSearchBar({
               )}
               style={{ opacity: open ? 1 : 0 }}
             >
-              <div className="flex w-full items-center gap-2 rounded-2xl bg-primary-black/[0.03] px-3 py-2.5">
+              <div className="flex w-full items-center gap-2 rounded-2xl bg-transparent px-3 py-2.5">
                 <Search
                   className="h-4 w-4 shrink-0 text-primary-black/45"
                   aria-hidden
@@ -559,7 +559,7 @@ export function ExploreSearchBar({
                   autoComplete="off"
                   enterKeyHint="search"
                   tabIndex={open ? 0 : -1}
-                  className="min-w-0 flex-1 bg-transparent text-base font-medium text-primary-black outline-none placeholder:font-normal placeholder:text-primary-black/40"
+                  className="min-w-0 flex-1 bg-transparent text-base font-medium text-primary-black outline-none placeholder:font-normal placeholder:text-primary-black/40 [&::-webkit-search-cancel-button]:hidden"
                 />
                 {draft ? (
                   <button
