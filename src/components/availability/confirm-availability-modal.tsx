@@ -2,14 +2,14 @@
 
 import { useAvailabilityRequests } from "@/context/availability-request-context";
 import { useProfileCommunications } from "@/context/profile-communications-context";
+import { useTabNavigation } from "@/context/tab-navigation-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { CalendarCheck2, MapPin, Users } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function ConfirmAvailabilityModal() {
-  const router = useRouter();
+  const { setTab } = useTabNavigation();
   const {
     pendingUserConfirms,
     confirmAvailabilityRequest,
@@ -39,7 +39,7 @@ export function ConfirmAvailabilityModal() {
       locationName: payload.locationName,
       date: formatDate(payload.date),
     });
-    router.push("/?tab=events");
+    setTab("events");
   }
 
   return (

@@ -24,9 +24,9 @@ import {
   type BusinessCategory,
   type BusinessProfile,
 } from "@/types/business";
+import { HomeTabLink } from "@/components/navigation/home-tab-link";
+import { assignHomeHref } from "@/lib/home-navigation";
 import { ArrowLeft, Briefcase, CheckCircle2 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 const CATEGORIES = Object.entries(BUSINESS_CATEGORY_LABELS) as [
@@ -166,7 +166,6 @@ function isValidEmail(value: string) {
 }
 
 export function BusinessOnboardingView() {
-  const router = useRouter();
   const navigateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const {
     accounts,
@@ -303,7 +302,7 @@ export function BusinessOnboardingView() {
       }
       navigateTimerRef.current = setTimeout(() => {
         navigateTimerRef.current = null;
-        router.push("/?tab=notifications");
+        assignHomeHref("/?tab=notifications");
       }, 1400);
       return;
     }
@@ -366,20 +365,20 @@ export function BusinessOnboardingView() {
       }
       navigateTimerRef.current = setTimeout(() => {
         navigateTimerRef.current = null;
-        router.push("/?tab=notifications");
+        assignHomeHref("/?tab=notifications");
       }, 1400);
     })();
   }
 
   return (
     <div className="space-y-6 pb-8">
-      <Link
-        href="/?tab=profile"
+      <HomeTabLink
+        tab="profile"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-black/60 transition-colors hover:text-primary-black"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden />
         Torna al Profilo
-      </Link>
+      </HomeTabLink>
 
       <header>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/25 px-3 py-1 text-xs font-semibold text-amber-700">

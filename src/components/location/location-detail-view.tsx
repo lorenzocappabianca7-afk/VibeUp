@@ -43,8 +43,9 @@ import {
   Heart,
   MapPin,
 } from "lucide-react";
+import { HardNavLink } from "@/components/navigation/hard-nav-link";
+import { HomeTabLink } from "@/components/navigation/home-tab-link";
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 interface LocationDetailViewProps {
@@ -527,13 +528,13 @@ export function LocationDetailView({
   return (
     <div className="space-y-6 pb-8 lg:pb-12">
       <div className="flex items-center justify-between gap-3">
-        <Link
-          href="/"
+        <HomeTabLink
+          tab="explore"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-black/60 transition-colors hover:text-primary-black"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Torna a Esplora
-        </Link>
+        </HomeTabLink>
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -681,7 +682,7 @@ function SimilarLocationsCarousel({ locations }: { locations: Location[] }) {
               key={similarLocation.id}
               className="w-[15rem] shrink-0 lg:w-[17rem]"
             >
-              <Link
+              <HardNavLink
                 href={`/location/${similarLocation.id}`}
                 className="block h-full overflow-hidden rounded-3xl border border-primary-black/10 bg-background shadow-sm transition-colors duration-150 hover:border-primary-black"
               >
@@ -712,7 +713,7 @@ function SimilarLocationsCarousel({ locations }: { locations: Location[] }) {
                     {price.badge}
                   </p>
                 </div>
-              </Link>
+              </HardNavLink>
             </li>
             );
           })}
@@ -744,7 +745,7 @@ function RecommendedDjsCarousel({
         <ul className="flex w-max gap-3">
           {djs.map((dj) => (
             <li key={dj.id} className="w-[15rem] shrink-0 lg:w-[17rem]">
-              <Link
+              <HardNavLink
                 href={`/service/${dj.id}?category=dj`}
                 className="flex h-full gap-3 rounded-3xl border border-primary-black/10 bg-surface p-4 shadow-sm transition-colors duration-150 hover:border-primary-black"
               >
@@ -790,7 +791,7 @@ function RecommendedDjsCarousel({
                     da {dj.price} €/{dj.priceSuffix}
                   </p>
                 </div>
-              </Link>
+              </HardNavLink>
             </li>
           ))}
         </ul>

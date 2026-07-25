@@ -1,40 +1,26 @@
 "use client";
 
 import { forceUnlockBodyScrollIfIdle } from "@/lib/body-scroll-lock";
-import { useEffect, useRef } from "react";
-
-const SW_UPDATE_MIN_MS = 30 * 60 * 1000;
+import { useEffect } from "react";
 
 /**
  * After long idle / bfcache restore, mobile Safari/Chrome can leave the page
- * unresponsive (stuck body scroll lock or a stale service worker).
- * This soft-recovers interaction without remounting the whole app.
+ * unresponsive (stuck body scroll lock). Unlock without poking the service
+ * worker — registration.update() + claim was interrupting live sessions.
  */
 export function AppWakeRecovery() {
-  const lastSwUpdateAtRef = useRef(0);
-
   useEffect(() => {
     const recover = () => {
       forceUnlockBodyScrollIfIdle();
-
-      // Throttle SW checks — focus/visibility can fire often during long use.
-      if (!("serviceWorker" in navigator)) return;
-      const now = Date.now();
-      if (now - lastSwUpdateAtRef.current < SW_UPDATE_MIN_MS) return;
-      lastSwUpdateAtRef.current = now;
-      void navigator.serviceWorker.getRegistration().then((registration) => {
-        void registration?.update();
-      });
     };
 
     const onVisibility = () => {
       if (document.visibilityState === "visible") recover();
     };
 
-    const onPageShow = (event: PageTransitionEvent) => {
+    const onPageShow = () => {
       // bfcache restore after backgrounding is a common freeze trigger.
-      if (event.persisted) recover();
-      else recover();
+      recover();
     };
 
     const onFocus = () => recover();

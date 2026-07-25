@@ -2,13 +2,14 @@
 
 import { useAppState } from "@/context/app-state-context";
 import { isBodyScrollLocked } from "@/lib/body-scroll-lock";
+import { assignHomeHref } from "@/lib/home-navigation";
 import {
   ALL_TAB_IDS,
   BUSINESS_TABS,
   CONSUMER_TABS,
   type TabId,
 } from "@/types/navigation";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   createContext,
   startTransition,
@@ -152,7 +153,6 @@ function TabParamSync({ onTab }: { onTab: (tab: string | null) => void }) {
 
 export function TabNavigationProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname() || "/";
-  const router = useRouter();
   const { isBusinessUser } = useAppState();
   const [tabParam, setTabParam] = useState<string | null>(null);
 
@@ -231,12 +231,13 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // From /location|/event|/service etc.: soft router.push also RSC-fetches
+      // and is the usual path to Safari’s “This page couldn’t load” after a
+      // long session. Full assign is reliable; splash is session-skipped.
       skipNextScrollRestoreRef.current = true;
-      startTransition(() => {
-        router.push(href, { scroll: false });
-      });
+      assignHomeHref(href);
     },
-    [activeTab, isBusinessUser, onHome, router],
+    [activeTab, isBusinessUser, onHome],
   );
 
   const value = useMemo(

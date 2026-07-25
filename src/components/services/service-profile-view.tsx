@@ -11,9 +11,9 @@ import { isEventPast } from "@/lib/event";
 import type { ManagedListing, ManagedServiceListing } from "@/types/admin";
 import type { BookedServiceCategory } from "@/types/event";
 import type { MusicType, PartyType } from "@/types/location";
+import { HomeTabLink } from "@/components/navigation/home-tab-link";
 import { ArrowLeft, Calendar, Check, Clock, MapPin, Star } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface ServiceProfileViewProps {
@@ -285,12 +285,12 @@ export function ServiceProfileView({
         <h1 className="text-xl font-black text-primary-black">
           Servizio non trovato
         </h1>
-        <Link
-          href="/?tab=explore"
+        <HomeTabLink
+          tab="explore"
           className="mt-6 rounded-2xl bg-brand-teal px-6 py-3 text-sm font-black text-ink-inverse"
         >
           Torna alla home
-        </Link>
+        </HomeTabLink>
       </div>
     );
   }
@@ -309,13 +309,14 @@ export function ServiceProfileView({
       }}
     >
       <div className="min-w-0 space-y-4 pb-8">
-        <Link
-          href={`/?tab=explore&category=${service.category}`}
+        <HomeTabLink
+          tab="explore"
+          search={`category=${service.category}`}
           className="inline-flex items-center gap-1.5 text-xs font-bold text-primary-black/60 transition-colors hover:text-primary-black sm:text-sm"
         >
           <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden />
           Torna ai servizi
-        </Link>
+        </HomeTabLink>
 
         <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.75fr)] xl:gap-6">
           <div className="space-y-3 sm:space-y-4">
@@ -503,12 +504,12 @@ export function ServiceProfileView({
                 )}
               </button>
               {serviceAdded && (
-                <Link
-                  href="/?tab=events"
+                <HomeTabLink
+                  tab="events"
                   className="mt-3 flex w-full items-center justify-center rounded-2xl bg-surface px-4 py-3 text-sm font-black text-brand-teal transition-colors hover:bg-surface/90"
                 >
                   Vai ai miei eventi
-                </Link>
+                </HomeTabLink>
               )}
             </aside>
           ) : (
@@ -681,12 +682,12 @@ export function ServiceProfileView({
                   )}
                 </button>
                 {serviceAdded && (
-                  <Link
-                    href="/?tab=events"
+                  <HomeTabLink
+                    tab="events"
                     className="mt-3 flex w-full items-center justify-center rounded-2xl bg-surface px-4 py-3 text-sm font-black text-brand-teal transition-colors hover:bg-surface/90"
                   >
                     Vai ai miei eventi
-                  </Link>
+                  </HomeTabLink>
                 )}
               </>
             )}

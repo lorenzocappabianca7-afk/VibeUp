@@ -12,9 +12,9 @@ import type {
   ManagedLocationListing,
   ManagedServiceListing,
 } from "@/types/admin";
+import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { formatCurrency, getLocationPricePresentation } from "@/lib/utils";
 import { Briefcase, Heart, MapPin, X } from "lucide-react";
-import Link from "next/link";
 import { useMemo } from "react";
 
 interface FavoritesSettingsPanelProps {
@@ -117,7 +117,7 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
                   key={location.id}
                   className="relative overflow-hidden rounded-2xl border border-primary-black/8 bg-background"
                 >
-                  <Link
+                  <HardNavLink
                     href={`/location/${location.id}`}
                     className="flex gap-3 p-2 pr-11"
                   >
@@ -147,7 +147,7 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
                         {price.badge}
                       </p>
                     </div>
-                  </Link>
+                  </HardNavLink>
                   <button
                     type="button"
                     onClick={() => removeFavoriteLocation(location.id)}
@@ -196,7 +196,7 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
                 key={service.id}
                 className="relative overflow-hidden rounded-2xl border border-primary-black/8 bg-background"
               >
-                <Link
+                <HardNavLink
                   href={`/service/${service.id}?category=${service.category}`}
                   className="flex gap-3 p-2 pr-11"
                 >
@@ -225,7 +225,7 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
                       {formatCurrency(service.price)}/{service.priceSuffix}
                     </p>
                   </div>
-                </Link>
+                </HardNavLink>
                 <button
                   type="button"
                   onClick={() => removeFavoriteService(service.id)}

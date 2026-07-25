@@ -5,7 +5,7 @@ import { useAppState } from "@/context/app-state-context";
 import { getLocationById } from "@/lib/location";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import type { ManagedLocationListing } from "@/types/admin";
-import Link from "next/link";
+import { HomeTabLink } from "@/components/navigation/home-tab-link";
 
 interface LocationPageClientProps {
   id: string;
@@ -49,12 +49,12 @@ export function LocationPageClient({
           <p className="mt-2 text-sm text-primary-black/60">
             Questa pubblicazione non e&apos; disponibile o non e&apos; stata ancora pubblicata.
           </p>
-          <Link
-            href="/"
+          <HomeTabLink
+            tab="explore"
             className="mt-4 inline-flex rounded-2xl bg-brand-teal px-5 py-3 text-sm font-bold text-ink-inverse"
           >
             Torna a Esplora
-          </Link>
+          </HomeTabLink>
         </div>
       </div>
     );

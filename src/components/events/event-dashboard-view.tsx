@@ -3,6 +3,7 @@
 import { EventCountdown } from "@/components/events/event-countdown";
 import { RefundReportModal } from "@/components/events/refund-report-modal";
 import { ServiceStatusList } from "@/components/events/service-status-list";
+import { HomeTabLink } from "@/components/navigation/home-tab-link";
 import { useAppState } from "@/context/app-state-context";
 import {
   EVENT_STATUS_LABELS,
@@ -23,7 +24,6 @@ import {
   Users,
   X,
 } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 
 interface EventDashboardViewProps {
@@ -55,13 +55,13 @@ export function EventDashboardView({
 
     return (
       <div className="space-y-6 pb-8">
-        <Link
-          href="/?tab=events"
+        <HomeTabLink
+          tab="events"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-black/60 transition-colors hover:text-primary-black"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Torna ai Miei Eventi
-        </Link>
+        </HomeTabLink>
         <div className="rounded-3xl border border-dashed border-primary-black/15 bg-primary-black/[0.02] p-8 text-center">
           <h1 className="text-lg font-bold text-primary-black">
             Evento non trovato
@@ -96,13 +96,13 @@ export function EventDashboardView({
 
   return (
     <div className="space-y-6 pb-8">
-      <Link
-        href="/?tab=events"
+      <HomeTabLink
+        tab="events"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-black/60 transition-colors hover:text-primary-black"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden />
         Torna ai Miei Eventi
-      </Link>
+      </HomeTabLink>
 
       <header>
         <span className="rounded-full bg-brand-teal/15 px-3 py-1 text-xs font-medium text-brand-teal">

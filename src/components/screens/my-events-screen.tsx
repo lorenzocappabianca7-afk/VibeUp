@@ -33,7 +33,7 @@ import {
   formatDate,
   MODAL_SAFE_BOTTOM_STYLE,
 } from "@/lib/utils";
-import Link from "next/link";
+import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 
@@ -748,7 +748,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
               const Icon = suggestion.icon;
 
               return (
-                <Link
+                <HardNavLink
                   key={suggestion.id}
                   href={buildSuggestionHref(event, suggestion.exploreCategory)}
                   className="inline-flex shrink-0 items-center gap-2 rounded-full border border-ink-inverse/15 bg-surface-2 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:border-ink-inverse/30"
@@ -758,7 +758,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                     aria-hidden
                   />
                   {suggestion.label}
-                </Link>
+                </HardNavLink>
               );
             })}
           </div>

@@ -1,11 +1,11 @@
 "use client";
 
-import { SafeImage } from "@/components/ui/safe-image";
 import { DistanceBadge } from "@/components/explore/distance-badge";
+import { HardNavLink } from "@/components/navigation/hard-nav-link";
+import { SafeImage } from "@/components/ui/safe-image";
 import { cn, getLocationPricePresentation } from "@/lib/utils";
 import type { ContactPreview, Location } from "@/types/location";
 import { GitCompareArrows, Heart, MapPin } from "lucide-react";
-import Link from "next/link";
 import { memo, useState } from "react";
 
 interface LocationCardProps {
@@ -33,7 +33,7 @@ export const LocationCard = memo(function LocationCard({
   return (
     <article className="render-contained h-full overflow-hidden rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-[border-color,transform,box-shadow] duration-150 hover:border-primary-black active:scale-[0.995]">
       <div className="relative aspect-[16/10] w-full">
-        <Link
+        <HardNavLink
           href={href}
           className="relative block h-full w-full"
         >
@@ -44,7 +44,7 @@ export const LocationCard = memo(function LocationCard({
             className="object-cover"
             sizes="(max-width: 448px) 100vw, 448px"
           />
-        </Link>
+        </HardNavLink>
 
         {location.distanceBadge && (
           <div className="absolute left-3 top-3 z-10">
@@ -107,7 +107,7 @@ export const LocationCard = memo(function LocationCard({
         </div>
       </div>
 
-      <Link href={href} className="block p-4">
+      <HardNavLink href={href} className="block p-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
           <div className="min-w-0">
             <h3 className="truncate font-semibold text-primary-black">
@@ -133,7 +133,7 @@ export const LocationCard = memo(function LocationCard({
           </p>
         </div>
 
-      </Link>
+      </HardNavLink>
 
       {hasContacts && (
         <div className="px-4 pb-4">

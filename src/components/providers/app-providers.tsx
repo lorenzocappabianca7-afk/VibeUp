@@ -20,8 +20,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
             <AvailabilityRequestProvider>
               <ChatProvider>
                 <SecurityRuntimeGuard />
-                <ConfirmAvailabilityModal />
-                <TabNavigationProvider>{children}</TabNavigationProvider>
+                <TabNavigationProvider>
+                  <ConfirmAvailabilityModal />
+                  {children}
+                </TabNavigationProvider>
               </ChatProvider>
             </AvailabilityRequestProvider>
           </ProfileCommunicationsProvider>

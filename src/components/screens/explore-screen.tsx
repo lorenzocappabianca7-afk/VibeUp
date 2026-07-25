@@ -54,8 +54,8 @@ import {
   useTransition,
 } from "react";
 import type { ManagedListing, ManagedLocationListing } from "@/types/admin";
+import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { SafeImage } from "@/components/ui/safe-image";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 type ExploreView = "list" | "compare";
@@ -959,7 +959,7 @@ const ServiceCard = memo(function ServiceCard({
 
   return (
     <article className="h-full overflow-hidden rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-colors duration-150 hover:border-primary-black">
-      <Link
+      <HardNavLink
         href={href}
         className={cn(
           "block",
@@ -1018,7 +1018,7 @@ const ServiceCard = memo(function ServiceCard({
             {getServicePriceLabel(service)}
           </span>
         </div>
-      </Link>
+      </HardNavLink>
       <div className={cn("px-4 pb-4", showProfilePhoto && "pt-0")}>
         <button
           type="button"

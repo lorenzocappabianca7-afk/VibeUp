@@ -18,9 +18,9 @@ import {
   Heart,
   X,
 } from "lucide-react";
-import Link from "next/link";
 import { AvatarCropModal } from "@/components/profile/avatar-crop-modal";
 import { ProfileSettingsView } from "@/components/profile/settings/profile-settings-view";
+import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { GUEST_USER, isProAccount, useAppState } from "@/context/app-state-context";
 import { useProfileCommunications } from "@/context/profile-communications-context";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
@@ -980,23 +980,23 @@ export function ProfileScreen({
       )}
 
       {!isBusinessUser && (
-        <Link
+        <HardNavLink
           href="/business/onboarding"
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-pink py-3.5 text-sm font-semibold text-primary-black transition-colors hover:bg-brand-pink/90"
         >
           <Briefcase className="h-4 w-4" aria-hidden />
           Passa a Business
-        </Link>
+        </HardNavLink>
       )}
 
       {isBusinessUser && (
-        <Link
+        <HardNavLink
           href="/business/onboarding"
           className="flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-400/40 bg-amber-400/15 py-3.5 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-400/25"
         >
           <Briefcase className="h-4 w-4" aria-hidden />
           Modifica profilo Business
-        </Link>
+        </HardNavLink>
       )}
 
       <button
@@ -1009,12 +1009,12 @@ export function ProfileScreen({
       </button>
 
       {canManagePublications && (
-        <Link
+        <HardNavLink
           href="/admin/catalog"
           className="block text-center text-xs font-medium text-primary-black/35 underline-offset-4 transition-colors hover:text-primary-black/55 hover:underline"
         >
           Area gestione pubblicazioni
-        </Link>
+        </HardNavLink>
       )}
 
       {avatarCropFile && (

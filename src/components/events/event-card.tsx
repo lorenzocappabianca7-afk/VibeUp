@@ -1,9 +1,9 @@
 "use client";
 
+import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { EVENT_STATUS_LABELS, type UserEvent } from "@/types/event";
 import { formatDate } from "@/lib/utils";
 import { Calendar, ChevronRight, MapPin, Users } from "lucide-react";
-import Link from "next/link";
 import { memo, useMemo } from "react";
 
 interface EventCardProps {
@@ -24,7 +24,7 @@ export const EventCard = memo(function EventCard({ event }: EventCardProps) {
   );
 
   return (
-    <Link
+    <HardNavLink
       href={`/event/${event.id}`}
       className="flex items-center gap-4 rounded-2xl border border-primary-black/10 bg-surface p-4 transition-colors duration-150 hover:border-primary-black"
     >
@@ -62,6 +62,6 @@ export const EventCard = memo(function EventCard({ event }: EventCardProps) {
         </span>
         <ChevronRight className="h-4 w-4 text-primary-black/30" aria-hidden />
       </div>
-    </Link>
+    </HardNavLink>
   );
 });
