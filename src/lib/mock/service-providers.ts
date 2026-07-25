@@ -152,7 +152,7 @@ export const SERVICE_PROVIDERS: ServiceProvider[] = [
     category: "altri",
     name: "Safe Night Security",
     description:
-      "Buttafuori certificati per controllo ingressi, gestione code e sicurezza durante feste private.",
+      "Security certificata per controllo ingressi, gestione code e sicurezza durante feste private.",
     providerZone: "Torino e provincia",
     price: 160,
     priceSuffix: "addetto",

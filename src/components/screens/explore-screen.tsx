@@ -137,7 +137,7 @@ const SEARCH_PLACEHOLDERS: Record<ExploreCategory, string> = {
   locali: "Cerca location...",
   dj: "Cerca DJ...",
   fotografo: "Cerca fotografo...",
-  decorazioni: "Cerca decorazioni...",
+  decorazioni: "Cerca negozi...",
   altri: "Cerca altri servizi...",
 };
 
@@ -721,8 +721,9 @@ export function ExploreScreen({
               <Megaphone className="h-4 w-4" aria-hidden />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-black text-primary-black">
-                Ottieni sconti
+              <span className="block text-sm font-black leading-snug text-primary-black">
+                Ottieni sconti invitando il tuo{" "}
+                {activeCategory === "dj" ? "DJ" : "fotografo"} di fiducia
               </span>
             </span>
             <ChevronDown

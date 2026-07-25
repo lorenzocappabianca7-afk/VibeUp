@@ -120,7 +120,7 @@ const EVENT_SERVICE_SUGGESTIONS = [
   },
   {
     id: "security",
-    label: "Buttafuori",
+    label: "Security",
     description: "Controllo ingressi e sicurezza durante la festa.",
     categories: ["security"],
     exploreCategory: "altri",
