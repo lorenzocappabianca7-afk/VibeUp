@@ -3,7 +3,7 @@
 import { SafeImage } from "@/components/ui/safe-image";
 import { DistanceBadge } from "@/components/explore/distance-badge";
 import { cn, getLocationPricePresentation } from "@/lib/utils";
-import type { Location } from "@/types/location";
+import type { ContactPreview, Location } from "@/types/location";
 import { GitCompareArrows, Heart, MapPin } from "lucide-react";
 import Link from "next/link";
 import { memo, useState } from "react";
@@ -141,26 +141,24 @@ export const LocationCard = memo(function LocationCard({
             type="button"
             onClick={() => setContactsOpen((current) => !current)}
             className={cn(
-              "w-full rounded-xl bg-brand-teal/8 px-3 py-2 text-left transition-all duration-150 hover:bg-brand-teal/12",
-              contactsOpen && "rounded-2xl bg-brand-teal/12 py-3",
+              "w-full rounded-xl bg-brand-teal px-3 py-2.5 text-left transition-all duration-150 hover:bg-brand-teal-strong",
+              contactsOpen && "rounded-2xl py-3",
             )}
             aria-expanded={contactsOpen}
           >
             <span className="flex items-center gap-2">
               <span className="flex -space-x-2">
                 {contactsBeenHere.contacts.slice(0, 3).map((contact) => (
-                  <span
+                  <ContactAvatar
                     key={contact.id}
-                    className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-background text-[9px] font-bold text-white"
-                    style={{ backgroundColor: contact.avatarColor }}
-                    title={contact.name}
-                  >
-                    {contact.initials}
-                  </span>
+                    contact={contact}
+                    size="sm"
+                    className="border-2 border-white/85"
+                  />
                 ))}
               </span>
-              <span className="text-[11px] leading-tight text-primary-black/70">
-                <span className="font-semibold text-primary-black">
+              <span className="text-[11px] leading-tight text-ink-inverse/85">
+                <span className="font-semibold text-ink-inverse">
                   {contactsBeenHere.count}
                 </span>{" "}
                 {contactsBeenHere.count === 1
@@ -170,20 +168,17 @@ export const LocationCard = memo(function LocationCard({
             </span>
 
             {contactsOpen && (
-              <span className="mt-3 block border-t border-brand-teal/20 pt-3">
-                <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-brand-teal">
+              <span className="mt-3 block border-t border-ink-inverse/20 pt-3">
+                <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-ink-inverse/80">
                   Chi è stato qui
                 </span>
                 <span className="mt-2 flex flex-wrap gap-2">
                   {contactsBeenHere.contacts.map((contact) => (
                     <span
                       key={contact.id}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-background px-2.5 py-1 text-xs font-bold text-primary-black shadow-sm"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-ink-inverse/10 px-2 py-1 text-xs font-bold text-ink-inverse"
                     >
-                      <span
-                        className="h-2 w-2 rounded-full"
-                        style={{ backgroundColor: contact.avatarColor }}
-                      />
+                      <ContactAvatar contact={contact} size="xs" />
                       {contact.name}
                     </span>
                   ))}
@@ -196,3 +191,45 @@ export const LocationCard = memo(function LocationCard({
     </article>
   );
 });
+
+function ContactAvatar({
+  contact,
+  size = "sm",
+  className,
+}: {
+  contact: ContactPreview;
+  size?: "xs" | "sm";
+  className?: string;
+}) {
+  const sizeClass = size === "xs" ? "h-5 w-5 text-[8px]" : "h-6 w-6 text-[9px]";
+
+  if (contact.avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={contact.avatarUrl}
+        alt=""
+        title={contact.name}
+        className={cn(
+          "shrink-0 rounded-full object-cover",
+          sizeClass,
+          className,
+        )}
+      />
+    );
+  }
+
+  return (
+    <span
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full font-bold text-white",
+        sizeClass,
+        className,
+      )}
+      style={{ backgroundColor: contact.avatarColor }}
+      title={contact.name}
+    >
+      {contact.initials}
+    </span>
+  );
+}

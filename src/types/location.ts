@@ -42,6 +42,8 @@ export interface ContactPreview {
   name: string;
   initials: string;
   avatarColor: string;
+  /** Profile photo URL when available. */
+  avatarUrl?: string;
 }
 
 export interface TechnicalDetails {

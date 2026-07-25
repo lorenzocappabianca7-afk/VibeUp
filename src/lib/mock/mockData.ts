@@ -1,4 +1,5 @@
 import type {
+  ContactPreview,
   DintorniZone,
   ExtraService,
   Location,
@@ -6,6 +7,34 @@ import type {
 } from "@/types/location";
 
 type LocationSeed = Omit<Location, "latitude" | "longitude">;
+
+const CONTACT_AVATARS: Record<string, string> = {
+  c1: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop&q=80",
+  c2: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop&q=80",
+  c3: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop&q=80",
+  c4: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&h=120&fit=crop&q=80",
+  c5: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&q=80",
+  c6: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop&q=80",
+  c7: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120&h=120&fit=crop&q=80",
+  c8: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=120&h=120&fit=crop&q=80",
+  c9: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=120&h=120&fit=crop&q=80",
+  c10: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=120&h=120&fit=crop&q=80",
+};
+
+function contact(
+  id: string,
+  name: string,
+  initials: string,
+  avatarColor: string,
+): ContactPreview {
+  return {
+    id,
+    name,
+    initials,
+    avatarColor,
+    avatarUrl: CONTACT_AVATARS[id],
+  };
+}
 
 // ─── Location Torino città ───────────────────────────────────────────────────
 
@@ -45,8 +74,8 @@ const torinoCityLocations: LocationSeed[] = [
     contactsBeenHere: {
       count: 2,
       contacts: [
-        { id: "c1", name: "Giulia R.", initials: "GR", avatarColor: "#32B4B4" },
-        { id: "c2", name: "Marco B.", initials: "MB", avatarColor: "#F091B2" },
+        contact("c1", "Giulia R.", "GR", "#32B4B4"),
+        contact("c2", "Marco B.", "MB", "#F091B2"),
       ],
     },
   },
@@ -85,7 +114,7 @@ const torinoCityLocations: LocationSeed[] = [
     contactsBeenHere: {
       count: 1,
       contacts: [
-        { id: "c3", name: "Sara M.", initials: "SM", avatarColor: "#32B4B4" },
+        contact("c3", "Sara M.", "SM", "#32B4B4"),
       ],
     },
   },
@@ -158,8 +187,8 @@ const torinoCityLocations: LocationSeed[] = [
     contactsBeenHere: {
       count: 2,
       contacts: [
-        { id: "c4", name: "Luca V.", initials: "LV", avatarColor: "#0F0F11" },
-        { id: "c5", name: "Elena P.", initials: "EP", avatarColor: "#F091B2" },
+        contact("c4", "Luca V.", "LV", "#0F0F11"),
+        contact("c5", "Elena P.", "EP", "#F091B2"),
       ],
     },
   },
@@ -205,8 +234,8 @@ const dintorniLocations: LocationSeed[] = [
     contactsBeenHere: {
       count: 3,
       contacts: [
-        { id: "c6", name: "Anna T.", initials: "AT", avatarColor: "#32B4B4" },
-        { id: "c7", name: "Paolo D.", initials: "PD", avatarColor: "#F091B2" },
+        contact("c6", "Anna T.", "AT", "#32B4B4"),
+        contact("c7", "Paolo D.", "PD", "#F091B2"),
       ],
     },
   },
@@ -250,7 +279,7 @@ const dintorniLocations: LocationSeed[] = [
     contactsBeenHere: {
       count: 1,
       contacts: [
-        { id: "c8", name: "Chiara L.", initials: "CL", avatarColor: "#32B4B4" },
+        contact("c8", "Chiara L.", "CL", "#32B4B4"),
       ],
     },
   },
@@ -330,8 +359,8 @@ const dintorniLocations: LocationSeed[] = [
     contactsBeenHere: {
       count: 2,
       contacts: [
-        { id: "c9", name: "Fabio S.", initials: "FS", avatarColor: "#0F0F11" },
-        { id: "c10", name: "Marta G.", initials: "MG", avatarColor: "#F091B2" },
+        contact("c9", "Fabio S.", "FS", "#0F0F11"),
+        contact("c10", "Marta G.", "MG", "#F091B2"),
       ],
     },
   },
