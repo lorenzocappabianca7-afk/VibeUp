@@ -6,7 +6,6 @@ import {
   AtSign,
   Check,
   ChevronRight,
-  CreditCard,
   HelpCircle,
   LockKeyhole,
   LogOut,
@@ -41,14 +40,19 @@ import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { requestActivationEmail } from "@/lib/auth/request-activation-email";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-const menuItems: Array<{
+const primaryMenuItems: Array<{
+  id: SettingsPanelId;
+  icon: typeof Settings;
+  label: string;
+  description?: string;
+}> = [{ id: "settings", icon: Settings, label: "Impostazioni account" }];
+
+const secondaryMenuItems: Array<{
   id: SettingsPanelId;
   icon: typeof Settings;
   label: string;
   description?: string;
 }> = [
-  { id: "settings", icon: Settings, label: "Impostazioni account" },
-  { id: "payments", icon: CreditCard, label: "Pagamenti e abbonamento" },
   { id: "help", icon: HelpCircle, label: "Aiuto e supporto" },
   {
     id: "privacy",
@@ -658,7 +662,212 @@ export function ProfileScreen({
 
       <nav>
         <ul className="divide-y divide-primary-black/8 overflow-hidden rounded-2xl border border-primary-black/10">
-          {menuItems.map((item) => (
+          {primaryMenuItems.map((item) => (
+            <li key={item.label}>
+              <button
+                type="button"
+                onClick={() => {
+                  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+                  setSettingsPanel(item.id);
+                }}
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-primary-black/[0.03]"
+              >
+                <item.icon
+                  className="h-5 w-5 text-primary-black/50"
+                  aria-hidden
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium text-primary-black">
+                    {item.label}
+                  </span>
+                </span>
+                <ChevronRight
+                  className="h-4 w-4 text-primary-black/30"
+                  aria-hidden
+                />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <section className="space-y-4 rounded-2xl border border-primary-black/10 bg-background p-4">
+        <div>
+          <h2 className="flex items-center gap-2 text-sm font-bold text-primary-black">
+            <Heart className="h-4 w-4 text-brand-pink" aria-hidden />
+            I tuoi preferiti
+          </h2>
+          <p className="mt-1 text-xs text-primary-black/55">
+            Location e servizi salvati con il cuore.
+          </p>
+        </div>
+
+        <div className="space-y-3 rounded-2xl border border-primary-black/8 bg-primary-black/[0.02] p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-primary-black">
+                Location preferite
+              </h3>
+              <p className="mt-1 text-xs text-primary-black/55">
+                Le location salvate con il cuore compariranno qui.
+              </p>
+            </div>
+            {favoriteLocations.length > 0 && (
+              <span className="rounded-full bg-brand-pink/15 px-2.5 py-1 text-xs font-bold text-brand-pink">
+                {favoriteLocations.length}
+              </span>
+            )}
+          </div>
+
+          {favoriteLocations.length > 0 ? (
+            <ul className="space-y-2">
+              {favoriteLocations.map((location) => (
+                <li
+                  key={location.id}
+                  className="relative overflow-hidden rounded-2xl border border-primary-black/8 bg-background"
+                >
+                  {(() => {
+                    const price = getLocationPricePresentation(location);
+                    return (
+                      <Link
+                        href={`/location/${location.id}`}
+                        className="flex gap-3 p-2 pr-11"
+                      >
+                        <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl">
+                          <SafeImage
+                            src={location.imageUrl}
+                            alt={location.name}
+                            fill
+                            className="object-cover"
+                            sizes="96px"
+                          />
+                        </div>
+                        <div className="min-w-0 py-1">
+                          <p className="truncate text-sm font-semibold text-primary-black">
+                            {location.name}
+                          </p>
+                          <p className="mt-1 flex items-center gap-1 text-xs text-primary-black/50">
+                            <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+                            <span className="truncate">
+                              {location.zoneLabel} · {location.comune}
+                            </span>
+                          </p>
+                          <p className="mt-2 text-xs font-bold text-brand-teal">
+                            {price.eyebrow} {price.price} {price.unit}
+                          </p>
+                          <p className="mt-0.5 text-[10px] font-semibold text-primary-black/45">
+                            {price.badge}
+                          </p>
+                        </div>
+                      </Link>
+                    );
+                  })()}
+                  <button
+                    type="button"
+                    onClick={() => removeFavoriteLocation(location.id)}
+                    className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-background text-primary-black/45 shadow-sm transition-colors hover:text-brand-pink"
+                    aria-label={`Rimuovi ${location.name} dai preferiti`}
+                  >
+                    <X className="h-3.5 w-3.5" aria-hidden />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-primary-black/12 bg-background px-4 py-5 text-center">
+              <p className="text-sm font-medium text-primary-black">
+                Nessuna location preferita
+              </p>
+              <p className="mt-1 text-xs text-primary-black/55">
+                Tocca il cuore su una location per salvarla nel profilo.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-3 rounded-2xl border border-primary-black/8 bg-primary-black/[0.02] p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-primary-black">
+                Servizi preferiti
+              </h3>
+              <p className="mt-1 text-xs text-primary-black/55">
+                DJ, fotografi, decorazioni e altri servizi salvati con il
+                cuore.
+              </p>
+            </div>
+            {favoriteServices.length > 0 && (
+              <span className="rounded-full bg-brand-pink/15 px-2.5 py-1 text-xs font-bold text-brand-pink">
+                {favoriteServices.length}
+              </span>
+            )}
+          </div>
+
+          {favoriteServices.length > 0 ? (
+            <ul className="space-y-2">
+              {favoriteServices.map((service) => (
+                <li
+                  key={service.id}
+                  className="relative overflow-hidden rounded-2xl border border-primary-black/8 bg-background"
+                >
+                  <Link
+                    href={`/service/${service.id}?category=${service.category}`}
+                    className="flex gap-3 p-2 pr-11"
+                  >
+                    <div className="relative flex h-20 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-brand-teal/10 text-brand-teal">
+                      {service.imageUrl ? (
+                        <SafeImage
+                          src={service.imageUrl}
+                          alt={service.name}
+                          fill
+                          className="object-cover"
+                          sizes="96px"
+                        />
+                      ) : (
+                        <Briefcase className="h-6 w-6" aria-hidden />
+                      )}
+                    </div>
+                    <div className="min-w-0 py-1">
+                      <p className="truncate text-sm font-semibold text-primary-black">
+                        {service.name}
+                      </p>
+                      <p className="mt-1 flex items-center gap-1 text-xs text-primary-black/50">
+                        <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+                        <span className="truncate">{service.providerZone}</span>
+                      </p>
+                      <p className="mt-2 text-xs font-bold text-brand-teal">
+                        {formatCurrency(service.price)}/{service.priceSuffix}
+                      </p>
+                    </div>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => removeFavoriteService(service.id)}
+                    className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-background text-primary-black/45 shadow-sm transition-colors hover:text-brand-pink"
+                    aria-label={`Rimuovi ${service.name} dai preferiti`}
+                  >
+                    <X className="h-3.5 w-3.5" aria-hidden />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-primary-black/12 bg-background px-4 py-5 text-center">
+              <p className="text-sm font-medium text-primary-black">
+                Nessun servizio preferito
+              </p>
+              <p className="mt-1 text-xs text-primary-black/55">
+                Tocca il cuore su DJ, fotografi, decorazioni o altri servizi
+                per salvarli qui.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <nav>
+        <ul className="divide-y divide-primary-black/8 overflow-hidden rounded-2xl border border-primary-black/10">
+          {secondaryMenuItems.map((item) => (
             <li key={item.label}>
               <button
                 type="button"
@@ -691,169 +900,6 @@ export function ProfileScreen({
           ))}
         </ul>
       </nav>
-
-      <section className="space-y-3 rounded-2xl border border-primary-black/10 bg-background p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="flex items-center gap-2 text-sm font-bold text-primary-black">
-              <Heart className="h-4 w-4 text-brand-pink" aria-hidden />
-              Location preferite
-            </h2>
-            <p className="mt-1 text-xs text-primary-black/55">
-              Le location salvate con il cuore compariranno qui.
-            </p>
-          </div>
-          {favoriteLocations.length > 0 && (
-            <span className="rounded-full bg-brand-pink/15 px-2.5 py-1 text-xs font-bold text-brand-pink">
-              {favoriteLocations.length}
-            </span>
-          )}
-        </div>
-
-        {favoriteLocations.length > 0 ? (
-          <ul className="space-y-2">
-            {favoriteLocations.map((location) => (
-              <li
-                key={location.id}
-                className="relative overflow-hidden rounded-2xl border border-primary-black/8 bg-primary-black/[0.02]"
-              >
-                {(() => {
-                  const price = getLocationPricePresentation(location);
-                  return (
-                <Link
-                  href={`/location/${location.id}`}
-                  className="flex gap-3 p-2 pr-11"
-                >
-                  <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl">
-                    <SafeImage
-                      src={location.imageUrl}
-                      alt={location.name}
-                      fill
-                      className="object-cover"
-                      sizes="96px"
-                    />
-                  </div>
-                  <div className="min-w-0 py-1">
-                    <p className="truncate text-sm font-semibold text-primary-black">
-                      {location.name}
-                    </p>
-                    <p className="mt-1 flex items-center gap-1 text-xs text-primary-black/50">
-                      <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-                      <span className="truncate">
-                        {location.zoneLabel} · {location.comune}
-                      </span>
-                    </p>
-                    <p className="mt-2 text-xs font-bold text-brand-teal">
-                      {price.eyebrow} {price.price} {price.unit}
-                    </p>
-                    <p className="mt-0.5 text-[10px] font-semibold text-primary-black/45">
-                      {price.badge}
-                    </p>
-                  </div>
-                </Link>
-                  );
-                })()}
-                <button
-                  type="button"
-                  onClick={() => removeFavoriteLocation(location.id)}
-                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-background text-primary-black/45 shadow-sm transition-colors hover:text-brand-pink"
-                  aria-label={`Rimuovi ${location.name} dai preferiti`}
-                >
-                  <X className="h-3.5 w-3.5" aria-hidden />
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-primary-black/12 bg-primary-black/[0.02] px-4 py-5 text-center">
-            <p className="text-sm font-medium text-primary-black">
-              Nessuna location preferita
-            </p>
-            <p className="mt-1 text-xs text-primary-black/55">
-              Tocca il cuore su una location per salvarla nel profilo.
-            </p>
-          </div>
-        )}
-      </section>
-
-      <section className="space-y-3 rounded-2xl border border-primary-black/10 bg-background p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="flex items-center gap-2 text-sm font-bold text-primary-black">
-              <Heart className="h-4 w-4 text-brand-pink" aria-hidden />
-              Servizi preferiti
-            </h2>
-            <p className="mt-1 text-xs text-primary-black/55">
-              DJ, fotografi, decorazioni e altri servizi salvati con il cuore.
-            </p>
-          </div>
-          {favoriteServices.length > 0 && (
-            <span className="rounded-full bg-brand-pink/15 px-2.5 py-1 text-xs font-bold text-brand-pink">
-              {favoriteServices.length}
-            </span>
-          )}
-        </div>
-
-        {favoriteServices.length > 0 ? (
-          <ul className="space-y-2">
-            {favoriteServices.map((service) => (
-              <li
-                key={service.id}
-                className="relative overflow-hidden rounded-2xl border border-primary-black/8 bg-primary-black/[0.02]"
-              >
-                <Link
-                  href={`/service/${service.id}?category=${service.category}`}
-                  className="flex gap-3 p-2 pr-11"
-                >
-                  <div className="relative flex h-20 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-brand-teal/10 text-brand-teal">
-                    {service.imageUrl ? (
-                      <SafeImage
-                        src={service.imageUrl}
-                        alt={service.name}
-                        fill
-                        className="object-cover"
-                        sizes="96px"
-                      />
-                    ) : (
-                      <Briefcase className="h-6 w-6" aria-hidden />
-                    )}
-                  </div>
-                  <div className="min-w-0 py-1">
-                    <p className="truncate text-sm font-semibold text-primary-black">
-                      {service.name}
-                    </p>
-                    <p className="mt-1 flex items-center gap-1 text-xs text-primary-black/50">
-                      <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-                      <span className="truncate">{service.providerZone}</span>
-                    </p>
-                    <p className="mt-2 text-xs font-bold text-brand-teal">
-                      {formatCurrency(service.price)}/{service.priceSuffix}
-                    </p>
-                  </div>
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => removeFavoriteService(service.id)}
-                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-background text-primary-black/45 shadow-sm transition-colors hover:text-brand-pink"
-                  aria-label={`Rimuovi ${service.name} dai preferiti`}
-                >
-                  <X className="h-3.5 w-3.5" aria-hidden />
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-primary-black/12 bg-primary-black/[0.02] px-4 py-5 text-center">
-            <p className="text-sm font-medium text-primary-black">
-              Nessun servizio preferito
-            </p>
-            <p className="mt-1 text-xs text-primary-black/55">
-              Tocca il cuore su DJ, fotografi, decorazioni o altri servizi per
-              salvarli qui.
-            </p>
-          </div>
-        )}
-      </section>
 
       <section className="space-y-3 rounded-2xl border border-primary-black/10 bg-background p-4">
         <div className="flex min-w-0 items-start justify-between gap-3">
