@@ -103,8 +103,13 @@ export default function RootLayout({
     <html
       lang="it"
       className={`${geistSans.variable} ${geistMono.variable} ${brandDisplay.variable} h-full antialiased`}
+      style={{ background: "#000000" }}
     >
-      <body className="min-h-dvh bg-black text-primary-black">
+      <body
+        className="min-h-dvh text-primary-black"
+        style={{ background: "#000000" }}
+      >
+        {/* First paint: black + inlined logo (before CSS/JS chunks) */}
         <BootSplash />
         <AppProviders>
           <div className="flex min-h-dvh min-w-0 max-w-full flex-col overflow-x-hidden bg-background">
