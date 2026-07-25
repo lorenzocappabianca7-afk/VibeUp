@@ -824,13 +824,13 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
   }, [deadline, isActive]);
 
   return (
-    <section className="min-w-0 overflow-hidden border-b border-primary-black/8 bg-primary-black/[0.02] px-3 py-3 sm:px-4">
+    <section className="min-w-0 overflow-hidden border-b border-brand-teal/35 bg-brand-teal/25 px-3 py-3 sm:px-4">
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-primary-black">
             Caparra {formatCurrency(depositAmount)}
           </p>
-          <p className="mt-0.5 break-words text-xs text-primary-black/50">
+          <p className="mt-0.5 break-words text-xs text-primary-black/55">
             Entro {formatDepositDeadline(deadline)}
             {!countdown.isPast && (
               <>
@@ -845,23 +845,21 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
 
         <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-auto sm:max-w-[14rem] sm:items-end">
           {!payment.paid && (
-            <p className="text-[11px] leading-snug text-primary-black/55 sm:text-right">
+            <p className="text-[11px] leading-snug text-primary-black/60 sm:text-right">
               Entro 36 ore dalla creazione: blocca {event.locationName} per il{" "}
               {formatDate(event.date)}. Se non la paghi, perdi la priorità.
             </p>
           )}
           {payment.paid ? (
-            <span className="inline-flex w-full items-center justify-center rounded-lg bg-white px-4 py-2.5 text-xs font-medium text-ink-inverse sm:w-fit">
+            <span className="inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-semibold text-ink-inverse sm:w-fit">
               Caparra pagata
             </span>
           ) : (
             <button
               type="button"
               onClick={onPayDeposit}
-              className={`inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-xs font-medium transition-colors sm:w-fit ${
-                countdown.isPast
-                  ? "border border-brand-pink/40 bg-brand-pink/15 text-primary-black hover:bg-brand-pink/25"
-                  : "bg-white text-ink-inverse hover:bg-white/90"
+              className={`inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-semibold text-ink-inverse transition-colors hover:bg-brand-teal-strong sm:w-fit ${
+                countdown.isPast ? "ring-2 ring-brand-pink/50" : ""
               }`}
             >
               {countdown.isPast ? "Paga caparra in ritardo" : "Paga caparra"}
