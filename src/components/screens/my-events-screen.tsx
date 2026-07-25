@@ -133,6 +133,8 @@ const MENU_COURSES = [
   {
     id: "antipasti",
     label: "Antipasti",
+    emoji: "🧀",
+    accentClass: "bg-amber-100 text-amber-800 ring-amber-200/80",
     items: [
       { id: "taglieri", label: "Taglieri misti" },
       { id: "finger-food", label: "Finger food" },
@@ -142,6 +144,8 @@ const MENU_COURSES = [
   {
     id: "primi",
     label: "Primi",
+    emoji: "🍝",
+    accentClass: "bg-orange-100 text-orange-800 ring-orange-200/80",
     items: [
       { id: "pasta", label: "Pasta fresca" },
       { id: "risotto", label: "Risotto" },
@@ -151,6 +155,8 @@ const MENU_COURSES = [
   {
     id: "secondi",
     label: "Secondi",
+    emoji: "🥩",
+    accentClass: "bg-rose-100 text-rose-800 ring-rose-200/80",
     items: [
       { id: "carne", label: "Secondo di carne" },
       { id: "pesce", label: "Secondo di pesce" },
@@ -160,6 +166,8 @@ const MENU_COURSES = [
   {
     id: "dolci",
     label: "Dolci",
+    emoji: "🍰",
+    accentClass: "bg-pink-100 text-pink-800 ring-pink-200/80",
     items: [
       { id: "torta", label: "Torta evento" },
       { id: "mono-porzioni", label: "Monoporzioni" },
@@ -169,6 +177,8 @@ const MENU_COURSES = [
   {
     id: "bevande",
     label: "Bevande",
+    emoji: "🥂",
+    accentClass: "bg-sky-100 text-sky-800 ring-sky-200/80",
     items: [
       { id: "soft-drink", label: "Soft drink" },
       { id: "vino", label: "Vino e prosecco" },
@@ -934,7 +944,13 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
 
           {MENU_COURSES.map((course) => (
             <div key={course.id}>
-              <p className="text-xs font-medium text-primary-black/70">
+              <p className="flex items-center gap-2 text-xs font-medium text-primary-black/70">
+                <span
+                  className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm ring-1 ${course.accentClass}`}
+                  aria-hidden
+                >
+                  {course.emoji}
+                </span>
                 {course.label}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
