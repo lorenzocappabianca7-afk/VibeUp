@@ -113,31 +113,30 @@ export async function generateInstantQuote(
   const cakeKg = preferences.cakeKg ?? Math.max(2, Math.ceil(guestCount / 12));
   const rawHours = calculateHours(preferences.startTime, preferences.endTime);
   const hours = Math.max(rawHours, location.technicalDetails.minHours);
-  const locationCost = roundCurrency(hours * location.hourlyPrice);
+  const baseLocationCost = roundCurrency(hours * location.hourlyPrice);
   const selectedInternalServices = priceList.filter((service) =>
     preferences.selectedServiceIds?.includes(service.id),
   );
+  const venueServicesCost = roundCurrency(
+    selectedInternalServices.reduce(
+      (sum, service) =>
+        sum +
+        calculateExtractedServicePrice(service, { guestCount, hours, cakeKg }),
+      0,
+    ),
+  );
+  const locationCost = roundCurrency(baseLocationCost + venueServicesCost);
   const lineItems: QuoteLineItem[] = [
     {
       id: "location",
-      label: `${location.name} (${hours}h)`,
+      label: `${location.name} (${hours}h${
+        venueServicesCost > 0 ? " + servizi locale" : ""
+      })`,
       amount: locationCost,
       source: "location",
       confidence: location.hourlyPrice > 0 ? 0.9 : 0.55,
     },
   ];
-
-  for (const service of selectedInternalServices) {
-    lineItems.push({
-      id: service.id,
-      label: service.name,
-      amount: roundCurrency(
-        calculateExtractedServicePrice(service, { guestCount, hours, cakeKg }),
-      ),
-      source: "internal_service",
-      confidence: storedRecord ? storedRecord.extraction.confidence : 0.72,
-    });
-  }
 
   for (const extraId of preferences.selectedExtraServiceIds ?? []) {
     const extraService = getExtraServiceById(extraId);
@@ -174,6 +173,7 @@ export async function generateInstantQuote(
     locationCost,
     extrasCost,
     drinksCost: 0,
+    venueServicesCost,
     total,
     depositAmount: roundCurrency(locationCost * 0.3),
   };

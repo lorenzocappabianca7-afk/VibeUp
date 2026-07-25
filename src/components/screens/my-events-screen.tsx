@@ -183,11 +183,20 @@ function getMissingServiceSuggestions(event: UserEvent) {
       .filter((service) => service.status !== "cancelled")
       .map((service) => service.category),
   );
+  const hasVenueMenu = locationIncludesVenueMenu(event);
 
-  return EVENT_SERVICE_SUGGESTIONS.filter(
-    (suggestion) =>
-      !suggestion.categories.some((category) => bookedCategories.has(category)),
-  );
+  return EVENT_SERVICE_SUGGESTIONS.filter((suggestion) => {
+    if (
+      suggestion.id === "menu" &&
+      (hasVenueMenu ||
+        suggestion.categories.some((category) => bookedCategories.has(category)))
+    ) {
+      return false;
+    }
+    return !suggestion.categories.some((category) =>
+      bookedCategories.has(category),
+    );
+  });
 }
 
 function getMenuServices(event: UserEvent) {
@@ -196,6 +205,22 @@ function getMenuServices(event: UserEvent) {
       service.status !== "cancelled" &&
       (service.category === "menu" || service.category === "catering"),
   );
+}
+
+function getLocationService(event: UserEvent) {
+  return (
+    event.services.find(
+      (service) =>
+        service.status !== "cancelled" && service.category === "location",
+    ) ?? null
+  );
+}
+
+function locationIncludesVenueMenu(event: UserEvent) {
+  const locationService = getLocationService(event);
+  if (!locationService) return false;
+  if ((locationService.allergens?.length ?? 0) > 0) return true;
+  return /menu|catering|buffet|food/i.test(locationService.name);
 }
 
 function inferMenuAllergens(service: BookedService): string[] {
@@ -473,6 +498,13 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   };
   const missingSuggestions = getMissingServiceSuggestions(event);
   const menuServices = getMenuServices(event);
+  const locationService = getLocationService(event);
+  const venueMenuAllergens =
+    locationService && locationIncludesVenueMenu(event)
+      ? inferMenuAllergens(locationService)
+      : [];
+  const showMenuSection =
+    menuServices.length > 0 || Boolean(locationService);
   const payDeposit = useCallback(() => {
     onOpenDepositPayment(event);
   }, [event, onOpenDepositPayment]);
@@ -589,7 +621,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
         onPayDeposit={payDeposit}
       />
 
-      {menuServices.length > 0 && (
+      {showMenuSection && (
         <section className="min-w-0 border-t border-primary-black/8 px-3 py-4 sm:px-4">
           <div className="flex items-center gap-2">
             <UtensilsCrossed className="h-4 w-4 text-primary-black/45" aria-hidden />
@@ -631,6 +663,27 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                 </div>
               );
             })}
+
+            {menuServices.length === 0 && venueMenuAllergens.length > 0 && (
+              <div className="min-w-0 rounded-xl bg-primary-black/[0.03] p-3">
+                <p className="text-sm font-medium text-primary-black">
+                  Menu incluso nella location
+                </p>
+                <p className="mt-0.5 text-xs text-primary-black/50">
+                  Il costo è compreso nel totale location.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {venueMenuAllergens.map((allergen) => (
+                    <span
+                      key={allergen}
+                      className="rounded-full bg-white px-2.5 py-0.5 text-[11px] text-primary-black/65 ring-1 ring-primary-black/10"
+                    >
+                      {allergen}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <MenuCoursePicker

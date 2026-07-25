@@ -23,7 +23,6 @@ import {
 import {
   getInternalLocationServicePrice,
   getInternalLocationServices,
-  type InternalLocationServiceType,
 } from "@/lib/location-services";
 import { EXTRA_SERVICES } from "@/lib/mock/extra-services";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
@@ -64,19 +63,6 @@ const EXTRA_SERVICE_CATEGORY: Record<ExtraServiceId, BookedServiceCategory> = {
   audio_lights: "audio_lights",
 };
 
-const INTERNAL_SERVICE_CATEGORY: Record<
-  InternalLocationServiceType,
-  BookedServiceCategory
-> = {
-  menu: "menu",
-  dj: "dj",
-  photographer: "photographer",
-  decorations: "decorations",
-  audio_lights: "audio_lights",
-  bar: "location",
-  other: "location",
-};
-
 function getMenuAllergens(serviceName: string): string[] | undefined {
   const lowered = serviceName.toLowerCase();
   const isMenuService =
@@ -95,6 +81,7 @@ const EMPTY_QUOTE: BookingQuote = {
   locationCost: 0,
   extrasCost: 0,
   drinksCost: 0,
+  venueServicesCost: 0,
   total: 0,
   depositAmount: 0,
 };
@@ -220,7 +207,7 @@ export function LocationDetailView({
       drinksPerInvitee,
       guestCount,
     });
-    const internalServicesCost = selectedInternalServices.reduce((sum, id) => {
+    const venueServicesCost = selectedInternalServices.reduce((sum, id) => {
       const service = internalServices.find((item) => item.id === id);
       if (!service) return sum;
       // Paid drink package replaces any paid bar line to avoid double counting.
@@ -233,9 +220,10 @@ export function LocationDetailView({
       }
       return sum + getInternalLocationServicePrice(service, guestCount);
     }, 0);
-    // Drinks are part of the venue package — paid with location, not as a separate line.
-    const locationCost = baseQuote.locationCost + drinksCost;
-    const extrasCost = baseQuote.extrasCost + internalServicesCost;
+    // Venue services + drinks are part of the location package (deposit base).
+    const locationCost =
+      baseQuote.locationCost + drinksCost + venueServicesCost;
+    const extrasCost = baseQuote.extrasCost;
     const total = locationCost + extrasCost;
 
     return {
@@ -243,6 +231,7 @@ export function LocationDetailView({
       locationCost,
       extrasCost,
       drinksCost,
+      venueServicesCost,
       total,
       depositAmount: locationCost * 0.3,
     } satisfies BookingQuote;
@@ -360,20 +349,56 @@ export function LocationDetailView({
 
     requireAccount(
       () => {
+        const includedVenueParts = selectedInternalServices.flatMap(
+          (serviceId) => {
+            const service = internalServices.find(
+              (item) => item.id === serviceId,
+            );
+            if (!service) return [];
+            if (
+              drinkMode !== "none" &&
+              service.type === "bar" &&
+              service.pricing.type !== "included"
+            ) {
+              return [];
+            }
+            return [service.name];
+          },
+        );
+        const locationNameParts = [
+          "Location",
+          ...includedVenueParts,
+          ...(drinkMode !== "none"
+            ? [
+                getDrinkPackageLabel({
+                  mode: drinkMode,
+                  drinksPerInvitee,
+                }),
+              ]
+            : []),
+        ];
+        const venueMenuAllergens = selectedInternalServices.flatMap(
+          (serviceId) => {
+            const service = internalServices.find(
+              (item) => item.id === serviceId,
+            );
+            if (!service || service.type !== "menu") return [];
+            return getMenuAllergens(service.name) ?? [];
+          },
+        );
+
         const services = [
           {
             id: "draft-location",
             category: "location" as const,
-            name:
-              quote.drinksCost > 0
-                ? `Location · ${getDrinkPackageLabel({
-                    mode: drinkMode,
-                    drinksPerInvitee,
-                  })}`
-                : "Location",
+            name: locationNameParts.join(" · "),
             providerName: location.name,
             status: "confirmed" as const,
             amountPaid: quote.locationCost,
+            allergens:
+              venueMenuAllergens.length > 0
+                ? Array.from(new Set(venueMenuAllergens))
+                : undefined,
           },
           ...selectedExtras.flatMap((extraId) => {
             const service = EXTRA_SERVICES.find((item) => item.id === extraId);
@@ -389,29 +414,6 @@ export function LocationDetailView({
                 cakeKg,
                 guestCount,
               }),
-              allergens: getMenuAllergens(service.name),
-            };
-          }),
-          ...selectedInternalServices.flatMap((serviceId) => {
-            const service = internalServices.find(
-              (item) => item.id === serviceId,
-            );
-            if (!service) return [];
-            if (
-              drinkMode !== "none" &&
-              service.type === "bar" &&
-              service.pricing.type !== "included"
-            ) {
-              return [];
-            }
-
-            return {
-              id: `draft-${serviceId}`,
-              category: INTERNAL_SERVICE_CATEGORY[service.type],
-              name: service.name,
-              providerName: location.name,
-              status: "confirmed" as const,
-              amountPaid: getInternalLocationServicePrice(service, guestCount),
               allergens: getMenuAllergens(service.name),
             };
           }),

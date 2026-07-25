@@ -739,7 +739,11 @@ export function SmartLocationDetailsSection({
                 <dt className="min-w-0">
                   Location ({generatedQuote.hours || 0}h x{" "}
                   {formatCurrency(hourlyPrice)}
-                  {generatedQuote.drinksCost > 0 ? " + bevande" : ""})
+                  {generatedQuote.drinksCost > 0 ? " + bevande" : ""}
+                  {(generatedQuote.venueServicesCost ?? 0) > 0
+                    ? " + servizi locale"
+                    : ""}
+                  )
                 </dt>
                 <dd className="shrink-0 font-bold text-primary-black">
                   {formatCurrency(generatedQuote.locationCost)}

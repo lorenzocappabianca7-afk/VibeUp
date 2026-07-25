@@ -224,6 +224,8 @@ export interface BookingQuote {
   extrasCost: number;
   /** Drink package cost folded into locationCost (not billed separately). */
   drinksCost: number;
+  /** Venue menu/bar/etc. folded into locationCost (not billed separately). */
+  venueServicesCost?: number;
   total: number;
   depositAmount: number;
 }
