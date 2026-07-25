@@ -441,7 +441,7 @@ export function ExploreFiltersSheet({
                         ),
                       )
                     }
-                    className="w-full rounded-2xl border border-primary-black/10 bg-background px-4 py-3 text-sm text-primary-black focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
+                    className="w-full rounded-2xl border border-primary-black/10 bg-background px-4 py-3 text-base text-primary-black focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
                     aria-label="Ore di attività nella serata"
                   />
                   <p className="mt-2 text-xs text-primary-black/50">
@@ -620,7 +620,7 @@ export function ExploreFiltersSheet({
                   }
                   rows={3}
                   placeholder="Inserisci via, città e dettagli utili per il fornitore..."
-                  className="w-full resize-none rounded-2xl border border-primary-black/10 bg-background px-4 py-3 text-sm text-primary-black placeholder:text-primary-black/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
+                  className="w-full resize-none rounded-2xl border border-primary-black/10 bg-background px-4 py-3 text-base text-primary-black placeholder:text-primary-black/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
                 />
               </fieldset>
             </>
@@ -926,7 +926,7 @@ export function ExploreFiltersSheet({
               }
               rows={4}
               placeholder="Es. spazio all'aperto, possibilità di musica fino a tardi, parcheggio vicino, stile elegante..."
-              className="w-full resize-none rounded-2xl border border-primary-black/10 bg-background px-4 py-3 text-sm text-primary-black placeholder:text-primary-black/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
+              className="w-full resize-none rounded-2xl border border-primary-black/10 bg-background px-4 py-3 text-base text-primary-black placeholder:text-primary-black/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
             />
             <p className="mt-2 text-xs text-primary-black/50">
               Queste note non restringono automaticamente i risultati: servono

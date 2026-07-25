@@ -27,7 +27,7 @@ function normalizeRange(min: number, max: number): [number, number] {
 }
 
 const inputClassName =
-  "w-full rounded-2xl border border-primary-black/10 bg-background px-3.5 py-3 text-sm text-primary-black placeholder:text-primary-black/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+  "w-full rounded-2xl border border-primary-black/10 bg-background px-3.5 py-3 text-base text-primary-black placeholder:text-primary-black/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
 export function PriceRangeInputs({
   value,

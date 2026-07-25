@@ -81,10 +81,10 @@ export function GuestCountStepper({
           disabled={atMin}
           aria-label="Riduci numero invitati"
           className={cn(
-            "flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors",
+            "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
             atMin
-              ? "cursor-not-allowed border-primary-black/10 text-primary-black/25"
-              : "border-brand-pink bg-brand-pink/10 text-brand-pink hover:bg-brand-pink/20",
+              ? "cursor-not-allowed bg-primary-black/10 text-primary-black/25"
+              : "bg-brand-pink text-ink-inverse hover:bg-brand-pink/90",
           )}
         >
           <Minus className="h-4 w-4" aria-hidden />
@@ -113,7 +113,7 @@ export function GuestCountStepper({
             }
           }}
           aria-label="Numero invitati"
-          className="min-w-[3.5rem] max-w-[4.5rem] bg-transparent text-center text-lg font-bold tabular-nums text-primary-black focus:outline-none focus:ring-2 focus:ring-brand-teal/20 rounded-lg"
+          className="min-w-[3.5rem] max-w-[4.5rem] rounded-lg bg-transparent text-center text-base font-bold tabular-nums text-primary-black focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
         />
 
         <button
@@ -122,10 +122,10 @@ export function GuestCountStepper({
           disabled={atMax}
           aria-label="Aumenta numero invitati"
           className={cn(
-            "flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors",
+            "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
             atMax
-              ? "cursor-not-allowed border-primary-black/10 text-primary-black/25"
-              : "border-brand-pink bg-brand-pink/10 text-brand-pink hover:bg-brand-pink/20",
+              ? "cursor-not-allowed bg-primary-black/10 text-primary-black/25"
+              : "bg-brand-teal text-ink-inverse hover:bg-brand-teal-strong",
           )}
         >
           <Plus className="h-4 w-4" aria-hidden />

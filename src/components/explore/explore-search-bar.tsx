@@ -701,12 +701,10 @@ export function ExploreSearchBar({
           tabIndex={open ? -1 : 0}
           aria-hidden={open}
           className={cn(
-            "absolute top-0 flex items-center justify-center rounded-full border",
+            "absolute top-0 flex items-center justify-center rounded-full border border-brand-teal bg-brand-teal text-ink-inverse",
             open
-              ? "pointer-events-none border-transparent opacity-0"
-              : activeFilterCount > 0
-                ? "border-brand-teal/30 bg-brand-teal/10 text-brand-teal opacity-100"
-                : "border-primary-black/10 bg-surface text-primary-black opacity-100 shadow-[0_2px_12px_rgba(15,15,17,0.08)]",
+              ? "pointer-events-none opacity-0"
+              : "opacity-100 shadow-[0_2px_12px_rgba(62,207,207,0.35)]",
           )}
           style={{
             right: 0,
@@ -716,7 +714,7 @@ export function ExploreSearchBar({
         >
           <SlidersHorizontal className="h-5 w-5 shrink-0" aria-hidden />
           {activeFilterCount > 0 && !open && (
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-teal px-1 text-[10px] font-bold text-white">
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-pink px-1 text-[10px] font-bold text-ink-inverse">
               {activeFilterCount}
             </span>
           )}

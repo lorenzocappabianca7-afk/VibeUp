@@ -79,7 +79,7 @@ export function CityAutocomplete({
           }}
           placeholder="Cerca un comune del Piemonte..."
           className={cn(
-            "w-full rounded-2xl border border-primary-black/10 bg-background py-3 pl-10 pr-10 text-sm text-primary-black placeholder:text-primary-black/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20",
+            "w-full rounded-2xl border border-primary-black/10 bg-background py-3 pl-10 pr-10 text-base text-primary-black placeholder:text-primary-black/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20",
             disabled && "cursor-not-allowed opacity-50",
           )}
         />

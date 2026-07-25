@@ -132,7 +132,7 @@ export function VibeUpCalendar({
                 !isPast && "text-primary-black",
                 isPast && "cursor-not-allowed text-primary-black/18",
                 isInRange && "bg-brand-teal/15 text-brand-teal",
-                isSelected && "bg-white/12 text-primary-black",
+                isSelected && "bg-brand-teal text-white",
               )}
             >
               {day.getDate()}
