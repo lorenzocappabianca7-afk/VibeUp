@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Montserrat } from "next/font/google";
 import { AppChrome } from "@/components/layout/app-chrome";
 import { AppProviders } from "@/components/providers/app-providers";
+import { BootSplash } from "@/components/splash/boot-splash";
 import { getSiteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -85,9 +86,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
+  /* Black matches PWA native launch splash / home-screen icon expand */
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#0F1115" },
-    { media: "(prefers-color-scheme: dark)", color: "#0F1115" },
+    { media: "(prefers-color-scheme: light)", color: "#000000" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
   colorScheme: "dark",
 };
@@ -102,9 +104,10 @@ export default function RootLayout({
       lang="it"
       className={`${geistSans.variable} ${geistMono.variable} ${brandDisplay.variable} h-full antialiased`}
     >
-      <body className="min-h-dvh bg-background text-primary-black">
+      <body className="min-h-dvh bg-black text-primary-black">
+        <BootSplash />
         <AppProviders>
-          <div className="flex min-h-dvh min-w-0 max-w-full flex-col overflow-x-hidden">
+          <div className="flex min-h-dvh min-w-0 max-w-full flex-col overflow-x-hidden bg-background">
             <AppChrome>{children}</AppChrome>
           </div>
         </AppProviders>

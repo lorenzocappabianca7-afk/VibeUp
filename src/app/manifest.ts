@@ -11,8 +11,9 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait-primary",
-    background_color: "#0F1115",
-    theme_color: "#0F1115",
+    /* Pure black so OS launch splash matches icon → fullscreen handoff */
+    background_color: "#000000",
+    theme_color: "#000000",
     lang: "it",
     icons: [
       {

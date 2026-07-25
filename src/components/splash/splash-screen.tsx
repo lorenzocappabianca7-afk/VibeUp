@@ -2,12 +2,12 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-
-const SPLASH_STORAGE_KEY = "vibeup-splash-seen";
-/** Text appears shortly after the logo bounce starts */
-const TAGLINE_DELAY_MS = 520;
-/** Hold after the tagline is visible, then open Explore */
-const HOLD_AFTER_TAGLINE_MS = 1900;
+import {
+  BOOT_SPLASH_ID,
+  HOLD_AFTER_TAGLINE_MS,
+  SPLASH_STORAGE_KEY,
+  TAGLINE_DELAY_MS,
+} from "@/lib/splash";
 
 function shouldSkipSplash() {
   if (typeof window === "undefined") return true;
@@ -22,15 +22,23 @@ function shouldSkipSplash() {
   return false;
 }
 
+function removeBootSplash() {
+  document.getElementById(BOOT_SPLASH_ID)?.remove();
+}
+
 export function SplashScreen() {
   const [visible, setVisible] = useState(true);
   const [showTagline, setShowTagline] = useState(false);
 
   useEffect(() => {
     if (shouldSkipSplash()) {
+      removeBootSplash();
       setVisible(false);
       return;
     }
+
+    // Take over from the HTML boot splash without a blank frame.
+    removeBootSplash();
 
     const previousOverflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = "hidden";
@@ -67,7 +75,7 @@ export function SplashScreen() {
           width={868}
           height={874}
           priority
-          className="vibeup-splash__logo"
+          className="vibeup-splash__logo vibeup-splash__logo--static"
           draggable={false}
         />
         <p
