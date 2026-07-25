@@ -105,6 +105,25 @@ function getAllowedTabs(isBusinessUser: boolean): Set<TabId> {
   );
 }
 
+function tabParamFromHref(href: string): string | null {
+  if (!href.startsWith("/?")) return null;
+  return new URLSearchParams(href.slice(2)).get("tab");
+}
+
+/**
+ * Sync URL search `tab` into state without a Next.js RSC navigation.
+ * `router.replace("/?tab=…")` on an already-mounted home shell can fail on
+ * flaky networks and Safari then shows “This page couldn’t be loaded”.
+ */
+function replaceHomeTabUrl(href: string) {
+  if (typeof window === "undefined") return;
+  const current = `${window.location.pathname}${window.location.search}`;
+  if (current === href || (href === "/" && window.location.pathname === "/" && !window.location.search)) {
+    return;
+  }
+  window.history.replaceState(window.history.state, "", href);
+}
+
 /** Isolated so useSearchParams suspension never blanks the whole app shell. */
 function TabParamSync({ onTab }: { onTab: (tab: string | null) => void }) {
   const searchParams = useSearchParams();
@@ -113,6 +132,16 @@ function TabParamSync({ onTab }: { onTab: (tab: string | null) => void }) {
   useEffect(() => {
     onTab(tab);
   }, [onTab, tab]);
+
+  // Back/forward after history.replaceState (home tab switches).
+  useEffect(() => {
+    const onPopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      onTab(params.get("tab"));
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [onTab]);
 
   return null;
 }
@@ -151,12 +180,10 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
     if (!onHome) return;
     if (candidate === activeTab) return;
 
-    startTransition(() => {
-      router.replace(buildTabHref(activeTab, isBusinessUser), {
-        scroll: false,
-      });
-    });
-  }, [activeTab, candidate, isBusinessUser, onHome, router]);
+    const href = buildTabHref(activeTab, isBusinessUser);
+    setTabParam(tabParamFromHref(href));
+    replaceHomeTabUrl(href);
+  }, [activeTab, candidate, isBusinessUser, onHome]);
 
   // Restore scroll per tab after the panel is visible.
   useEffect(() => {
@@ -184,18 +211,22 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Optimistic UI: swap panel immediately, sync URL afterwards.
-      setOptimisticTab(tab);
-
       const href = buildTabHref(tab, isBusinessUser);
 
+      // Optimistic UI: swap panel immediately.
+      setOptimisticTab(tab);
+
+      if (onHome) {
+        // Same document — update query locally. Avoid router.replace RSC fetch
+        // (flaky mobile networks → Safari “page couldn’t be loaded”).
+        setTabParam(tabParamFromHref(href));
+        replaceHomeTabUrl(href);
+        return;
+      }
+
+      skipNextScrollRestoreRef.current = true;
       startTransition(() => {
-        if (onHome) {
-          router.replace(href, { scroll: false });
-        } else {
-          skipNextScrollRestoreRef.current = true;
-          router.push(href, { scroll: false });
-        }
+        router.push(href, { scroll: false });
       });
     },
     [activeTab, isBusinessUser, onHome, router],

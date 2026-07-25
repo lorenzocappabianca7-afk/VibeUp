@@ -6,6 +6,7 @@ import {
   SettingsSection,
 } from "@/components/profile/settings/settings-section";
 import { SettingsShell } from "@/components/profile/settings/settings-shell";
+import { useTabNavigation } from "@/context/tab-navigation-context";
 import {
   BookOpenText,
   ChevronDown,
@@ -50,6 +51,7 @@ const FAQS = [
 ];
 
 export function HelpSettingsPanel({ onBack }: HelpSettingsPanelProps) {
+  const { setTab } = useTabNavigation();
   const [view, setView] = useState<HelpSubview>("home");
   const [openFaqId, setOpenFaqId] = useState<string | null>(FAQS[0]?.id ?? null);
   const [reportDraft, setReportDraft] = useState({
@@ -93,7 +95,8 @@ export function HelpSettingsPanel({ onBack }: HelpSettingsPanelProps) {
             label="Chat in-app"
             description="Scrivici dalla tab Chat"
             onClick={() => {
-              window.location.href = "/?tab=messages";
+              onBack();
+              setTab("messages");
             }}
           />
         </SettingsSection>
