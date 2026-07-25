@@ -279,17 +279,17 @@ export function SmartLocationDetailsSection({
       </div>
 
       <div className="grid gap-4 p-5">
-        <div className="rounded-3xl border border-white bg-white p-4">
+        <div className="rounded-3xl border border-white/80 bg-surface-2 p-4 shadow-[0_8px_28px_-16px_rgba(0,0,0,0.55)]">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-black text-ink-inverse">
+              <h3 className="text-sm font-black text-white">
                 Servizi disponibili
               </h3>
-              <p className="text-xs text-ink-inverse/55">
+              <p className="text-xs text-primary-black/55">
                 Menu, DJ del locale, bar, audio e allestimenti.
               </p>
             </div>
-            <span className="rounded-full bg-brand-teal/15 px-3 py-1 text-xs font-bold text-brand-teal-strong">
+            <span className="rounded-full bg-brand-teal/20 px-3 py-1 text-xs font-bold text-brand-teal">
               {selectedInternalServices.length}/{internalServices.length}
             </span>
           </div>
@@ -308,8 +308,8 @@ export function SmartLocationDetailsSection({
                     className={cn(
                       "flex w-full items-start gap-3 rounded-2xl border p-3 text-left transition-colors duration-150",
                       isSelected
-                        ? "border-brand-teal bg-brand-teal/10"
-                        : "border-ink-inverse/10 bg-white hover:border-ink-inverse/25",
+                        ? "border-brand-teal bg-brand-teal/15"
+                        : "border-white/15 bg-surface hover:border-white/30",
                       !service.available && "cursor-not-allowed opacity-50",
                     )}
                   >
@@ -318,21 +318,21 @@ export function SmartLocationDetailsSection({
                         "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
                         isSelected
                           ? "bg-brand-teal text-ink-inverse"
-                          : "bg-ink-inverse/5 text-ink-inverse/50",
+                          : "bg-background/70 text-white/55",
                       )}
                     >
                       <Icon className="h-5 w-5" aria-hidden />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-start justify-between gap-2">
-                        <span className="font-semibold text-ink-inverse">
+                        <span className="font-semibold text-white">
                           {service.name}
                         </span>
-                        <span className="shrink-0 text-sm font-bold text-brand-teal-strong">
+                        <span className="shrink-0 text-sm font-bold text-brand-teal">
                           {formatInternalServicePrice(service, guestCount)}
                         </span>
                       </span>
-                      <span className="mt-0.5 block text-xs leading-relaxed text-ink-inverse/55">
+                      <span className="mt-0.5 block text-xs leading-relaxed text-primary-black/55">
                         {service.description}
                       </span>
                     </span>
@@ -341,7 +341,7 @@ export function SmartLocationDetailsSection({
                         "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2",
                         isSelected
                           ? "border-brand-teal bg-brand-teal text-ink-inverse"
-                          : "border-ink-inverse/20",
+                          : "border-white/25",
                       )}
                     >
                       {isSelected && <Check className="h-3 w-3" aria-hidden />}
@@ -560,11 +560,11 @@ export function SmartLocationDetailsSection({
                 {generatedQuote ? formatCurrency(generatedQuote.total) : "Da generare"}
               </p>
             </div>
-            <div className="shrink-0 rounded-xl border border-ink-inverse/10 bg-white px-2.5 py-1.5 text-right">
-              <p className="text-[9px] uppercase tracking-wide text-ink-inverse/55">
+            <div className="shrink-0 rounded-xl border border-white/20 bg-surface-2 px-2.5 py-1.5 text-right">
+              <p className="text-[9px] uppercase tracking-wide text-white/60">
                 Caparra 30%
               </p>
-              <p className="text-xs font-bold text-brand-teal-strong">
+              <p className="text-xs font-bold text-brand-teal">
                 {generatedQuote
                   ? formatCurrency(generatedQuote.depositAmount)
                   : "—"}
@@ -576,19 +576,19 @@ export function SmartLocationDetailsSection({
             <button
               type="button"
               onClick={() => togglePicker("date")}
-              className="w-full rounded-xl border border-ink-inverse/10 bg-white px-2.5 py-2 text-left"
+              className="w-full rounded-xl border border-white/20 bg-surface-2 px-2.5 py-2 text-left"
             >
-              <span className="flex items-center gap-1 text-[10px] font-semibold text-ink-inverse/55">
+              <span className="flex items-center gap-1 text-[10px] font-semibold text-white/60">
                 <Calendar className="h-3 w-3" aria-hidden />
                 Data
               </span>
               <span className="mt-0.5 flex items-center justify-between gap-2">
-                <span className="text-sm font-black text-ink-inverse">
+                <span className="text-sm font-black text-white">
                   {formatDateLabel(date)}
                 </span>
                 <ChevronDown
                   className={cn(
-                    "h-3.5 w-3.5 text-brand-teal-strong transition-transform",
+                    "h-3.5 w-3.5 text-brand-teal transition-transform",
                     openPicker === "date" && "rotate-180",
                   )}
                   aria-hidden
@@ -611,33 +611,33 @@ export function SmartLocationDetailsSection({
               <button
                 type="button"
                 onClick={() => togglePicker("start")}
-                className="rounded-xl border border-ink-inverse/10 bg-white px-2.5 py-2 text-left"
+                className="rounded-xl border border-white/20 bg-surface-2 px-2.5 py-2 text-left"
               >
-                <span className="flex items-center gap-1 text-[10px] font-semibold text-ink-inverse/55">
+                <span className="flex items-center gap-1 text-[10px] font-semibold text-white/60">
                   <Clock className="h-3 w-3" aria-hidden />
                   Inizio
                 </span>
-                <span className="mt-0.5 block text-sm font-black text-ink-inverse">
+                <span className="mt-0.5 block text-sm font-black text-white">
                   {startTime}
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => togglePicker("end")}
-                className="rounded-xl border border-ink-inverse/10 bg-white px-2.5 py-2 text-left"
+                className="rounded-xl border border-white/20 bg-surface-2 px-2.5 py-2 text-left"
               >
-                <span className="flex items-center gap-1 text-[10px] font-semibold text-ink-inverse/55">
+                <span className="flex items-center gap-1 text-[10px] font-semibold text-white/60">
                   <Clock className="h-3 w-3" aria-hidden />
                   Fine
                 </span>
-                <span className="mt-0.5 block text-sm font-black text-ink-inverse">
+                <span className="mt-0.5 block text-sm font-black text-white">
                   {endTime}
                 </span>
               </button>
             </div>
 
-            <div className="rounded-xl border border-ink-inverse/10 bg-white px-2.5 py-2">
-              <span className="text-[10px] font-semibold text-ink-inverse/55">
+            <div className="rounded-xl border border-white/20 bg-surface-2 px-2.5 py-2">
+              <span className="text-[10px] font-semibold text-white/60">
                 Invitati
               </span>
               <div className="mt-0.5 flex items-center justify-between gap-2">
@@ -679,7 +679,7 @@ export function SmartLocationDetailsSection({
                       setGuestCountInput(String(guestCount));
                     }
                   }}
-                  className="min-w-[3rem] flex-1 bg-transparent text-center text-sm font-black tabular-nums text-ink-inverse outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  className="min-w-[3rem] flex-1 bg-transparent text-center text-sm font-black tabular-nums text-white outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   aria-label="Numero invitati"
                 />
                 <button
@@ -724,7 +724,7 @@ export function SmartLocationDetailsSection({
           </button>
 
           {quoteNeedsRefresh && (
-            <p className="mt-2 rounded-lg bg-white/90 px-2.5 py-1.5 text-[11px] font-semibold text-ink-inverse">
+            <p className="mt-2 rounded-lg border border-white/15 bg-surface-2 px-2.5 py-1.5 text-[11px] font-semibold text-white">
               Hai modificato i dettagli: rigenera il preventivo per vedere il costo aggiornato.
             </p>
           )}
@@ -756,7 +756,7 @@ export function SmartLocationDetailsSection({
             </dl>
           )}
           {hasTimeIssue && (
-            <p className="mt-2 rounded-lg border border-ink-inverse/10 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-ink-inverse">
+            <p className="mt-2 rounded-lg border border-white/15 bg-surface-2 px-2.5 py-1.5 text-[11px] font-semibold text-white">
               Durata minima richiesta: {minHours} ore.
             </p>
           )}
