@@ -33,12 +33,8 @@ function removeCriticalPaint() {
 }
 
 /**
- * White-flash analysis (what we fixed):
- * 1) Browser default canvas is white until styles apply → blocking head script + CSS
- * 2) Critical shell had no inline bg (CSS-only) → transparent → white showed through
- * 3) We removed the black shell in useLayoutEffect BEFORE splash CSS applied → gap
- *    → now keep CriticalPaint until splash is fully gone
- * 4) Splash root now has inline background:#000 so it never depends on scoped <style>
+ * Splash over a black safety net (CriticalPaint sits UNDER this layer).
+ * Bug fixed: critical paint was z-index 99998 > splash 10000 → logo/tagline invisible.
  */
 export function SplashScreen() {
   const [phase, setPhase] = useState<Phase>("enter");
