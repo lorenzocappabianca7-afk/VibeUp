@@ -443,7 +443,6 @@ export const MyEventsScreen = memo(function MyEventsScreen({
                   event={event}
                   isActive={isActive}
                   paymentStates={paymentStates}
-                  onOpenPayment={setPaymentModal}
                   onOpenDepositPayment={openDepositPayment}
                   onTitleChange={updateEventTitle}
                   onMenuSelectionsChange={updateEventMenuSelections}
@@ -467,7 +466,6 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   event,
   isActive,
   paymentStates,
-  onOpenPayment,
   onOpenDepositPayment,
   onTitleChange,
   onMenuSelectionsChange,
@@ -475,7 +473,6 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   event: UserEvent;
   isActive: boolean;
   paymentStates: Record<string, ServicePaymentState>;
-  onOpenPayment: (selection: { event: UserEvent; service: BookedService }) => void;
   onOpenDepositPayment: (event: UserEvent) => void;
   onTitleChange: (eventId: string, title: string) => void;
   onMenuSelectionsChange: (
@@ -696,110 +693,20 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       )}
 
       <div className="min-w-0 overflow-hidden border-t border-primary-black/8 px-3 py-4 sm:px-4">
-        <div className="flex min-w-0 items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold text-primary-black">Servizi</h3>
-          <p className="shrink-0 text-sm text-primary-black/50">
-            {event.services.length}{" "}
-            {event.services.length === 1 ? "voce" : "voci"}
-          </p>
-        </div>
+        <h3 className="text-sm font-semibold text-primary-black">Da pagare</h3>
 
-        <ul className="mt-3 min-w-0 divide-y divide-primary-black/8">
-          {event.services.map((service) => {
-            const payment =
-              paymentStates[`${event.id}:${service.id}`] ?? { paid: false };
-            const requiresDepositFirst =
-              service.category === "location" &&
-              !depositPayment.paid &&
-              !payment.paid;
-            const canPay = !payment.paid && !requiresDepositFirst;
-            const payableAmount =
-              service.category === "location" && depositPayment.paid
-                ? Math.max(0, service.amountPaid - depositAmount)
-                : service.amountPaid;
-            const displayAmount = payment.paid
-              ? service.amountPaid
-              : payableAmount;
-
-            return (
-              <li
-                key={service.id}
-                className="flex min-w-0 items-center gap-3 py-3 first:pt-0 last:pb-0"
-              >
-                <div className="min-w-0 flex-1 overflow-hidden">
-                  <p className="truncate text-sm font-medium text-primary-black">
-                    {service.name}
-                  </p>
-                  <p className="truncate text-xs text-primary-black/50">
-                    {service.providerName}
-                  </p>
-                  {requiresDepositFirst && (
-                    <p className="mt-1 text-[11px] leading-snug text-primary-black/40">
-                      Prima paga la caparra, poi la location
-                    </p>
-                  )}
-                  {service.category === "location" &&
-                    depositPayment.paid &&
-                    !payment.paid &&
-                    depositAmount > 0 && (
-                      <p className="mt-1 text-[11px] leading-snug text-primary-black/40">
-                        Saldo dopo caparra
-                      </p>
-                    )}
-                </div>
-                <div className="flex w-[6.75rem] shrink-0 flex-col items-end gap-1.5">
-                  <span
-                    className={`text-sm font-semibold tabular-nums ${
-                      payment.paid
-                        ? "text-emerald-600"
-                        : requiresDepositFirst
-                          ? "text-red-300"
-                          : "text-red-500"
-                    }`}
-                  >
-                    {formatCurrency(displayAmount)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      canPay
-                        ? onOpenPayment({
-                            event,
-                            service:
-                              service.category === "location" &&
-                              depositPayment.paid
-                                ? {
-                                    ...service,
-                                    amountPaid: payableAmount,
-                                    name:
-                                      payableAmount < service.amountPaid
-                                        ? "Saldo location"
-                                        : service.name,
-                                  }
-                                : service,
-                          })
-                        : undefined
-                    }
-                    disabled={!canPay}
-                    title={
-                      requiresDepositFirst
-                        ? "Paga prima la caparra per sbloccare il pagamento della location"
-                        : undefined
-                    }
-                    className={`w-full rounded-lg px-2 py-1.5 text-center text-[11px] font-medium leading-tight transition-colors ${
-                      payment.paid
-                        ? "bg-primary-black text-white"
-                        : requiresDepositFirst
-                          ? "cursor-not-allowed border border-primary-black/10 bg-primary-black/[0.03] text-primary-black/35"
-                          : "border border-primary-black/15 text-primary-black hover:border-primary-black/30"
-                    }`}
-                  >
-                    {payment.paid ? "Pagato" : "Da pagare"}
-                  </button>
-                </div>
-              </li>
-            );
-          })}
+        <ul className="mt-3 min-w-0 space-y-2">
+          {event.services.map((service) => (
+            <li
+              key={service.id}
+              className="flex min-w-0 items-baseline justify-between gap-3 text-sm text-primary-black"
+            >
+              <span className="min-w-0 truncate font-medium">{service.name}</span>
+              <span className="shrink-0 tabular-nums">
+                {formatCurrency(service.amountPaid)}
+              </span>
+            </li>
+          ))}
         </ul>
 
         <dl className="mt-4 min-w-0 space-y-2 border-t border-primary-black/8 pt-4 text-sm">
