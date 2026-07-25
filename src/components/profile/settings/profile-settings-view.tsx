@@ -1,6 +1,7 @@
 "use client";
 
 import { AccountSettingsPanel } from "@/components/profile/settings/account-settings-panel";
+import { FavoritesSettingsPanel } from "@/components/profile/settings/favorites-settings-panel";
 import { HelpSettingsPanel } from "@/components/profile/settings/help-settings-panel";
 import { NotificationsSettingsPanel } from "@/components/profile/settings/notifications-settings-panel";
 import { PaymentsSettingsPanel } from "@/components/profile/settings/payments-settings-panel";
@@ -20,6 +21,8 @@ export function ProfileSettingsView({
   switch (panel) {
     case "settings":
       return <AccountSettingsPanel onBack={onClose} />;
+    case "favorites":
+      return <FavoritesSettingsPanel onBack={onClose} />;
     case "payments":
       return <PaymentsSettingsPanel onBack={onClose} />;
     case "help":

@@ -87,6 +87,7 @@ export function normalizeUserSettings(
 
 export type SettingsPanelId =
   | "settings"
+  | "favorites"
   | "payments"
   | "help"
   | "privacy"
@@ -95,6 +96,7 @@ export type SettingsPanelId =
 
 export const SETTINGS_PANEL_TITLES: Record<SettingsPanelId, string> = {
   settings: "Impostazioni account",
+  favorites: "I tuoi preferiti",
   payments: "Pagamenti e abbonamento",
   help: "Aiuto e supporto",
   privacy: "Privacy e Visibilità",
