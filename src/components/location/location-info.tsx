@@ -204,7 +204,7 @@ export function LocationReviewsSection({ location }: LocationInfoProps) {
   const averageRating = getLocationAverageRating(location);
 
   return (
-    <section className="rounded-3xl border border-primary-black/10 bg-primary-black/[0.02] p-5">
+    <section className="rounded-3xl border border-white bg-primary-black/[0.02] p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-wide text-primary-black/50">
