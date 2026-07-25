@@ -23,15 +23,22 @@ export function EventCountdown({
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
 
-    const tick = () => setCountdown(getCountdown(target));
-    const start = () => {
-      tick();
-      interval = setInterval(tick, 1000);
-    };
     const stop = () => {
       if (interval) {
         clearInterval(interval);
         interval = null;
+      }
+    };
+    const tick = () => {
+      const next = getCountdown(target);
+      setCountdown(next);
+      // Stop the 1s timer once the event is over / invalid — important with many cards.
+      if (next.isPast) stop();
+    };
+    const start = () => {
+      tick();
+      if (!interval && !getCountdown(target).isPast) {
+        interval = setInterval(tick, 1000);
       }
     };
 

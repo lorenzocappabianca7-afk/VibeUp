@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -103,6 +104,7 @@ export function PwaInstallBanner() {
     useState<BeforeInstallPromptEvent | null>(null);
   const [guide, setGuide] = useState<"ios" | "android" | null>(null);
   const [verifyHint, setVerifyHint] = useState(false);
+  const claimTimerRef = useRef<number | null>(null);
 
   useLayoutEffect(() => {
     // Client-only mount gate: must run before paint to avoid a blank flash.
@@ -138,12 +140,24 @@ export function PwaInstallBanner() {
 
     setVerifyHint(true);
     persistSessionDismissed();
-    window.setTimeout(() => {
+    if (claimTimerRef.current != null) {
+      window.clearTimeout(claimTimerRef.current);
+    }
+    claimTimerRef.current = window.setTimeout(() => {
+      claimTimerRef.current = null;
       setHidden(true);
       setForcedShow(false);
       setGuide(null);
       setVerifyHint(false);
     }, 2200);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (claimTimerRef.current != null) {
+        window.clearTimeout(claimTimerRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {

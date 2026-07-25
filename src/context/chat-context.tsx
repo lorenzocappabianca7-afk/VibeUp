@@ -58,6 +58,8 @@ const ChatContext = createContext<ChatContextValue | null>(null);
 const STORAGE_KEY_PREFIX = "vibeup-chat-v1";
 const LEGACY_STORAGE_KEY = "vibeup-chat-v1";
 const MAX_MESSAGES_PER_THREAD = 80;
+/** Cap pending auto-reply / delivery timers during long chat spam. */
+const MAX_PENDING_REPLY_TIMERS = 24;
 
 function chatStorageKey(userId: string) {
   return `${STORAGE_KEY_PREFIX}:${userId}`;
@@ -374,16 +376,24 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [conversations, syncUnreadMessages]);
 
   useEffect(() => {
-    const timers = replyTimers.current;
     return () => {
-      for (const timer of timers) {
+      for (const timer of replyTimers.current) {
         window.clearTimeout(timer);
       }
+      replyTimers.current = [];
     };
   }, []);
 
   const releaseTimer = useCallback((timer: number) => {
     replyTimers.current = replyTimers.current.filter((id) => id !== timer);
+  }, []);
+
+  const trackTimer = useCallback((timer: number) => {
+    while (replyTimers.current.length >= MAX_PENDING_REPLY_TIMERS) {
+      const oldest = replyTimers.current.shift();
+      if (oldest != null) window.clearTimeout(oldest);
+    }
+    replyTimers.current.push(timer);
   }, []);
 
   const getMessages = useCallback(
@@ -532,7 +542,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           };
         });
       }, 700 + Math.floor(Math.random() * 500));
-      replyTimers.current.push(deliveredTimer);
+      trackTimer(deliveredTimer);
 
       const replies = AUTO_REPLIES[conversationId] ?? [
         "Grazie! Ti rispondo a breve.",
@@ -543,9 +553,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         releaseTimer(timer);
         receiveIncoming(conversationId, reply);
       }, delay);
-      replyTimers.current.push(timer);
+      trackTimer(timer);
     },
-    [receiveIncoming, releaseTimer],
+    [receiveIncoming, releaseTimer, trackTimer],
   );
 
   const value = useMemo(

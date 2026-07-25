@@ -118,6 +118,17 @@ export function ExploreSearchBar({
 
   useBodyScrollLock(scrollLocked);
 
+  // Render-phase close when leaving Explore — unlock scroll in the same commit
+  // (useEffect alone left a freeze window after long background / tab switch).
+  if (forceClosed && (open || scrollLocked)) {
+    openRef.current = false;
+    animatingRef.current = false;
+    pendingOpenAnimRef.current = false;
+    clipRef.current = 0;
+    if (open) setOpen(false);
+    if (scrollLocked) setScrollLocked(false);
+  }
+
   function resetPanelChrome() {
     const panel = panelRef.current;
     if (!panel) return;

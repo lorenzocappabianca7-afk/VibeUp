@@ -1,7 +1,9 @@
 "use client";
 
 import { forceUnlockBodyScrollIfIdle } from "@/lib/body-scroll-lock";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+
+const SW_UPDATE_MIN_MS = 30 * 60 * 1000;
 
 /**
  * After long idle / bfcache restore, mobile Safari/Chrome can leave the page
@@ -9,16 +11,20 @@ import { useEffect } from "react";
  * This soft-recovers interaction without remounting the whole app.
  */
 export function AppWakeRecovery() {
+  const lastSwUpdateAtRef = useRef(0);
+
   useEffect(() => {
     const recover = () => {
       forceUnlockBodyScrollIfIdle();
 
-      // Nudge a stale SW to update after the tab wakes up.
-      if ("serviceWorker" in navigator) {
-        void navigator.serviceWorker.getRegistration().then((registration) => {
-          void registration?.update();
-        });
-      }
+      // Throttle SW checks — focus/visibility can fire often during long use.
+      if (!("serviceWorker" in navigator)) return;
+      const now = Date.now();
+      if (now - lastSwUpdateAtRef.current < SW_UPDATE_MIN_MS) return;
+      lastSwUpdateAtRef.current = now;
+      void navigator.serviceWorker.getRegistration().then((registration) => {
+        void registration?.update();
+      });
     };
 
     const onVisibility = () => {

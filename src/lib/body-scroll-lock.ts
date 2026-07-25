@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 
 let lockCount = 0;
+/** Bumped on force-unlock so stale unlock callbacks from hidden tabs no-op. */
+let lockGeneration = 0;
 
 /** True when any useBodyScrollLock / lockBodyScroll holder is active. */
 export function isBodyScrollLocked() {
@@ -47,9 +49,13 @@ export function lockBodyScroll() {
   }
 
   lockCount += 1;
+  const generation = lockGeneration;
   document.body.style.overflow = "hidden";
 
   return () => {
+    // After wake-recovery force-unlock, ignore cleanup from orphaned holders
+    // so they cannot drive lockCount negative / unlock under a new modal.
+    if (generation !== lockGeneration) return;
     lockCount = Math.max(0, lockCount - 1);
     if (lockCount === 0) {
       document.body.style.overflow = "";
@@ -67,15 +73,12 @@ export function useBodyScrollLock(locked: boolean) {
 /**
  * Used by wake-recovery: clear orphan locks after PWA idle / bfcache,
  * ignoring overlays that are only mounted inside hidden tab panels.
- *
- * Also resets lockCount when no visible overlay remains — React holders in
- * hidden tabs may still think they own a lock; zeroing avoids permanent freeze.
- * Tab-leave teardown (search/profile/events) should clear those holders ASAP.
  */
 export function forceUnlockBodyScrollIfIdle() {
   if (typeof document === "undefined") return;
   if (hasVisibleOverlay()) return;
 
+  lockGeneration += 1;
   lockCount = 0;
   document.body.style.overflow = "";
 }

@@ -27,7 +27,7 @@ import {
 import { ArrowLeft, Briefcase, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const CATEGORIES = Object.entries(BUSINESS_CATEGORY_LABELS) as [
   BusinessCategory,
@@ -167,6 +167,7 @@ function isValidEmail(value: string) {
 
 export function BusinessOnboardingView() {
   const router = useRouter();
+  const navigateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const {
     accounts,
     businessProfile,
@@ -176,6 +177,14 @@ export function BusinessOnboardingView() {
     saveBusinessProfile,
     updateCurrentUser,
   } = useAppState();
+
+  useEffect(() => {
+    return () => {
+      if (navigateTimerRef.current != null) {
+        clearTimeout(navigateTimerRef.current);
+      }
+    };
+  }, []);
 
   const editingExisting = isBusinessUser && Boolean(businessProfile);
 
@@ -289,7 +298,11 @@ export function BusinessOnboardingView() {
       });
       saveBusinessProfile(profile);
       setSuccess(true);
-      setTimeout(() => {
+      if (navigateTimerRef.current != null) {
+        clearTimeout(navigateTimerRef.current);
+      }
+      navigateTimerRef.current = setTimeout(() => {
+        navigateTimerRef.current = null;
         router.push("/?tab=notifications");
       }, 1400);
       return;
@@ -348,7 +361,11 @@ export function BusinessOnboardingView() {
       }
 
       setSuccess(true);
-      setTimeout(() => {
+      if (navigateTimerRef.current != null) {
+        clearTimeout(navigateTimerRef.current);
+      }
+      navigateTimerRef.current = setTimeout(() => {
+        navigateTimerRef.current = null;
         router.push("/?tab=notifications");
       }, 1400);
     })();
