@@ -7,7 +7,7 @@ const SPLASH_STORAGE_KEY = "vibeup-splash-seen";
 /** Text appears shortly after the logo bounce starts */
 const TAGLINE_DELAY_MS = 520;
 /** Hold after the tagline is visible, then open Explore */
-const HOLD_AFTER_TAGLINE_MS = 1700;
+const HOLD_AFTER_TAGLINE_MS = 1900;
 
 function shouldSkipSplash() {
   if (typeof window === "undefined") return true;
