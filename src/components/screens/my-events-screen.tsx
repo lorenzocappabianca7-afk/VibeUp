@@ -540,8 +540,8 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   }, [isEditingTitle]);
 
   return (
-    <article className="box-border w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-brand-teal/30 bg-surface-2 shadow-[0_8px_28px_-16px_rgba(0,0,0,0.55)]">
-      <div className="min-w-0 border-b border-brand-teal/15 bg-gradient-to-br from-brand-teal/[0.12] via-surface-2 to-surface-2 px-3 py-4 sm:px-4">
+    <article className="box-border w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/80 bg-surface-2 shadow-[0_8px_28px_-16px_rgba(0,0,0,0.55)]">
+      <div className="min-w-0 border-b border-white/15 bg-gradient-to-br from-brand-teal/[0.12] via-surface-2 to-surface-2 px-3 py-4 sm:px-4">
         <div className="min-w-0 overflow-hidden">
           <p className={`text-xs font-medium ${statusColors[event.status]}`}>
             {EVENT_STATUS_LABELS[event.status]}
