@@ -3,6 +3,7 @@
 import { EventCountdown } from "@/components/events/event-countdown";
 import { RefundReportModal } from "@/components/events/refund-report-modal";
 import { ServiceStatusList } from "@/components/events/service-status-list";
+import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
 import { useAppState } from "@/context/app-state-context";
 import {
@@ -309,7 +310,7 @@ function AddServicesModal({
 
             return (
               <li key={category.id}>
-                <Link
+                <HardNavLink
                   href={href}
                   className="flex w-full items-start gap-3 rounded-2xl border border-primary-black/10 bg-surface p-4 text-left transition-colors duration-150 hover:border-primary-black"
                 >
@@ -324,7 +325,7 @@ function AddServicesModal({
                       {category.description}
                     </p>
                   </div>
-                </Link>
+                </HardNavLink>
               </li>
             );
           })}
