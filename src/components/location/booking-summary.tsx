@@ -36,7 +36,7 @@ export function BookingSummary({
     requestStatus === "declined" || requestStatus === "cancelled";
 
   return (
-    <section className="space-y-4 rounded-2xl border border-primary-black/10 bg-primary-black/[0.02] p-5">
+    <section className="space-y-4 rounded-2xl border border-white bg-primary-black/[0.02] p-5">
       <h2 className="text-base font-bold text-primary-black">Riepilogo</h2>
 
       <dl className="space-y-2 text-sm">
