@@ -31,6 +31,7 @@ import {
   sanitizeUrl,
 } from "@/lib/security/sanitize";
 import { scrubPersistedJson } from "@/lib/security/persist-scrub";
+import { purgeUserSatelliteStorage } from "@/lib/local-user-data-cleanup";
 import type { ManagedListing } from "@/types/admin";
 import type { BookedService, EventMenuSelection, UserEvent } from "@/types/event";
 import type { SavedPaymentCard } from "@/types/payment";
@@ -1421,6 +1422,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       void _removed;
       return rest;
     });
+
+    // Drop chat / profile comms / availability rows that live outside app-state.
+    purgeUserSatelliteStorage(id);
   }, []);
 
   const switchAccount = useCallback(

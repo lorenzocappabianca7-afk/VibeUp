@@ -15,6 +15,8 @@ import {
 } from "react";
 
 const STORAGE_PREFIX = "vibeup-profile-comms-v1:";
+const MAX_COMMUNICATIONS = 40;
+const REMINDER_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
 
 interface ProfileCommunicationsContextValue {
   communications: ProfileCommunication[];
@@ -35,6 +37,30 @@ function storageKey(userId: string) {
   return `${STORAGE_PREFIX}${userId}`;
 }
 
+function isProfileCommunication(item: unknown): item is ProfileCommunication {
+  return Boolean(item && typeof item === "object" && "id" in item);
+}
+
+function pruneCommunications(
+  items: ProfileCommunication[],
+  aggressive = false,
+): ProfileCommunication[] {
+  const now = Date.now();
+  const maxAge = aggressive ? 3 * 24 * 60 * 60 * 1000 : REMINDER_MAX_AGE_MS;
+  const maxCount = aggressive ? 20 : MAX_COMMUNICATIONS;
+
+  const pruned = items.filter((item) => {
+    if (item.kind === "deposit_policy") return true;
+    const stamp = Date.parse(item.createdAt);
+    if (Number.isNaN(stamp)) return false;
+    return now - stamp <= maxAge;
+  });
+
+  const policy = pruned.filter((item) => item.kind === "deposit_policy").slice(0, 1);
+  const rest = pruned.filter((item) => item.kind !== "deposit_policy");
+  return [...policy, ...rest].slice(0, maxCount);
+}
+
 function readStored(userId: string): ProfileCommunication[] {
   if (typeof window === "undefined") return [];
   try {
@@ -42,10 +68,7 @@ function readStored(userId: string): ProfileCommunication[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (item): item is ProfileCommunication =>
-        Boolean(item && typeof item === "object" && "id" in item),
-    );
+    return pruneCommunications(parsed.filter(isProfileCommunication));
   } catch {
     return [];
   }
@@ -53,10 +76,18 @@ function readStored(userId: string): ProfileCommunication[] {
 
 function writeStored(userId: string, items: ProfileCommunication[]) {
   if (typeof window === "undefined") return;
+  const pruned = pruneCommunications(items);
   try {
-    window.localStorage.setItem(storageKey(userId), JSON.stringify(items));
+    window.localStorage.setItem(storageKey(userId), JSON.stringify(pruned));
   } catch {
-    // private mode / quota
+    try {
+      window.localStorage.setItem(
+        storageKey(userId),
+        JSON.stringify(pruneCommunications(pruned, true)),
+      );
+    } catch {
+      // private mode / quota
+    }
   }
 }
 
@@ -118,7 +149,12 @@ export function ProfileCommunicationsProvider({
       skipFirstPersist.current = false;
       return;
     }
-    writeStored(userId, communications);
+    const pruned = pruneCommunications(communications);
+    if (pruned.length !== communications.length) {
+      setCommunications(pruned);
+      return;
+    }
+    writeStored(userId, pruned);
   }, [communications, hydrated, isBusinessUser, isGuest, userId]);
 
   const unreadCount = useMemo(
@@ -163,7 +199,7 @@ export function ProfileCommunicationsProvider({
 
       setCommunications((prev) => {
         const withoutDup = prev.filter((item) => item.id !== notice.id);
-        return [notice, ...withoutDup];
+        return pruneCommunications([notice, ...withoutDup]);
       });
     },
     [isBusinessUser],

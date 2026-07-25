@@ -19,6 +19,13 @@ import {
 } from "react";
 
 const STORAGE_KEY = "vibeup-availability-requests-v1";
+const MAX_REQUESTS = 80;
+const TERMINAL_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+const TERMINAL_STATUSES = new Set([
+  "confirmed",
+  "declined",
+  "cancelled",
+]);
 
 interface AvailabilityRequestContextValue {
   requests: AvailabilityRequest[];
@@ -45,6 +52,28 @@ interface AvailabilityRequestContextValue {
 const AvailabilityRequestContext =
   createContext<AvailabilityRequestContextValue | null>(null);
 
+function isAvailabilityRequest(item: unknown): item is AvailabilityRequest {
+  return Boolean(item && typeof item === "object" && "id" in item);
+}
+
+function pruneAvailabilityRequests(
+  requests: AvailabilityRequest[],
+  aggressive = false,
+): AvailabilityRequest[] {
+  const now = Date.now();
+  const maxAge = aggressive ? 7 * 24 * 60 * 60 * 1000 : TERMINAL_MAX_AGE_MS;
+  const maxCount = aggressive ? 40 : MAX_REQUESTS;
+
+  const pruned = requests.filter((item) => {
+    if (!TERMINAL_STATUSES.has(item.status)) return true;
+    const stamp = Date.parse(item.updatedAt || item.createdAt);
+    if (Number.isNaN(stamp)) return false;
+    return now - stamp <= maxAge;
+  });
+
+  return pruned.slice(0, maxCount);
+}
+
 function readStoredRequests(): AvailabilityRequest[] {
   if (typeof window === "undefined") return [];
   try {
@@ -52,10 +81,7 @@ function readStoredRequests(): AvailabilityRequest[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (item): item is AvailabilityRequest =>
-        Boolean(item && typeof item === "object" && "id" in item),
-    );
+    return pruneAvailabilityRequests(parsed.filter(isAvailabilityRequest));
   } catch {
     return [];
   }
@@ -63,10 +89,18 @@ function readStoredRequests(): AvailabilityRequest[] {
 
 function writeStoredRequests(requests: AvailabilityRequest[]) {
   if (typeof window === "undefined") return;
+  const pruned = pruneAvailabilityRequests(requests);
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned));
   } catch {
-    // private mode / quota
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(pruneAvailabilityRequests(pruned, true)),
+      );
+    } catch {
+      // private mode / quota
+    }
   }
 }
 
@@ -129,7 +163,12 @@ export function AvailabilityRequestProvider({
       skipFirstPersist.current = false;
       return;
     }
-    writeStoredRequests(requests);
+    const pruned = pruneAvailabilityRequests(requests);
+    if (pruned.length !== requests.length) {
+      setRequests(pruned);
+      return;
+    }
+    writeStoredRequests(pruned);
   }, [hydrated, requests]);
 
   const managedLocationIds = useMemo(() => {
@@ -339,6 +378,7 @@ export function AvailabilityRequestProvider({
 
       addEvent(event);
       setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+      confirmLockRef.current.delete(requestId);
       return { ok: true as const, eventId };
     },
     [addEvent],
