@@ -33,23 +33,23 @@ function removeCriticalPaint() {
 }
 
 /**
- * Single splash layer over a server-painted black shell.
- * Smooth spring bounce → tagline → hold 2.1s → soft exit → Explore.
+ * Why the logo looked soft (and how we fix it):
+ * 1) Upscaling a small bitmap on 2x/3x screens → use @640px source for ~7rem CSS
+ * 2) Sub-pixel CSS widths (vw) → fixed rem size so the bitmap maps cleanly
+ * 3) Parent `transform` / leftover `will-change` after scale bounce → settle layer
+ *    with transform:none after animationend (Safari keeps a soft composited layer otherwise)
  */
 export function SplashScreen() {
   const [phase, setPhase] = useState<Phase>("enter");
   const [showTagline, setShowTagline] = useState(false);
-  const [bounceDone] = useState(() => splashBounceAlreadyPlayed);
+  const [bounceDone, setBounceDone] = useState(() => splashBounceAlreadyPlayed);
 
-  // Before paint: drop the critical shell once our overlay is in the tree
-  // (or immediately if this session skips splash). Avoids stacked layers & white gaps.
   useLayoutEffect(() => {
     if (shouldSkipSplash()) {
       removeCriticalPaint();
       setPhase("gone");
       return;
     }
-    // Splash covers the viewport — safe to remove the server black shell.
     removeCriticalPaint();
   }, []);
 
@@ -68,6 +68,11 @@ export function SplashScreen() {
       setShowTagline(true);
     }, TAGLINE_DELAY_MS);
 
+    // Fallback if animationend is missed — still drop the GPU scale layer.
+    const settleTimer = window.setTimeout(() => {
+      setBounceDone(true);
+    }, LOGO_BOUNCE_MS + 40);
+
     const exitTimer = window.setTimeout(() => {
       setPhase("exit");
     }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS);
@@ -79,12 +84,12 @@ export function SplashScreen() {
         /* ignore */
       }
       document.documentElement.style.overflow = previousOverflow;
-      // Keep html/body black — app shell uses its own bg-background surface.
       setPhase("gone");
     }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS + SPLASH_EXIT_MS);
 
     return () => {
       window.clearTimeout(taglineTimer);
+      window.clearTimeout(settleTimer);
       window.clearTimeout(exitTimer);
       window.clearTimeout(doneTimer);
       document.documentElement.style.overflow = previousOverflow;
@@ -106,8 +111,8 @@ export function SplashScreen() {
         <img
           src={SPLASH_LOGO_DATA_URI}
           alt=""
-          width={256}
-          height={256}
+          width={640}
+          height={640}
           className={
             bounceDone
               ? "vibeup-splash__logo vibeup-splash__logo--settled"
@@ -116,6 +121,10 @@ export function SplashScreen() {
           draggable={false}
           decoding="sync"
           fetchPriority="high"
+          onAnimationEnd={(event) => {
+            if (!event.animationName.includes("vibeup-splash-bounce")) return;
+            setBounceDone(true);
+          }}
         />
         <p
           className={`vibeup-splash__tagline${showTagline ? " vibeup-splash__tagline--in" : ""}`}
@@ -140,26 +149,32 @@ const SPLASH_CSS = `
 .vibeup-splash__stage{
   box-sizing:border-box;
   display:flex;flex-direction:column;align-items:center;
-  transform:translateY(-7vh);
+  /* Lift without transform — parent transforms blur child bitmaps on WebKit */
+  margin-bottom:14vh;
 }
 .vibeup-splash__logo{
   display:block;
-  width:min(52vw,11.5rem);
+  /* Smaller on screen; fixed rem avoids sub-pixel blur from vw */
+  width:7rem;
+  max-width:7rem;
   height:auto;
-  aspect-ratio:1;object-fit:contain;
+  aspect-ratio:1/1;
+  object-fit:contain;
+  object-position:center;
   transform-origin:center center;
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
+  image-rendering:auto;
+  -webkit-user-drag:none;
   animation:vibeup-splash-bounce ${LOGO_BOUNCE_MS}ms cubic-bezier(0.16,1,0.3,1) both;
-  will-change:transform,opacity;
 }
 .vibeup-splash__logo--settled{
   animation:none!important;
   opacity:1!important;
   transform:none!important;
+  filter:none!important;
+  will-change:auto!important;
 }
 .vibeup-splash__tagline{
-  margin:1.15rem 0 0;
+  margin:1rem 0 0;
   min-height:1.15em;
   padding:0 0.5rem;
   font-family:var(--font-brand),system-ui,sans-serif;
@@ -173,12 +188,11 @@ const SPLASH_CSS = `
   animation:vibeup-splash-tagline-in 640ms cubic-bezier(0.16,1,0.3,1) both;
 }
 @keyframes vibeup-splash-bounce{
-  0%{opacity:0;transform:translate3d(0,8px,0) scale(0.55)}
+  0%{opacity:0;transform:translate3d(0,6px,0) scale(0.62)}
   18%{opacity:1}
-  45%{transform:translate3d(0,0,0) scale(1.08)}
-  62%{transform:translate3d(0,0,0) scale(0.96)}
-  78%{transform:translate3d(0,0,0) scale(1.03)}
-  90%{transform:translate3d(0,0,0) scale(0.99)}
+  45%{transform:translate3d(0,0,0) scale(1.05)}
+  62%{transform:translate3d(0,0,0) scale(0.98)}
+  78%{transform:translate3d(0,0,0) scale(1.015)}
   100%{opacity:1;transform:translate3d(0,0,0) scale(1)}
 }
 @keyframes vibeup-splash-tagline-in{
@@ -190,5 +204,8 @@ const SPLASH_CSS = `
     animation:none!important;opacity:1;transform:none
   }
   .vibeup-splash{transition:none}
+}
+@media (max-width:380px){
+  .vibeup-splash__logo{width:6.25rem;max-width:6.25rem}
 }
 `.replace(/\n/g, "");
