@@ -51,10 +51,10 @@ interface ServicePaymentState {
 }
 
 const statusColors: Record<UserEvent["status"], string> = {
-  draft: "text-primary-black/50",
-  organizing: "text-primary-black",
-  confirmed: "text-primary-black",
-  completed: "text-primary-black/50",
+  draft: "text-white",
+  organizing: "text-white",
+  confirmed: "text-white",
+  completed: "text-white",
 };
 
 const paymentMethodLabels: Record<PaymentMethod, string> = {
@@ -563,11 +563,11 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                   }
                 }}
                 placeholder="Nome evento"
-                className="box-border min-w-0 flex-1 bg-transparent text-lg font-semibold leading-snug text-primary-black outline-none placeholder:text-primary-black/35 sm:text-xl"
+                className="box-border min-w-0 flex-1 bg-transparent text-lg font-semibold leading-snug text-white outline-none placeholder:text-white/40 sm:text-xl"
                 aria-label="Titolo evento"
               />
             ) : (
-              <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-snug text-primary-black sm:text-xl">
+              <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-snug text-white sm:text-xl">
                 {event.title}
               </h3>
             )}
@@ -581,7 +581,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                 setTitleDraft(event.title);
                 setIsEditingTitle(true);
               }}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background/50 text-primary-black/55 transition-colors hover:bg-background hover:text-primary-black"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background/50 text-white transition-colors hover:bg-background"
               aria-label={
                 isEditingTitle ? "Salva nome evento" : "Modifica nome evento"
               }
@@ -600,7 +600,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
           )}
         </div>
 
-        <div className="mt-4 min-w-0 space-y-1.5 text-sm text-primary-black/65">
+        <div className="mt-4 min-w-0 space-y-1.5 text-sm text-white">
           <p className="flex min-w-0 items-center gap-1.5">
             <Calendar className="h-4 w-4 shrink-0 text-brand-teal" aria-hidden />
             <span className="min-w-0 truncate">
@@ -631,8 +631,8 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       {showMenuSection && (
         <section className="min-w-0 border-t border-primary-black/8 bg-surface px-3 py-4 sm:px-4">
           <div className="flex items-center gap-2">
-            <UtensilsCrossed className="h-4 w-4 text-primary-black/45" aria-hidden />
-            <h3 className="text-sm font-semibold text-primary-black">Menu</h3>
+            <UtensilsCrossed className="h-4 w-4 text-white/70" aria-hidden />
+            <h3 className="text-sm font-semibold text-white">Menu</h3>
           </div>
 
           <div className="mt-3 space-y-3">
@@ -646,14 +646,14 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                 >
                   <div className="flex min-w-0 items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-primary-black">
+                      <p className="truncate text-sm font-medium text-white">
                         {service.name}
                       </p>
-                      <p className="truncate text-xs text-primary-black/50">
+                      <p className="truncate text-xs text-white">
                         {service.providerName}
                       </p>
                     </div>
-                    <p className="shrink-0 text-sm font-medium tabular-nums text-primary-black">
+                    <p className="shrink-0 text-sm font-medium tabular-nums text-white">
                       {formatCurrency(service.amountPaid)}
                     </p>
                   </div>
@@ -661,7 +661,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                     {allergens.map((allergen) => (
                       <span
                         key={allergen}
-                        className="rounded-full bg-surface-2 px-2.5 py-0.5 text-[11px] text-primary-black/65 ring-1 ring-primary-black/10"
+                        className="rounded-full bg-surface-2 px-2.5 py-0.5 text-[11px] text-white ring-1 ring-primary-black/10"
                       >
                         {allergen}
                       </span>
@@ -673,17 +673,17 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
 
             {menuServices.length === 0 && venueMenuAllergens.length > 0 && (
               <div className="min-w-0 rounded-xl bg-background/70 p-3 ring-1 ring-primary-black/8">
-                <p className="text-sm font-medium text-primary-black">
+                <p className="text-sm font-medium text-white">
                   Menu incluso nella location
                 </p>
-                <p className="mt-0.5 text-xs text-primary-black/50">
+                <p className="mt-0.5 text-xs text-white">
                   Il costo è compreso nel totale location.
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {venueMenuAllergens.map((allergen) => (
                     <span
                       key={allergen}
-                      className="rounded-full bg-surface-2 px-2.5 py-0.5 text-[11px] text-primary-black/65 ring-1 ring-primary-black/10"
+                      className="rounded-full bg-surface-2 px-2.5 py-0.5 text-[11px] text-white ring-1 ring-primary-black/10"
                     >
                       {allergen}
                     </span>
@@ -703,13 +703,13 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       )}
 
       <div className="min-w-0 overflow-hidden border-t border-primary-black/8 bg-surface-2 px-3 py-4 sm:px-4">
-        <h3 className="text-sm font-semibold text-primary-black">Da pagare</h3>
+        <h3 className="text-sm font-semibold text-white">Da pagare</h3>
 
         <ul className="mt-3 min-w-0 space-y-2">
           {event.services.map((service) => (
             <li
               key={service.id}
-              className="flex min-w-0 items-baseline justify-between gap-3 text-sm text-primary-black"
+              className="flex min-w-0 items-baseline justify-between gap-3 text-sm text-white"
             >
               <span className="min-w-0 truncate font-medium">{service.name}</span>
               <span className="shrink-0 tabular-nums">
@@ -721,14 +721,14 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
 
         <dl className="mt-4 min-w-0 space-y-2 border-t border-primary-black/8 pt-4 text-sm">
           <div className="flex min-w-0 items-center justify-between gap-3">
-            <dt className="min-w-0 text-primary-black/55">Caparra location</dt>
-            <dd className="shrink-0 font-medium tabular-nums text-primary-black">
+            <dt className="min-w-0 text-white">Caparra location</dt>
+            <dd className="shrink-0 font-medium tabular-nums text-white">
               {formatCurrency(depositAmount)}
             </dd>
           </div>
           <div className="flex min-w-0 items-center justify-between gap-3">
-            <dt className="font-semibold text-primary-black">Totale</dt>
-            <dd className="shrink-0 text-base font-semibold tabular-nums text-primary-black">
+            <dt className="font-semibold text-white">Totale</dt>
+            <dd className="shrink-0 text-base font-semibold tabular-nums text-white">
               {formatCurrency(totalCost)}
             </dd>
           </div>
@@ -737,10 +737,10 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
 
       {missingSuggestions.length > 0 && (
         <section className="min-w-0 overflow-hidden border-t border-brand-teal/35 bg-brand-teal/25 px-3 py-4 sm:px-4">
-          <p className="text-sm font-medium text-primary-black">
+          <p className="text-sm font-medium text-white">
             Potrebbe mancare
           </p>
-          <p className="mt-0.5 text-xs text-primary-black/55">
+          <p className="mt-0.5 text-xs text-white">
             Aggiungi altri servizi alla festa
           </p>
           <div className="scrollbar-hidden mt-3 flex max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1">
@@ -751,7 +751,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                 <Link
                   key={suggestion.id}
                   href={buildSuggestionHref(event, suggestion.exploreCategory)}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary-black/10 bg-surface-2 px-3.5 py-2 text-sm font-medium text-primary-black transition-colors hover:border-primary-black/25"
+                  className="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary-black/10 bg-surface-2 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:border-primary-black/25"
                 >
                   <Icon
                     className={`h-4 w-4 ${suggestion.iconClass}`}
@@ -827,10 +827,10 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
     <section className="min-w-0 overflow-hidden border-b border-brand-teal/35 bg-brand-teal/25 px-3 py-3 sm:px-4">
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-primary-black">
+          <p className="text-sm font-medium text-white">
             Caparra {formatCurrency(depositAmount)}
           </p>
-          <p className="mt-0.5 break-words text-xs text-primary-black/55">
+          <p className="mt-0.5 break-words text-xs text-white">
             Entro {formatDepositDeadline(deadline)}
             {!countdown.isPast && (
               <>
@@ -845,7 +845,7 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
 
         <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-auto sm:max-w-[14rem] sm:items-end">
           {!payment.paid && (
-            <p className="text-[11px] leading-snug text-primary-black/60 sm:text-right">
+            <p className="text-[11px] leading-snug text-white sm:text-right">
               Entro 36 ore dalla creazione: blocca {event.locationName} per il{" "}
               {formatDate(event.date)}. Se non la paghi, perdi la priorità.
             </p>
@@ -921,10 +921,10 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
         className="flex w-full items-center gap-3 rounded-2xl border border-primary-black/10 bg-background/60 px-3.5 py-3 text-left transition-colors hover:border-primary-black/20"
       >
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-primary-black">
+          <span className="block text-sm font-semibold text-white">
             Scegli i piatti
           </span>
-          <span className="mt-0.5 block text-xs text-primary-black/50">
+          <span className="mt-0.5 block text-xs text-white">
             {selections.length === 0
               ? "Apri per selezionare le portate"
               : `${selections.length} ${
@@ -935,7 +935,7 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
           </span>
         </span>
         <ChevronDown
-          className={`h-4 w-4 shrink-0 text-primary-black/45 transition-transform duration-200 ${
+          className={`h-4 w-4 shrink-0 text-white transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
           aria-hidden
@@ -944,13 +944,13 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
 
       {open && (
         <div className="mt-3 space-y-3 rounded-2xl border border-primary-black/8 bg-primary-black/[0.02] p-3">
-          <p className="text-xs text-primary-black/50">
+          <p className="text-xs text-white">
             Seleziona cosa includere nel menu
           </p>
 
           {MENU_COURSES.map((course) => (
             <div key={course.id}>
-              <p className="flex items-center gap-2 text-xs font-medium text-primary-black/70">
+              <p className="flex items-center gap-2 text-xs font-medium text-white">
                 <span
                   className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm ring-1 ${course.accentClass}`}
                   aria-hidden
@@ -970,8 +970,8 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
                       onClick={() => toggleSelection(course, item)}
                       className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                         selected
-                          ? "bg-white/12 text-primary-black"
-                          : "bg-surface text-primary-black ring-1 ring-primary-black/12 hover:ring-primary-black/25"
+                          ? "bg-white/12 text-white"
+                          : "bg-surface text-white ring-1 ring-primary-black/12 hover:ring-primary-black/25"
                       }`}
                     >
                       {item.label}
@@ -984,17 +984,17 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
 
           {selections.length > 0 && (
             <div className="rounded-xl bg-surface p-3 ring-1 ring-primary-black/8">
-              <p className="text-sm font-semibold text-primary-black">
+              <p className="text-sm font-semibold text-white">
                 Riepilogo
               </p>
-              <p className="mt-0.5 text-xs text-primary-black/50">
+              <p className="mt-0.5 text-xs text-white">
                 Portate e piatti selezionati per il menu
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {selections.map((selection) => (
                   <span
                     key={`${selection.courseId}-${selection.itemId}`}
-                    className="rounded-full bg-primary-black/[0.04] px-3 py-1 text-xs text-primary-black ring-1 ring-primary-black/10"
+                    className="rounded-full bg-primary-black/[0.04] px-3 py-1 text-xs text-white ring-1 ring-primary-black/10"
                   >
                     {selection.courseLabel}: {selection.itemLabel}
                   </span>

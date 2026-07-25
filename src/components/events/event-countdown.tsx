@@ -66,12 +66,12 @@ export function EventCountdown({
             : "rounded-2xl border border-primary-black/10 bg-primary-black/[0.03] p-5 text-center"
         }
       >
-        <p className="text-sm font-medium text-primary-black/60">
+        <p className="text-sm font-medium text-white">
           L&apos;evento è passato
         </p>
         {!embedded && (
           <>
-            <p className="mt-1 text-lg font-bold text-primary-black">
+            <p className="mt-1 text-lg font-bold text-white">
               {event.title}
             </p>
             <p className="mt-2 text-xs text-brand-teal">
@@ -101,7 +101,7 @@ export function EventCountdown({
       <p
         className={
           embedded
-            ? "text-sm font-medium text-primary-black"
+            ? "text-sm font-medium text-white"
             : "text-center text-xs font-semibold uppercase tracking-widest text-brand-teal"
         }
       >
@@ -125,10 +125,16 @@ export function EventCountdown({
             key={unit.label}
             className="flex flex-col items-center rounded-xl bg-background py-2.5 sm:py-3"
           >
-            <span className="text-xl font-bold tabular-nums text-primary-black sm:text-2xl">
+            <span className="text-xl font-bold tabular-nums text-white sm:text-2xl">
               {String(unit.value).padStart(2, "0")}
             </span>
-            <span className="mt-0.5 text-[10px] font-medium uppercase text-primary-black/50">
+            <span
+              className={
+                embedded
+                  ? "mt-0.5 text-[10px] font-medium uppercase text-white"
+                  : "mt-0.5 text-[10px] font-medium uppercase text-primary-black/50"
+              }
+            >
               {unit.label}
             </span>
           </div>
