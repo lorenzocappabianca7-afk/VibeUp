@@ -736,7 +736,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       </div>
 
       {missingSuggestions.length > 0 && (
-        <section className="min-w-0 overflow-hidden border-t border-brand-pink/35 bg-brand-pink/25 px-3 py-4 sm:px-4">
+        <section className="min-w-0 overflow-hidden border-t border-brand-teal/35 bg-brand-teal/25 px-3 py-4 sm:px-4">
           <p className="text-sm font-medium text-primary-black">
             Potrebbe mancare
           </p>
