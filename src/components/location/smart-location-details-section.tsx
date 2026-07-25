@@ -21,10 +21,8 @@ import type {
   BookingQuote,
   ExtraService,
   ExtraServiceId,
-  PartyType,
 } from "@/types/location";
 import {
-  Bot,
   Calendar,
   Camera,
   Cake,
@@ -90,15 +88,7 @@ const TIME_GROUPS = [
 
 type PickerPanel = "date" | "start" | "end" | null;
 
-interface ExternalServiceSuggestionView {
-  serviceId: ExtraServiceId;
-  name: string;
-  reason: string;
-  estimatedCost: number;
-}
-
 interface SmartLocationDetailsSectionProps {
-  partyType: PartyType;
   dateRangeTo?: string;
   guestCount: number;
   maxGuests: number;
@@ -115,11 +105,6 @@ interface SmartLocationDetailsSectionProps {
   cakeKg: number;
   drinkMode: DrinkPackageMode;
   drinksPerInvitee: number;
-  isAiPromptOpen: boolean;
-  aiMissingPrompt: string;
-  aiLoading: boolean;
-  aiSuggestions: ExternalServiceSuggestionView[];
-  aiError: string | null;
   onDateChange: (date: string) => void;
   onStartTimeChange: (time: string) => void;
   onEndTimeChange: (time: string) => void;
@@ -132,9 +117,6 @@ interface SmartLocationDetailsSectionProps {
   onGenerateQuote: () => void;
   canGenerateQuote: boolean;
   quoteNeedsRefresh: boolean;
-  onOpenAiPrompt: () => void;
-  onAiMissingPromptChange: (value: string) => void;
-  onAskAiForSuggestions: () => void;
 }
 
 function formatInternalServicePrice(
@@ -237,8 +219,7 @@ function BookingTimePicker({
 }
 
 export function SmartLocationDetailsSection({
-  partyType,
-  dateRangeTo,
+  dateRangeTo: _dateRangeTo,
   guestCount,
   maxGuests,
   quote,
@@ -254,11 +235,6 @@ export function SmartLocationDetailsSection({
   cakeKg,
   drinkMode,
   drinksPerInvitee,
-  isAiPromptOpen,
-  aiMissingPrompt,
-  aiLoading,
-  aiSuggestions,
-  aiError,
   onDateChange,
   onStartTimeChange,
   onEndTimeChange,
@@ -271,13 +247,9 @@ export function SmartLocationDetailsSection({
   onGenerateQuote,
   canGenerateQuote,
   quoteNeedsRefresh,
-  onOpenAiPrompt,
-  onAiMissingPromptChange,
-  onAskAiForSuggestions,
 }: SmartLocationDetailsSectionProps) {
   const [openPicker, setOpenPicker] = useState<PickerPanel>(null);
   const [guestCountInput, setGuestCountInput] = useState(String(guestCount));
-  const needsAssistant = internalServices.length === 0 || isAiPromptOpen;
   const hasTimeIssue = estimatedHours > 0 && estimatedHours < minHours;
   const generatedQuote = quote && quote.total > 0 ? quote : null;
 
@@ -483,6 +455,93 @@ export function SmartLocationDetailsSection({
             </div>
           )}
         </div>
+
+        <details className="rounded-3xl border border-primary-black/8 bg-background p-4">
+          <summary className="cursor-pointer text-sm font-black text-primary-black">
+            Servizi esterni opzionali
+          </summary>
+          <ul className="mt-3 space-y-2">
+            {EXTRA_SERVICES.map((service) => {
+              const Icon = SERVICE_ICONS[service.id];
+              const isSelected = selectedExtras.includes(service.id);
+              const isBakery = service.id === "bakery";
+              const perKgPricing =
+                service.pricing.type === "per_kg" ? service.pricing : null;
+
+              return (
+                <li key={service.id}>
+                  <button
+                    type="button"
+                    onClick={() => onToggleExtra(service.id)}
+                    className={cn(
+                      "flex w-full items-start gap-3 rounded-2xl border p-3 text-left transition-colors",
+                      isSelected
+                        ? "border-brand-teal bg-brand-teal/10"
+                        : "border-primary-black/8 bg-primary-black/[0.02]",
+                    )}
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-black/5 text-primary-black/55">
+                      <Icon className="h-4 w-4" aria-hidden />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex justify-between gap-2">
+                        <span className="text-sm font-bold text-primary-black">
+                          {service.name}
+                        </span>
+                        <span className="shrink-0 text-xs font-bold text-primary-black/70">
+                          {formatExternalServicePrice(service)}
+                        </span>
+                      </span>
+                      {service.providerName && (
+                        <span className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-brand-pink">
+                          <MapPin className="h-3 w-3" aria-hidden />
+                          {service.providerName}
+                        </span>
+                      )}
+                      <span className="mt-0.5 block text-xs text-primary-black/58">
+                        {service.description}
+                      </span>
+                      {isBakery && isSelected && perKgPricing && (
+                        <span
+                          className="mt-2 flex items-center gap-2"
+                          onClick={(event) => event.stopPropagation()}
+                          onKeyDown={(event) => event.stopPropagation()}
+                          role="presentation"
+                        >
+                          <span className="text-xs font-semibold text-primary-black/60">
+                            Peso torta
+                          </span>
+                          <select
+                            value={cakeKg}
+                            onChange={(event) =>
+                              onCakeKgChange(Number(event.target.value))
+                            }
+                            className="rounded-lg border border-primary-black/10 bg-background px-2 py-1 text-xs text-primary-black focus:border-brand-teal focus:outline-none"
+                          >
+                            {Array.from(
+                              {
+                                length:
+                                  perKgPricing.maxKg - perKgPricing.minKg + 1,
+                              },
+                              (_, index) => perKgPricing.minKg + index,
+                            ).map((kg) => (
+                              <option key={kg} value={kg}>
+                                {kg} kg -{" "}
+                                {formatCurrency(
+                                  getExtraServicePrice(service, { cakeKg: kg }),
+                                )}
+                              </option>
+                            ))}
+                          </select>
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </details>
 
         <div className="relative overflow-hidden rounded-2xl border border-brand-teal/20 bg-gradient-to-br from-brand-teal/18 via-brand-teal/10 to-brand-teal/[0.06] p-3 text-primary-black">
           <div
@@ -704,177 +763,6 @@ export function SmartLocationDetailsSection({
           </div>
         </div>
 
-        <div
-          className={cn(
-            "rounded-3xl border p-4 transition-colors duration-150",
-            needsAssistant
-              ? "border-brand-pink/30 bg-brand-pink/10"
-              : "border-primary-black/8 bg-background",
-          )}
-        >
-          <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-pink text-primary-black">
-              <Bot className="h-5 w-5" aria-hidden />
-            </span>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-black text-primary-black">
-                Serve altro? Contatta l&apos;assistente IA
-              </h3>
-              <p className="mt-0.5 text-xs leading-relaxed text-primary-black/60">
-                Se menu, DJ o allestimenti del locale non bastano, descrivi cosa manca e ricevi alternative esterne per la tua festa.
-              </p>
-            </div>
-          </div>
-
-          {!isAiPromptOpen ? (
-            <button
-              type="button"
-              onClick={onOpenAiPrompt}
-              className="mt-3 w-full rounded-2xl bg-brand-pink px-4 py-3 text-sm font-black text-primary-black transition-opacity hover:opacity-90"
-            >
-              Attiva assistente IA
-            </button>
-          ) : (
-            <div className="mt-3 space-y-3">
-              <textarea
-                value={aiMissingPrompt}
-                onChange={(event) => onAiMissingPromptChange(event.target.value)}
-                rows={3}
-                placeholder={`Es. per questa ${partyType} mi serve un DJ, un menu vegetariano e decorazioni a tema...`}
-                className="w-full rounded-2xl border border-primary-black/10 bg-background px-4 py-3 text-sm text-primary-black outline-none transition-colors focus:border-brand-pink focus:ring-2 focus:ring-brand-pink/15"
-              />
-              <button
-                type="button"
-                onClick={onAskAiForSuggestions}
-                disabled={aiLoading}
-                className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-black text-white transition-opacity disabled:opacity-60"
-              >
-                {aiLoading ? "Sto cercando alternative..." : "Suggerisci servizi esterni"}
-              </button>
-              {aiError && <p className="text-xs text-brand-pink">{aiError}</p>}
-              {aiSuggestions.length > 0 && (
-                <ul className="space-y-2">
-                  {aiSuggestions.map((suggestion) => (
-                    <li
-                      key={`${suggestion.serviceId}-${suggestion.name}`}
-                      className="rounded-2xl border border-primary-black/8 bg-background p-3"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-bold text-primary-black">
-                            {suggestion.name}
-                          </p>
-                          <p className="mt-0.5 text-xs leading-relaxed text-primary-black/60">
-                            {suggestion.reason}
-                          </p>
-                        </div>
-                        <span className="shrink-0 text-sm font-black text-brand-pink">
-                          {formatCurrency(suggestion.estimatedCost)}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => onToggleExtra(suggestion.serviceId)}
-                        className="mt-2 text-xs font-black text-brand-teal"
-                      >
-                        {selectedExtras.includes(suggestion.serviceId)
-                          ? "Rimuovi dagli extra"
-                          : "Aggiungi al preventivo"}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-        </div>
-
-        <details className="rounded-3xl border border-primary-black/8 bg-background p-4">
-          <summary className="cursor-pointer text-sm font-black text-primary-black">
-            Servizi esterni opzionali
-          </summary>
-          <ul className="mt-3 space-y-2">
-            {EXTRA_SERVICES.map((service) => {
-              const Icon = SERVICE_ICONS[service.id];
-              const isSelected = selectedExtras.includes(service.id);
-              const isBakery = service.id === "bakery";
-              const perKgPricing =
-                service.pricing.type === "per_kg" ? service.pricing : null;
-
-              return (
-                <li key={service.id}>
-                  <button
-                    type="button"
-                    onClick={() => onToggleExtra(service.id)}
-                    className={cn(
-                      "flex w-full items-start gap-3 rounded-2xl border p-3 text-left transition-colors",
-                      isSelected
-                        ? "border-brand-teal bg-brand-teal/10"
-                        : "border-primary-black/8 bg-primary-black/[0.02]",
-                    )}
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-black/5 text-primary-black/55">
-                      <Icon className="h-4 w-4" aria-hidden />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex justify-between gap-2">
-                        <span className="text-sm font-bold text-primary-black">
-                          {service.name}
-                        </span>
-                        <span className="shrink-0 text-xs font-bold text-primary-black/70">
-                          {formatExternalServicePrice(service)}
-                        </span>
-                      </span>
-                      {service.providerName && (
-                        <span className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-brand-pink">
-                          <MapPin className="h-3 w-3" aria-hidden />
-                          {service.providerName}
-                        </span>
-                      )}
-                      <span className="mt-0.5 block text-xs text-primary-black/58">
-                        {service.description}
-                      </span>
-                      {isBakery && isSelected && perKgPricing && (
-                        <span
-                          className="mt-2 flex items-center gap-2"
-                          onClick={(event) => event.stopPropagation()}
-                          onKeyDown={(event) => event.stopPropagation()}
-                          role="presentation"
-                        >
-                          <span className="text-xs font-semibold text-primary-black/60">
-                            Peso torta
-                          </span>
-                          <select
-                            value={cakeKg}
-                            onChange={(event) =>
-                              onCakeKgChange(Number(event.target.value))
-                            }
-                            className="rounded-lg border border-primary-black/10 bg-background px-2 py-1 text-xs text-primary-black focus:border-brand-teal focus:outline-none"
-                          >
-                            {Array.from(
-                              {
-                                length:
-                                  perKgPricing.maxKg - perKgPricing.minKg + 1,
-                              },
-                              (_, index) => perKgPricing.minKg + index,
-                            ).map((kg) => (
-                              <option key={kg} value={kg}>
-                                {kg} kg -{" "}
-                                {formatCurrency(
-                                  getExtraServicePrice(service, { cakeKg: kg }),
-                                )}
-                              </option>
-                            ))}
-                          </select>
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </details>
       </div>
     </section>
   );

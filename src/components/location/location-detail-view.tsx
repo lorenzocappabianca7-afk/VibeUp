@@ -100,21 +100,6 @@ const EMPTY_QUOTE: BookingQuote = {
 const MAX_QUOTE_GUESTS = 300;
 const MAX_COMPARE_LOCATIONS = 3;
 
-type AiRequiredServiceType =
-  | "menu"
-  | "dj"
-  | "photographer"
-  | "decorations"
-  | "catering"
-  | "audio_lights";
-
-interface AiExternalServiceSuggestion {
-  serviceId: ExtraServiceId;
-  name: string;
-  reason: string;
-  estimatedCost: number;
-}
-
 export function LocationDetailView({
   location,
   initialQuoteContext,
@@ -155,13 +140,6 @@ export function LocationDetailView({
   const [drinksPerInvitee, setDrinksPerInvitee] = useState(
     DEFAULT_DRINKS_PER_INVITEE,
   );
-  const [isAiPromptOpen, setIsAiPromptOpen] = useState(false);
-  const [aiMissingPrompt, setAiMissingPrompt] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [aiSuggestions, setAiSuggestions] = useState<
-    AiExternalServiceSuggestion[]
-  >([]);
   const [generatedQuote, setGeneratedQuote] = useState<{
     key: string;
     quote: BookingQuote;
@@ -357,107 +335,6 @@ export function LocationDetailView({
     );
   }
 
-  function inferRequiredServices(prompt: string): AiRequiredServiceType[] {
-    const lowered = prompt.toLowerCase();
-    const services: AiRequiredServiceType[] = [];
-
-    if (/dj|musica|reggaeton|house|commerciale|latino/.test(lowered)) {
-      services.push("dj");
-    }
-    if (/menu|cibo|buffet|aperitivo|catering|vegetariano|vegano/.test(lowered)) {
-      services.push("menu");
-    }
-    if (/allest|decor|pallonc|tema|scenografia/.test(lowered)) {
-      services.push("decorations");
-    }
-    if (/foto|fotograf|video|reportage/.test(lowered)) {
-      services.push("photographer");
-    }
-    if (/audio|luci|impianto|microfono/.test(lowered)) {
-      services.push("audio_lights");
-    }
-
-    if (services.length > 0) return Array.from(new Set(services));
-
-    if (location.partyTypes.includes("laurea")) {
-      return ["dj", "decorations", "menu"];
-    }
-    if (location.partyTypes.includes("compleanno")) {
-      return ["dj", "menu", "decorations"];
-    }
-    return ["dj", "menu"];
-  }
-
-  function buildFallbackSuggestions(
-    requiredServices: AiRequiredServiceType[],
-  ): AiExternalServiceSuggestion[] {
-    const extraIds = requiredServices
-      .map((service): string => {
-        if (service === "menu") return "menu";
-        if (service === "catering") return "catering";
-        if (service === "photographer") return "photographer";
-        return service;
-      })
-      .filter((service): service is ExtraServiceId =>
-        EXTRA_SERVICES.some((extra) => extra.id === service),
-      );
-
-    return Array.from(new Set(extraIds)).flatMap((extraId) => {
-      const service = EXTRA_SERVICES.find((item) => item.id === extraId);
-      if (!service) return [];
-
-      return {
-        serviceId: service.id,
-        name: service.name,
-        reason: `Alternativa esterna consigliata per una festa ${location.partyTypes[0] ?? "privata"} quando i servizi del locale non bastano.`,
-        estimatedCost: getExtraServicePrice(service, { cakeKg, guestCount }),
-      };
-    });
-  }
-
-  async function askAiForExternalSuggestions() {
-    setAiLoading(true);
-    setAiError(null);
-
-    const requiredServices = inferRequiredServices(aiMissingPrompt);
-
-    try {
-      const response = await fetch("/api/quotes/instant", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          location,
-          startTime,
-          endTime,
-          guestCount,
-          partyType: location.partyTypes[0],
-          requiredServices,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Suggerimenti IA non disponibili");
-      }
-
-      const body = (await response.json()) as {
-        data?: { externalServiceSuggestions?: AiExternalServiceSuggestion[] };
-      };
-      const suggestions = body.data?.externalServiceSuggestions ?? [];
-      setAiSuggestions(
-        suggestions.length > 0
-          ? suggestions
-          : buildFallbackSuggestions(requiredServices),
-      );
-    } catch {
-      setAiSuggestions(buildFallbackSuggestions(requiredServices));
-      setAiError(
-        "Sto usando i suggerimenti locali perche' l'assistente IA non e' raggiungibile.",
-      );
-    } finally {
-      setAiLoading(false);
-    }
-  }
-
   function createEventFromBooking() {
     if (!quote) return;
 
@@ -599,11 +476,6 @@ export function LocationDetailView({
 
         <aside className="space-y-6 xl:sticky xl:top-8">
           <SmartLocationDetailsSection
-            partyType={
-              initialQuoteContext?.partyType
-                ? (initialQuoteContext.partyType as typeof location.partyTypes[number])
-                : location.partyTypes[0] ?? "festa"
-            }
             dateRangeTo={initialQuoteContext?.dateTo}
             guestCount={guestCount}
             maxGuests={MAX_QUOTE_GUESTS}
@@ -620,11 +492,6 @@ export function LocationDetailView({
             cakeKg={cakeKg}
             drinkMode={drinkMode}
             drinksPerInvitee={drinksPerInvitee}
-            isAiPromptOpen={isAiPromptOpen}
-            aiMissingPrompt={aiMissingPrompt}
-            aiLoading={aiLoading}
-            aiSuggestions={aiSuggestions}
-            aiError={aiError}
             onDateChange={setDate}
             onStartTimeChange={setStartTime}
             onEndTimeChange={setEndTime}
@@ -639,9 +506,6 @@ export function LocationDetailView({
             onGenerateQuote={generateQuote}
             canGenerateQuote={canGenerateQuote}
             quoteNeedsRefresh={generatedQuote !== null && !quoteIsCurrent}
-            onOpenAiPrompt={() => setIsAiPromptOpen(true)}
-            onAiMissingPromptChange={setAiMissingPrompt}
-            onAskAiForSuggestions={askAiForExternalSuggestions}
           />
 
           <BookingSummary
