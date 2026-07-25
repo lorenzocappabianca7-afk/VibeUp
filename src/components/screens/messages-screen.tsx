@@ -150,7 +150,9 @@ export const MessagesScreen = memo(function MessagesScreen({
   return (
     <div className="min-w-0 space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-primary-black">Chat</h1>
+        <h1 className="text-[1.75rem] font-extrabold tracking-tight text-primary-black">
+          Chat
+        </h1>
         <p className="mt-1 text-sm text-primary-black/60">
           Apri una chat, scrivi e ricevi risposte in tempo reale
         </p>
