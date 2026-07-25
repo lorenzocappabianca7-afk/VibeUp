@@ -517,30 +517,6 @@ export function SmartLocationDetailsSection({
             </div>
           </div>
 
-          {generatedQuote && (
-            <div className="mt-2.5 grid gap-1.5 rounded-2xl border border-brand-teal/10 bg-white/85 p-2 text-primary-black shadow-sm backdrop-blur-sm sm:grid-cols-2">
-              <div className="rounded-xl bg-brand-teal/8 px-3 py-2">
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-brand-teal">
-                  Prezzo totale evento
-                </p>
-                <p className="mt-0.5 text-xl font-black tabular-nums text-primary-black">
-                  {formatCurrency(generatedQuote.total)}
-                </p>
-              </div>
-              <div className="rounded-xl bg-brand-pink/10 px-3 py-2">
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-brand-pink">
-                  Caparra da pagare
-                </p>
-                <p className="mt-0.5 text-xl font-black tabular-nums text-primary-black">
-                  {formatCurrency(generatedQuote.depositAmount)}
-                </p>
-                <p className="mt-0.5 text-[10px] font-bold text-primary-black/50">
-                  30% del costo location
-                </p>
-              </div>
-            </div>
-          )}
-
           <div className="mt-2.5 space-y-2">
             <button
               type="button"
