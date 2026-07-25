@@ -51,7 +51,7 @@ export function SettingsToggle({
       >
         <span
           className={cn(
-            "absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-sm transition-transform",
+            "absolute top-0.5 h-6 w-6 rounded-full bg-surface shadow-sm transition-transform",
             checked ? "translate-x-5" : "translate-x-0.5",
           )}
         />

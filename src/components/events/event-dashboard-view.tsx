@@ -274,13 +274,13 @@ function AddServicesModal({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-primary-black/45"
+        className="absolute inset-0 bg-black/50"
         onClick={onClose}
         aria-label="Chiudi aggiunta servizi"
       />
 
       <div
-        className="vibe-sheet-enter smooth-scroll relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-background p-5 shadow-xl lg:rounded-3xl"
+        className="vibe-sheet-enter smooth-scroll relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface p-5 shadow-xl lg:rounded-3xl"
         style={MODAL_SAFE_BOTTOM_STYLE}
       >
         <div className="mb-5 flex items-center justify-between">
@@ -311,7 +311,7 @@ function AddServicesModal({
               <li key={category.id}>
                 <Link
                   href={href}
-                  className="flex w-full items-start gap-3 rounded-2xl border border-primary-black/10 bg-background p-4 text-left transition-colors duration-150 hover:border-primary-black"
+                  className="flex w-full items-start gap-3 rounded-2xl border border-primary-black/10 bg-surface p-4 text-left transition-colors duration-150 hover:border-primary-black"
                 >
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-teal/12 text-brand-teal">
                     <Icon className="h-5 w-5" aria-hidden />

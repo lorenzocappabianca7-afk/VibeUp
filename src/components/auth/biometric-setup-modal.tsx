@@ -55,10 +55,10 @@ export function BiometricSetupModal({
       className="vibe-overlay-enter fixed inset-0 z-[95] flex items-center justify-center p-6"
       data-overlay-open="true"
     >
-      <div className="absolute inset-0 bg-primary-black/55" aria-hidden />
+      <div className="absolute inset-0 bg-black/60" aria-hidden />
 
       <div
-        className="vibe-sheet-enter relative w-full max-w-sm rounded-3xl bg-background p-6 shadow-xl"
+        className="vibe-sheet-enter relative w-full max-w-sm rounded-3xl bg-surface p-6 shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="biometric-setup-title"
@@ -109,7 +109,7 @@ export function BiometricSetupModal({
             type="button"
             disabled={submitting}
             onClick={() => void handleEnable()}
-            className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+            className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-ink-inverse disabled:opacity-60"
           >
             {submitting ? "Attivo…" : `Attiva ${label}`}
           </button>

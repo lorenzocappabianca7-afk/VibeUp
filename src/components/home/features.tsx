@@ -37,7 +37,7 @@ export function Features() {
           {features.map((feature) => (
             <article
               key={feature.title}
-              className="rounded-2xl border border-primary-black/10 bg-background p-8 shadow-sm"
+              className="rounded-2xl border border-primary-black/10 bg-surface p-8 shadow-sm"
             >
               <div
                 className={`mb-4 h-1 w-12 rounded-full ${feature.accent}`}

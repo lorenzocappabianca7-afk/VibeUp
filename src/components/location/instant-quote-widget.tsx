@@ -95,7 +95,7 @@ export function InstantQuoteWidget({
 
         <div
           className={cn(
-            "rounded-xl bg-background p-4",
+            "rounded-xl bg-surface p-4",
             hours > 0 && isValidDuration
               ? "border border-brand-teal/30"
               : "border border-primary-black/10",

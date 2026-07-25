@@ -8,10 +8,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "#FFFFFF",
-        "primary-black": "#0F0F11",
-        "brand-teal": "#32B4B4",
-        "brand-teal-strong": "#1F8F8F",
+        /* Night canvas — user swatch */
+        background: "#0F1115",
+        /* Primary ink (text / icons) — kept name for codebase compatibility */
+        "primary-black": "#F5F5F7",
+        /* Elevated surfaces (cards, sheets, chips) */
+        surface: "#1A1C21",
+        "surface-2": "#2A2C33",
+        /* Text on solid light CTAs */
+        "ink-inverse": "#0F1115",
+        /* Brand accents — use sparingly */
+        "brand-teal": "#3ECFCF",
+        "brand-teal-strong": "#32B4B4",
         "brand-pink": "#F091B2",
       },
     },

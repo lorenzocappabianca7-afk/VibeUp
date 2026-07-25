@@ -99,13 +99,13 @@ export function CreateAccountModal({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-primary-black/50"
+        className="absolute inset-0 bg-black/55"
         onClick={onClose}
         aria-label="Chiudi"
       />
 
       <div
-        className="vibe-sheet-enter relative max-h-[min(90dvh,calc(100dvh-2rem))] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-6 shadow-xl"
+        className="vibe-sheet-enter relative max-h-[min(90dvh,calc(100dvh-2rem))] w-full max-w-sm overflow-y-auto rounded-3xl bg-surface p-6 shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-account-title"
@@ -203,7 +203,7 @@ export function CreateAccountModal({
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+            className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-ink-inverse disabled:opacity-60"
           >
             {submitting ? "Creo account…" : "Crea account"}
           </button>

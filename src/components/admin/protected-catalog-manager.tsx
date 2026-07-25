@@ -215,7 +215,7 @@ export function ProtectedCatalogManager() {
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
             Torna alla home
           </Link>
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-black text-white">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/12 text-primary-black">
             <Lock className="h-5 w-5" aria-hidden />
           </span>
           <h1 className="mt-4 text-2xl font-black text-primary-black">
@@ -454,7 +454,7 @@ export function ProtectedCatalogManager() {
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
             Torna alla home
           </Link>
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-black text-white">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/12 text-primary-black">
             <Lock className="h-5 w-5" aria-hidden />
           </span>
           <h1 className="mt-4 text-2xl font-black text-primary-black">
@@ -551,7 +551,7 @@ export function ProtectedCatalogManager() {
       </div>
 
       <div className="mt-6 grid min-w-0 gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="min-w-0 rounded-[1.75rem] border border-primary-black/10 bg-background p-4 shadow-sm sm:rounded-[2rem] sm:p-5">
+        <section className="min-w-0 rounded-[1.75rem] border border-primary-black/10 bg-surface p-4 shadow-sm sm:rounded-[2rem] sm:p-5">
           <div className="flex min-w-0 items-center gap-2">
             <Plus className="h-5 w-5 shrink-0 text-brand-teal" aria-hidden />
             <h2 className="min-w-0 text-base font-black text-primary-black sm:text-lg">
@@ -752,14 +752,14 @@ export function ProtectedCatalogManager() {
           </div>
           <ul className="mt-4 space-y-3">
             {categoryListings.length === 0 && (
-              <li className="rounded-2xl border border-dashed border-primary-black/15 bg-background p-6 text-center text-sm text-primary-black/55">
+              <li className="rounded-2xl border border-dashed border-primary-black/15 bg-surface p-6 text-center text-sm text-primary-black/55">
                 Nessuna pubblicazione in questa categoria.
               </li>
             )}
             {categoryListings.map((listing) => (
               <li
                 key={listing.id}
-                className="min-w-0 rounded-2xl border border-primary-black/10 bg-background p-4"
+                className="min-w-0 rounded-2xl border border-primary-black/10 bg-surface p-4"
               >
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -880,7 +880,7 @@ function PhotoUploadField({
                 <X className="h-3.5 w-3.5" aria-hidden />
               </button>
               {index === 0 && (
-                <span className="absolute bottom-2 left-2 rounded-full bg-primary-black px-2 py-1 text-[10px] font-black text-white">
+                <span className="absolute bottom-2 left-2 rounded-full bg-white px-2 py-1 text-[10px] font-black text-ink-inverse">
                   Copertina
                 </span>
               )}

@@ -408,13 +408,13 @@ export const MyEventsScreen = memo(function MyEventsScreen({
           </button>
           {discountBannerOpen && (
             <div className={DISCOUNT_POPOVER_CLASS}>
-              <span className="absolute -top-2 right-8 hidden h-4 w-4 rotate-45 border-l-2 border-t-2 border-brand-pink bg-pink-50 sm:block" />
+              <span className="absolute -top-2 right-8 hidden h-4 w-4 rotate-45 border-l-2 border-t-2 border-brand-pink bg-surface-2 sm:block" />
               <DiscountInviteBanner
                 contact={inviteContact}
                 sent={inviteSent}
                 onContactChange={handleInviteContactChange}
                 onSubmit={handleInviteSubmit}
-                className="bg-gradient-to-br from-pink-50 via-rose-50 to-pink-50 p-4"
+                className="bg-gradient-to-br from-brand-pink/15 via-surface to-brand-teal/10 p-4"
               />
             </div>
           )}
@@ -433,7 +433,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
             <button
               type="button"
               onClick={onCreateEvent}
-              className="mt-4 inline-flex rounded-2xl bg-primary-black px-4 py-2.5 text-sm font-semibold text-white"
+              className="mt-4 inline-flex rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-ink-inverse"
             >
               Esplora location
             </button>
@@ -540,7 +540,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   }, [isEditingTitle]);
 
   return (
-    <article className="box-border w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-primary-black/10 bg-white shadow-[0_6px_24px_-12px_rgba(15,15,17,0.18)]">
+    <article className="box-border w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-primary-black/10 bg-surface shadow-[0_6px_24px_-12px_rgba(15,15,17,0.18)]">
       <div className="min-w-0 border-b border-primary-black/8 px-3 py-4 sm:px-4">
         <div className="min-w-0 overflow-hidden">
           <p className={`text-xs font-medium ${statusColors[event.status]}`}>
@@ -661,7 +661,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                     {allergens.map((allergen) => (
                       <span
                         key={allergen}
-                        className="rounded-full bg-white px-2.5 py-0.5 text-[11px] text-primary-black/65 ring-1 ring-primary-black/10"
+                        className="rounded-full bg-surface px-2.5 py-0.5 text-[11px] text-primary-black/65 ring-1 ring-primary-black/10"
                       >
                         {allergen}
                       </span>
@@ -683,7 +683,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                   {venueMenuAllergens.map((allergen) => (
                     <span
                       key={allergen}
-                      className="rounded-full bg-white px-2.5 py-0.5 text-[11px] text-primary-black/65 ring-1 ring-primary-black/10"
+                      className="rounded-full bg-surface px-2.5 py-0.5 text-[11px] text-primary-black/65 ring-1 ring-primary-black/10"
                     >
                       {allergen}
                     </span>
@@ -751,7 +751,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                 <Link
                   key={suggestion.id}
                   href={buildSuggestionHref(event, suggestion.exploreCategory)}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary-black/10 bg-white px-3.5 py-2 text-sm font-medium text-primary-black transition-colors hover:border-primary-black/25"
+                  className="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary-black/10 bg-surface px-3.5 py-2 text-sm font-medium text-primary-black transition-colors hover:border-primary-black/25"
                 >
                   <Icon
                     className={`h-4 w-4 ${suggestion.iconClass}`}
@@ -851,7 +851,7 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
             </p>
           )}
           {payment.paid ? (
-            <span className="inline-flex w-full items-center justify-center rounded-lg bg-primary-black px-4 py-2.5 text-xs font-medium text-white sm:w-fit">
+            <span className="inline-flex w-full items-center justify-center rounded-lg bg-white px-4 py-2.5 text-xs font-medium text-ink-inverse sm:w-fit">
               Caparra pagata
             </span>
           ) : (
@@ -861,7 +861,7 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
               className={`inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-xs font-medium transition-colors sm:w-fit ${
                 countdown.isPast
                   ? "border border-brand-pink/40 bg-brand-pink/15 text-primary-black hover:bg-brand-pink/25"
-                  : "bg-primary-black text-white hover:bg-primary-black/85"
+                  : "bg-white text-ink-inverse hover:bg-white/90"
               }`}
             >
               {countdown.isPast ? "Paga caparra in ritardo" : "Paga caparra"}
@@ -920,7 +920,7 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
         type="button"
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
-        className="flex w-full items-center gap-3 rounded-2xl border border-primary-black/10 bg-white px-3.5 py-3 text-left transition-colors hover:border-primary-black/20"
+        className="flex w-full items-center gap-3 rounded-2xl border border-primary-black/10 bg-surface px-3.5 py-3 text-left transition-colors hover:border-primary-black/20"
       >
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-primary-black">
@@ -972,8 +972,8 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
                       onClick={() => toggleSelection(course, item)}
                       className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                         selected
-                          ? "bg-primary-black text-white"
-                          : "bg-white text-primary-black ring-1 ring-primary-black/12 hover:ring-primary-black/25"
+                          ? "bg-white/12 text-primary-black"
+                          : "bg-surface text-primary-black ring-1 ring-primary-black/12 hover:ring-primary-black/25"
                       }`}
                     >
                       {item.label}
@@ -985,7 +985,7 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
           ))}
 
           {selections.length > 0 && (
-            <div className="rounded-xl bg-white p-3 ring-1 ring-primary-black/8">
+            <div className="rounded-xl bg-surface p-3 ring-1 ring-primary-black/8">
               <p className="text-sm font-semibold text-primary-black">
                 Riepilogo
               </p>
@@ -1048,12 +1048,12 @@ const PaymentChoiceModal = memo(function PaymentChoiceModal({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-primary-black/35"
+        className="absolute inset-0 bg-black/40"
         onClick={onClose}
         aria-label="Chiudi scelta pagamento"
       />
       <div
-        className="vibe-sheet-enter smooth-scroll relative max-h-[min(90dvh,calc(100dvh-5.5rem-env(safe-area-inset-bottom,0px)))] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-background p-5 shadow-xl lg:rounded-[2rem]"
+        className="vibe-sheet-enter smooth-scroll relative max-h-[min(90dvh,calc(100dvh-5.5rem-env(safe-area-inset-bottom,0px)))] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-surface p-5 shadow-xl lg:rounded-[2rem]"
         style={MODAL_SAFE_BOTTOM_STYLE}
       >
         <div className="flex min-w-0 items-start justify-between gap-3">
@@ -1134,7 +1134,7 @@ const PaymentChoiceModal = memo(function PaymentChoiceModal({
                     key={method}
                     type="button"
                     onClick={() => onMarkPaid(event.id, service.id, method)}
-                    className="flex items-center gap-2 rounded-2xl border border-primary-black/10 bg-white px-4 py-3 text-sm font-bold text-primary-black transition-colors hover:border-primary-black"
+                    className="flex items-center gap-2 rounded-2xl border border-primary-black/10 bg-surface px-4 py-3 text-sm font-bold text-primary-black transition-colors hover:border-primary-black"
                   >
                     <CreditCard className="h-4 w-4 text-brand-teal" aria-hidden />
                     {paymentMethodLabels[method]}

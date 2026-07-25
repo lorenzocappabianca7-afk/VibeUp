@@ -243,13 +243,13 @@ export function AvatarCropModal({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-primary-black/55"
+        className="absolute inset-0 bg-black/60"
         onClick={onCancel}
         aria-label="Annulla ritaglio foto"
       />
 
       <div
-        className="vibe-sheet-enter relative flex max-h-[min(94dvh,720px)] w-full max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-primary-black text-white shadow-xl sm:rounded-[2rem]"
+        className="vibe-sheet-enter relative flex max-h-[min(94dvh,720px)] w-full max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-surface-2 text-primary-black shadow-xl sm:rounded-[2rem]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="avatar-crop-title"
@@ -258,18 +258,18 @@ export function AvatarCropModal({
           <div className="min-w-0">
             <h2
               id="avatar-crop-title"
-              className="text-base font-black text-white"
+              className="text-base font-black text-primary-black"
             >
               Ritaglia la foto
             </h2>
-            <p className="mt-0.5 text-xs text-white/55">
+            <p className="mt-0.5 text-xs text-primary-black/55">
               Zoom uniforme · proporzioni invariate
             </p>
           </div>
           <button
             type="button"
             onClick={onCancel}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-white/15"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-primary-black/80 transition-colors hover:bg-white/15"
             aria-label="Chiudi"
           >
             <X className="h-4 w-4" aria-hidden />

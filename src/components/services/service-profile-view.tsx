@@ -368,7 +368,7 @@ export function ServiceProfileView({
               </p>
             </div>
 
-            <section className="render-contained rounded-2xl border border-primary-black/10 bg-background p-3.5 sm:rounded-3xl sm:p-5">
+            <section className="render-contained rounded-2xl border border-primary-black/10 bg-surface p-3.5 sm:rounded-3xl sm:p-5">
               <h2 className="text-sm font-black text-primary-black sm:text-lg">
                 Preferenze e stile
               </h2>
@@ -384,7 +384,7 @@ export function ServiceProfileView({
               </div>
             </section>
 
-            <section className="render-contained rounded-2xl border border-primary-black/10 bg-background p-3.5 sm:rounded-3xl sm:p-5">
+            <section className="render-contained rounded-2xl border border-primary-black/10 bg-surface p-3.5 sm:rounded-3xl sm:p-5">
               <h2 className="text-sm font-black text-primary-black sm:text-lg">
                 Recensioni
               </h2>
@@ -428,7 +428,7 @@ export function ServiceProfileView({
               </h2>
 
               <div className="mt-4 space-y-3">
-                <div className="rounded-2xl bg-white p-3 text-primary-black">
+                <div className="rounded-2xl bg-surface p-3 text-primary-black">
                   <p className="text-xs font-bold text-primary-black/55">
                     Tipo negozio
                   </p>
@@ -441,7 +441,7 @@ export function ServiceProfileView({
 
                 {service.supportsInPerson && (
                   <>
-                    <div className="rounded-2xl bg-white p-3 text-primary-black">
+                    <div className="rounded-2xl bg-surface p-3 text-primary-black">
                       <p className="flex items-center gap-1.5 text-xs font-bold text-primary-black/55">
                         <MapPin className="h-3.5 w-3.5" aria-hidden />
                         Indirizzo
@@ -450,7 +450,7 @@ export function ServiceProfileView({
                         {service.providerZone}, Torino
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-white p-3 text-primary-black">
+                    <div className="rounded-2xl bg-surface p-3 text-primary-black">
                       <p className="text-xs font-bold text-primary-black/55">
                         Contatti
                       </p>
@@ -461,7 +461,7 @@ export function ServiceProfileView({
                   </>
                 )}
 
-                <label className="block rounded-2xl bg-white p-3 text-primary-black">
+                <label className="block rounded-2xl bg-surface p-3 text-primary-black">
                   <span className="flex items-center gap-1.5 text-xs font-bold text-primary-black/55">
                     <Calendar className="h-3.5 w-3.5" aria-hidden />
                     Evento per cui ti servono le decorazioni
@@ -505,7 +505,7 @@ export function ServiceProfileView({
               {serviceAdded && (
                 <Link
                   href="/?tab=events"
-                  className="mt-3 flex w-full items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-black text-brand-teal transition-colors hover:bg-white/90"
+                  className="mt-3 flex w-full items-center justify-center rounded-2xl bg-surface px-4 py-3 text-sm font-black text-brand-teal transition-colors hover:bg-surface/90"
                 >
                   Vai ai miei eventi
                 </Link>
@@ -521,7 +521,7 @@ export function ServiceProfileView({
             </p>
 
             {event && (
-              <p className="mt-3 rounded-2xl bg-white px-3 py-2 text-sm font-bold text-primary-black">
+              <p className="mt-3 rounded-2xl bg-surface px-3 py-2 text-sm font-bold text-primary-black">
                 Dati precompilati da {event.title}: data e location sono già
                 inserite.
               </p>
@@ -529,7 +529,7 @@ export function ServiceProfileView({
 
             <div className="mt-4 space-y-3">
               {showEventSelection && (
-                <label className="block rounded-2xl bg-white p-3 text-primary-black">
+                <label className="block rounded-2xl bg-surface p-3 text-primary-black">
                   <span className="flex items-center gap-1.5 text-xs font-bold text-primary-black/55">
                     <Calendar className="h-3.5 w-3.5" aria-hidden />
                     Evento per cui ti serve il {serviceRoleLabel}
@@ -560,7 +560,7 @@ export function ServiceProfileView({
 
               {!usesEventSelection && (
                 <>
-                  <label className="block rounded-2xl bg-white p-3 text-primary-black">
+                  <label className="block rounded-2xl bg-surface p-3 text-primary-black">
                     <span className="flex items-center gap-1.5 text-xs font-bold text-primary-black/55">
                       <Calendar className="h-3.5 w-3.5" aria-hidden />
                       Data inizio
@@ -576,7 +576,7 @@ export function ServiceProfileView({
                     />
                   </label>
 
-                  <label className="block rounded-2xl bg-white p-3 text-primary-black">
+                  <label className="block rounded-2xl bg-surface p-3 text-primary-black">
                     <span className="text-xs font-bold text-primary-black/55">
                       Data fine, se serve più giorni
                     </span>
@@ -593,7 +593,7 @@ export function ServiceProfileView({
                 </>
               )}
 
-              <label className="block rounded-2xl bg-white p-3 text-primary-black">
+              <label className="block rounded-2xl bg-surface p-3 text-primary-black">
                 <span className="flex items-center gap-1.5 text-xs font-bold text-primary-black/55">
                   <Clock className="h-3.5 w-3.5" aria-hidden />
                   Ore di servizio
@@ -622,7 +622,7 @@ export function ServiceProfileView({
               </label>
 
               {!usesEventSelection && (
-                <label className="block rounded-2xl bg-white p-3 text-primary-black">
+                <label className="block rounded-2xl bg-surface p-3 text-primary-black">
                   <span className="flex items-center gap-1.5 text-xs font-bold text-primary-black/55">
                     <MapPin className="h-3.5 w-3.5" aria-hidden />
                     Indirizzo locale
@@ -653,7 +653,7 @@ export function ServiceProfileView({
                 );
               }}
               className={cn(
-                "mt-4 w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-black text-white transition-opacity",
+                "mt-4 w-full rounded-2xl bg-white px-4 py-3 text-sm font-black text-ink-inverse transition-opacity",
                 !canGenerate && "opacity-50",
               )}
             >
@@ -670,7 +670,7 @@ export function ServiceProfileView({
                     "mt-3 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition-colors disabled:pointer-events-none",
                     serviceAdded
                       ? "bg-emerald-500 text-white disabled:opacity-100"
-                      : "bg-white text-primary-black disabled:opacity-55",
+                      : "bg-surface text-primary-black disabled:opacity-55",
                   )}
                 >
                   <Check className="h-4 w-4" aria-hidden />
@@ -683,7 +683,7 @@ export function ServiceProfileView({
                 {serviceAdded && (
                   <Link
                     href="/?tab=events"
-                    className="mt-3 flex w-full items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-black text-brand-teal transition-colors hover:bg-white/90"
+                    className="mt-3 flex w-full items-center justify-center rounded-2xl bg-surface px-4 py-3 text-sm font-black text-brand-teal transition-colors hover:bg-surface/90"
                   >
                     Vai ai miei eventi
                   </Link>
@@ -691,7 +691,7 @@ export function ServiceProfileView({
               </>
             )}
 
-            <p className="mt-3 rounded-2xl bg-white px-3 py-2 text-xs font-bold text-primary-black/70">
+            <p className="mt-3 rounded-2xl bg-surface px-3 py-2 text-xs font-bold text-primary-black/70">
               Il costo tiene conto dell&apos;evento selezionato, delle ore
               richieste e della distanza dal luogo della festa.
             </p>

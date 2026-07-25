@@ -53,13 +53,13 @@ export function RefundReportModal({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-primary-black/50"
+        className="absolute inset-0 bg-black/55"
         onClick={handleClose}
         aria-label="Chiudi"
       />
 
       <div
-        className="vibe-sheet-enter relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-background p-6 shadow-xl sm:rounded-3xl"
+        className="vibe-sheet-enter relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface p-6 shadow-xl sm:rounded-3xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="refund-title"

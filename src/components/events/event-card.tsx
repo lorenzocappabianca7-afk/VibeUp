@@ -26,7 +26,7 @@ export const EventCard = memo(function EventCard({ event }: EventCardProps) {
   return (
     <Link
       href={`/event/${event.id}`}
-      className="flex items-center gap-4 rounded-2xl border border-primary-black/10 bg-background p-4 transition-colors duration-150 hover:border-primary-black"
+      className="flex items-center gap-4 rounded-2xl border border-primary-black/10 bg-surface p-4 transition-colors duration-150 hover:border-primary-black"
     >
       <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-pink/15 text-brand-pink">
         <Calendar className="h-6 w-6" aria-hidden />

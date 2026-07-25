@@ -59,7 +59,7 @@ export function MobileShell() {
   return (
     <div
       className={cn(
-        "relative mx-auto box-border min-h-dvh overflow-x-hidden bg-background shadow-none sm:shadow-[0_0_60px_-15px_rgba(15,15,17,0.12)]",
+        "relative mx-auto box-border min-h-dvh overflow-x-hidden bg-background shadow-none sm:shadow-[0_0_60px_-15px_rgba(0,0,0,0.55)]",
         APP_SHELL_WIDTH_CLASS,
       )}
     >

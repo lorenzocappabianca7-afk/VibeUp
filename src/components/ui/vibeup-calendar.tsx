@@ -71,7 +71,7 @@ export function VibeUpCalendar({
   return (
     <div
       className={cn(
-        "max-w-[20rem] rounded-[1.35rem] border border-primary-black/10 bg-white p-3",
+        "max-w-[20rem] rounded-[1.35rem] border border-primary-black/10 bg-surface p-3",
         className,
       )}
     >
@@ -132,7 +132,7 @@ export function VibeUpCalendar({
                 !isPast && "text-primary-black",
                 isPast && "cursor-not-allowed text-primary-black/18",
                 isInRange && "bg-brand-teal/15 text-brand-teal",
-                isSelected && "bg-primary-black text-white",
+                isSelected && "bg-white/12 text-primary-black",
               )}
             >
               {day.getDate()}

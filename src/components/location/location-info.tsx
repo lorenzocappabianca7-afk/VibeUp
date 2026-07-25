@@ -228,7 +228,7 @@ export function LocationReviewsSection({ location }: LocationInfoProps) {
         {reviews.map((review) => (
           <li
             key={review.id}
-            className="rounded-2xl border border-primary-black/8 bg-background p-4"
+            className="rounded-2xl border border-primary-black/8 bg-surface p-4"
           >
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <p className="min-w-0 text-sm font-bold text-primary-black">

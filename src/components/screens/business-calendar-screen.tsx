@@ -57,7 +57,7 @@ function buildCalendarDays(month: Date) {
 
 function EventCard({ event }: { event: BusinessConfirmedEvent }) {
   return (
-    <article className="rounded-2xl border border-primary-black/10 bg-background p-4">
+    <article className="rounded-2xl border border-primary-black/10 bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-primary-black">{event.title}</p>
@@ -133,7 +133,7 @@ export const BusinessCalendarScreen = memo(function BusinessCalendarScreen() {
         </p>
       </header>
 
-      <section className="rounded-[1.35rem] border border-primary-black/10 bg-white p-4">
+      <section className="rounded-[1.35rem] border border-primary-black/10 bg-surface p-4">
         <div className="mb-3 flex items-center justify-between gap-3">
           <p className="text-xs font-black capitalize text-primary-black">
             {monthLabel(visibleMonth)}
@@ -187,7 +187,7 @@ export const BusinessCalendarScreen = memo(function BusinessCalendarScreen() {
                 className={cn(
                   "relative flex aspect-square flex-col items-center justify-center rounded-xl text-xs font-black transition-colors duration-150",
                   isSelected
-                    ? "bg-primary-black text-white"
+                    ? "bg-white/12 text-primary-black"
                     : hasEvent
                       ? "bg-brand-teal/15 text-brand-teal"
                       : "text-primary-black hover:bg-primary-black/[0.04]",
@@ -199,7 +199,7 @@ export const BusinessCalendarScreen = memo(function BusinessCalendarScreen() {
                   <span
                     className={cn(
                       "mt-0.5 h-1 w-1 rounded-full",
-                      isSelected ? "bg-white" : "bg-brand-pink",
+                      isSelected ? "bg-surface" : "bg-brand-pink",
                     )}
                     aria-hidden
                   />

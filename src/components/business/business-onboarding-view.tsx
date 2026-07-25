@@ -412,7 +412,7 @@ export function BusinessOnboardingView() {
           />
 
           {category && (
-            <section className="rounded-2xl border border-primary-black/10 bg-background p-5">
+            <section className="rounded-2xl border border-primary-black/10 bg-surface p-5">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-primary-black/50">
                 Dati proprietario
               </h2>
@@ -479,7 +479,7 @@ export function BusinessOnboardingView() {
           )}
 
           {category && categoryUsesLocaleFields(category) && (
-            <section className="rounded-2xl border border-primary-black/10 bg-background p-5">
+            <section className="rounded-2xl border border-primary-black/10 bg-surface p-5">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-primary-black/50">
                 Dettagli Location
               </h2>
@@ -492,7 +492,7 @@ export function BusinessOnboardingView() {
           )}
 
           {category && categoryUsesPerformerFields(category) && (
-            <section className="rounded-2xl border border-primary-black/10 bg-background p-5">
+            <section className="rounded-2xl border border-primary-black/10 bg-surface p-5">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-primary-black/50">
                 Dettagli {BUSINESS_CATEGORY_LABELS[category]}
               </h2>
@@ -505,7 +505,7 @@ export function BusinessOnboardingView() {
           )}
 
           {category && categoryUsesShopFields(category) && (
-            <section className="rounded-2xl border border-primary-black/10 bg-background p-5">
+            <section className="rounded-2xl border border-primary-black/10 bg-surface p-5">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-primary-black/50">
                 Dettagli {BUSINESS_CATEGORY_LABELS[category]}
               </h2>

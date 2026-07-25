@@ -541,7 +541,7 @@ export function LocationDetailView({
             className={`inline-flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-md transition-colors ${
               isCompareSelected
                 ? "border-brand-teal-strong bg-brand-teal-strong text-white"
-                : "border-brand-teal-strong/30 bg-white text-brand-teal-strong hover:bg-brand-teal/10"
+                : "border-brand-teal-strong/30 bg-surface text-brand-teal-strong hover:bg-brand-teal/10"
             }`}
             aria-label={
               isCompareSelected
@@ -561,7 +561,7 @@ export function LocationDetailView({
             className={`inline-flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-md transition-colors ${
               isFavorite
                 ? "border-brand-pink bg-brand-pink text-white"
-                : "border-primary-black/10 bg-white text-primary-black/65 hover:bg-white/90 hover:text-brand-pink"
+                : "border-primary-black/10 bg-surface text-primary-black/65 hover:bg-surface/90 hover:text-brand-pink"
             }`}
             aria-label={
               isFavorite
@@ -746,7 +746,7 @@ function RecommendedDjsCarousel({
             <li key={dj.id} className="w-[15rem] shrink-0 lg:w-[17rem]">
               <Link
                 href={`/service/${dj.id}?category=dj`}
-                className="flex h-full gap-3 rounded-3xl border border-primary-black/10 bg-background p-4 shadow-sm transition-colors duration-150 hover:border-primary-black"
+                className="flex h-full gap-3 rounded-3xl border border-primary-black/10 bg-surface p-4 shadow-sm transition-colors duration-150 hover:border-primary-black"
               >
                 <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border border-primary-black/10 bg-brand-teal/12 text-brand-teal">
                   {dj.imageUrl ? (

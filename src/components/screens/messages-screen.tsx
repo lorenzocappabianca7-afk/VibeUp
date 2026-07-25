@@ -47,7 +47,7 @@ function MessageReceipt({ status }: { status: ChatDeliveryStatus }) {
             "h-[7px] w-[7px] rounded-full border transition-colors duration-300",
             read
               ? "border-brand-teal bg-brand-teal"
-              : "border-[#B8B8BE] bg-white",
+              : "border-[#B8B8BE] bg-surface",
           )}
         />
       ))}
@@ -264,8 +264,8 @@ function ConversationThread({
                   className={cn(
                     "max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
                     mine
-                      ? "rounded-br-md bg-primary-black text-white"
-                      : "rounded-bl-md bg-primary-black/[0.05] text-primary-black",
+                      ? "rounded-br-md bg-brand-teal/25 text-primary-black ring-1 ring-brand-teal/30"
+                      : "rounded-bl-md bg-surface-2 text-primary-black/90",
                   )}
                 >
                   <p className="whitespace-pre-wrap break-words">
@@ -280,7 +280,7 @@ function ConversationThread({
                     <span
                       className={cn(
                         "text-[10px]",
-                        mine ? "text-white/55" : "text-primary-black/40",
+                        mine ? "text-primary-black/50" : "text-primary-black/40",
                       )}
                     >
                       {formatChatTime(message.createdAt)}
@@ -301,7 +301,7 @@ function ConversationThread({
         onSubmit={handleSubmit}
         className="shrink-0 border-t border-primary-black/8 bg-background pt-3 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
       >
-        <div className="flex items-end gap-2 rounded-2xl border border-primary-black/10 bg-white p-2 shadow-[0_2px_12px_rgba(15,15,17,0.06)]">
+        <div className="flex items-end gap-2 rounded-2xl border border-primary-black/10 bg-surface p-2 shadow-[0_2px_12px_rgba(15,15,17,0.06)]">
           <textarea
             ref={inputRef}
             value={draft}

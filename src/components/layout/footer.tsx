@@ -9,7 +9,7 @@ interface FooterProps {
 export function Footer({ withNavOffset = false }: FooterProps) {
   return (
     <footer
-      className="mt-8 shrink-0 bg-primary-black text-white"
+      className="mt-8 shrink-0 border-t border-white/10 bg-surface-2 text-primary-black"
       style={
         withNavOffset
           ? {

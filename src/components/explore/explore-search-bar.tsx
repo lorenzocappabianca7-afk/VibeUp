@@ -466,7 +466,7 @@ export function ExploreSearchBar({
       >
         <div
           ref={panelRef}
-          className="absolute inset-x-0 top-0 overflow-hidden border border-primary-black/10 bg-white"
+          className="absolute inset-x-0 top-0 overflow-hidden border border-primary-black/10 bg-surface"
           style={{
             transform: "translateZ(0)",
             backfaceVisibility: "hidden",
@@ -684,7 +684,7 @@ export function ExploreSearchBar({
                 <button
                   type="button"
                   onClick={() => commitSearch(draft)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary-black px-4 py-2.5 text-sm font-semibold text-white"
+                  className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-ink-inverse"
                 >
                   <Search className="h-4 w-4" aria-hidden />
                   Cerca
@@ -706,7 +706,7 @@ export function ExploreSearchBar({
               ? "pointer-events-none border-transparent opacity-0"
               : activeFilterCount > 0
                 ? "border-brand-teal/30 bg-brand-teal/10 text-brand-teal opacity-100"
-                : "border-primary-black/10 bg-white text-primary-black opacity-100 shadow-[0_2px_12px_rgba(15,15,17,0.08)]",
+                : "border-primary-black/10 bg-surface text-primary-black opacity-100 shadow-[0_2px_12px_rgba(15,15,17,0.08)]",
           )}
           style={{
             right: 0,

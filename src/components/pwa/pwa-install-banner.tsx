@@ -197,7 +197,7 @@ export function PwaInstallBanner() {
 
   return (
     <div
-      className="border-b border-white/10 bg-primary-black text-white"
+      className="border-b border-white/10 bg-surface-2 text-primary-black"
       role="region"
       aria-label="Installa VibeUp"
     >
@@ -210,13 +210,13 @@ export function PwaInstallBanner() {
           className="h-11 w-11 shrink-0 rounded-xl sm:h-12 sm:w-12"
           priority
         />
-        <p className="min-w-0 flex-1 text-[14px] font-semibold leading-snug text-white sm:text-base">
+        <p className="min-w-0 flex-1 text-[14px] font-semibold leading-snug text-primary-black sm:text-base">
           Aggiungi VibeUp alla home
         </p>
         <button
           type="button"
           onClick={() => void handleInstall()}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brand-teal px-3.5 py-2.5 text-xs font-bold text-primary-black transition-colors hover:bg-brand-teal/90 sm:px-4 sm:text-sm"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brand-teal px-3.5 py-2.5 text-xs font-bold text-ink-inverse transition-colors hover:bg-brand-teal/90 sm:px-4 sm:text-sm"
         >
           <Download className="h-4 w-4" aria-hidden />
           Aggiungi
@@ -224,7 +224,7 @@ export function PwaInstallBanner() {
         <button
           type="button"
           onClick={dismissForSession}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-primary-black/55 transition-colors hover:bg-white/10 hover:text-primary-black"
           aria-label="Chiudi per ora"
         >
           <X className="h-5 w-5" aria-hidden />
@@ -252,23 +252,23 @@ export function PwaInstallBanner() {
                   className="mx-0.5 inline h-3.5 w-3.5 text-brand-teal"
                   aria-hidden
                 />{" "}
-                <span className="font-semibold text-white">Condividi</span> in
+                <span className="font-semibold text-primary-black">Condividi</span> in
                 alto a destra
               </GuideStep>
               <GuideStep index={2}>
                 Cerca e seleziona{" "}
-                <span className="font-semibold text-white">Altro</span>
+                <span className="font-semibold text-primary-black">Altro</span>
               </GuideStep>
               <GuideStep index={3}>
                 Premi{" "}
-                <span className="font-semibold text-white">Aggiungi a Home</span>
+                <span className="font-semibold text-primary-black">Aggiungi a Home</span>
               </GuideStep>
             </InstallMethodCard>
 
             <InstallMethodCard title="Metodo 2">
               <GuideStep index={1}>
                 Clicca i tre puntini{" "}
-                <span className="font-semibold text-white">⋯</span> in basso a
+                <span className="font-semibold text-primary-black">⋯</span> in basso a
                 destra dello schermo
               </GuideStep>
               <GuideStep index={2}>
@@ -277,11 +277,11 @@ export function PwaInstallBanner() {
                   className="mx-0.5 inline h-3.5 w-3.5 text-brand-teal"
                   aria-hidden
                 />{" "}
-                <span className="font-semibold text-white">Condividi</span>
+                <span className="font-semibold text-primary-black">Condividi</span>
               </GuideStep>
               <GuideStep index={3}>
                 Scorri verso il basso fino a trovare e selezionare{" "}
-                <span className="font-semibold text-white">Aggiungi a Home</span>
+                <span className="font-semibold text-primary-black">Aggiungi a Home</span>
               </GuideStep>
             </InstallMethodCard>
           </div>
@@ -297,14 +297,14 @@ export function PwaInstallBanner() {
           <ol className="space-y-2">
             <GuideStep index={1}>
               Tocca i tre puntini{" "}
-              <span className="font-semibold text-white">⋮</span> vicino alla
+              <span className="font-semibold text-primary-black">⋮</span> vicino alla
               barra di ricerca
             </GuideStep>
             <GuideStep index={2}>
               Scorri giù e scegli{" "}
-              <span className="font-semibold text-white">Installa app</span>{" "}
+              <span className="font-semibold text-primary-black">Installa app</span>{" "}
               oppure{" "}
-              <span className="font-semibold text-white">Aggiungi a Home</span>
+              <span className="font-semibold text-primary-black">Aggiungi a Home</span>
             </GuideStep>
             <GuideStep index={3}>
               Conferma e trova VibeUp nella Home del telefono
@@ -329,23 +329,23 @@ function InstallGuide({
 }) {
   return (
     <div className="border-t border-white/10 px-3 pb-3 pt-2 sm:px-4">
-      <div className="rounded-2xl bg-white/8 px-3.5 py-3">
-        <p className="text-sm font-semibold text-white">{title}</p>
-        <div className="mt-2 text-xs leading-relaxed text-white/75">
+      <div className="rounded-2xl bg-surface/8 px-3.5 py-3">
+        <p className="text-sm font-semibold text-primary-black">{title}</p>
+        <div className="mt-2 text-xs leading-relaxed text-primary-black/70">
           {children}
         </div>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
             onClick={onCloseGuide}
-            className="flex-1 rounded-full border border-white/15 px-3 py-2 text-xs font-medium text-white/80"
+            className="flex-1 rounded-full border border-white/15 px-3 py-2 text-xs font-medium text-primary-black/70"
           >
             Chiudi guida
           </button>
           <button
             type="button"
             onClick={onDone}
-            className="flex-1 rounded-full bg-white px-3 py-2 text-xs font-bold text-primary-black"
+            className="flex-1 rounded-full bg-surface px-3 py-2 text-xs font-bold text-primary-black"
           >
             Fatto
           </button>
@@ -363,7 +363,7 @@ function InstallMethodCard({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-primary-black/35 px-3 py-2.5">
+    <div className="rounded-xl border border-white/10 bg-black/40 px-3 py-2.5">
       <p className="text-[11px] font-black uppercase tracking-[0.12em] text-brand-teal">
         {title}
       </p>

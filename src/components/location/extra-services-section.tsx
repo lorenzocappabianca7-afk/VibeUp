@@ -259,7 +259,7 @@ export function ExtraServicesSection({
               {aiSuggestions.map((suggestion) => (
                 <li
                   key={`${suggestion.serviceId}-${suggestion.name}`}
-                  className="rounded-xl border border-primary-black/10 bg-background p-3"
+                  className="rounded-xl border border-primary-black/10 bg-surface p-3"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>

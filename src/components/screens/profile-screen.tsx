@@ -412,12 +412,12 @@ export function ProfileScreen({
           >
             <button
               type="button"
-              className="absolute inset-0 bg-primary-black/45"
+              className="absolute inset-0 bg-black/50"
               onClick={() => setAccountPendingDelete(null)}
               aria-label="Annulla eliminazione"
             />
             <div
-              className="vibe-sheet-enter relative max-h-[min(90dvh,calc(100dvh-2rem))] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-5 shadow-xl"
+              className="vibe-sheet-enter relative max-h-[min(90dvh,calc(100dvh-2rem))] w-full max-w-sm overflow-y-auto rounded-3xl bg-surface p-5 shadow-xl"
               role="dialog"
               aria-modal="true"
               aria-labelledby="delete-account-title-settings"
@@ -504,7 +504,7 @@ export function ProfileScreen({
         >
           <button
             type="button"
-            className="absolute inset-0 bg-primary-black/55"
+            className="absolute inset-0 bg-black/60"
             aria-label="Chiudi comunicazioni"
             onClick={() => setCommsOpen(false)}
           />
@@ -622,7 +622,7 @@ export function ProfileScreen({
         </div>
 
         {profileEditOpen && (
-          <div className="mt-4 rounded-2xl border border-primary-black/8 bg-background p-4">
+          <div className="mt-4 rounded-2xl border border-primary-black/8 bg-surface p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-bold text-primary-black">
@@ -632,7 +632,7 @@ export function ProfileScreen({
                   Aggiorna foto, nome utente e contatti principali.
                 </p>
               </div>
-              <label className="flex shrink-0 cursor-pointer items-center gap-2 rounded-full bg-primary-black px-3 py-2 text-xs font-black text-white">
+              <label className="flex shrink-0 cursor-pointer items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-black text-ink-inverse">
                 <Camera className="h-3.5 w-3.5" aria-hidden />
                 Foto
                 <input
@@ -708,7 +708,7 @@ export function ProfileScreen({
         )}
       </div>
 
-      <section className="space-y-3 rounded-2xl border border-primary-black/10 bg-background p-4">
+      <section className="space-y-3 rounded-2xl border border-primary-black/10 bg-surface p-4">
         <div>
           <h2 className="text-sm font-bold text-primary-black">
             Contatti collegati
@@ -796,7 +796,7 @@ export function ProfileScreen({
         </ul>
       </nav>
 
-      <section className="space-y-4 rounded-2xl border border-primary-black/10 bg-background p-4">
+      <section className="space-y-4 rounded-2xl border border-primary-black/10 bg-surface p-4">
         <div>
           <h2 className="flex items-center gap-2 text-sm font-bold text-primary-black">
             <Heart className="h-4 w-4 text-brand-pink" aria-hidden />
@@ -1006,7 +1006,7 @@ export function ProfileScreen({
         </ul>
       </nav>
 
-      <section className="space-y-3 rounded-2xl border border-primary-black/10 bg-background p-4">
+      <section className="space-y-3 rounded-2xl border border-primary-black/10 bg-surface p-4">
         <div className="flex min-w-0 items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h2 className="text-sm font-bold text-primary-black">
@@ -1024,7 +1024,7 @@ export function ProfileScreen({
               setAddAccountOpen((current) => !current);
               setAccountPendingDelete(null);
             }}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-black text-white transition-colors hover:bg-primary-black/85"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/12 text-primary-black transition-colors hover:bg-surface/85"
             aria-label={addAccountOpen ? "Chiudi form nuovo account" : "Aggiungi account"}
             aria-expanded={addAccountOpen}
           >
@@ -1160,7 +1160,7 @@ export function ProfileScreen({
               type="button"
               disabled={creatingAccount}
               onClick={() => void handleCreateAccount()}
-              className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+              className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-ink-inverse disabled:opacity-60"
             >
               {creatingAccount
                 ? "Creo account…"
@@ -1179,12 +1179,12 @@ export function ProfileScreen({
         >
           <button
             type="button"
-            className="absolute inset-0 bg-primary-black/45"
+            className="absolute inset-0 bg-black/50"
             onClick={() => setAccountPendingDelete(null)}
             aria-label="Annulla eliminazione"
           />
           <div
-            className="vibe-sheet-enter relative max-h-[min(90dvh,calc(100dvh-2rem))] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-5 shadow-xl"
+            className="vibe-sheet-enter relative max-h-[min(90dvh,calc(100dvh-2rem))] w-full max-w-sm overflow-y-auto rounded-3xl bg-surface p-5 shadow-xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-account-title"

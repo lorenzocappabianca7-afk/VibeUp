@@ -72,7 +72,7 @@ export const ServiceStatusList = memo(function ServiceStatusList({
           return (
             <li
               key={service.id}
-              className="rounded-2xl border border-primary-black/10 bg-background p-4"
+              className="rounded-2xl border border-primary-black/10 bg-surface p-4"
             >
               <div className="flex items-start gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-black/5 text-primary-black/50">

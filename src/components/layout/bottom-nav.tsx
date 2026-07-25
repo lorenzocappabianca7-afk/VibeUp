@@ -49,17 +49,17 @@ export function BottomNav({
   return (
     <nav
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 mx-auto border-t border-primary-black/15 bg-background lg:rounded-t-3xl lg:border-x",
+        "fixed inset-x-0 bottom-0 z-50 mx-auto px-2 pb-2 pt-1 sm:px-3",
         APP_SHELL_WIDTH_CLASS,
       )}
       style={{
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        paddingLeft: "env(safe-area-inset-left, 0px)",
-        paddingRight: "env(safe-area-inset-right, 0px)",
+        paddingBottom: "max(0.5rem, env(safe-area-inset-bottom, 0px))",
+        paddingLeft: "max(0.5rem, env(safe-area-inset-left, 0px))",
+        paddingRight: "max(0.5rem, env(safe-area-inset-right, 0px))",
       }}
       aria-label="Navigazione principale"
     >
-      <ul className="flex items-stretch justify-around px-1 pt-1.5 pb-2">
+      <ul className="flex items-stretch justify-around rounded-[1.35rem] border border-white/10 bg-surface-2/95 px-1 py-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-xl">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = TAB_ICONS[tab.id];
@@ -82,49 +82,28 @@ export function BottomNav({
                     : tab.label
                 }
                 className={cn(
-                  "flex w-full min-w-0 flex-col items-center gap-0.5 rounded-xl px-0.5 py-1.5 transition-colors duration-100 sm:gap-1 sm:px-1 sm:py-2",
+                  "flex w-full min-w-0 flex-col items-center gap-0.5 rounded-2xl px-0.5 py-1.5 transition-colors duration-150 sm:gap-1 sm:px-1 sm:py-2",
                   isActive
-                    ? "bg-primary-black/[0.03] text-primary-black"
-                    : "text-primary-black/45 hover:text-primary-black/70",
+                    ? "bg-white/12 text-primary-black"
+                    : "text-primary-black/45 hover:text-primary-black/75",
                 )}
               >
                 <span className="relative inline-flex">
                   <Icon
-                    className={cn(
-                      "h-5 w-5 transition-colors duration-150",
-                      isActive ? "text-primary-black" : "text-current",
-                    )}
-                    strokeWidth={isActive ? 2.5 : 2}
+                    className="h-5 w-5 text-current"
+                    strokeWidth={isActive ? 2.4 : 2}
                     aria-hidden
                   />
                   {showBadge && (
                     <span
-                      className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[#FF3B30] ring-2 ring-background"
+                      className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-brand-pink ring-2 ring-surface-2"
                       aria-hidden
                     />
                   )}
                 </span>
-                <span
-                  className={cn(
-                    "max-w-full truncate px-0.5 text-[9px] font-medium leading-none transition-colors duration-150 sm:text-[10px] sm:leading-tight",
-                    isActive ? "text-primary-black" : "text-current",
-                  )}
-                >
+                <span className="max-w-full truncate px-0.5 text-[9px] font-medium leading-none sm:text-[10px] sm:leading-tight">
                   {tab.label}
                 </span>
-                {isActive && (
-                  <span
-                    className={cn(
-                      "h-0.5 w-4 rounded-full",
-                      tab.id === "messages" ||
-                        tab.id === "profile" ||
-                        tab.id === "notifications"
-                        ? "bg-brand-pink"
-                        : "bg-brand-teal",
-                    )}
-                    aria-hidden
-                  />
-                )}
               </button>
             </li>
           );

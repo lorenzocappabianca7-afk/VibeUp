@@ -38,7 +38,7 @@ export const DiscountInviteBanner = memo(function DiscountInviteBanner({
       <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-brand-pink/25 blur-2xl" />
       <div className="relative">
         <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-black text-white shadow-sm">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/12 text-primary-black shadow-sm ring-1 ring-white/10">
             <Megaphone className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0">
@@ -78,7 +78,7 @@ export const DiscountInviteBanner = memo(function DiscountInviteBanner({
           type="button"
           onClick={onSubmit}
           disabled={!contact.trim()}
-          className="rounded-2xl bg-primary-black px-5 py-2.5 text-sm font-black text-white shadow-sm transition-opacity hover:bg-primary-black/90 disabled:opacity-45"
+          className="rounded-2xl bg-white px-5 py-2.5 text-sm font-black text-ink-inverse shadow-sm transition-opacity hover:bg-surface/90 disabled:opacity-45"
         >
           Invita e sblocca sconto
         </button>

@@ -217,7 +217,7 @@ export function SecuritySettingsPanel({ onBack }: SecuritySettingsPanelProps) {
           type="button"
           disabled={isGuest || savingPassword}
           onClick={() => void handleChangePassword()}
-          className="w-full rounded-2xl bg-primary-black px-4 py-3 text-sm font-black text-white transition-colors hover:bg-primary-black/90 disabled:opacity-50"
+          className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-black text-ink-inverse transition-colors hover:bg-surface/90 disabled:opacity-50"
         >
           {savingPassword ? "Aggiorno…" : "Aggiorna password"}
         </button>
@@ -289,7 +289,7 @@ export function SecuritySettingsPanel({ onBack }: SecuritySettingsPanelProps) {
             type="button"
             disabled={isGuest || biometricBusy}
             onClick={() => void handleEnableBiometric()}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-black px-4 py-3 text-sm font-black text-white transition-colors hover:bg-primary-black/90 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-black text-ink-inverse transition-colors hover:bg-surface/90 disabled:opacity-50"
           >
             <BiometricIcon className="h-4 w-4" aria-hidden />
             {biometricBusy ? "Configuro…" : `Configura ${biometricLabel}`}

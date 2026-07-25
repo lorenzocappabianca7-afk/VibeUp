@@ -95,41 +95,36 @@ const EXPLORE_CATEGORIES: {
     id: "locali",
     label: "Locali",
     icon: Building2,
-    iconClass: "text-brand-teal",
-    activeClass:
-      "bg-brand-teal/15 text-primary-black shadow-sm ring-1 ring-brand-teal/35",
+    iconClass: "text-primary-black/65",
+    activeClass: "bg-white/12 text-primary-black shadow-sm ring-1 ring-white/15",
   },
   {
     id: "dj",
     label: "DJ",
     icon: Disc3,
-    iconClass: "text-brand-pink",
-    activeClass:
-      "bg-brand-pink/15 text-primary-black shadow-sm ring-1 ring-brand-pink/35",
+    iconClass: "text-primary-black/65",
+    activeClass: "bg-white/12 text-primary-black shadow-sm ring-1 ring-white/15",
   },
   {
     id: "fotografo",
     label: "Fotografo",
     icon: Camera,
-    iconClass: "text-[#4A8FE7]",
-    activeClass:
-      "bg-[#4A8FE7]/15 text-primary-black shadow-sm ring-1 ring-[#4A8FE7]/35",
+    iconClass: "text-primary-black/65",
+    activeClass: "bg-white/12 text-primary-black shadow-sm ring-1 ring-white/15",
   },
   {
     id: "decorazioni",
     label: "Decorazioni",
     icon: Gift,
-    iconClass: "text-[#E8A54B]",
-    activeClass:
-      "bg-[#E8A54B]/15 text-primary-black shadow-sm ring-1 ring-[#E8A54B]/35",
+    iconClass: "text-primary-black/65",
+    activeClass: "bg-white/12 text-primary-black shadow-sm ring-1 ring-white/15",
   },
   {
     id: "altri",
     label: "Altri servizi",
     icon: Music,
-    iconClass: "text-[#2BB673]",
-    activeClass:
-      "bg-[#2BB673]/15 text-primary-black shadow-sm ring-1 ring-[#2BB673]/35",
+    iconClass: "text-primary-black/65",
+    activeClass: "bg-white/12 text-primary-black shadow-sm ring-1 ring-white/15",
   },
 ];
 
@@ -675,11 +670,14 @@ export function ExploreScreen({
                     "flex shrink-0 items-center justify-center gap-1.5 rounded-2xl px-3 py-2.5 transition-colors duration-150",
                     isActive
                       ? category.activeClass
-                      : "bg-background text-primary-black/65 hover:text-primary-black",
+                      : "bg-surface text-primary-black/55 hover:bg-surface-2 hover:text-primary-black/80",
                   )}
                 >
                   <Icon
-                    className={cn("h-4 w-4 shrink-0", category.iconClass)}
+                    className={cn(
+                      "h-4 w-4 shrink-0",
+                      isActive ? "text-primary-black" : category.iconClass,
+                    )}
                     aria-hidden
                   />
                   <span className="whitespace-nowrap text-xs font-semibold leading-none sm:text-sm">
@@ -713,11 +711,11 @@ export function ExploreScreen({
             className={cn(
               "flex w-full min-w-0 items-center gap-3 rounded-2xl border-2 border-brand-pink bg-gradient-to-r from-brand-pink/20 via-brand-pink/10 to-brand-teal/15 px-4 py-3 text-left transition-colors",
               discountBannerOpen
-                ? "rounded-b-none border-b-0 bg-gradient-to-br from-pink-50 via-rose-50 to-pink-50"
+                ? "rounded-b-none border-b-0 bg-gradient-to-br from-brand-pink/15 via-surface to-brand-teal/10"
                 : "hover:from-brand-pink/25 hover:to-brand-teal/20",
             )}
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-black text-white">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-primary-black">
               <Megaphone className="h-4 w-4" aria-hidden />
             </span>
             <span className="min-w-0 flex-1">
@@ -758,7 +756,7 @@ export function ExploreScreen({
             className={cn(
               "flex-1 rounded-xl py-2.5 text-sm font-medium transition-colors duration-150",
               view === "list"
-                ? "bg-primary-black text-white shadow-sm"
+                ? "bg-white/12 text-primary-black shadow-sm"
                 : "text-primary-black/50",
             )}
           >
@@ -771,8 +769,8 @@ export function ExploreScreen({
             className={cn(
               "flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-semibold transition-colors duration-150",
               view === "compare"
-                ? "bg-brand-teal-strong text-white shadow-sm"
-                : "bg-white text-brand-teal-strong hover:bg-brand-teal/10",
+                ? "bg-brand-teal/25 text-brand-teal shadow-sm ring-1 ring-brand-teal/35"
+                : "bg-surface text-primary-black/70 hover:bg-surface-2",
               compareLocationIds.length === 0 && "opacity-50",
             )}
           >
@@ -787,7 +785,7 @@ export function ExploreScreen({
                 className={cn(
                   "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
                   view === "compare"
-                    ? "bg-white/25 text-white"
+                    ? "bg-surface/25 text-white"
                     : "bg-brand-teal-strong/15 text-brand-teal-strong",
                 )}
               >
@@ -1009,7 +1007,7 @@ const ServiceCard = memo(function ServiceCard({
               {service.providerZone}
             </p>
           </div>
-          <span className="shrink-0 self-start rounded-full bg-primary-black px-3 py-1.5 text-xs font-bold text-white">
+          <span className="shrink-0 self-start rounded-full bg-white px-3 py-1.5 text-xs font-bold text-ink-inverse">
             {getServicePriceLabel(service)}
           </span>
         </div>

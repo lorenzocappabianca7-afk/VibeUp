@@ -47,9 +47,9 @@ export function ConfirmAvailabilityModal() {
       className="vibe-overlay-enter fixed inset-0 z-[85] flex items-end justify-center p-4 sm:items-center"
       data-overlay-open="true"
     >
-      <div className="absolute inset-0 bg-primary-black/55" aria-hidden />
+      <div className="absolute inset-0 bg-black/60" aria-hidden />
       <div
-        className="vibe-sheet-enter relative w-full max-w-md rounded-3xl bg-background p-5 shadow-xl"
+        className="vibe-sheet-enter relative w-full max-w-md rounded-3xl bg-surface p-5 shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-availability-title"

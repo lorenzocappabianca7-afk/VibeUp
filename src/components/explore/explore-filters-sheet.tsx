@@ -327,7 +327,7 @@ export function ExploreFiltersSheet({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-primary-black/45"
+        className="absolute inset-0 bg-black/50"
         onClick={onClose}
         aria-label="Chiudi filtri"
       />
@@ -521,7 +521,7 @@ export function ExploreFiltersSheet({
                       >
                         <span
                           className={cn(
-                            "absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform",
+                            "absolute left-1 top-1 h-4 w-4 rounded-full bg-surface shadow-sm transition-transform",
                           draftServiceFilters.viewDecorationsInPerson &&
                               "translate-x-5",
                           )}
@@ -575,7 +575,7 @@ export function ExploreFiltersSheet({
                     className="flex w-full items-center justify-between gap-3 rounded-2xl border border-primary-black/10 bg-primary-black/[0.03] px-4 py-3 text-left transition-colors duration-150 hover:bg-brand-teal/8"
                   >
                     <span className="flex items-center gap-2">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-brand-teal">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface text-brand-teal">
                         <Calendar className="h-4 w-4" aria-hidden />
                       </span>
                       <span>
@@ -636,7 +636,7 @@ export function ExploreFiltersSheet({
               className="flex w-full items-center justify-between gap-3 rounded-2xl border border-primary-black/10 bg-primary-black/[0.03] px-4 py-3 text-left transition-colors duration-150 hover:bg-brand-teal/8"
             >
               <span className="flex items-center gap-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-brand-teal">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface text-brand-teal">
                   <Calendar className="h-4 w-4" aria-hidden />
                 </span>
                 <span>
