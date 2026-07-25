@@ -15,7 +15,16 @@ html,body{background:#000!important}
 }
 #${BOOT_SPLASH_ID} .vibeup-boot-logo{
   display:block;width:min(52vw,11.5rem);height:auto;
-  aspect-ratio:1;object-fit:contain
+  aspect-ratio:1;object-fit:contain;
+  transform-origin:center center;
+  animation:vibeup-splash-bounce 720ms cubic-bezier(0.34,1.56,0.64,1) both
+}
+@keyframes vibeup-splash-bounce{
+  0%{opacity:0;transform:scale(0.2)}
+  55%{opacity:1;transform:scale(1.18)}
+  72%{transform:scale(0.92)}
+  86%{transform:scale(1.06)}
+  100%{opacity:1;transform:scale(1)}
 }
 @keyframes vibeup-splash-tagline-in{
   from{opacity:0;transform:translateY(10px)}
