@@ -107,7 +107,11 @@ export function LocationDetailView({
     toggleFavoriteLocation,
   } = useAppState();
   const { requireAccount } = useAccountGate();
-  const { requests, sendAvailabilityRequest } = useAvailabilityRequests();
+  const {
+    requests,
+    sendAvailabilityRequest,
+    resumeAvailabilityConfirm,
+  } = useAvailabilityRequests();
   const defaultEventTitle = `Festa da ${location.name}`;
   const isFavorite = favoriteLocationIds.includes(location.id);
   const isCompareSelected = compareLocationIds.includes(location.id);
@@ -194,14 +198,16 @@ export function LocationDetailView({
         item.locationId === location.id &&
         item.requesterUserId === currentUser.id,
     );
+    // Only in-flight requests lock the CTA; confirmed must not block a new booking.
     return (
       mine.find(
         (item) =>
           item.status === "pending_manager" ||
           item.status === "pending_user_confirm",
       ) ??
-      mine.find((item) => item.status === "confirmed") ??
-      mine[0] ??
+      mine.find(
+        (item) => item.status === "declined" || item.status === "cancelled",
+      ) ??
       null
     );
   }, [currentUser.id, location.id, requests]);
@@ -408,6 +414,11 @@ export function LocationDetailView({
   }
 
   function sendRequestFromBooking() {
+    if (activeRequest?.status === "pending_user_confirm") {
+      resumeAvailabilityConfirm(activeRequest.id);
+      return;
+    }
+
     if (!quote) return;
 
     requireAccount(
@@ -615,7 +626,6 @@ export function LocationDetailView({
             isReady={isReady}
             requestStatus={activeRequest?.status ?? null}
             requestError={requestError}
-            savedEventHref="/?tab=events"
             eventTitle={eventTitle}
             eventTitlePlaceholder={defaultEventTitle}
             onEventTitleChange={(title) => {

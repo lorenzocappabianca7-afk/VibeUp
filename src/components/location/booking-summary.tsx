@@ -5,7 +5,6 @@ import { cn, formatCurrency } from "@/lib/utils";
 import type { AvailabilityRequestStatus } from "@/types/availability-request";
 import type { BookingQuote } from "@/types/location";
 import { Check, Clock3, ShieldCheck } from "lucide-react";
-import Link from "next/link";
 
 interface BookingSummaryProps {
   quote: BookingQuote;
@@ -13,7 +12,6 @@ interface BookingSummaryProps {
   isReady: boolean;
   requestStatus?: AvailabilityRequestStatus | null;
   requestError?: string | null;
-  savedEventHref?: string;
   eventTitle: string;
   eventTitlePlaceholder: string;
   onEventTitleChange: (title: string) => void;
@@ -26,7 +24,6 @@ export function BookingSummary({
   isReady,
   requestStatus = null,
   requestError = null,
-  savedEventHref,
   eventTitle,
   eventTitlePlaceholder,
   onEventTitleChange,
@@ -34,9 +31,7 @@ export function BookingSummary({
 }: BookingSummaryProps) {
   const isPendingManager = requestStatus === "pending_manager";
   const isPendingUserConfirm = requestStatus === "pending_user_confirm";
-  const isConfirmed = requestStatus === "confirmed";
-  const isLocked =
-    isPendingManager || isPendingUserConfirm || isConfirmed;
+  const isLocked = isPendingManager || isPendingUserConfirm;
   const canRetry =
     requestStatus === "declined" || requestStatus === "cancelled";
 
@@ -112,37 +107,25 @@ export function BookingSummary({
       </label>
 
       <div className="space-y-2">
-        {!isConfirmed && (
-          <p className="text-center text-xs text-primary-black/45">
-            Sei interessato?
-          </p>
-        )}
+        <p className="text-center text-xs text-primary-black/45">
+          Sei interessato?
+        </p>
 
         <Button
           className={cn(
             "w-full rounded-2xl py-4 text-base font-semibold",
-            isConfirmed &&
-              "bg-emerald-500 hover:bg-emerald-500 disabled:opacity-100",
             isPendingManager &&
               "bg-primary-black/70 hover:bg-primary-black/70 disabled:opacity-100",
             isPendingUserConfirm &&
               "bg-brand-teal hover:bg-brand-teal disabled:opacity-100",
           )}
           disabled={
-            !isReady ||
-            quote.total <= 0 ||
-            isPendingManager ||
-            isPendingUserConfirm ||
-            isConfirmed
+            (!isReady || quote.total <= 0 || isPendingManager) &&
+            !isPendingUserConfirm
           }
           onClick={onSendRequest}
         >
-          {isConfirmed ? (
-            <span className="inline-flex items-center gap-2">
-              <Check className="h-4 w-4" aria-hidden />
-              Evento creato nei miei eventi
-            </span>
-          ) : isPendingUserConfirm ? (
+          {isPendingUserConfirm ? (
             <span className="inline-flex items-center gap-2">
               <Check className="h-4 w-4" aria-hidden />
               Gestore ha accettato — conferma
@@ -180,14 +163,6 @@ export function BookingSummary({
         )}
       </div>
 
-      {isConfirmed && savedEventHref && (
-        <Link
-          href={savedEventHref}
-          className="flex w-full items-center justify-center rounded-2xl border border-brand-teal/25 bg-brand-teal/10 px-4 py-3 text-sm font-black text-brand-teal transition-colors hover:bg-brand-teal/18"
-        >
-          Vai ai miei eventi
-        </Link>
-      )}
     </section>
   );
 }

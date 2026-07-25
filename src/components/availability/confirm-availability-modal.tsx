@@ -13,7 +13,7 @@ export function ConfirmAvailabilityModal() {
   const {
     pendingUserConfirms,
     confirmAvailabilityRequest,
-    cancelAvailabilityRequest,
+    snoozeAvailabilityConfirm,
   } = useAvailabilityRequests();
   const { addDepositReminder } = useProfileCommunications();
   const [submittingId, setSubmittingId] = useState<string | null>(null);
@@ -26,18 +26,20 @@ export function ConfirmAvailabilityModal() {
   const payload = request.eventPayload;
 
   function handleConfirm() {
+    if (submittingId) return;
     setSubmittingId(request.id);
     const result = confirmAvailabilityRequest(request.id);
-    setSubmittingId(null);
-    if (result.ok) {
-      addDepositReminder({
-        eventId: result.eventId,
-        eventTitle: payload.title,
-        locationName: payload.locationName,
-        date: formatDate(payload.date),
-      });
-      router.push("/?tab=events");
+    if (!result.ok) {
+      setSubmittingId(null);
+      return;
     }
+    addDepositReminder({
+      eventId: result.eventId,
+      eventTitle: payload.title,
+      locationName: payload.locationName,
+      date: formatDate(payload.date),
+    });
+    router.push("/?tab=events");
   }
 
   return (
@@ -87,7 +89,7 @@ export function ConfirmAvailabilityModal() {
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
-            onClick={() => cancelAvailabilityRequest(request.id)}
+            onClick={() => snoozeAvailabilityConfirm(request.id)}
             className="flex-1 rounded-2xl border border-primary-black/12 px-4 py-3 text-sm font-semibold text-primary-black/70"
           >
             Non ora

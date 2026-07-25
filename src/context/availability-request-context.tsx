@@ -1,9 +1,7 @@
 "use client";
 
-import { notifyAvailabilityUpdate } from "@/lib/browser-notifications";
 import { useAppState } from "@/context/app-state-context";
 import { useInboxBadge } from "@/context/inbox-badge-context";
-import { normalizeUserSettings } from "@/types/user-settings";
 import type {
   AvailabilityEventPayload,
   AvailabilityRequest,
@@ -36,6 +34,10 @@ interface AvailabilityRequestContextValue {
     eventId: string;
   } | { ok: false; error: string };
   cancelAvailabilityRequest: (requestId: string) => void;
+  /** Hide confirm modal for now without cancelling the manager acceptance. */
+  snoozeAvailabilityConfirm: (requestId: string) => void;
+  /** Show the confirm modal again after a snooze. */
+  resumeAvailabilityConfirm: (requestId: string) => void;
   pendingManagerRequests: AvailabilityRequest[];
   pendingUserConfirms: AvailabilityRequest[];
 }
@@ -92,23 +94,29 @@ export function AvailabilityRequestProvider({
 }) {
   const {
     addEvent,
+    businessProfile,
     currentUser,
     isBusinessUser,
     isGuest,
     managedListings,
   } = useAppState();
   const { syncUnreadNotifications } = useInboxBadge();
-  const pushEnabled = normalizeUserSettings(currentUser.settings).notifications
-    .pushEnabled;
 
   const [requests, setRequests] = useState<AvailabilityRequest[]>([]);
+  const [snoozedConfirmIds, setSnoozedConfirmIds] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const skipFirstPersist = useRef(true);
   const currentUserIdRef = useRef(currentUser.id);
+  const confirmLockRef = useRef<Set<string>>(new Set());
+  const requestsRef = useRef<AvailabilityRequest[]>([]);
 
   useEffect(() => {
     currentUserIdRef.current = currentUser.id;
   }, [currentUser.id]);
+
+  useEffect(() => {
+    requestsRef.current = requests;
+  }, [requests]);
 
   useEffect(() => {
     setRequests(readStoredRequests());
@@ -137,18 +145,40 @@ export function AvailabilityRequestProvider({
       (item) => item.status === "pending_manager",
     );
     if (!isBusinessUser) return [];
-    if (managedLocationIds.size === 0) return pending;
-    return pending.filter((item) => managedLocationIds.has(item.locationId));
-  }, [isBusinessUser, managedLocationIds, requests]);
+    if (managedLocationIds.size > 0) {
+      return pending.filter((item) => managedLocationIds.has(item.locationId));
+    }
+    const businessName = businessProfile?.businessName?.trim().toLowerCase();
+    if (businessName) {
+      const matched = pending.filter((item) =>
+        item.locationName.toLowerCase().includes(businessName),
+      );
+      if (matched.length > 0) return matched;
+    }
+    // On-device demo: Pro accounts without linked listings still see pending requests.
+    return pending;
+  }, [
+    businessProfile?.businessName,
+    isBusinessUser,
+    managedLocationIds,
+    requests,
+  ]);
 
   const pendingUserConfirms = useMemo(() => {
     if (isGuest || isBusinessUser) return [];
     return requests.filter(
       (item) =>
         item.status === "pending_user_confirm" &&
-        item.requesterUserId === currentUser.id,
+        item.requesterUserId === currentUser.id &&
+        !snoozedConfirmIds.includes(item.id),
     );
-  }, [currentUser.id, isBusinessUser, isGuest, requests]);
+  }, [
+    currentUser.id,
+    isBusinessUser,
+    isGuest,
+    requests,
+    snoozedConfirmIds,
+  ]);
 
   useEffect(() => {
     if (!isBusinessUser) {
@@ -189,15 +219,7 @@ export function AvailabilityRequestProvider({
       };
 
       setRequests((prev) => [request, ...prev]);
-
-      notifyAvailabilityUpdate({
-        pushEnabled,
-        title: "Nuova richiesta di disponibilità",
-        body: `${currentUser.name} vuole festeggiare a ${input.locationName} il ${input.eventPayload.date}.`,
-        tag: `vibeup-availability-manager-${request.id}`,
-        onlyWhenHidden: false,
-      });
-
+      // Manager sees the request in Notifiche Pro; avoid notifying the requester's tab.
       return { ok: true as const, requestId: request.id };
     },
     [
@@ -206,37 +228,24 @@ export function AvailabilityRequestProvider({
       currentUser.name,
       isBusinessUser,
       isGuest,
-      pushEnabled,
     ],
   );
 
-  const acceptAvailabilityRequest = useCallback(
-    (requestId: string) => {
-      setRequests((prev) =>
-        prev.map((item) => {
-          if (item.id !== requestId || item.status !== "pending_manager") {
-            return item;
-          }
-          const next: AvailabilityRequest = {
-            ...item,
-            status: "pending_user_confirm",
-            updatedAt: new Date().toISOString(),
-          };
-
-          notifyAvailabilityUpdate({
-            pushEnabled: true,
-            title: "Disponibilità confermata dal gestore",
-            body: `${item.locationName} ha accettato la tua richiesta. Conferma per creare l'evento.`,
-            tag: `vibeup-availability-user-${item.id}`,
-            onlyWhenHidden: false,
-          });
-
-          return next;
-        }),
-      );
-    },
-    [],
-  );
+  const acceptAvailabilityRequest = useCallback((requestId: string) => {
+    setRequests((prev) =>
+      prev.map((item) =>
+        item.id === requestId && item.status === "pending_manager"
+          ? {
+              ...item,
+              status: "pending_user_confirm" as const,
+              updatedAt: new Date().toISOString(),
+            }
+          : item,
+      ),
+    );
+    // Clear snooze so the consumer sees the confirm modal again after accept.
+    setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+  }, []);
 
   const declineAvailabilityRequest = useCallback((requestId: string) => {
     setRequests((prev) =>
@@ -254,14 +263,49 @@ export function AvailabilityRequestProvider({
 
   const confirmAvailabilityRequest = useCallback(
     (requestId: string) => {
-      const target = requests.find((item) => item.id === requestId);
-      if (!target) {
-        return { ok: false as const, error: "Richiesta non trovata." };
+      if (confirmLockRef.current.has(requestId)) {
+        return {
+          ok: false as const,
+          error: "Conferma già in corso.",
+        };
       }
-      if (target.requesterUserId !== currentUserIdRef.current) {
-        return { ok: false as const, error: "Questa richiesta non è tua." };
+
+      const existing = requestsRef.current.find(
+        (item) =>
+          item.id === requestId &&
+          item.status === "pending_user_confirm" &&
+          item.requesterUserId === currentUserIdRef.current,
+      );
+      if (!existing) {
+        return {
+          ok: false as const,
+          error: "La richiesta non è pronta per la conferma.",
+        };
       }
-      if (target.status !== "pending_user_confirm") {
+
+      confirmLockRef.current.add(requestId);
+
+      let didClaim = false;
+      setRequests((prev) => {
+        const stillPending = prev.some(
+          (item) =>
+            item.id === requestId && item.status === "pending_user_confirm",
+        );
+        if (!stillPending) return prev;
+        didClaim = true;
+        return prev.map((item) =>
+          item.id === requestId
+            ? {
+                ...item,
+                status: "confirmed" as const,
+                updatedAt: new Date().toISOString(),
+              }
+            : item,
+        );
+      });
+
+      if (!didClaim) {
+        confirmLockRef.current.delete(requestId);
         return {
           ok: false as const,
           error: "La richiesta non è pronta per la conferma.",
@@ -269,7 +313,7 @@ export function AvailabilityRequestProvider({
       }
 
       const eventId = `evt-${Date.now()}`;
-      const payload = target.eventPayload;
+      const payload = existing.eventPayload;
       const event: UserEvent = {
         id: eventId,
         title: payload.title,
@@ -294,21 +338,10 @@ export function AvailabilityRequestProvider({
       };
 
       addEvent(event);
-      setRequests((prev) =>
-        prev.map((item) =>
-          item.id === requestId
-            ? {
-                ...item,
-                status: "confirmed" as const,
-                updatedAt: new Date().toISOString(),
-              }
-            : item,
-        ),
-      );
-
+      setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
       return { ok: true as const, eventId };
     },
-    [addEvent, requests],
+    [addEvent],
   );
 
   const cancelAvailabilityRequest = useCallback((requestId: string) => {
@@ -325,6 +358,17 @@ export function AvailabilityRequestProvider({
           : item,
       ),
     );
+    setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+  }, []);
+
+  const snoozeAvailabilityConfirm = useCallback((requestId: string) => {
+    setSnoozedConfirmIds((prev) =>
+      prev.includes(requestId) ? prev : [...prev, requestId],
+    );
+  }, []);
+
+  const resumeAvailabilityConfirm = useCallback((requestId: string) => {
+    setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
   }, []);
 
   const value = useMemo(
@@ -335,6 +379,8 @@ export function AvailabilityRequestProvider({
       declineAvailabilityRequest,
       confirmAvailabilityRequest,
       cancelAvailabilityRequest,
+      snoozeAvailabilityConfirm,
+      resumeAvailabilityConfirm,
       pendingManagerRequests,
       pendingUserConfirms,
     }),
@@ -345,6 +391,8 @@ export function AvailabilityRequestProvider({
       declineAvailabilityRequest,
       confirmAvailabilityRequest,
       cancelAvailabilityRequest,
+      snoozeAvailabilityConfirm,
+      resumeAvailabilityConfirm,
       pendingManagerRequests,
       pendingUserConfirms,
     ],
