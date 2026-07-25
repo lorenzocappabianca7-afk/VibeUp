@@ -279,7 +279,7 @@ export function SmartLocationDetailsSection({
       </div>
 
       <div className="grid gap-4 p-5">
-        <div className="rounded-3xl border border-white/80 bg-surface-2 p-4 shadow-[0_8px_28px_-16px_rgba(0,0,0,0.55)]">
+        <div className="rounded-3xl bg-surface-2 p-4 shadow-[0_8px_28px_-16px_rgba(0,0,0,0.55)]">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-black text-white">
