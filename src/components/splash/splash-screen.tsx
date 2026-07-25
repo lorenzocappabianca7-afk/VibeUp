@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
+import { CRITICAL_PAINT_ID } from "@/lib/critical-paint";
 import {
   HOLD_AFTER_TAGLINE_MS,
   LOGO_BOUNCE_MS,
@@ -27,16 +28,30 @@ function shouldSkipSplash() {
   return false;
 }
 
+function removeCriticalPaint() {
+  document.getElementById(CRITICAL_PAINT_ID)?.remove();
+}
+
 /**
- * Single splash layer:
- * - Tagline always in the layout (opacity 0) → logo never jumps
- * - Bounce runs once (Strict Mode remount keeps settled logo)
- * - bounce → tagline → hold 2.1s → soft exit → Explore
+ * Single splash layer over a server-painted black shell.
+ * Smooth spring bounce → tagline → hold 2.1s → soft exit → Explore.
  */
 export function SplashScreen() {
   const [phase, setPhase] = useState<Phase>("enter");
   const [showTagline, setShowTagline] = useState(false);
   const [bounceDone] = useState(() => splashBounceAlreadyPlayed);
+
+  // Before paint: drop the critical shell once our overlay is in the tree
+  // (or immediately if this session skips splash). Avoids stacked layers & white gaps.
+  useLayoutEffect(() => {
+    if (shouldSkipSplash()) {
+      removeCriticalPaint();
+      setPhase("gone");
+      return;
+    }
+    // Splash covers the viewport — safe to remove the server black shell.
+    removeCriticalPaint();
+  }, []);
 
   useEffect(() => {
     if (shouldSkipSplash()) {
@@ -64,6 +79,7 @@ export function SplashScreen() {
         /* ignore */
       }
       document.documentElement.style.overflow = previousOverflow;
+      // Keep html/body black — app shell uses its own bg-background surface.
       setPhase("gone");
     }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS + SPLASH_EXIT_MS);
 
@@ -115,9 +131,10 @@ const SPLASH_CSS = `
 .vibeup-splash{
   position:fixed;inset:0;z-index:10000;
   display:flex;align-items:center;justify-content:center;
-  background:#000;pointer-events:none;
+  background:#000;
+  pointer-events:none;
   opacity:1;
-  transition:opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.22,1,0.36,1);
+  transition:opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.4,0,0.2,1);
 }
 .vibeup-splash--exit{opacity:0}
 .vibeup-splash__stage{
@@ -133,7 +150,7 @@ const SPLASH_CSS = `
   transform-origin:center center;
   backface-visibility:hidden;
   -webkit-backface-visibility:hidden;
-  animation:vibeup-splash-bounce ${LOGO_BOUNCE_MS}ms cubic-bezier(0.22,1,0.36,1) both;
+  animation:vibeup-splash-bounce ${LOGO_BOUNCE_MS}ms cubic-bezier(0.16,1,0.3,1) both;
   will-change:transform,opacity;
 }
 .vibeup-splash__logo--settled{
@@ -150,25 +167,28 @@ const SPLASH_CSS = `
   letter-spacing:-0.025em;line-height:1.15;
   color:#fff;text-align:center;white-space:nowrap;
   opacity:0;
-  transform:translate3d(0,12px,0);
+  transform:translate3d(0,10px,0);
 }
 .vibeup-splash__tagline--in{
-  animation:vibeup-splash-tagline-in 520ms cubic-bezier(0.22,1,0.36,1) both;
+  animation:vibeup-splash-tagline-in 640ms cubic-bezier(0.16,1,0.3,1) both;
 }
 @keyframes vibeup-splash-bounce{
-  0%{opacity:0;transform:translate3d(0,0,0) scale(0.35)}
-  40%{opacity:1;transform:translate3d(0,0,0) scale(1.12)}
-  58%{transform:translate3d(0,0,0) scale(0.94)}
-  76%{transform:translate3d(0,0,0) scale(1.04)}
+  0%{opacity:0;transform:translate3d(0,8px,0) scale(0.55)}
+  18%{opacity:1}
+  45%{transform:translate3d(0,0,0) scale(1.08)}
+  62%{transform:translate3d(0,0,0) scale(0.96)}
+  78%{transform:translate3d(0,0,0) scale(1.03)}
+  90%{transform:translate3d(0,0,0) scale(0.99)}
   100%{opacity:1;transform:translate3d(0,0,0) scale(1)}
 }
 @keyframes vibeup-splash-tagline-in{
-  from{opacity:0;transform:translate3d(0,12px,0)}
+  from{opacity:0;transform:translate3d(0,10px,0)}
   to{opacity:1;transform:translate3d(0,0,0)}
 }
 @media (prefers-reduced-motion:reduce){
   .vibeup-splash__logo,.vibeup-splash__tagline--in{
     animation:none!important;opacity:1;transform:none
   }
+  .vibeup-splash{transition:none}
 }
 `.replace(/\n/g, "");

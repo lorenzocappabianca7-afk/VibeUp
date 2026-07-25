@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Montserrat } from "next/font/google";
 import { AppChrome } from "@/components/layout/app-chrome";
 import { AppProviders } from "@/components/providers/app-providers";
+import { CriticalPaint } from "@/components/splash/critical-paint";
 import { SplashScreen } from "@/components/splash/splash-screen";
+import { CRITICAL_PAINT_CSS } from "@/lib/critical-paint";
 import { getSiteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -103,13 +105,19 @@ export default function RootLayout({
     <html
       lang="it"
       className={`${geistSans.variable} ${geistMono.variable} ${brandDisplay.variable} h-full antialiased`}
-      style={{ background: "#000000" }}
+      style={{ backgroundColor: "#000000" }}
     >
+      <head>
+        {/* First bytes in head: kill default white canvas before CSS chunks */}
+        <style
+          dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_CSS }}
+        />
+      </head>
       <body
         className="min-h-dvh text-primary-black"
-        style={{ background: "#000000" }}
+        style={{ backgroundColor: "#000000" }}
       >
-        {/* Single splash layer — logo+slot reserved, no boot handoff flicker */}
+        <CriticalPaint />
         <SplashScreen />
         <AppProviders>
           <div className="flex min-h-dvh min-w-0 max-w-full flex-col overflow-x-hidden bg-background">

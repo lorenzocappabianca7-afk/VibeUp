@@ -41,11 +41,12 @@ html {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
-  background: var(--background);
+  /* Black base — prevents white overscroll / cold-start flash; app surfaces use bg-background */
+  background: #000000;
 }
 
 body {
-  background: var(--background);
+  background: #000000;
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
