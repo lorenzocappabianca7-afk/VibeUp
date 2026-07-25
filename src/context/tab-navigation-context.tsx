@@ -130,7 +130,11 @@ function TabParamSync({ onTab }: { onTab: (tab: string | null) => void }) {
   const tab = searchParams.get("tab");
 
   useEffect(() => {
-    onTab(tab);
+    // Prefer the live address bar. After home tab switches we use
+    // history.replaceState — Next's useSearchParams can stay stale and would
+    // otherwise overwrite the tab back to explore/null.
+    const fromLocation = new URLSearchParams(window.location.search).get("tab");
+    onTab(fromLocation);
   }, [onTab, tab]);
 
   // Back/forward after history.replaceState (home tab switches).
@@ -181,8 +185,11 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
     if (candidate === activeTab) return;
 
     const href = buildTabHref(activeTab, isBusinessUser);
-    setTabParam(tabParamFromHref(href));
+    const nextParam = tabParamFromHref(href);
     replaceHomeTabUrl(href);
+    startTransition(() => {
+      setTabParam(nextParam);
+    });
   }, [activeTab, candidate, isBusinessUser, onHome]);
 
   // Restore scroll per tab after the panel is visible.
