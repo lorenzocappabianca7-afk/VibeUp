@@ -1,9 +1,18 @@
-import { CRITICAL_PAINT_ID } from "@/lib/critical-paint";
+import {
+  CRITICAL_PAINT_ID,
+  CRITICAL_PAINT_INLINE_STYLE,
+} from "@/lib/critical-paint";
 
 /**
- * Server-only black full-screen shell in the first HTML body bytes.
- * CSS for this lives in <head> (CRITICAL_PAINT_CSS) so it applies before paint.
+ * Server-only black full-screen shell with INLINE styles (no CSS file wait).
+ * Stays until SplashScreen finishes — never remove early or a white gap appears.
  */
 export function CriticalPaint() {
-  return <div id={CRITICAL_PAINT_ID} aria-hidden />;
+  return (
+    <div
+      id={CRITICAL_PAINT_ID}
+      style={CRITICAL_PAINT_INLINE_STYLE}
+      aria-hidden
+    />
+  );
 }

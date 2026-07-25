@@ -33,11 +33,12 @@ function removeCriticalPaint() {
 }
 
 /**
- * Why the logo looked soft (and how we fix it):
- * 1) Upscaling a small bitmap on 2x/3x screens → use @640px source for ~7rem CSS
- * 2) Sub-pixel CSS widths (vw) → fixed rem size so the bitmap maps cleanly
- * 3) Parent `transform` / leftover `will-change` after scale bounce → settle layer
- *    with transform:none after animationend (Safari keeps a soft composited layer otherwise)
+ * White-flash analysis (what we fixed):
+ * 1) Browser default canvas is white until styles apply → blocking head script + CSS
+ * 2) Critical shell had no inline bg (CSS-only) → transparent → white showed through
+ * 3) We removed the black shell in useLayoutEffect BEFORE splash CSS applied → gap
+ *    → now keep CriticalPaint until splash is fully gone
+ * 4) Splash root now has inline background:#000 so it never depends on scoped <style>
  */
 export function SplashScreen() {
   const [phase, setPhase] = useState<Phase>("enter");
@@ -48,13 +49,14 @@ export function SplashScreen() {
     if (shouldSkipSplash()) {
       removeCriticalPaint();
       setPhase("gone");
-      return;
     }
-    removeCriticalPaint();
+    // Do NOT remove CriticalPaint here on enter — it stays under the splash
+    // as a black safety net until phase === "gone".
   }, []);
 
   useEffect(() => {
     if (shouldSkipSplash()) {
+      removeCriticalPaint();
       setPhase("gone");
       return;
     }
@@ -68,7 +70,6 @@ export function SplashScreen() {
       setShowTagline(true);
     }, TAGLINE_DELAY_MS);
 
-    // Fallback if animationend is missed — still drop the GPU scale layer.
     const settleTimer = window.setTimeout(() => {
       setBounceDone(true);
     }, LOGO_BOUNCE_MS + 40);
@@ -84,6 +85,8 @@ export function SplashScreen() {
         /* ignore */
       }
       document.documentElement.style.overflow = previousOverflow;
+      // Remove black shell only after splash has faded — no white gap.
+      removeCriticalPaint();
       setPhase("gone");
     }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS + SPLASH_EXIT_MS);
 
@@ -104,6 +107,19 @@ export function SplashScreen() {
       role="presentation"
       aria-hidden
       suppressHydrationWarning
+      style={{
+        position: "fixed",
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        zIndex: 10000,
+        backgroundColor: "#000000",
+        pointerEvents: "none",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
     >
       <style>{SPLASH_CSS}</style>
       <div className="vibeup-splash__stage">
@@ -137,24 +153,18 @@ export function SplashScreen() {
 }
 
 const SPLASH_CSS = `
+.vibeup-splash--exit{opacity:0}
 .vibeup-splash{
-  position:fixed;inset:0;z-index:10000;
-  display:flex;align-items:center;justify-content:center;
-  background:#000;
-  pointer-events:none;
   opacity:1;
   transition:opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.4,0,0.2,1);
 }
-.vibeup-splash--exit{opacity:0}
 .vibeup-splash__stage{
   box-sizing:border-box;
   display:flex;flex-direction:column;align-items:center;
-  /* Lift without transform — parent transforms blur child bitmaps on WebKit */
   margin-bottom:14vh;
 }
 .vibeup-splash__logo{
   display:block;
-  /* Smaller on screen; fixed rem avoids sub-pixel blur from vw */
   width:7rem;
   max-width:7rem;
   height:auto;

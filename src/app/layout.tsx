@@ -4,7 +4,10 @@ import { AppChrome } from "@/components/layout/app-chrome";
 import { AppProviders } from "@/components/providers/app-providers";
 import { CriticalPaint } from "@/components/splash/critical-paint";
 import { SplashScreen } from "@/components/splash/splash-screen";
-import { CRITICAL_PAINT_CSS } from "@/lib/critical-paint";
+import {
+  CRITICAL_PAINT_CSS,
+  CRITICAL_PAINT_SCRIPT,
+} from "@/lib/critical-paint";
 import { getSiteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -45,7 +48,8 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "VibeUp",
-    statusBarStyle: "black-translucent",
+    /* "black" (not translucent) avoids a light strip/flash under the status bar on iOS */
+    statusBarStyle: "black",
   },
   formatDetection: {
     telephone: false,
@@ -105,10 +109,15 @@ export default function RootLayout({
     <html
       lang="it"
       className={`${geistSans.variable} ${geistMono.variable} ${brandDisplay.variable} h-full antialiased`}
-      style={{ backgroundColor: "#000000" }}
+      style={{ backgroundColor: "#000000", colorScheme: "dark" }}
+      suppressHydrationWarning
     >
       <head>
-        {/* First bytes in head: kill default white canvas before CSS chunks */}
+        {/* 1) Sync script before paint — same FOUC pattern as next-themes */}
+        <script
+          dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_SCRIPT }}
+        />
+        {/* 2) Inline CSS before any stylesheet link */}
         <style
           dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_CSS }}
         />
@@ -116,7 +125,9 @@ export default function RootLayout({
       <body
         className="min-h-dvh text-primary-black"
         style={{ backgroundColor: "#000000" }}
+        suppressHydrationWarning
       >
+        {/* Black shell with inline styles — stays until splash completes */}
         <CriticalPaint />
         <SplashScreen />
         <AppProviders>
