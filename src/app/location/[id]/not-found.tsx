@@ -11,7 +11,7 @@ export default function LocationNotFound() {
       </p>
       <Link
         href="/"
-        className="mt-6 rounded-2xl bg-brand-teal px-6 py-3 text-sm font-medium text-white"
+        className="mt-6 rounded-2xl bg-brand-teal px-6 py-3 text-sm font-medium text-ink-inverse"
       >
         Torna a Esplora
       </Link>

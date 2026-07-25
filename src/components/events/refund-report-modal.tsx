@@ -97,7 +97,7 @@ export function RefundReportModal({
             <button
               type="button"
               onClick={handleClose}
-              className="mt-6 w-full rounded-2xl bg-brand-teal py-3.5 text-sm font-semibold text-white"
+              className="mt-6 w-full rounded-2xl bg-brand-teal py-3.5 text-sm font-semibold text-ink-inverse"
             >
               Chiudi
             </button>

@@ -80,11 +80,11 @@ export function BookingSummary({
 
       <div className="flex items-start gap-2.5 rounded-xl bg-brand-teal p-3">
         <ShieldCheck
-          className="mt-0.5 h-4 w-4 shrink-0 text-white"
+          className="mt-0.5 h-4 w-4 shrink-0 text-ink-inverse"
           aria-hidden
         />
-        <p className="text-xs leading-relaxed text-white/90">
-          <span className="font-semibold text-white">
+        <p className="text-xs leading-relaxed text-ink-inverse/90">
+          <span className="font-semibold text-ink-inverse">
             Prima la disponibilità
           </span>{" "}
           Invia la richiesta al gestore. Se accetta, potrai confermare e solo

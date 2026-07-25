@@ -162,7 +162,7 @@ export function EventDashboardView({
           <button
             type="button"
             onClick={() => setAddServicesOpen(true)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-teal text-white transition-colors duration-150 hover:bg-brand-teal/90"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-teal text-ink-inverse transition-colors duration-150 hover:bg-brand-teal/90"
             aria-label="Aggiungi servizio"
           >
             <Plus className="h-5 w-5" aria-hidden />

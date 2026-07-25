@@ -96,35 +96,35 @@ const EXPLORE_CATEGORIES: {
     label: "Locali",
     icon: Building2,
     iconClass: "text-primary-black/65",
-    activeClass: "bg-brand-teal text-white shadow-sm",
+    activeClass: "bg-brand-teal text-ink-inverse shadow-sm",
   },
   {
     id: "dj",
     label: "DJ",
     icon: Disc3,
     iconClass: "text-primary-black/65",
-    activeClass: "bg-brand-teal text-white shadow-sm",
+    activeClass: "bg-brand-teal text-ink-inverse shadow-sm",
   },
   {
     id: "fotografo",
     label: "Fotografo",
     icon: Camera,
     iconClass: "text-primary-black/65",
-    activeClass: "bg-brand-teal text-white shadow-sm",
+    activeClass: "bg-brand-teal text-ink-inverse shadow-sm",
   },
   {
     id: "decorazioni",
     label: "Decorazioni",
     icon: Gift,
     iconClass: "text-primary-black/65",
-    activeClass: "bg-brand-teal text-white shadow-sm",
+    activeClass: "bg-brand-teal text-ink-inverse shadow-sm",
   },
   {
     id: "altri",
     label: "Altri servizi",
     icon: Music,
     iconClass: "text-primary-black/65",
-    activeClass: "bg-brand-teal text-white shadow-sm",
+    activeClass: "bg-brand-teal text-ink-inverse shadow-sm",
   },
 ];
 
@@ -680,7 +680,7 @@ export function ExploreScreen({
                   <Icon
                     className={cn(
                       "h-4 w-4 shrink-0",
-                      isActive ? "text-white" : category.iconClass,
+                      isActive ? "text-ink-inverse" : category.iconClass,
                     )}
                     aria-hidden
                   />
@@ -760,7 +760,7 @@ export function ExploreScreen({
             className={cn(
               "flex-1 rounded-xl py-2.5 text-sm font-medium transition-colors duration-150",
               view === "list"
-                ? "bg-brand-teal font-semibold text-white shadow-sm"
+                ? "bg-brand-teal font-semibold text-ink-inverse shadow-sm"
                 : "text-primary-black/50",
             )}
           >
@@ -773,7 +773,7 @@ export function ExploreScreen({
             className={cn(
               "flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-semibold transition-colors duration-150",
               view === "compare"
-                ? "bg-brand-teal text-white shadow-sm"
+                ? "bg-brand-teal text-ink-inverse shadow-sm"
                 : "bg-surface text-primary-black/70 hover:bg-surface-2",
               compareLocationIds.length === 0 && "opacity-50",
             )}
@@ -781,7 +781,7 @@ export function ExploreScreen({
             <GitCompareArrows
               className={cn(
                 "h-4 w-4",
-                view === "compare" ? "text-white" : "text-primary-black/70",
+                view === "compare" ? "text-ink-inverse" : "text-primary-black/70",
               )}
               strokeWidth={2.75}
               aria-hidden
@@ -792,7 +792,7 @@ export function ExploreScreen({
                 className={cn(
                   "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
                   view === "compare"
-                    ? "bg-white/25 text-white"
+                    ? "bg-ink-inverse/15 text-ink-inverse"
                     : "bg-brand-teal-strong/15 text-brand-teal-strong",
                 )}
               >

@@ -287,7 +287,7 @@ export function ServiceProfileView({
         </h1>
         <Link
           href="/?tab=explore"
-          className="mt-6 rounded-2xl bg-brand-teal px-6 py-3 text-sm font-black text-white"
+          className="mt-6 rounded-2xl bg-brand-teal px-6 py-3 text-sm font-black text-ink-inverse"
         >
           Torna alla home
         </Link>
@@ -419,8 +419,8 @@ export function ServiceProfileView({
           </div>
 
           {isDecorationShop ? (
-            <aside className="smooth-scroll rounded-2xl bg-brand-teal p-3.5 text-white sm:rounded-3xl sm:p-4 xl:sticky xl:top-8 xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/80 sm:text-xs sm:tracking-[0.18em]">
+            <aside className="smooth-scroll rounded-2xl bg-brand-teal p-3.5 text-ink-inverse sm:rounded-3xl sm:p-4 xl:sticky xl:top-8 xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-ink-inverse/80 sm:text-xs sm:tracking-[0.18em]">
                 Seleziona negozio
               </p>
               <h2 className="mt-1 text-lg font-black sm:text-2xl">
@@ -512,8 +512,8 @@ export function ServiceProfileView({
               )}
             </aside>
           ) : (
-            <aside className="smooth-scroll rounded-2xl bg-brand-teal p-3.5 text-white sm:rounded-3xl sm:p-4 xl:sticky xl:top-8 xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/80 sm:text-xs sm:tracking-[0.18em]">
+            <aside className="smooth-scroll rounded-2xl bg-brand-teal p-3.5 text-ink-inverse sm:rounded-3xl sm:p-4 xl:sticky xl:top-8 xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-ink-inverse/80 sm:text-xs sm:tracking-[0.18em]">
               Preventivo servizio
             </p>
             <p className="mt-1 text-2xl font-black sm:text-3xl">

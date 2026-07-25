@@ -51,7 +51,7 @@ export function LocationPageClient({
           </p>
           <Link
             href="/"
-            className="mt-4 inline-flex rounded-2xl bg-brand-teal px-5 py-3 text-sm font-bold text-white"
+            className="mt-4 inline-flex rounded-2xl bg-brand-teal px-5 py-3 text-sm font-bold text-ink-inverse"
           >
             Torna a Esplora
           </Link>

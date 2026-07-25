@@ -11,7 +11,7 @@ export function Header() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2">
           <span
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-teal text-sm font-bold text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-teal text-sm font-bold text-ink-inverse"
             aria-hidden
           >
             V

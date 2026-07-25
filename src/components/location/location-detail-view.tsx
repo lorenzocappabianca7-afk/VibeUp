@@ -540,7 +540,7 @@ export function LocationDetailView({
             onClick={toggleCompare}
             className={`inline-flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-md transition-colors ${
               isCompareSelected
-                ? "border-brand-teal-strong bg-brand-teal-strong text-white"
+                ? "border-brand-teal-strong bg-brand-teal-strong text-ink-inverse"
                 : "border-brand-teal-strong/30 bg-surface text-brand-teal-strong hover:bg-brand-teal/10"
             }`}
             aria-label={

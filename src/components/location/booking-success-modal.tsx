@@ -82,7 +82,7 @@ export function BookingSuccessModal({
             onClose();
             onPrimaryAction?.();
           }}
-          className="mt-6 w-full rounded-2xl bg-brand-teal py-3.5 text-sm font-semibold text-white transition-colors hover:bg-brand-teal/90"
+          className="mt-6 w-full rounded-2xl bg-brand-teal py-3.5 text-sm font-semibold text-ink-inverse transition-colors hover:bg-brand-teal/90"
         >
           {primaryLabel}
         </button>

@@ -552,7 +552,7 @@ export function ExploreFiltersSheet({
                             "rounded-2xl px-3 py-3 text-xs font-semibold transition-colors",
                             draftServiceFilters.decorationFulfillment ===
                               fulfillment
-                              ? "bg-brand-teal text-white"
+                              ? "bg-brand-teal text-ink-inverse"
                               : "bg-primary-black/5 text-primary-black/70",
                           )}
                         >
@@ -737,7 +737,7 @@ export function ExploreFiltersSheet({
                 className={cn(
                   "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                   draftFilters.allPiemonte
-                    ? "bg-brand-teal text-white"
+                    ? "bg-brand-teal text-ink-inverse"
                     : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
                 )}
               >
@@ -749,7 +749,7 @@ export function ExploreFiltersSheet({
                 className={cn(
                   "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                   torinoCityWide
-                    ? "bg-brand-teal text-white"
+                    ? "bg-brand-teal text-ink-inverse"
                     : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
                 )}
               >
@@ -762,7 +762,7 @@ export function ExploreFiltersSheet({
                 className={cn(
                   "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                   draftFilters.nearMe
-                    ? "bg-brand-teal text-white"
+                    ? "bg-brand-teal text-ink-inverse"
                     : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
                   nearMeLoading && "opacity-60",
                 )}
@@ -846,7 +846,7 @@ export function ExploreFiltersSheet({
                         className={cn(
                           "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                           draftFilters.district === district.value
-                            ? "bg-brand-teal text-white"
+                            ? "bg-brand-teal text-ink-inverse"
                             : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
                         )}
                       >
@@ -867,7 +867,7 @@ export function ExploreFiltersSheet({
                         className={cn(
                           "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                           draftFilters.zone === zone.value
-                            ? "bg-brand-teal text-white"
+                            ? "bg-brand-teal text-ink-inverse"
                             : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
                         )}
                       >
@@ -971,7 +971,7 @@ export function ExploreFiltersSheet({
                 onApplyServiceFilters(draftServiceFilters);
                 onClose();
               }}
-              className="flex-1 rounded-2xl bg-brand-teal py-3 text-sm font-medium text-white"
+              className="flex-1 rounded-2xl bg-brand-teal py-3 text-sm font-medium text-ink-inverse"
             >
               Applica
             </button>

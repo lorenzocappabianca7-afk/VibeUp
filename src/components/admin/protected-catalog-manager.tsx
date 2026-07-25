@@ -667,7 +667,7 @@ export function ProtectedCatalogManager() {
                 className={cn(
                   "flex shrink-0 items-center gap-2 rounded-2xl px-3.5 py-2.5 text-sm font-bold transition-colors sm:px-4",
                   activeCategory === category.id
-                    ? "bg-brand-teal text-white"
+                    ? "bg-brand-teal text-ink-inverse"
                     : "bg-background text-primary-black/65",
                 )}
               >
@@ -1061,7 +1061,7 @@ function PhotoUploadField({
             {description}
           </p>
         </div>
-        <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-2xl bg-brand-teal px-3 py-2 text-xs font-black text-white transition-colors hover:bg-brand-teal/90">
+        <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-2xl bg-brand-teal px-3 py-2 text-xs font-black text-ink-inverse transition-colors hover:bg-brand-teal/90">
           <UploadCloud className="h-4 w-4" aria-hidden />
           Carica
           <input

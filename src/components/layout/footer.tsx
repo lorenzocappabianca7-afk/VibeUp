@@ -84,7 +84,7 @@ export function Footer({ withNavOffset = false }: FooterProps) {
               href="https://www.tiktok.com/@vibeup451"
               target="_blank"
               rel="noreferrer"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 text-white transition-colors hover:border-brand-teal hover:bg-brand-teal"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 text-white transition-colors hover:border-brand-teal hover:bg-brand-teal hover:text-ink-inverse"
               aria-label="TikTok VibeUp"
             >
               <svg

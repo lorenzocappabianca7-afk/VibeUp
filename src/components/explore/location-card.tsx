@@ -68,7 +68,7 @@ export const LocationCard = memo(function LocationCard({
             className={cn(
               "flex h-9 w-9 items-center justify-center rounded-full shadow-md backdrop-blur-md transition-colors duration-150",
               isCompareSelected
-                ? "bg-brand-teal-strong text-white"
+                ? "bg-brand-teal-strong text-ink-inverse"
                 : "bg-surface text-brand-teal-strong hover:bg-brand-teal/10",
             )}
           >

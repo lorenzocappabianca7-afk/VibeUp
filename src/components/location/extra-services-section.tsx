@@ -165,7 +165,7 @@ export function ExtraServicesSection({
                       className={cn(
                         "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
                         isSelected
-                          ? "bg-brand-teal text-white"
+                          ? "bg-brand-teal text-ink-inverse"
                           : "bg-primary-black/5 text-primary-black/50",
                       )}
                     >
@@ -197,7 +197,7 @@ export function ExtraServicesSection({
                       className={cn(
                         "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors",
                         isSelected
-                          ? "border-brand-teal bg-brand-teal text-white"
+                          ? "border-brand-teal bg-brand-teal text-ink-inverse"
                           : "border-primary-black/20",
                       )}
                       aria-hidden
@@ -324,7 +324,7 @@ export function ExtraServicesSection({
                   className={cn(
                     "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
                     isSelected
-                      ? "bg-brand-teal text-white"
+                      ? "bg-brand-teal text-ink-inverse"
                       : "bg-primary-black/5 text-primary-black/50",
                   )}
                 >
@@ -396,7 +396,7 @@ export function ExtraServicesSection({
                   className={cn(
                     "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors",
                     isSelected
-                      ? "border-brand-teal bg-brand-teal text-white"
+                      ? "border-brand-teal bg-brand-teal text-ink-inverse"
                       : "border-primary-black/20",
                   )}
                   aria-hidden

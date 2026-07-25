@@ -527,7 +527,7 @@ export function BusinessOnboardingView() {
             <button
               type="submit"
               disabled={submitting || success}
-              className="w-full rounded-2xl bg-brand-teal py-4 text-sm font-semibold text-white transition-colors hover:bg-brand-teal/90 disabled:opacity-60"
+              className="w-full rounded-2xl bg-brand-teal py-4 text-sm font-semibold text-ink-inverse transition-colors hover:bg-brand-teal/90 disabled:opacity-60"
             >
               {submitting
                 ? "Creo account…"

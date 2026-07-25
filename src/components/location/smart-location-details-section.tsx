@@ -690,7 +690,7 @@ export function SmartLocationDetailsSection({
                     onGuestCountChange(nextValue);
                   }}
                   disabled={guestCount >= maxGuests}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-teal-strong text-white disabled:opacity-40"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-teal-strong text-ink-inverse disabled:opacity-40"
                   aria-label="Aumenta invitati di 10"
                 >
                   <Plus className="h-3 w-3" aria-hidden />
