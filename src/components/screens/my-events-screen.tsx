@@ -843,23 +843,31 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
           </p>
         </div>
 
-        {payment.paid ? (
-          <span className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-primary-black px-4 py-2.5 text-xs font-medium text-white sm:w-fit">
-            Caparra pagata
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={onPayDeposit}
-            className={`inline-flex w-full shrink-0 items-center justify-center rounded-lg px-4 py-2.5 text-xs font-medium transition-colors sm:w-fit ${
-              countdown.isPast
-                ? "border border-brand-pink/40 bg-brand-pink/15 text-primary-black hover:bg-brand-pink/25"
-                : "bg-primary-black text-white hover:bg-primary-black/85"
-            }`}
-          >
-            {countdown.isPast ? "Paga caparra in ritardo" : "Paga caparra"}
-          </button>
-        )}
+        <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-auto sm:max-w-[14rem] sm:items-end">
+          {!payment.paid && (
+            <p className="text-[11px] leading-snug text-primary-black/55 sm:text-right">
+              Serve a bloccare {event.locationName} per il{" "}
+              {formatDate(event.date)}.
+            </p>
+          )}
+          {payment.paid ? (
+            <span className="inline-flex w-full items-center justify-center rounded-lg bg-primary-black px-4 py-2.5 text-xs font-medium text-white sm:w-fit">
+              Caparra pagata
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={onPayDeposit}
+              className={`inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-xs font-medium transition-colors sm:w-fit ${
+                countdown.isPast
+                  ? "border border-brand-pink/40 bg-brand-pink/15 text-primary-black hover:bg-brand-pink/25"
+                  : "bg-primary-black text-white hover:bg-primary-black/85"
+              }`}
+            >
+              {countdown.isPast ? "Paga caparra in ritardo" : "Paga caparra"}
+            </button>
+          )}
+        </div>
       </div>
     </section>
   );
