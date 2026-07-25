@@ -244,26 +244,47 @@ export function PwaInstallBanner() {
           onCloseGuide={() => setGuide(null)}
           onDone={handleClaimInstalled}
         >
-          <GuideStep index={1}>
-            Premi i tre puntini{" "}
-            <span className="font-semibold text-white">⋯</span>
-          </GuideStep>
-          <GuideStep index={2}>
-            Tocca{" "}
-            <Share
-              className="mx-0.5 inline h-3.5 w-3.5 text-brand-teal"
-              aria-hidden
-            />{" "}
-            <span className="font-semibold text-white">Condividi</span> in Safari
-          </GuideStep>
-          <GuideStep index={3}>
-            Scorri giù e scegli{" "}
-            <span className="font-semibold text-white">Aggiungi a Home</span>
-          </GuideStep>
-          <GuideStep index={4}>
-            Conferma con{" "}
-            <span className="font-semibold text-white">Aggiungi</span>
-          </GuideStep>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <InstallMethodCard title="Metodo 1">
+              <GuideStep index={1}>
+                Clicca{" "}
+                <Share
+                  className="mx-0.5 inline h-3.5 w-3.5 text-brand-teal"
+                  aria-hidden
+                />{" "}
+                <span className="font-semibold text-white">Condividi</span> in
+                alto a destra
+              </GuideStep>
+              <GuideStep index={2}>
+                Cerca e seleziona{" "}
+                <span className="font-semibold text-white">Altro</span>
+              </GuideStep>
+              <GuideStep index={3}>
+                Premi{" "}
+                <span className="font-semibold text-white">Aggiungi a Home</span>
+              </GuideStep>
+            </InstallMethodCard>
+
+            <InstallMethodCard title="Metodo 2">
+              <GuideStep index={1}>
+                Clicca i tre puntini{" "}
+                <span className="font-semibold text-white">⋯</span> in basso a
+                destra dello schermo
+              </GuideStep>
+              <GuideStep index={2}>
+                Scegli{" "}
+                <Share
+                  className="mx-0.5 inline h-3.5 w-3.5 text-brand-teal"
+                  aria-hidden
+                />{" "}
+                <span className="font-semibold text-white">Condividi</span>
+              </GuideStep>
+              <GuideStep index={3}>
+                Scorri verso il basso fino a trovare e selezionare{" "}
+                <span className="font-semibold text-white">Aggiungi a Home</span>
+              </GuideStep>
+            </InstallMethodCard>
+          </div>
         </InstallGuide>
       )}
 
@@ -273,19 +294,22 @@ export function PwaInstallBanner() {
           onCloseGuide={() => setGuide(null)}
           onDone={handleClaimInstalled}
         >
-          <GuideStep index={1}>
-            Tocca i tre puntini{" "}
-            <span className="font-semibold text-white">⋮</span> vicino alla
-            barra di ricerca
-          </GuideStep>
-          <GuideStep index={2}>
-            Scorri giù e scegli{" "}
-            <span className="font-semibold text-white">Installa app</span> oppure{" "}
-            <span className="font-semibold text-white">Aggiungi a Home</span>
-          </GuideStep>
-          <GuideStep index={3}>
-            Conferma e trova VibeUp nella Home del telefono
-          </GuideStep>
+          <ol className="space-y-2">
+            <GuideStep index={1}>
+              Tocca i tre puntini{" "}
+              <span className="font-semibold text-white">⋮</span> vicino alla
+              barra di ricerca
+            </GuideStep>
+            <GuideStep index={2}>
+              Scorri giù e scegli{" "}
+              <span className="font-semibold text-white">Installa app</span>{" "}
+              oppure{" "}
+              <span className="font-semibold text-white">Aggiungi a Home</span>
+            </GuideStep>
+            <GuideStep index={3}>
+              Conferma e trova VibeUp nella Home del telefono
+            </GuideStep>
+          </ol>
         </InstallGuide>
       )}
     </div>
@@ -307,9 +331,9 @@ function InstallGuide({
     <div className="border-t border-white/10 px-3 pb-3 pt-2 sm:px-4">
       <div className="rounded-2xl bg-white/8 px-3.5 py-3">
         <p className="text-sm font-semibold text-white">{title}</p>
-        <ol className="mt-2 space-y-2 text-xs leading-relaxed text-white/75">
+        <div className="mt-2 text-xs leading-relaxed text-white/75">
           {children}
-        </ol>
+        </div>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
@@ -327,6 +351,23 @@ function InstallGuide({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function InstallMethodCard({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-primary-black/35 px-3 py-2.5">
+      <p className="text-[11px] font-black uppercase tracking-[0.12em] text-brand-teal">
+        {title}
+      </p>
+      <ol className="mt-2 space-y-2">{children}</ol>
     </div>
   );
 }
