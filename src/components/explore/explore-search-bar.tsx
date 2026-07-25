@@ -704,7 +704,7 @@ export function ExploreSearchBar({
             "absolute top-0 flex items-center justify-center rounded-full border border-brand-teal bg-brand-teal text-ink-inverse",
             open
               ? "pointer-events-none opacity-0"
-              : "opacity-100 shadow-[0_2px_12px_rgba(62,207,207,0.35)]",
+              : "opacity-100",
           )}
           style={{
             right: 0,
