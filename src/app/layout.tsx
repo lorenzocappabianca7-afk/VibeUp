@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Montserrat } from "next/font/google";
 import { AppChrome } from "@/components/layout/app-chrome";
 import { AppProviders } from "@/components/providers/app-providers";
 import { getSiteUrl } from "@/lib/site";
@@ -13,6 +13,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const brandDisplay = Montserrat({
+  variable: "--font-brand",
+  subsets: ["latin"],
+  weight: ["600"],
 });
 
 export const metadata: Metadata = {
@@ -94,7 +100,7 @@ export default function RootLayout({
   return (
     <html
       lang="it"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${brandDisplay.variable} h-full antialiased`}
     >
       <body className="min-h-dvh bg-background text-primary-black">
         <AppProviders>

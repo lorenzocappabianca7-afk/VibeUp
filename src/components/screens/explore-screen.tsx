@@ -656,7 +656,7 @@ export function ExploreScreen({
         />
       </Suspense>
       <header className="relative min-w-0 space-y-4">
-        <h1 className="text-center text-[1.65rem] font-semibold italic tracking-tight text-white">
+        <h1 className="text-center font-[family-name:var(--font-brand)] text-[1.75rem] font-semibold tracking-tight text-white">
           VibeUp
         </h1>
         <div className="rounded-3xl border border-primary-black/10 bg-primary-black/[0.03] p-1.5">
