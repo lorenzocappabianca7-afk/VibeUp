@@ -2,7 +2,7 @@
 
 import { BookingSummary } from "@/components/location/booking-summary";
 import { LocationGallery } from "@/components/location/location-gallery";
-import { LocationInfo } from "@/components/location/location-info";
+import { LocationInfo, LocationReviewsSection } from "@/components/location/location-info";
 import { SmartLocationDetailsSection } from "@/components/location/smart-location-details-section";
 import { useAccountGate } from "@/context/account-gate-context";
 import { useAppState } from "@/context/app-state-context";
@@ -664,6 +664,7 @@ export function LocationDetailView({
       <ScrollForSimilarHint />
       <SimilarLocationsCarousel locations={similarLocations} />
       <RecommendedDjsCarousel djs={recommendedDjs} />
+      <LocationReviewsSection location={location} />
 
     </div>
   );

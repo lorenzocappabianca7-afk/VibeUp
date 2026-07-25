@@ -16,10 +16,11 @@ interface LocationInfoProps {
   location: Location;
 }
 
-function getLocationReviews(location: Location) {
+export function getLocationReviews(location: Location) {
   const contacts = location.contactsBeenHere.contacts;
   const fallbackNames = ["Giulia R.", "Marco B.", "Sara M."];
-  const names = contacts.length > 0 ? contacts.map((contact) => contact.name) : fallbackNames;
+  const names =
+    contacts.length > 0 ? contacts.map((contact) => contact.name) : fallbackNames;
 
   return [
     {
@@ -43,11 +44,52 @@ function getLocationReviews(location: Location) {
   ];
 }
 
+export function getLocationAverageRating(location: Location) {
+  const reviews = getLocationReviews(location);
+  return (
+    reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+  );
+}
+
+function PinkStarRating({
+  rating,
+  size = "md",
+  showValue = false,
+}: {
+  rating: number;
+  size?: "sm" | "md";
+  showValue?: boolean;
+}) {
+  const filled = Math.max(0, Math.min(5, Math.round(rating)));
+  const starClass = size === "sm" ? "h-3 w-3" : "h-4 w-4";
+
+  return (
+    <span
+      className="inline-flex shrink-0 items-center gap-1 text-brand-pink"
+      aria-label={`Valutazione ${rating.toFixed(1)} su 5`}
+    >
+      <span className="inline-flex items-center gap-0.5">
+        {Array.from({ length: 5 }, (_, index) => (
+          <Star
+            key={index}
+            className={starClass}
+            fill={index < filled ? "currentColor" : "none"}
+            aria-hidden
+          />
+        ))}
+      </span>
+      {showValue && (
+        <span className="text-sm font-bold tabular-nums">
+          {rating.toFixed(1)}
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function LocationInfo({ location }: LocationInfoProps) {
   const { technicalDetails: tech } = location;
-  const reviews = getLocationReviews(location);
-  const averageRating =
-    reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+  const averageRating = getLocationAverageRating(location);
 
   const specs = [
     { icon: Ruler, label: "Superficie", value: `${tech.surfaceSqm} m²` },
@@ -74,9 +116,12 @@ export function LocationInfo({ location }: LocationInfoProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-primary-black">
-          {location.name}
-        </h1>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <h1 className="text-2xl font-bold text-primary-black">
+            {location.name}
+          </h1>
+          <PinkStarRating rating={averageRating} showValue />
+        </div>
         <p className="mt-1 flex min-w-0 items-start gap-1 text-sm text-primary-black/60">
           <MapPin className="h-4 w-4 shrink-0" aria-hidden />
           <span className="min-w-0 break-words">{location.address}</span>
@@ -150,55 +195,53 @@ export function LocationInfo({ location }: LocationInfoProps) {
           ))}
         </ul>
       </section>
-
-      <section className="rounded-3xl border border-primary-black/10 bg-primary-black/[0.02] p-5">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-primary-black/50">
-              Recensioni del luogo
-            </h2>
-            <p className="mt-1 text-sm text-primary-black/60">
-              Feedback di chi ha già organizzato qui.
-            </p>
-          </div>
-          <div className="rounded-2xl bg-brand-teal/10 px-3 py-2 text-right">
-            <p className="text-lg font-black text-brand-teal">
-              {averageRating.toFixed(1)}
-            </p>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-primary-black/45">
-              {reviews.length} recensioni
-            </p>
-          </div>
-        </div>
-
-        <ul className="space-y-3">
-          {reviews.map((review) => (
-            <li
-              key={review.id}
-              className="rounded-2xl border border-primary-black/8 bg-background p-4"
-            >
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <p className="min-w-0 text-sm font-bold text-primary-black">
-                  {review.author}
-                </p>
-                <span className="flex shrink-0 flex-wrap items-center justify-end gap-0.5 text-brand-pink">
-                  {Array.from({ length: 5 }, (_, index) => (
-                    <Star
-                      key={index}
-                      className="h-3 w-3"
-                      fill={index < review.rating ? "currentColor" : "none"}
-                      aria-hidden
-                    />
-                  ))}
-                </span>
-              </div>
-              <p className="text-xs leading-relaxed text-primary-black/65">
-                {review.text}
-              </p>
-            </li>
-          ))}
-        </ul>
-      </section>
     </div>
+  );
+}
+
+export function LocationReviewsSection({ location }: LocationInfoProps) {
+  const reviews = getLocationReviews(location);
+  const averageRating = getLocationAverageRating(location);
+
+  return (
+    <section className="rounded-3xl border border-primary-black/10 bg-primary-black/[0.02] p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-primary-black/50">
+            Recensioni del luogo
+          </h2>
+          <p className="mt-1 text-sm text-primary-black/60">
+            Feedback di chi ha già organizzato qui.
+          </p>
+        </div>
+        <div className="rounded-2xl bg-brand-pink/10 px-3 py-2 text-right">
+          <p className="text-lg font-black text-brand-pink">
+            {averageRating.toFixed(1)}
+          </p>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-primary-black/45">
+            {reviews.length} recensioni
+          </p>
+        </div>
+      </div>
+
+      <ul className="space-y-3">
+        {reviews.map((review) => (
+          <li
+            key={review.id}
+            className="rounded-2xl border border-primary-black/8 bg-background p-4"
+          >
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <p className="min-w-0 text-sm font-bold text-primary-black">
+                {review.author}
+              </p>
+              <PinkStarRating rating={review.rating} size="sm" />
+            </div>
+            <p className="text-xs leading-relaxed text-primary-black/65">
+              {review.text}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
