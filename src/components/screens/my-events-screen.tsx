@@ -401,7 +401,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
           <button
             type="button"
             onClick={toggleDiscountBanner}
-            className="relative z-50 max-w-[8.5rem] truncate rounded-full border border-brand-pink bg-brand-pink/12 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-brand-pink transition-colors hover:bg-brand-pink/20 sm:max-w-none sm:px-3 sm:py-2 sm:text-[11px] sm:tracking-[0.12em]"
+            className="relative z-50 max-w-[8.5rem] truncate rounded-full bg-brand-pink px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-white transition-colors hover:bg-brand-pink/90 sm:max-w-none sm:px-3 sm:py-2 sm:text-[11px] sm:tracking-[0.12em]"
             aria-expanded={discountBannerOpen}
           >
             Ottieni sconti
