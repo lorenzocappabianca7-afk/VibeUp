@@ -54,6 +54,18 @@ export interface TechnicalDetails {
   outdoorArea: boolean;
 }
 
+export type AvailableLocationServicePricing =
+  | { type: "included" }
+  | { type: "fixed"; price: number }
+  | { type: "per_person"; pricePerPerson: number };
+
+/** Bookable services offered by the venue (shown as "Servizi disponibili"). */
+export interface AvailableLocationService {
+  name: string;
+  description?: string;
+  pricing: AvailableLocationServicePricing;
+}
+
 export interface Location {
   id: string;
   name: string;
@@ -81,6 +93,8 @@ export interface Location {
   partyTypes: PartyType[];
   deposit: number;
   includedServices: string[];
+  /** Optional curated list of bookable venue services. */
+  availableServices?: AvailableLocationService[];
   contactsBeenHere: {
     count: number;
     contacts: ContactPreview[];

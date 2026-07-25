@@ -283,7 +283,7 @@ export function SmartLocationDetailsSection({
           <div className="flex items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-black text-primary-black">
-                Servizi interni
+                Servizi disponibili
               </h3>
               <p className="text-xs text-primary-black/55">
                 Menu, DJ del locale, bar, audio e allestimenti.

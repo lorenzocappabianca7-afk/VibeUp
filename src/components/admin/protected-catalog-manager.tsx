@@ -10,7 +10,11 @@ import type {
   ManagedLocationListing,
   ManagedServiceListing,
 } from "@/types/admin";
-import type { ExploreCategory, Location } from "@/types/location";
+import type {
+  AvailableLocationService,
+  ExploreCategory,
+  Location,
+} from "@/types/location";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
@@ -46,6 +50,20 @@ const CATEGORIES: {
   { id: "altri", label: "Altri servizi", icon: Music },
 ];
 
+type AvailableServiceFormRow = {
+  name: string;
+  pricingType: "included" | "fixed" | "per_person";
+  price: string;
+  description: string;
+};
+
+const EMPTY_AVAILABLE_SERVICE_ROW = (): AvailableServiceFormRow => ({
+  name: "",
+  pricingType: "included",
+  price: "",
+  description: "",
+});
+
 const EMPTY_LOCATION_FORM = {
   name: "",
   address: "",
@@ -56,7 +74,27 @@ const EMPTY_LOCATION_FORM = {
   description: "",
   imageUrl: "",
   galleryImageUrls: [] as string[],
-  includedServices: "Menu del locale, Open bar",
+  includedServices: "Wi-Fi, Aria condizionata",
+  surfaceSqm: "",
+  parkingSpots: "",
+  minHours: "3",
+  accessibility: true,
+  airConditioning: true,
+  outdoorArea: false,
+  availableServices: [
+    {
+      name: "Menu del locale",
+      pricingType: "per_person" as const,
+      price: "28",
+      description: "",
+    },
+    {
+      name: "Open bar",
+      pricingType: "included" as const,
+      price: "",
+      description: "",
+    },
+  ] as AvailableServiceFormRow[],
 };
 
 const EMPTY_SERVICE_FORM = {
@@ -70,12 +108,48 @@ const EMPTY_SERVICE_FORM = {
   galleryImageUrls: [] as string[],
 };
 
-function createLocationFromForm(form: typeof EMPTY_LOCATION_FORM): Location {
-  const name = form.name.trim() || "Nuova location";
-  const includedServices = form.includedServices
+function parseCommaList(value: string): string[] {
+  return value
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function toAvailableServices(
+  rows: AvailableServiceFormRow[],
+): AvailableLocationService[] {
+  return rows
+    .map((row) => {
+      const name = row.name.trim();
+      if (!name) return null;
+
+      const amount = Number(row.price);
+      let pricing: AvailableLocationService["pricing"] = { type: "included" };
+      if (row.pricingType === "fixed" && Number.isFinite(amount) && amount >= 0) {
+        pricing = { type: "fixed", price: amount };
+      } else if (
+        row.pricingType === "per_person" &&
+        Number.isFinite(amount) &&
+        amount >= 0
+      ) {
+        pricing = { type: "per_person", pricePerPerson: amount };
+      }
+
+      const description = row.description.trim();
+      return {
+        name,
+        ...(description ? { description } : {}),
+        pricing,
+      } satisfies AvailableLocationService;
+    })
+    .filter((item): item is AvailableLocationService => item != null);
+}
+
+function createLocationFromForm(form: typeof EMPTY_LOCATION_FORM): Location {
+  const name = form.name.trim() || "Nuova location";
+  const includedServices = parseCommaList(form.includedServices);
+  const capacity = Number(form.capacity) || 50;
+  const availableServices = toAvailableServices(form.availableServices);
   const fallbackImage =
     "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&q=80";
   const manualImage = form.imageUrl.trim();
@@ -101,20 +175,21 @@ function createLocationFromForm(form: typeof EMPTY_LOCATION_FORM): Location {
       form.description.trim() ||
       "Location gestita dal catalogo privato VibeUp.",
     technicalDetails: {
-      surfaceSqm: 0,
-      parkingSpots: 0,
-      minHours: 3,
-      maxGuests: Number(form.capacity) || 50,
-      accessibility: true,
-      airConditioning: true,
-      outdoorArea: false,
+      surfaceSqm: Number(form.surfaceSqm) || 0,
+      parkingSpots: Number(form.parkingSpots) || 0,
+      minHours: Number(form.minHours) || 3,
+      maxGuests: capacity,
+      accessibility: form.accessibility,
+      airConditioning: form.airConditioning,
+      outdoorArea: form.outdoorArea,
     },
     hourlyPrice: Number(form.hourlyPrice) || 0,
-    capacity: Number(form.capacity) || 50,
+    capacity,
     partyTypes: ["compleanno", "laurea", "festa"],
     deposit: Math.round((Number(form.hourlyPrice) || 0) * 2),
     includedServices:
       includedServices.length > 0 ? includedServices : ["Dettagli da completare"],
+    ...(availableServices.length > 0 ? { availableServices } : {}),
     contactsBeenHere: { count: 0, contacts: [] },
   };
 }
@@ -366,26 +441,80 @@ export function ProtectedCatalogManager() {
       const body = (await response.json()) as {
         data?: {
           location?: Location;
-          extraction?: { priceList?: Array<{ name: string; price: number }> };
+          extraction?: {
+            priceList?: Array<{
+              name: string;
+              price: number;
+              pricingUnit?: string;
+              included?: boolean;
+              description?: string;
+            }>;
+          };
         };
       };
       const location = body.data?.location;
       if (!location) throw new Error("Nessun dato location estratto");
 
+      const tech = location.technicalDetails;
+      const priceList = body.data?.extraction?.priceList ?? [];
+      const availableFromAi: AvailableServiceFormRow[] =
+        location.availableServices && location.availableServices.length > 0
+          ? location.availableServices.map((service) => ({
+              name: service.name,
+              pricingType:
+                service.pricing.type === "per_person"
+                  ? "per_person"
+                  : service.pricing.type === "fixed"
+                    ? "fixed"
+                    : "included",
+              price:
+                service.pricing.type === "per_person"
+                  ? String(service.pricing.pricePerPerson)
+                  : service.pricing.type === "fixed"
+                    ? String(service.pricing.price)
+                    : "",
+              description: service.description ?? "",
+            }))
+          : priceList.map((item) => {
+              const included = Boolean(item.included) || item.price <= 0;
+              const perPerson =
+                item.pricingUnit === "person" || item.pricingUnit === "kg";
+              return {
+                name: item.name,
+                pricingType: included
+                  ? ("included" as const)
+                  : perPerson
+                    ? ("per_person" as const)
+                    : ("fixed" as const),
+                price: included ? "" : String(Math.round(item.price)),
+                description: item.description ?? "",
+              };
+            });
+
       setLocationForm({
         name: location.name,
         address: location.address,
         city: location.city,
-        capacity: String(location.capacity),
+        capacity: String(location.capacity || tech?.maxGuests || 50),
         hourlyPrice: String(location.hourlyPrice),
         menu:
-          body.data?.extraction?.priceList
-            ?.map((item) => `${item.name}: ${formatCurrency(item.price)}`)
+          priceList
+            .map((item) => `${item.name}: ${formatCurrency(item.price)}`)
             .join("\n") ?? "",
         description: location.description,
         imageUrl: location.imageUrl,
         galleryImageUrls: location.gallery,
         includedServices: location.includedServices.join(", "),
+        surfaceSqm: tech?.surfaceSqm ? String(tech.surfaceSqm) : "",
+        parkingSpots: tech?.parkingSpots ? String(tech.parkingSpots) : "",
+        minHours: String(tech?.minHours || 3),
+        accessibility: tech?.accessibility ?? true,
+        airConditioning: tech?.airConditioning ?? true,
+        outdoorArea: tech?.outdoorArea ?? false,
+        availableServices:
+          availableFromAi.length > 0
+            ? availableFromAi
+            : [EMPTY_AVAILABLE_SERVICE_ROW()],
       });
       setAiMessage("Informazioni importate: controllale e poi salva o pubblica.");
     } catch {
@@ -624,7 +753,100 @@ export function ProtectedCatalogManager() {
                 onAddPhotos={(files) => void addLocationPhotos(files)}
                 onRemovePhoto={removeLocationPhoto}
               />
-              <FormInput label="Servizi interni inclusi (separati da virgola)" value={locationForm.includedServices} onChange={(value) => setLocationForm((prev) => ({ ...prev, includedServices: value }))} />
+
+              <section className="space-y-3 rounded-3xl border border-primary-black/10 bg-primary-black/[0.02] p-4">
+                <div>
+                  <h3 className="text-sm font-black text-primary-black">
+                    Dettagli tecnici
+                  </h3>
+                  <p className="mt-1 text-xs text-primary-black/55">
+                    Compariranno nella scheda del locale sotto «Dettagli tecnici».
+                  </p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <FormInput
+                    label="Superficie (m²)"
+                    type="number"
+                    value={locationForm.surfaceSqm}
+                    onChange={(value) =>
+                      setLocationForm((prev) => ({ ...prev, surfaceSqm: value }))
+                    }
+                  />
+                  <FormInput
+                    label="Posti parcheggio"
+                    type="number"
+                    value={locationForm.parkingSpots}
+                    onChange={(value) =>
+                      setLocationForm((prev) => ({
+                        ...prev,
+                        parkingSpots: value,
+                      }))
+                    }
+                  />
+                  <FormInput
+                    label="Durata minima (ore)"
+                    type="number"
+                    value={locationForm.minHours}
+                    onChange={(value) =>
+                      setLocationForm((prev) => ({ ...prev, minHours: value }))
+                    }
+                  />
+                </div>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <ToggleChip
+                    label="Accessibilità"
+                    checked={locationForm.accessibility}
+                    onChange={(checked) =>
+                      setLocationForm((prev) => ({
+                        ...prev,
+                        accessibility: checked,
+                      }))
+                    }
+                  />
+                  <ToggleChip
+                    label="Aria condizionata"
+                    checked={locationForm.airConditioning}
+                    onChange={(checked) =>
+                      setLocationForm((prev) => ({
+                        ...prev,
+                        airConditioning: checked,
+                      }))
+                    }
+                  />
+                  <ToggleChip
+                    label="Area esterna"
+                    checked={locationForm.outdoorArea}
+                    onChange={(checked) =>
+                      setLocationForm((prev) => ({
+                        ...prev,
+                        outdoorArea: checked,
+                      }))
+                    }
+                  />
+                </div>
+              </section>
+
+              <FormTextarea
+                label="Servizi inclusi nel prezzo (separati da virgola)"
+                value={locationForm.includedServices}
+                onChange={(value) =>
+                  setLocationForm((prev) => ({
+                    ...prev,
+                    includedServices: value,
+                  }))
+                }
+              />
+
+              <AvailableServicesEditor
+                rows={locationForm.availableServices}
+                onChange={(rows) =>
+                  setLocationForm((prev) => ({
+                    ...prev,
+                    availableServices: rows,
+                  }))
+                }
+              />
+
               <FormTextarea label="Menu / listino" value={locationForm.menu} onChange={(value) => setLocationForm((prev) => ({ ...prev, menu: value }))} />
               <FormTextarea label="Descrizione" value={locationForm.description} onChange={(value) => setLocationForm((prev) => ({ ...prev, description: value }))} />
               <div className="grid gap-2 sm:grid-cols-2">
@@ -946,5 +1168,150 @@ function FormTextarea({
         className="w-full min-w-0 max-w-full resize-y rounded-2xl border border-primary-black/10 bg-background px-4 py-3 text-base outline-none focus:border-brand-teal"
       />
     </label>
+  );
+}
+
+function ToggleChip({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={cn(
+        "rounded-2xl border px-3 py-3 text-left text-sm font-bold transition-colors",
+        checked
+          ? "border-brand-teal/40 bg-brand-teal/10 text-brand-teal"
+          : "border-primary-black/10 bg-background text-primary-black/55",
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
+function AvailableServicesEditor({
+  rows,
+  onChange,
+}: {
+  rows: AvailableServiceFormRow[];
+  onChange: (rows: AvailableServiceFormRow[]) => void;
+}) {
+  function updateRow(
+    index: number,
+    patch: Partial<AvailableServiceFormRow>,
+  ) {
+    onChange(
+      rows.map((row, rowIndex) =>
+        rowIndex === index ? { ...row, ...patch } : row,
+      ),
+    );
+  }
+
+  return (
+    <section className="space-y-3 rounded-3xl border border-primary-black/10 bg-primary-black/[0.02] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-sm font-black text-primary-black">
+            Servizi disponibili
+          </h3>
+          <p className="mt-1 text-xs text-primary-black/55">
+            Servizi selezionabili nel preventivo (menu, DJ, fotografo, bar…).
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onChange([...rows, EMPTY_AVAILABLE_SERVICE_ROW()])}
+          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-teal/15 px-3 py-1.5 text-xs font-bold text-brand-teal"
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden />
+          Aggiungi
+        </button>
+      </div>
+
+      <ul className="space-y-3">
+        {rows.map((row, index) => (
+          <li
+            key={`available-service-${index}`}
+            className="space-y-2 rounded-2xl border border-primary-black/10 bg-background p-3"
+          >
+            <div className="flex items-start gap-2">
+              <input
+                type="text"
+                value={row.name}
+                onChange={(event) =>
+                  updateRow(index, { name: event.target.value })
+                }
+                placeholder="Nome servizio"
+                className="min-w-0 flex-1 rounded-xl border border-primary-black/10 bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  onChange(rows.filter((_, rowIndex) => rowIndex !== index))
+                }
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-primary-black/40 transition-colors hover:bg-brand-pink/10 hover:text-brand-pink"
+                aria-label={`Rimuovi servizio ${index + 1}`}
+              >
+                <Trash2 className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-[1.1fr_0.9fr]">
+              <label className="min-w-0">
+                <span className="mb-1 block text-[11px] font-bold text-primary-black/45">
+                  Prezzo
+                </span>
+                <select
+                  value={row.pricingType}
+                  onChange={(event) =>
+                    updateRow(index, {
+                      pricingType: event.target
+                        .value as AvailableServiceFormRow["pricingType"],
+                    })
+                  }
+                  className="w-full rounded-xl border border-primary-black/10 bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
+                >
+                  <option value="included">Incluso</option>
+                  <option value="fixed">Prezzo fisso (€)</option>
+                  <option value="per_person">A persona (€)</option>
+                </select>
+              </label>
+              {row.pricingType !== "included" && (
+                <label className="min-w-0">
+                  <span className="mb-1 block text-[11px] font-bold text-primary-black/45">
+                    Importo
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={row.price}
+                    onChange={(event) =>
+                      updateRow(index, { price: event.target.value })
+                    }
+                    placeholder="0"
+                    className="w-full rounded-xl border border-primary-black/10 bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
+                  />
+                </label>
+              )}
+            </div>
+            <input
+              type="text"
+              value={row.description}
+              onChange={(event) =>
+                updateRow(index, { description: event.target.value })
+              }
+              placeholder="Descrizione opzionale"
+              className="w-full rounded-xl border border-primary-black/10 bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
+            />
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

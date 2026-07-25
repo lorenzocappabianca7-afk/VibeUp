@@ -1,4 +1,7 @@
-import type { Location } from "@/types/location";
+import type {
+  AvailableLocationService,
+  Location,
+} from "@/types/location";
 
 export type InternalLocationServiceType =
   | "menu"
@@ -68,7 +71,24 @@ function isSelectablePartyService(serviceName: string): boolean {
   return !nonSelectableKeywords.some((keyword) => lowered.includes(keyword));
 }
 
-export function getInternalLocationServices(
+function mapAvailableService(
+  service: AvailableLocationService,
+  index: number,
+): InternalLocationService {
+  const name = service.name.trim();
+  return {
+    id: `available-${slugify(name) || index}`,
+    type: inferServiceType(name),
+    name,
+    description:
+      service.description?.trim() ||
+      "Servizio offerto direttamente dal locale.",
+    pricing: service.pricing,
+    available: true,
+  };
+}
+
+function buildFallbackInternalServices(
   location: Location,
 ): InternalLocationService[] {
   const includedServices = location.includedServices
@@ -145,6 +165,20 @@ export function getInternalLocationServices(
   }
 
   return [...includedServices, ...bookableDefaults];
+}
+
+export function getInternalLocationServices(
+  location: Location,
+): InternalLocationService[] {
+  const curated = (location.availableServices ?? [])
+    .map((service, index) => mapAvailableService(service, index))
+    .filter((service) => service.name.length > 0);
+
+  if (curated.length > 0) {
+    return curated;
+  }
+
+  return buildFallbackInternalServices(location);
 }
 
 export function getInternalLocationServicePrice(

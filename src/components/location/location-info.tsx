@@ -39,7 +39,7 @@ export function getLocationReviews(location: Location) {
       id: `${location.id}-review-3`,
       author: names[2] ?? "Organizzatore evento",
       rating: 5,
-      text: "Servizi interni comodi e ambiente adatto agli invitati. La consiglierei per eventi simili.",
+      text: "Servizi disponibili comodi e ambiente adatto agli invitati. La consiglierei per eventi simili.",
     },
   ];
 }

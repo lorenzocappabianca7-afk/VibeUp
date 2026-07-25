@@ -144,7 +144,7 @@ export async function extractLocationWithVisionModel(
       type: "input_text",
       text: [
         "Estrai dettagli strutturati di una location per feste in Piemonte.",
-        "Usa foto, listini, email e testi per ricavare dati del locale, servizi interni, menu e prezzi.",
+        "Usa foto, listini, email e testi per ricavare dati del locale, servizi disponibili, menu e prezzi.",
         "Normalizza i prezzi in euro. Se un dato non e' presente, omettilo e aggiungilo a suggestedReviewFields.",
         "Rispondi solo con JSON valido conforme allo schema.",
         "",

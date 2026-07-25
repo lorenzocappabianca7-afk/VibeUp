@@ -117,7 +117,7 @@ export function ExtraServicesSection({
           Servizi della festa
         </h2>
         <p className="mt-1 text-sm text-primary-black/60">
-          Scegli prima i servizi interni del locale, poi aggiungi alternative esterne se manca qualcosa.
+          Scegli prima i servizi disponibili del locale, poi aggiungi alternative esterne se manca qualcosa.
         </p>
       </div>
 
@@ -125,7 +125,7 @@ export function ExtraServicesSection({
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className="text-sm font-bold text-primary-black">
-              Servizi interni del locale
+              Servizi disponibili
             </h3>
             <p className="text-xs text-primary-black/55">
               Menu, bar, audio e allestimenti gestiti dalla location.
