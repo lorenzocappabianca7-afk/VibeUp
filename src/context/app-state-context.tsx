@@ -35,6 +35,8 @@ import { purgeUserSatelliteStorage } from "@/lib/local-user-data-cleanup";
 import type { ManagedListing } from "@/types/admin";
 import type { BookedService, EventMenuSelection, UserEvent } from "@/types/event";
 import type { SavedPaymentCard } from "@/types/payment";
+import type { SavedQuote } from "@/types/saved-quote";
+import { MAX_SAVED_QUOTES } from "@/types/saved-quote";
 import {
   normalizeUserSettings,
   type UserSettings,
@@ -148,6 +150,7 @@ interface AppStateContextValue {
   favoriteLocationIds: string[];
   favoriteServiceIds: string[];
   compareLocationIds: string[];
+  savedQuotes: SavedQuote[];
   managedListings: ManagedListing[];
   addEvent: (event: UserEvent) => void;
   getEvent: (id: string) => UserEvent | undefined;
@@ -165,6 +168,9 @@ interface AppStateContextValue {
   removeFavoriteService: (id: string) => void;
   toggleCompareLocation: (id: string) => void;
   removeCompareLocation: (id: string) => void;
+  saveQuote: (quote: SavedQuote) => void;
+  removeSavedQuote: (id: string) => void;
+  isQuoteSaved: (id: string) => boolean;
   upsertManagedListing: (listing: ManagedListing) => void;
   removeManagedListing: (id: string) => void;
   toggleManagedListingPublication: (id: string) => void;
@@ -230,6 +236,26 @@ interface UserScopedState {
   favoriteLocationIds: string[];
   favoriteServiceIds: string[];
   compareLocationIds: string[];
+  savedQuotes: SavedQuote[];
+}
+
+function isSavedQuote(value: unknown): value is SavedQuote {
+  if (!value || typeof value !== "object") return false;
+  const item = value as SavedQuote;
+  return (
+    typeof item.id === "string" &&
+    typeof item.locationId === "string" &&
+    typeof item.locationName === "string" &&
+    typeof item.imageUrl === "string" &&
+    item.quote != null &&
+    typeof item.quote === "object" &&
+    typeof item.quote.total === "number"
+  );
+}
+
+function normalizeSavedQuotes(value: unknown): SavedQuote[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isSavedQuote).slice(0, MAX_SAVED_QUOTES);
 }
 
 function normalizeUserScopedState(
@@ -274,6 +300,7 @@ function normalizeUserScopedState(
     favoriteServiceIds: Array.isArray(state.favoriteServiceIds)
       ? state.favoriteServiceIds.filter((id) => typeof id === "string")
       : [],
+    savedQuotes: normalizeSavedQuotes(state.savedQuotes),
     // Compare is session-only: never restore selections from previous visits.
     compareLocationIds: [],
   };
@@ -323,6 +350,7 @@ function createDefaultUserState(userId: string): UserScopedState {
     favoriteLocationIds: [],
     favoriteServiceIds: [],
     compareLocationIds: [],
+    savedQuotes: [],
   };
 }
 
@@ -402,7 +430,8 @@ function isUserScopedStateEmpty(state: UserScopedState) {
     Object.keys(state.paymentStates).length === 0 &&
     state.favoriteLocationIds.length === 0 &&
     state.favoriteServiceIds.length === 0 &&
-    state.compareLocationIds.length === 0
+    state.compareLocationIds.length === 0 &&
+    state.savedQuotes.length === 0
   );
 }
 
@@ -430,6 +459,12 @@ function mergeUserScopedState(
       ...target.favoriteServiceIds,
       ...source.favoriteServiceIds,
     ]),
+    savedQuotes: [
+      ...target.savedQuotes,
+      ...source.savedQuotes.filter(
+        (quote) => !target.savedQuotes.some((item) => item.id === quote.id),
+      ),
+    ].slice(0, MAX_SAVED_QUOTES),
     compareLocationIds: trimCompareIds(
       uniqueIds([
         ...target.compareLocationIds,
@@ -575,6 +610,9 @@ function writeStoredAppState(state: StoredAppState) {
                 favoriteServiceIds: aggressive
                   ? pruned.favoriteServiceIds.slice(0, 40)
                   : pruned.favoriteServiceIds,
+                savedQuotes: aggressive
+                  ? pruned.savedQuotes.slice(0, 10)
+                  : pruned.savedQuotes.slice(0, MAX_SAVED_QUOTES),
                 events: aggressive ? pruned.events.slice(0, 20) : pruned.events,
               },
             ];
@@ -665,6 +703,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const paymentStates = currentUserState.paymentStates;
   const favoriteLocationIds = currentUserState.favoriteLocationIds;
   const favoriteServiceIds = currentUserState.favoriteServiceIds;
+  const savedQuotes = currentUserState.savedQuotes;
   const compareLocationIds = currentUserState.compareLocationIds;
 
   const updateCurrentUserState = useCallback(
@@ -1071,6 +1110,37 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       };
     });
   }, [updateCurrentUserState]);
+
+  const saveQuote = useCallback(
+    (quote: SavedQuote) => {
+      updateCurrentUserState((state) => {
+        const without = state.savedQuotes.filter((item) => item.id !== quote.id);
+        return {
+          ...state,
+          savedQuotes: [quote, ...without].slice(0, MAX_SAVED_QUOTES),
+        };
+      });
+    },
+    [updateCurrentUserState],
+  );
+
+  const removeSavedQuote = useCallback(
+    (id: string) => {
+      updateCurrentUserState((state) => {
+        if (!state.savedQuotes.some((item) => item.id === id)) return state;
+        return {
+          ...state,
+          savedQuotes: state.savedQuotes.filter((item) => item.id !== id),
+        };
+      });
+    },
+    [updateCurrentUserState],
+  );
+
+  const isQuoteSaved = useCallback(
+    (id: string) => savedQuotes.some((item) => item.id === id),
+    [savedQuotes],
+  );
 
   const upsertManagedListing = useCallback((listing: ManagedListing) => {
     setManagedListings((prev) => [
@@ -1814,6 +1884,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       favoriteLocationIds,
       favoriteServiceIds,
       compareLocationIds,
+      savedQuotes,
       managedListings,
       addEvent,
       getEvent,
@@ -1828,6 +1899,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       removeFavoriteService,
       toggleCompareLocation,
       removeCompareLocation,
+      saveQuote,
+      removeSavedQuote,
+      isQuoteSaved,
       upsertManagedListing,
       removeManagedListing,
       toggleManagedListingPublication,
@@ -1861,6 +1935,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       favoriteLocationIds,
       favoriteServiceIds,
       compareLocationIds,
+      savedQuotes,
       managedListings,
       addEvent,
       getEvent,
@@ -1875,6 +1950,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       removeFavoriteService,
       toggleCompareLocation,
       removeCompareLocation,
+      saveQuote,
+      removeSavedQuote,
+      isQuoteSaved,
       upsertManagedListing,
       removeManagedListing,
       toggleManagedListingPublication,

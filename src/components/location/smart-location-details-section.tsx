@@ -23,6 +23,7 @@ import type {
   ExtraServiceId,
 } from "@/types/location";
 import {
+  Bookmark,
   Calendar,
   Camera,
   Cake,
@@ -117,6 +118,8 @@ interface SmartLocationDetailsSectionProps {
   onGenerateQuote: () => void;
   canGenerateQuote: boolean;
   quoteNeedsRefresh: boolean;
+  quoteSaved?: boolean;
+  onSaveQuote?: () => void;
 }
 
 function formatInternalServicePrice(
@@ -247,6 +250,8 @@ export function SmartLocationDetailsSection({
   onGenerateQuote,
   canGenerateQuote,
   quoteNeedsRefresh,
+  quoteSaved = false,
+  onSaveQuote,
 }: SmartLocationDetailsSectionProps) {
   const [openPicker, setOpenPicker] = useState<PickerPanel>(null);
   const [guestCountInput, setGuestCountInput] = useState(String(guestCount));
@@ -730,30 +735,53 @@ export function SmartLocationDetailsSection({
           )}
 
           {generatedQuote && (
-            <dl className="mt-2.5 space-y-1.5 text-xs">
-              <div className="flex justify-between gap-3 text-ink-inverse/80">
-                <dt className="min-w-0">
-                  Location ({generatedQuote.hours || 0}h x{" "}
-                  {formatCurrency(hourlyPrice)}
-                  {generatedQuote.drinksCost > 0 ? " + bevande" : ""}
-                  {(generatedQuote.venueServicesCost ?? 0) > 0
-                    ? " + servizi locale"
-                    : ""}
-                  )
-                </dt>
-                <dd className="shrink-0 font-bold text-ink-inverse">
-                  {formatCurrency(generatedQuote.locationCost)}
-                </dd>
-              </div>
-              {generatedQuote.extrasCost > 0 && (
+            <>
+              <dl className="mt-2.5 space-y-1.5 text-xs">
                 <div className="flex justify-between gap-3 text-ink-inverse/80">
-                  <dt className="min-w-0">Servizi selezionati</dt>
+                  <dt className="min-w-0">
+                    Location ({generatedQuote.hours || 0}h x{" "}
+                    {formatCurrency(hourlyPrice)}
+                    {generatedQuote.drinksCost > 0 ? " + bevande" : ""}
+                    {(generatedQuote.venueServicesCost ?? 0) > 0
+                      ? " + servizi locale"
+                      : ""}
+                    )
+                  </dt>
                   <dd className="shrink-0 font-bold text-ink-inverse">
-                    {formatCurrency(generatedQuote.extrasCost)}
+                    {formatCurrency(generatedQuote.locationCost)}
                   </dd>
                 </div>
+                {generatedQuote.extrasCost > 0 && (
+                  <div className="flex justify-between gap-3 text-ink-inverse/80">
+                    <dt className="min-w-0">Servizi selezionati</dt>
+                    <dd className="shrink-0 font-bold text-ink-inverse">
+                      {formatCurrency(generatedQuote.extrasCost)}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+
+              {onSaveQuote && (
+                <button
+                  type="button"
+                  onClick={onSaveQuote}
+                  className={cn(
+                    "mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-black transition-colors",
+                    quoteSaved
+                      ? "bg-brand-pink/25 text-ink-inverse ring-1 ring-white/25"
+                      : "bg-brand-pink text-ink-inverse hover:bg-brand-pink/90",
+                  )}
+                  aria-pressed={quoteSaved}
+                >
+                  <Bookmark
+                    className="h-3.5 w-3.5"
+                    fill={quoteSaved ? "currentColor" : "none"}
+                    aria-hidden
+                  />
+                  {quoteSaved ? "Preventivo salvato" : "Salva preventivo"}
+                </button>
               )}
-            </dl>
+            </>
           )}
           {hasTimeIssue && (
             <p className="mt-2 rounded-lg border border-white/15 bg-surface-2 px-2.5 py-1.5 text-[11px] font-semibold text-white">

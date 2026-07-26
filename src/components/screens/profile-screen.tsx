@@ -14,6 +14,7 @@ import {
   Settings,
   Trash2,
   User,
+  Bookmark,
   Briefcase,
   Heart,
   X,
@@ -37,6 +38,12 @@ const primaryMenuItems: Array<{
   label: string;
   description?: string;
 }> = [
+  {
+    id: "savedQuotes",
+    icon: Bookmark,
+    label: "Preventivi salvati",
+    description: "Confronta i preventivi generati dalle location.",
+  },
   { id: "settings", icon: Settings, label: "Impostazioni account" },
   { id: "favorites", icon: Heart, label: "I tuoi preferiti" },
 ];

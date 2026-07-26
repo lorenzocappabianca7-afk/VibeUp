@@ -36,6 +36,10 @@ import type { ManagedLocationListing } from "@/types/admin";
 import type { BookedServiceCategory } from "@/types/event";
 import type { BookingQuote, ExtraServiceId, Location } from "@/types/location";
 import {
+  buildSavedQuoteId,
+  type SavedQuote,
+} from "@/types/saved-quote";
+import {
   ArrowDown,
   ArrowLeft,
   Disc3,
@@ -102,8 +106,11 @@ export function LocationDetailView({
     compareLocationIds,
     currentUser,
     favoriteLocationIds,
+    isQuoteSaved,
     managedListings,
     removeCompareLocation,
+    removeSavedQuote,
+    saveQuote,
     toggleCompareLocation,
     toggleFavoriteLocation,
   } = useAppState();
@@ -336,6 +343,11 @@ export function LocationDetailView({
   );
   const quoteIsCurrent = generatedQuote?.key === quoteKey;
   const quote = quoteIsCurrent ? generatedQuote.quote : null;
+  const savedQuoteId =
+    quoteIsCurrent && generatedQuote
+      ? buildSavedQuoteId(location.id, generatedQuote.key)
+      : null;
+  const quoteSaved = savedQuoteId ? isQuoteSaved(savedQuoteId) : false;
   const canGenerateQuote =
     date.length > 0 &&
     hours >= location.technicalDetails.minHours &&
@@ -370,6 +382,50 @@ export function LocationDetailView({
         });
       },
       "Per generare un preventivo crea un account.",
+    );
+  }
+
+  function handleSaveQuote() {
+    if (!quote || !quoteIsCurrent || !generatedQuote) return;
+
+    requireAccount(
+      () => {
+        const id = buildSavedQuoteId(location.id, generatedQuote.key);
+        if (isQuoteSaved(id)) {
+          removeSavedQuote(id);
+          return;
+        }
+
+        const gallery = Array.from(
+          new Set(
+            [location.imageUrl, ...(location.gallery ?? [])].filter(Boolean),
+          ),
+        ).slice(0, 4);
+
+        const snapshot: SavedQuote = {
+          id,
+          savedAt: new Date().toISOString(),
+          locationId: location.id,
+          locationName: location.name,
+          locationCity: location.city || location.comune,
+          zoneLabel: location.zoneLabel,
+          imageUrl: location.imageUrl,
+          gallery,
+          quote: { ...quote },
+          hourlyPrice: location.hourlyPrice,
+          date,
+          startTime,
+          endTime,
+          guestCount,
+          eventTitle: eventTitle.trim() || undefined,
+          drinkMode,
+          drinksPerInvitee,
+          selectedExtraIds: [...selectedExtras],
+          selectedInternalServiceIds: [...selectedInternalServices],
+        };
+        saveQuote(snapshot);
+      },
+      "Per salvare un preventivo crea un account.",
     );
   }
 
@@ -619,6 +675,8 @@ export function LocationDetailView({
             onGenerateQuote={generateQuote}
             canGenerateQuote={canGenerateQuote}
             quoteNeedsRefresh={generatedQuote !== null && !quoteIsCurrent}
+            quoteSaved={quoteSaved}
+            onSaveQuote={handleSaveQuote}
           />
 
           <BookingSummary

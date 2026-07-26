@@ -86,6 +86,7 @@ export function normalizeUserSettings(
 }
 
 export type SettingsPanelId =
+  | "savedQuotes"
   | "settings"
   | "favorites"
   | "payments"
@@ -95,6 +96,7 @@ export type SettingsPanelId =
   | "security";
 
 export const SETTINGS_PANEL_TITLES: Record<SettingsPanelId, string> = {
+  savedQuotes: "Preventivi salvati",
   settings: "Impostazioni account",
   favorites: "I tuoi preferiti",
   payments: "Pagamenti e abbonamento",

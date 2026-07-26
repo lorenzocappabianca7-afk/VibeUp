@@ -6,6 +6,7 @@ import { HelpSettingsPanel } from "@/components/profile/settings/help-settings-p
 import { NotificationsSettingsPanel } from "@/components/profile/settings/notifications-settings-panel";
 import { PaymentsSettingsPanel } from "@/components/profile/settings/payments-settings-panel";
 import { PrivacySettingsPanel } from "@/components/profile/settings/privacy-settings-panel";
+import { SavedQuotesSettingsPanel } from "@/components/profile/settings/saved-quotes-settings-panel";
 import { SecuritySettingsPanel } from "@/components/profile/settings/security-settings-panel";
 import type { SettingsPanelId } from "@/types/user-settings";
 
@@ -19,6 +20,8 @@ export function ProfileSettingsView({
   onClose,
 }: ProfileSettingsViewProps) {
   switch (panel) {
+    case "savedQuotes":
+      return <SavedQuotesSettingsPanel onBack={onClose} />;
     case "settings":
       return <AccountSettingsPanel onBack={onClose} />;
     case "favorites":
