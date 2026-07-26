@@ -393,7 +393,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
           {discountBannerOpen && (
             <button
               type="button"
-              className="fixed inset-0 z-40 cursor-default bg-transparent"
+              className="fixed inset-0 z-40 cursor-default bg-black"
               onClick={closeDiscountBanner}
               aria-label="Chiudi banner sconti"
             />
@@ -408,13 +408,14 @@ export const MyEventsScreen = memo(function MyEventsScreen({
           </button>
           {discountBannerOpen && (
             <div className={DISCOUNT_POPOVER_CLASS}>
-              <span className="absolute -top-2 right-8 hidden h-4 w-4 rotate-45 border-l-2 border-t-2 border-brand-pink bg-surface-2 sm:block" />
+              <span className="absolute -top-2 right-8 hidden h-4 w-4 rotate-45 border-l-2 border-t-2 border-brand-pink bg-black sm:block" />
               <DiscountInviteBanner
                 contact={inviteContact}
                 sent={inviteSent}
                 onContactChange={handleInviteContactChange}
                 onSubmit={handleInviteSubmit}
-                className="bg-gradient-to-br from-brand-pink/15 via-surface to-brand-teal/10 p-4"
+                variant="solid"
+                className="p-4"
               />
             </div>
           )}
@@ -736,11 +737,11 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       </div>
 
       {missingSuggestions.length > 0 && (
-        <section className="min-w-0 overflow-hidden border-t border-brand-teal bg-brand-teal px-3 py-4 sm:px-4">
+        <section className="min-w-0 overflow-hidden border-t border-primary-black/10 bg-white px-3 py-4 sm:px-4">
           <p className="text-sm font-medium text-ink-inverse">
             Potrebbe mancare
           </p>
-          <p className="mt-0.5 text-xs text-ink-inverse/85">
+          <p className="mt-0.5 text-xs text-ink-inverse/70">
             Aggiungi altri servizi alla festa
           </p>
           <div className="scrollbar-hidden mt-3 flex max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1">
@@ -751,10 +752,10 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                 <HardNavLink
                   key={suggestion.id}
                   href={buildSuggestionHref(event, suggestion.exploreCategory)}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-full border border-ink-inverse/15 bg-surface-2 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:border-ink-inverse/30"
+                  className="inline-flex shrink-0 items-center gap-2 rounded-full bg-brand-pink px-3.5 py-2 text-sm font-medium text-ink-inverse transition-colors hover:bg-brand-pink/90"
                 >
                   <Icon
-                    className={`h-4 w-4 ${suggestion.iconClass}`}
+                    className="h-4 w-4 text-ink-inverse"
                     aria-hidden
                   />
                   {suggestion.label}
@@ -824,13 +825,13 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
   }, [deadline, isActive]);
 
   return (
-    <section className="min-w-0 overflow-hidden border-b border-brand-teal bg-brand-teal px-3 py-3 sm:px-4">
+    <section className="min-w-0 overflow-hidden border-b border-primary-black/10 bg-white px-3 py-3 sm:px-4">
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-ink-inverse">
             Caparra {formatCurrency(depositAmount)}
           </p>
-          <p className="mt-0.5 break-words text-xs text-ink-inverse/85">
+          <p className="mt-0.5 break-words text-xs text-ink-inverse/70">
             Entro {formatDepositDeadline(deadline)}
             {!countdown.isPast && (
               <>
@@ -845,21 +846,21 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
 
         <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-auto sm:max-w-[14rem] sm:items-end">
           {!payment.paid && (
-            <p className="text-[11px] leading-snug text-ink-inverse/90 sm:text-right">
+            <p className="text-[11px] leading-snug text-ink-inverse/75 sm:text-right">
               Entro 36 ore dalla creazione: blocca {event.locationName} per il{" "}
               {formatDate(event.date)}. Se non la paghi, perdi la priorità.
             </p>
           )}
           {payment.paid ? (
-            <span className="inline-flex w-full items-center justify-center rounded-lg bg-brand-pink px-4 py-2.5 text-xs font-semibold text-white sm:w-fit">
+            <span className="inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-semibold text-ink-inverse sm:w-fit">
               Caparra pagata
             </span>
           ) : (
             <button
               type="button"
               onClick={onPayDeposit}
-              className={`inline-flex w-full items-center justify-center rounded-lg bg-brand-pink px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-brand-pink/90 sm:w-fit ${
-                countdown.isPast ? "ring-2 ring-white/50" : ""
+              className={`inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-semibold text-ink-inverse transition-colors hover:bg-brand-teal/90 sm:w-fit ${
+                countdown.isPast ? "ring-2 ring-brand-teal/40" : ""
               }`}
             >
               {countdown.isPast ? "Paga caparra in ritardo" : "Paga caparra"}

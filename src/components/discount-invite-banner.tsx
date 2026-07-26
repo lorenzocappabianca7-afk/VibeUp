@@ -11,6 +11,8 @@ interface DiscountInviteBannerProps {
   onContactChange: (value: string) => void;
   onSubmit: () => void;
   className?: string;
+  /** Solid black panel (My Events popover) vs default pink gradient. */
+  variant?: "gradient" | "solid";
 }
 
 export const DiscountInviteBanner = memo(function DiscountInviteBanner({
@@ -20,6 +22,7 @@ export const DiscountInviteBanner = memo(function DiscountInviteBanner({
   onContactChange,
   onSubmit,
   className,
+  variant = "gradient",
 }: DiscountInviteBannerProps) {
   const contactTarget =
     categoryLabel === "DJ" || categoryLabel === "fotografo"
@@ -31,11 +34,16 @@ export const DiscountInviteBanner = memo(function DiscountInviteBanner({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-[2rem] border-2 border-brand-pink bg-gradient-to-br from-brand-pink/30 via-brand-pink/12 to-brand-teal/18 p-4 shadow-[0_18px_45px_-28px_rgba(236,72,153,0.65)]",
+        "relative overflow-hidden rounded-[2rem] border-2 border-brand-pink p-4",
+        variant === "solid"
+          ? "bg-black shadow-none"
+          : "bg-gradient-to-br from-brand-pink/30 via-brand-pink/12 to-brand-teal/18 shadow-[0_18px_45px_-28px_rgba(236,72,153,0.65)]",
         className,
       )}
     >
-      <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-brand-pink/25 blur-2xl" />
+      {variant === "gradient" && (
+        <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-brand-pink/25 blur-2xl" />
+      )}
       <div className="relative">
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/12 text-primary-black shadow-sm ring-1 ring-white/10">
