@@ -8,23 +8,30 @@ import {
 import {
   HOLD_AFTER_TAGLINE_MS,
   LOGO_BOUNCE_MS,
-  SPLASH_EXIT_MS,
   SPLASH_STORAGE_KEY,
   TAGLINE_DELAY_MS,
 } from "@/lib/splash";
 
-/** True after the first bounce has started — Strict Mode remount must not replay it. */
+/** Survives Strict Mode remount — settle class without replaying bounce CSS. */
 let splashBounceAlreadyPlayed = false;
 
 type Phase = "enter" | "exit" | "gone";
 
 function shouldSkipSplash() {
+  if (typeof document !== "undefined") {
+    if (document.documentElement.classList.contains("vibeup-splash-skip")) {
+      return true;
+    }
+  }
   try {
     if (sessionStorage.getItem(SPLASH_STORAGE_KEY) === "1") return true;
   } catch {
     /* ignore */
   }
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  if (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
     return true;
   }
   return false;
@@ -34,24 +41,33 @@ function removeCriticalPaint() {
   document.getElementById(CRITICAL_PAINT_ID)?.remove();
 }
 
+function markSplashSeen() {
+  try {
+    sessionStorage.setItem(SPLASH_STORAGE_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+  document.documentElement.classList.add("vibeup-splash-skip");
+}
+
 /**
- * Splash over a black safety net (CriticalPaint sits UNDER this layer).
+ * Cold-start intro.
  *
- * FOUC fixes:
- * - Logo uses a preloaded PNG URL (not a 250KB data-URI that delayed first paint).
- * - Bounce never starts at opacity:0 (that left a blank frame before the mark).
- * - Width is inline + in critical CSS so a 640px bitmap cannot flash full-screen.
+ * Skip is applied in a blocking <head> script (`vibeup-splash-skip`) so hard
+ * navigations never paint this overlay again in the same session — CSS hides
+ * it before first paint; this component then unmounts in useLayoutEffect.
  */
 export function SplashScreen() {
+  // Always start as "enter" on server+client for hydration match.
+  // Skip visits are invisible via html.vibeup-splash-skip CSS, then cleaned up.
   const [phase, setPhase] = useState<Phase>("enter");
   const [showTagline, setShowTagline] = useState(false);
   const [bounceDone, setBounceDone] = useState(() => splashBounceAlreadyPlayed);
 
   useLayoutEffect(() => {
-    if (shouldSkipSplash()) {
-      removeCriticalPaint();
-      setPhase("gone");
-    }
+    if (!shouldSkipSplash()) return;
+    removeCriticalPaint();
+    setPhase("gone");
   }, []);
 
   useEffect(() => {
@@ -79,11 +95,7 @@ export function SplashScreen() {
     }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS);
 
     const doneTimer = window.setTimeout(() => {
-      try {
-        sessionStorage.setItem(SPLASH_STORAGE_KEY, "1");
-      } catch {
-        /* ignore */
-      }
+      markSplashSeen();
       document.documentElement.style.overflow = previousOverflow;
       removeCriticalPaint();
       setPhase("gone");
@@ -114,13 +126,12 @@ export function SplashScreen() {
         left: 0,
         zIndex: 10000,
         backgroundColor: "#000000",
-        pointerEvents: "none",
+        pointerEvents: phase === "exit" ? "none" : "auto",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <style>{SPLASH_CSS}</style>
       <div className="vibeup-splash__stage">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -140,7 +151,7 @@ export function SplashScreen() {
             opacity: 1,
           }}
           draggable={false}
-          decoding="async"
+          decoding="sync"
           fetchPriority="high"
           onAnimationEnd={(event) => {
             if (!event.animationName.includes("vibeup-splash-bounce")) return;
@@ -156,71 +167,3 @@ export function SplashScreen() {
     </div>
   );
 }
-
-const SPLASH_CSS = `
-.vibeup-splash--exit{opacity:0}
-.vibeup-splash{
-  opacity:1;
-  transition:opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.4,0,0.2,1);
-}
-.vibeup-splash__stage{
-  box-sizing:border-box;
-  display:flex;flex-direction:column;align-items:center;
-  margin-bottom:14vh;
-}
-.vibeup-splash__logo{
-  display:block;
-  width:7rem;
-  max-width:7rem;
-  height:auto;
-  aspect-ratio:1/1;
-  object-fit:contain;
-  object-position:center;
-  transform-origin:center center;
-  image-rendering:auto;
-  -webkit-user-drag:none;
-  opacity:1;
-  animation:vibeup-splash-bounce ${LOGO_BOUNCE_MS}ms cubic-bezier(0.16,1,0.3,1) both;
-}
-.vibeup-splash__logo--settled{
-  animation:none!important;
-  opacity:1!important;
-  transform:none!important;
-  filter:none!important;
-  will-change:auto!important;
-}
-.vibeup-splash__tagline{
-  margin:1rem 0 0;
-  min-height:1.15em;
-  padding:0 0.5rem;
-  font-family:var(--font-brand),system-ui,sans-serif;
-  font-size:1.75rem;font-weight:700;
-  letter-spacing:-0.025em;line-height:1.15;
-  color:#fff;text-align:center;white-space:nowrap;
-  opacity:0;
-  transform:translate3d(0,10px,0);
-}
-.vibeup-splash__tagline--in{
-  animation:vibeup-splash-tagline-in 640ms cubic-bezier(0.16,1,0.3,1) both;
-}
-@keyframes vibeup-splash-bounce{
-  0%{opacity:1;transform:translate3d(0,6px,0) scale(0.62)}
-  45%{transform:translate3d(0,0,0) scale(1.05)}
-  62%{transform:translate3d(0,0,0) scale(0.98)}
-  78%{transform:translate3d(0,0,0) scale(1.015)}
-  100%{opacity:1;transform:translate3d(0,0,0) scale(1)}
-}
-@keyframes vibeup-splash-tagline-in{
-  from{opacity:0;transform:translate3d(0,10px,0)}
-  to{opacity:1;transform:translate3d(0,0,0)}
-}
-@media (prefers-reduced-motion:reduce){
-  .vibeup-splash__logo,.vibeup-splash__tagline--in{
-    animation:none!important;opacity:1;transform:none
-  }
-  .vibeup-splash{transition:none}
-}
-@media (max-width:380px){
-  .vibeup-splash__logo{width:6.25rem;max-width:6.25rem}
-}
-`.replace(/\n/g, "");

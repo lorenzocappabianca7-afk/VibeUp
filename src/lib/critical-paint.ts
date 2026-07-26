@@ -1,18 +1,31 @@
+import {
+  LOGO_BOUNCE_MS,
+  SPLASH_EXIT_MS,
+  SPLASH_STORAGE_KEY,
+} from "@/lib/splash";
+
 /**
  * Blocking first-paint CSS — must live in <head> before any stylesheet link.
  *
- * Layering (critical):
+ * Layering:
  *   critical paint  z-index 9990  → black safety net UNDER the splash
- *   splash overlay  z-index 10000 → logo + tagline visible on top
- * Previously critical was 99998 (> splash) and fully hid the logo.
+ *   splash overlay  z-index 10000 → logo + tagline on top
  *
- * Logo size is also inlined here so a 640×640 <img> cannot paint full-bleed
- * (looks like a white/bright flash) before the splash stylesheet hydrates.
+ * `html.vibeup-splash-skip` is set by the blocking head script when this
+ * session already saw the splash — hides overlays BEFORE first paint so
+ * hard navigations (location/event/service) never flash the loader again.
  */
 export const CRITICAL_PAINT_CSS = `
 html,body{
   background:#000000!important;
   color-scheme:dark!important;
+}
+html.vibeup-splash-skip #vibeup-critical-paint,
+html.vibeup-splash-skip .vibeup-splash{
+  display:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
+  pointer-events:none!important;
 }
 #vibeup-critical-paint{
   position:fixed!important;
@@ -26,10 +39,24 @@ html,body{
   inset:0!important;
   z-index:10000!important;
   background:#000000!important;
-  pointer-events:none!important;
+  /* Block taps/scroll on the app underneath during the intro */
+  pointer-events:auto!important;
   display:flex!important;
   align-items:center!important;
   justify-content:center!important;
+  opacity:1;
+  transition:opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.4,0,0.2,1);
+}
+.vibeup-splash--exit{
+  opacity:0!important;
+  pointer-events:none!important;
+}
+.vibeup-splash__stage{
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  margin-bottom:14vh;
 }
 .vibeup-splash__logo{
   display:block!important;
@@ -38,7 +65,54 @@ html,body{
   height:auto!important;
   aspect-ratio:1/1!important;
   object-fit:contain!important;
+  object-position:center!important;
   opacity:1!important;
+  transform-origin:center center;
+  -webkit-user-drag:none;
+  animation:vibeup-splash-bounce ${LOGO_BOUNCE_MS}ms cubic-bezier(0.16,1,0.3,1) both;
+}
+.vibeup-splash__logo--settled{
+  animation:none!important;
+  transform:none!important;
+  filter:none!important;
+  will-change:auto!important;
+}
+.vibeup-splash__tagline{
+  margin:1rem 0 0;
+  min-height:1.15em;
+  padding:0 0.5rem;
+  font-family:var(--font-brand),system-ui,sans-serif;
+  font-size:1.75rem;
+  font-weight:700;
+  letter-spacing:-0.025em;
+  line-height:1.15;
+  color:#fff;
+  text-align:center;
+  white-space:nowrap;
+  opacity:0;
+  transform:translate3d(0,10px,0);
+}
+.vibeup-splash__tagline--in{
+  animation:vibeup-splash-tagline-in 640ms cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes vibeup-splash-bounce{
+  0%{transform:translate3d(0,6px,0) scale(0.62)}
+  45%{transform:translate3d(0,0,0) scale(1.05)}
+  62%{transform:translate3d(0,0,0) scale(0.98)}
+  78%{transform:translate3d(0,0,0) scale(1.015)}
+  100%{transform:translate3d(0,0,0) scale(1)}
+}
+@keyframes vibeup-splash-tagline-in{
+  from{opacity:0;transform:translate3d(0,10px,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+@media (prefers-reduced-motion:reduce){
+  .vibeup-splash__logo,.vibeup-splash__tagline--in{
+    animation:none!important;
+    opacity:1!important;
+    transform:none!important;
+  }
+  .vibeup-splash{transition:none!important}
 }
 @media (max-width:380px){
   .vibeup-splash__logo{width:6.25rem!important;max-width:6.25rem!important}
@@ -46,16 +120,16 @@ html,body{
 `.replace(/\s+/g, " ").trim();
 
 /**
- * Synchronous head script — runs before first paint (same pattern as next-themes FOUC fix).
+ * Synchronous head script — before first paint.
+ * Sets black canvas + splash-skip when this session already played the intro.
  */
-export const CRITICAL_PAINT_SCRIPT = `(function(){try{var d=document.documentElement,b=document.body;d.style.backgroundColor="#000000";d.style.colorScheme="dark";if(b){b.style.backgroundColor="#000000";}}catch(e){}})();`;
+export const CRITICAL_PAINT_SCRIPT = `(function(){try{var d=document.documentElement;d.style.backgroundColor="#000000";d.style.colorScheme="dark";if(sessionStorage.getItem(${JSON.stringify(SPLASH_STORAGE_KEY)})==="1"){d.classList.add("vibeup-splash-skip");}var b=document.body;if(b){b.style.backgroundColor="#000000";}}catch(e){}})();`;
 
 export const CRITICAL_PAINT_ID = "vibeup-critical-paint";
 
-/** Public boot logo — small enough for preload; avoids 250KB data-URI delaying first paint. */
+/** Splash mark (preloaded in layout). Kept as the approved brand asset. */
 export const SPLASH_LOGO_SRC = "/vibeup-splash-logo-boot.png";
 
-/** Inline styles for the server black shell — UNDER the splash (z-index 9990). */
 export const CRITICAL_PAINT_INLINE_STYLE = {
   position: "fixed" as const,
   top: 0,
