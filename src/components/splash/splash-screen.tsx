@@ -8,6 +8,7 @@ import {
 import {
   HOLD_AFTER_TAGLINE_MS,
   LOGO_BOUNCE_MS,
+  SPLASH_EXIT_MS,
   SPLASH_STORAGE_KEY,
   TAGLINE_DELAY_MS,
 } from "@/lib/splash";
