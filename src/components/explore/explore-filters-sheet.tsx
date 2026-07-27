@@ -104,18 +104,20 @@ export function ExploreFiltersSheet({
     wasOpenRef.current = open;
 
     if (justOpened) {
-      setDraftFilters(filters);
-      setDraftServiceFilters(serviceFilters);
-      setDatePickerOpen(false);
-      setNearMeError(null);
-      setNearMeLoading(false);
+      queueMicrotask(() => {
+        setDraftFilters(filters);
+        setDraftServiceFilters(serviceFilters);
+        setDatePickerOpen(false);
+        setNearMeError(null);
+        setNearMeLoading(false);
+      });
       return;
     }
 
     if (!open) {
       // Invalidate in-flight geolocation so a late callback can't mutate closed state.
       nearMeRequestRef.current += 1;
-      setNearMeLoading(false);
+      queueMicrotask(() => setNearMeLoading(false));
     }
   }, [filters, open, serviceFilters]);
 
@@ -579,10 +581,10 @@ export function ExploreFiltersSheet({
                         <Calendar className="h-4 w-4" aria-hidden />
                       </span>
                       <span>
-                        <span className="block text-xs font-semibold text-primary-black/50">
+                        <span className="block text-xs font-semibold text-ink-inverse/50">
                           Data
                         </span>
-                        <span className="block text-sm font-black text-primary-black">
+                        <span className="block text-sm font-black text-ink-inverse">
                           {formatFilterDateLabel(
                             draftFilters.dateFrom,
                             draftFilters.dateTo,
@@ -640,10 +642,10 @@ export function ExploreFiltersSheet({
                   <Calendar className="h-4 w-4" aria-hidden />
                 </span>
                 <span>
-                  <span className="block text-xs font-semibold text-primary-black/50">
+                  <span className="block text-xs font-semibold text-ink-inverse/50">
                     Quando
                   </span>
-                  <span className="block text-sm font-black text-primary-black">
+                  <span className="block text-sm font-black text-ink-inverse">
                     {formatFilterDateLabel(
                       draftFilters.dateFrom,
                       draftFilters.dateTo,

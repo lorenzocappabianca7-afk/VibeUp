@@ -142,7 +142,6 @@ export function ExploreSearchBar({
 
   useEffect(() => {
     resetPanelChrome();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
   }, []);
 
   useEffect(() => {
@@ -470,15 +469,17 @@ export function ExploreSearchBar({
         data-overlay-open={open ? "true" : undefined}
         onClick={(event) => {
           const { clientX, clientY } = event;
-          // Let the same tap reach a card underneath after closing search.
+          // Same tap should open the card under the search scrim.
           event.currentTarget.style.pointerEvents = "none";
           closeSearch();
           requestAnimationFrame(() => {
-            const under = document.elementFromPoint(clientX, clientY);
-            const link = under?.closest("a");
-            if (link instanceof HTMLAnchorElement) {
-              link.click();
-            }
+            requestAnimationFrame(() => {
+              const under = document.elementFromPoint(clientX, clientY);
+              const link = under?.closest("a");
+              if (link instanceof HTMLAnchorElement) {
+                link.click();
+              }
+            });
           });
         }}
       />

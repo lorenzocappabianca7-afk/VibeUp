@@ -4,17 +4,12 @@ import { Button } from "@/components/ui/button";
 import { SafeImage } from "@/components/ui/safe-image";
 import { useAppState } from "@/context/app-state-context";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
-import { APP_SHELL_WIDTH_CLASS, cn, formatCurrency } from "@/lib/utils";
+import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import type {
   ManagedListing,
-  ManagedLocationListing,
   ManagedServiceListing,
 } from "@/types/admin";
-import type {
-  AvailableLocationService,
-  ExploreCategory,
-  Location,
-} from "@/types/location";
+import type { ExploreCategory } from "@/types/location";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
@@ -51,53 +46,6 @@ const CATEGORIES: {
   { id: "altri", label: "Altri servizi", icon: Music },
 ];
 
-type AvailableServiceFormRow = {
-  name: string;
-  pricingType: "included" | "fixed" | "per_person";
-  price: string;
-  description: string;
-};
-
-const EMPTY_AVAILABLE_SERVICE_ROW = (): AvailableServiceFormRow => ({
-  name: "",
-  pricingType: "included",
-  price: "",
-  description: "",
-});
-
-const EMPTY_LOCATION_FORM = {
-  name: "",
-  address: "",
-  city: "Torino",
-  capacity: "50",
-  hourlyPrice: "100",
-  menu: "",
-  description: "",
-  imageUrl: "",
-  galleryImageUrls: [] as string[],
-  includedServices: "Wi-Fi, Aria condizionata",
-  surfaceSqm: "",
-  parkingSpots: "",
-  minHours: "3",
-  accessibility: true,
-  airConditioning: true,
-  outdoorArea: false,
-  availableServices: [
-    {
-      name: "Menu del locale",
-      pricingType: "per_person" as const,
-      price: "28",
-      description: "",
-    },
-    {
-      name: "Open bar",
-      pricingType: "included" as const,
-      price: "",
-      description: "",
-    },
-  ] as AvailableServiceFormRow[],
-};
-
 const EMPTY_SERVICE_FORM = {
   name: "",
   description: "",
@@ -109,91 +57,6 @@ const EMPTY_SERVICE_FORM = {
   galleryImageUrls: [] as string[],
 };
 
-function parseCommaList(value: string): string[] {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function toAvailableServices(
-  rows: AvailableServiceFormRow[],
-): AvailableLocationService[] {
-  return rows
-    .map((row) => {
-      const name = row.name.trim();
-      if (!name) return null;
-
-      const amount = Number(row.price);
-      let pricing: AvailableLocationService["pricing"] = { type: "included" };
-      if (row.pricingType === "fixed" && Number.isFinite(amount) && amount >= 0) {
-        pricing = { type: "fixed", price: amount };
-      } else if (
-        row.pricingType === "per_person" &&
-        Number.isFinite(amount) &&
-        amount >= 0
-      ) {
-        pricing = { type: "per_person", pricePerPerson: amount };
-      }
-
-      const description = row.description.trim();
-      return {
-        name,
-        ...(description ? { description } : {}),
-        pricing,
-      } satisfies AvailableLocationService;
-    })
-    .filter((item): item is AvailableLocationService => item != null);
-}
-
-function createLocationFromForm(form: typeof EMPTY_LOCATION_FORM): Location {
-  const name = form.name.trim() || "Nuova location";
-  const includedServices = parseCommaList(form.includedServices);
-  const capacity = Number(form.capacity) || 50;
-  const availableServices = toAvailableServices(form.availableServices);
-  const fallbackImage =
-    "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&q=80";
-  const manualImage = form.imageUrl.trim();
-  const gallery =
-    form.galleryImageUrls.length > 0
-      ? form.galleryImageUrls
-      : [manualImage || fallbackImage];
-
-  return {
-    id: `managed-location-${Date.now()}`,
-    name,
-    city: form.city.trim() || "Torino",
-    comune: form.city.trim() || "Torino",
-    regione: "Piemonte",
-    address: form.address.trim() || "Indirizzo da completare",
-    geoArea: "torino_citta",
-    zoneLabel: form.city.trim() || "Torino",
-    latitude: 45.0703,
-    longitude: 7.6869,
-    imageUrl: gallery[0],
-    gallery,
-    description:
-      form.description.trim() ||
-      "Location gestita dal catalogo privato VibeUp.",
-    technicalDetails: {
-      surfaceSqm: Number(form.surfaceSqm) || 0,
-      parkingSpots: Number(form.parkingSpots) || 0,
-      minHours: Number(form.minHours) || 3,
-      maxGuests: capacity,
-      accessibility: form.accessibility,
-      airConditioning: form.airConditioning,
-      outdoorArea: form.outdoorArea,
-    },
-    hourlyPrice: Number(form.hourlyPrice) || 0,
-    capacity,
-    partyTypes: ["compleanno", "laurea", "festa"],
-    deposit: Math.round((Number(form.hourlyPrice) || 0) * 2),
-    includedServices:
-      includedServices.length > 0 ? includedServices : ["Dettagli da completare"],
-    ...(availableServices.length > 0 ? { availableServices } : {}),
-    contactsBeenHere: { count: 0, contacts: [] },
-  };
-}
 
 function listingName(listing: ManagedListing): string {
   return listing.category === "locali"
@@ -264,7 +127,6 @@ export function ProtectedCatalogManager() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [activeCategory, setActiveCategory] = useState<ExploreCategory>("locali");
-  const [locationForm, setLocationForm] = useState(EMPTY_LOCATION_FORM);
   const [serviceForm, setServiceForm] = useState(EMPTY_SERVICE_FORM);
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -315,23 +177,6 @@ export function ProtectedCatalogManager() {
     setPasswordError("Password non corretta.");
   }
 
-  function saveLocation(published = false) {
-    const location = createLocationFromForm(locationForm);
-    const listing: ManagedLocationListing = {
-      id: location.id,
-      category: "locali",
-      location,
-      menu: locationForm.menu,
-      published,
-      updatedAt: new Date().toISOString(),
-    };
-
-    upsertManagedListing(listing);
-    setLocationForm(EMPTY_LOCATION_FORM);
-    setAiText("");
-    setAiMessage("Locale salvato. Puoi pubblicarlo quando sei pronto.");
-  }
-
   function saveService(published = false) {
     const listing: ManagedServiceListing = {
       id: `managed-${activeCategory}-${Date.now()}`,
@@ -360,26 +205,6 @@ export function ProtectedCatalogManager() {
     upsertManagedListing(listing);
     setServiceForm(EMPTY_SERVICE_FORM);
     setAiMessage("Servizio salvato. Puoi pubblicarlo quando sei pronto.");
-  }
-
-  async function addLocationPhotos(files?: FileList | null) {
-    const images = await readImageFiles(files);
-    if (images.length === 0) return;
-
-    setLocationForm((prev) => ({
-      ...prev,
-      galleryImageUrls: [...prev.galleryImageUrls, ...images],
-    }));
-    setAiMessage(`${images.length} foto aggiunte alla pubblicazione.`);
-  }
-
-  function removeLocationPhoto(index: number) {
-    setLocationForm((prev) => ({
-      ...prev,
-      galleryImageUrls: prev.galleryImageUrls.filter((_, itemIndex) =>
-        itemIndex !== index
-      ),
-    }));
   }
 
   async function addServicePhoto(files?: FileList | null) {
@@ -415,116 +240,6 @@ export function ProtectedCatalogManager() {
         uploadedImageUrl: galleryImageUrls[0] ?? "",
       };
     });
-  }
-
-  async function importLocationWithAi(files?: FileList | null) {
-    if (activeCategory !== "locali") return;
-
-    setAiLoading(true);
-    setAiMessage(null);
-
-    try {
-      const formData = new FormData();
-      if (aiText.trim()) {
-        formData.append("text", aiText);
-      }
-      Array.from(files ?? []).forEach((file) => {
-        formData.append(file.type.startsWith("image/") ? "photos" : "files", file);
-      });
-
-      const response = await fetch("/api/ai/location-extract", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error("Import non riuscito");
-
-      const body = (await response.json()) as {
-        data?: {
-          location?: Location;
-          extraction?: {
-            priceList?: Array<{
-              name: string;
-              price: number;
-              pricingUnit?: string;
-              included?: boolean;
-              description?: string;
-            }>;
-          };
-        };
-      };
-      const location = body.data?.location;
-      if (!location) throw new Error("Nessun dato location estratto");
-
-      const tech = location.technicalDetails;
-      const priceList = body.data?.extraction?.priceList ?? [];
-      const availableFromAi: AvailableServiceFormRow[] =
-        location.availableServices && location.availableServices.length > 0
-          ? location.availableServices.map((service) => ({
-              name: service.name,
-              pricingType:
-                service.pricing.type === "per_person"
-                  ? "per_person"
-                  : service.pricing.type === "fixed"
-                    ? "fixed"
-                    : "included",
-              price:
-                service.pricing.type === "per_person"
-                  ? String(service.pricing.pricePerPerson)
-                  : service.pricing.type === "fixed"
-                    ? String(service.pricing.price)
-                    : "",
-              description: service.description ?? "",
-            }))
-          : priceList.map((item) => {
-              const included = Boolean(item.included) || item.price <= 0;
-              const perPerson =
-                item.pricingUnit === "person" || item.pricingUnit === "kg";
-              return {
-                name: item.name,
-                pricingType: included
-                  ? ("included" as const)
-                  : perPerson
-                    ? ("per_person" as const)
-                    : ("fixed" as const),
-                price: included ? "" : String(Math.round(item.price)),
-                description: item.description ?? "",
-              };
-            });
-
-      setLocationForm({
-        name: location.name,
-        address: location.address,
-        city: location.city,
-        capacity: String(location.capacity || tech?.maxGuests || 50),
-        hourlyPrice: String(location.hourlyPrice),
-        menu:
-          priceList
-            .map((item) => `${item.name}: ${formatCurrency(item.price)}`)
-            .join("\n") ?? "",
-        description: location.description,
-        imageUrl: location.imageUrl,
-        galleryImageUrls: location.gallery,
-        includedServices: location.includedServices.join(", "),
-        surfaceSqm: tech?.surfaceSqm ? String(tech.surfaceSqm) : "",
-        parkingSpots: tech?.parkingSpots ? String(tech.parkingSpots) : "",
-        minHours: String(tech?.minHours || 3),
-        accessibility: tech?.accessibility ?? true,
-        airConditioning: tech?.airConditioning ?? true,
-        outdoorArea: tech?.outdoorArea ?? false,
-        availableServices:
-          availableFromAi.length > 0
-            ? availableFromAi
-            : [EMPTY_AVAILABLE_SERVICE_ROW()],
-      });
-      setAiMessage("Informazioni importate: controllale e poi salva o pubblica.");
-    } catch {
-      setAiMessage(
-        "Non sono riuscito a importare automaticamente. Puoi incollare piu' testo o completare i campi a mano.",
-      );
-    } finally {
-      setAiLoading(false);
-    }
   }
 
   async function importServiceDetails(files?: FileList | null) {
@@ -1009,150 +724,5 @@ function FormTextarea({
         className="w-full min-w-0 max-w-full resize-y rounded-2xl border border-primary-black/10 bg-background px-4 py-3 text-base outline-none focus:border-brand-teal"
       />
     </label>
-  );
-}
-
-function ToggleChip({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={cn(
-        "rounded-2xl border px-3 py-3 text-left text-sm font-bold transition-colors",
-        checked
-          ? "border-brand-teal/40 bg-brand-teal/10 text-brand-teal"
-          : "border-primary-black/10 bg-background text-primary-black/55",
-      )}
-    >
-      {label}
-    </button>
-  );
-}
-
-function AvailableServicesEditor({
-  rows,
-  onChange,
-}: {
-  rows: AvailableServiceFormRow[];
-  onChange: (rows: AvailableServiceFormRow[]) => void;
-}) {
-  function updateRow(
-    index: number,
-    patch: Partial<AvailableServiceFormRow>,
-  ) {
-    onChange(
-      rows.map((row, rowIndex) =>
-        rowIndex === index ? { ...row, ...patch } : row,
-      ),
-    );
-  }
-
-  return (
-    <section className="space-y-3 rounded-3xl border border-primary-black/10 bg-primary-black/[0.02] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-sm font-black text-primary-black">
-            Servizi disponibili
-          </h3>
-          <p className="mt-1 text-xs text-primary-black/55">
-            Servizi selezionabili nel preventivo (menu, DJ, fotografo, bar…).
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => onChange([...rows, EMPTY_AVAILABLE_SERVICE_ROW()])}
-          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-teal/15 px-3 py-1.5 text-xs font-bold text-brand-teal"
-        >
-          <Plus className="h-3.5 w-3.5" aria-hidden />
-          Aggiungi
-        </button>
-      </div>
-
-      <ul className="space-y-3">
-        {rows.map((row, index) => (
-          <li
-            key={`available-service-${index}`}
-            className="space-y-2 rounded-2xl border border-primary-black/10 bg-background p-3"
-          >
-            <div className="flex items-start gap-2">
-              <input
-                type="text"
-                value={row.name}
-                onChange={(event) =>
-                  updateRow(index, { name: event.target.value })
-                }
-                placeholder="Nome servizio"
-                className="min-w-0 flex-1 rounded-xl border border-primary-black/10 bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
-              />
-              <button
-                type="button"
-                onClick={() =>
-                  onChange(rows.filter((_, rowIndex) => rowIndex !== index))
-                }
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-primary-black/40 transition-colors hover:bg-brand-pink/10 hover:text-brand-pink"
-                aria-label={`Rimuovi servizio ${index + 1}`}
-              >
-                <Trash2 className="h-4 w-4" aria-hidden />
-              </button>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-[1.1fr_0.9fr]">
-              <label className="min-w-0">
-                <span className="mb-1 block text-[11px] font-bold text-primary-black/45">
-                  Prezzo
-                </span>
-                <select
-                  value={row.pricingType}
-                  onChange={(event) =>
-                    updateRow(index, {
-                      pricingType: event.target
-                        .value as AvailableServiceFormRow["pricingType"],
-                    })
-                  }
-                  className="w-full rounded-xl border border-primary-black/10 bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
-                >
-                  <option value="included">Incluso</option>
-                  <option value="fixed">Prezzo fisso (€)</option>
-                  <option value="per_person">A persona (€)</option>
-                </select>
-              </label>
-              {row.pricingType !== "included" && (
-                <label className="min-w-0">
-                  <span className="mb-1 block text-[11px] font-bold text-primary-black/45">
-                    Importo
-                  </span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={row.price}
-                    onChange={(event) =>
-                      updateRow(index, { price: event.target.value })
-                    }
-                    placeholder="0"
-                    className="w-full rounded-xl border border-primary-black/10 bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
-                  />
-                </label>
-              )}
-            </div>
-            <input
-              type="text"
-              value={row.description}
-              onChange={(event) =>
-                updateRow(index, { description: event.target.value })
-              }
-              placeholder="Descrizione opzionale"
-              className="w-full rounded-xl border border-primary-black/10 bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
-            />
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
