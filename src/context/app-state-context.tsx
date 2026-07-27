@@ -19,7 +19,11 @@ import {
   isActivationTokenExpired,
 } from "@/lib/auth/activation";
 import { isEventPast } from "@/lib/event";
-import { pruneMenuSelectionsForAllergens } from "@/lib/menu-allergens";
+import {
+  allergenRestrictionNames,
+  normalizeAllergenRestrictions,
+  pruneMenuSelectionsForAllergens,
+} from "@/lib/menu-allergens";
 import { MOCK_EVENTS } from "@/lib/mock/events";
 import {
   sanitizeAccountPaymentCards,
@@ -34,7 +38,12 @@ import {
 import { scrubPersistedJson } from "@/lib/security/persist-scrub";
 import { purgeUserSatelliteStorage } from "@/lib/local-user-data-cleanup";
 import type { ManagedListing } from "@/types/admin";
-import type { BookedService, EventMenuSelection, UserEvent } from "@/types/event";
+import type {
+  BookedService,
+  EventMenuSelection,
+  MenuAllergenRestriction,
+  UserEvent,
+} from "@/types/event";
 import type { SavedPaymentCard } from "@/types/payment";
 import type { SavedQuote } from "@/types/saved-quote";
 import { MAX_SAVED_QUOTES } from "@/types/saved-quote";
@@ -161,7 +170,10 @@ interface AppStateContextValue {
     eventId: string,
     selections: EventMenuSelection[],
   ) => void;
-  updateEventMenuAllergens: (eventId: string, allergens: string[]) => void;
+  updateEventMenuAllergens: (
+    eventId: string,
+    allergens: MenuAllergenRestriction[],
+  ) => void;
   addServiceToEvent: (eventId: string, service: BookedService) => void;
   markServicePaid: (eventId: string, serviceId: string, method?: string) => void;
   toggleFavoriteLocation: (id: string) => void;
@@ -992,10 +1004,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   );
 
   const updateEventMenuAllergens = useCallback(
-    (eventId: string, allergens: string[]) => {
-      const nextAllergens = Array.from(
-        new Set(allergens.map((item) => item.trim()).filter(Boolean)),
-      );
+    (eventId: string, allergens: MenuAllergenRestriction[]) => {
+      const nextAllergens = normalizeAllergenRestrictions(allergens);
+      const nextNames = allergenRestrictionNames(nextAllergens);
 
       updateCurrentUserState((state) => ({
         ...state,
@@ -1032,7 +1043,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             services,
             menuSelections: pruneMenuSelectionsForAllergens(
               event.menuSelections ?? [],
-              nextAllergens,
+              nextNames,
             ),
           };
         }),

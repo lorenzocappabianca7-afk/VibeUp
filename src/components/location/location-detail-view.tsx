@@ -34,7 +34,7 @@ import {
 } from "@/lib/quote-session-draft";
 import { getLocationPricePresentation } from "@/lib/utils";
 import type { ManagedLocationListing } from "@/types/admin";
-import type { BookedServiceCategory } from "@/types/event";
+import type { BookedServiceCategory, MenuAllergenRestriction } from "@/types/event";
 import type { BookingQuote, ExtraServiceId, Location } from "@/types/location";
 import {
   buildSavedQuoteId,
@@ -138,7 +138,9 @@ export function LocationDetailView({
   const [selectedInternalServices, setSelectedInternalServices] = useState<
     string[]
   >([]);
-  const [menuAllergens, setMenuAllergens] = useState<string[]>([]);
+  const [menuAllergens, setMenuAllergens] = useState<MenuAllergenRestriction[]>(
+    [],
+  );
   const [allergenSheetOpen, setAllergenSheetOpen] = useState(false);
   const [pendingMenuServiceId, setPendingMenuServiceId] = useState<
     string | null
@@ -462,7 +464,7 @@ export function LocationDetailView({
     );
   }
 
-  function confirmMenuAllergens(allergens: string[]) {
+  function confirmMenuAllergens(allergens: MenuAllergenRestriction[]) {
     const serviceId = pendingMenuServiceId;
     setMenuAllergens(allergens);
     if (serviceId) {
@@ -563,7 +565,7 @@ export function LocationDetailView({
             allergens: selectedInternalServices.some((serviceId) =>
               isVenueMenuServiceId(serviceId, internalServices),
             )
-              ? Array.from(new Set(venueMenuAllergens))
+              ? venueMenuAllergens
               : undefined,
           },
           ...selectedExtras.flatMap((extraId) => {
@@ -738,6 +740,7 @@ export function LocationDetailView({
       <AllergenPickerSheet
         open={allergenSheetOpen}
         initialSelected={menuAllergens}
+        maxGuests={guestCount}
         onClose={closeAllergenSheet}
         onConfirm={confirmMenuAllergens}
       />

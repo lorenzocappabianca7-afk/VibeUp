@@ -7,6 +7,8 @@ import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { useAppState } from "@/context/app-state-context";
 import { getCountdown, isEventPast } from "@/lib/event";
 import {
+  allergenRestrictionNames,
+  coerceAllergenRestrictions,
   filterMenuCoursesByAllergens,
   type MenuCourse,
   type MenuCourseItem,
@@ -15,6 +17,7 @@ import {
   EVENT_STATUS_LABELS,
   type BookedService,
   type EventMenuSelection,
+  type MenuAllergenRestriction,
   type UserEvent,
 } from "@/types/event";
 import {
@@ -181,12 +184,26 @@ function locationIncludesVenueMenu(event: UserEvent) {
   return /menu|catering|buffet|food/i.test(locationService.name);
 }
 
-function getEventMenuAllergens(event: UserEvent): string[] {
-  const fromMenuServices = getMenuServices(event).flatMap(
-    (service) => service.allergens ?? [],
-  );
-  const fromLocation = getLocationService(event)?.allergens ?? [];
-  return Array.from(new Set([...fromMenuServices, ...fromLocation]));
+function getEventMenuAllergens(event: UserEvent): MenuAllergenRestriction[] {
+  const merged = [
+    ...getMenuServices(event).flatMap((service) =>
+      coerceAllergenRestrictions(service.allergens),
+    ),
+    ...coerceAllergenRestrictions(getLocationService(event)?.allergens),
+  ];
+
+  const byName = new Map<string, number>();
+  for (const item of merged) {
+    byName.set(
+      item.name,
+      Math.max(byName.get(item.name) ?? 0, item.guestCount),
+    );
+  }
+
+  return Array.from(byName.entries()).map(([name, guestCount]) => ({
+    name,
+    guestCount,
+  }));
 }
 
 function eventHasEditableMenuAllergens(event: UserEvent) {
@@ -436,7 +453,10 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
     eventId: string,
     selections: EventMenuSelection[],
   ) => void;
-  onMenuAllergensChange: (eventId: string, allergens: string[]) => void;
+  onMenuAllergensChange: (
+    eventId: string,
+    allergens: MenuAllergenRestriction[],
+  ) => void;
 }) {
   const [titleDraft, setTitleDraft] = useState(event.title);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -455,6 +475,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   const missingSuggestions = getMissingServiceSuggestions(event);
   const menuServices = getMenuServices(event);
   const restrictedAllergens = getEventMenuAllergens(event);
+  const restrictedAllergenNames = allergenRestrictionNames(restrictedAllergens);
   const canEditAllergens = eventHasEditableMenuAllergens(event);
   const showMenuSection =
     menuServices.length > 0 || locationIncludesVenueMenu(event);
@@ -635,10 +656,13 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {restrictedAllergens.map((allergen) => (
                     <span
-                      key={allergen}
+                      key={allergen.name}
                       className="rounded-full bg-brand-pink/20 px-2.5 py-0.5 text-[11px] font-medium text-white ring-1 ring-brand-pink/35"
                     >
-                      {allergen}
+                      {allergen.name}
+                      <span className="ml-1 tabular-nums text-white/75">
+                        · {allergen.guestCount}
+                      </span>
                     </span>
                   ))}
                 </div>
@@ -651,7 +675,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
           </div>
 
           <MenuCoursePicker
-            restrictedAllergens={restrictedAllergens}
+            restrictedAllergens={restrictedAllergenNames}
             selections={event.menuSelections ?? []}
             onChange={(selections) =>
               onMenuSelectionsChange(event.id, selections)
@@ -663,6 +687,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       <AllergenPickerSheet
         open={allergenSheetOpen}
         initialSelected={restrictedAllergens}
+        maxGuests={event.guestCount}
         title="Modifica allergeni"
         confirmLabel="Aggiorna menu"
         onClose={() => setAllergenSheetOpen(false)}

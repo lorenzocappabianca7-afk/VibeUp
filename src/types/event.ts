@@ -13,6 +13,12 @@ export type BookedServiceCategory =
   | "audio_lights"
   | "security";
 
+/** Guest allergen restriction with how many people are affected. */
+export interface MenuAllergenRestriction {
+  name: string;
+  guestCount: number;
+}
+
 export interface BookedService {
   id: string;
   category: BookedServiceCategory;
@@ -20,7 +26,11 @@ export interface BookedService {
   providerName: string;
   status: ServiceStatus;
   amountPaid: number;
-  allergens?: string[];
+  /**
+   * Guest allergen restrictions for menu/catering/location-with-menu.
+   * Legacy string[] values are still accepted when reading persisted state.
+   */
+  allergens?: MenuAllergenRestriction[] | string[];
 }
 
 export interface EventMenuSelection {

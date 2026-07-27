@@ -1,5 +1,7 @@
 /** Guest allergen restrictions and venue menu course catalog. */
 
+import type { MenuAllergenRestriction } from "@/types/event";
+
 export const MENU_ALLERGEN_OPTIONS = [
   "Glutine",
   "Latte",
@@ -16,6 +18,55 @@ export const MENU_ALLERGEN_OPTIONS = [
 ] as const;
 
 export type MenuAllergen = (typeof MENU_ALLERGEN_OPTIONS)[number];
+
+export function coerceAllergenRestrictions(
+  value: MenuAllergenRestriction[] | string[] | undefined | null,
+): MenuAllergenRestriction[] {
+  if (!Array.isArray(value) || value.length === 0) return [];
+
+  const byName = new Map<string, number>();
+
+  for (const item of value) {
+    if (typeof item === "string") {
+      const name = item.trim();
+      if (!name) continue;
+      byName.set(name, Math.max(byName.get(name) ?? 0, 1));
+      continue;
+    }
+
+    if (!item || typeof item !== "object") continue;
+    const name = String(item.name ?? "").trim();
+    if (!name) continue;
+    const parsed = Number(item.guestCount);
+    const guestCount = Math.max(
+      1,
+      Number.isFinite(parsed) ? Math.floor(parsed) : 1,
+    );
+    byName.set(name, Math.max(byName.get(name) ?? 0, guestCount));
+  }
+
+  return Array.from(byName.entries()).map(([name, guestCount]) => ({
+    name,
+    guestCount,
+  }));
+}
+
+export function allergenRestrictionNames(
+  value: MenuAllergenRestriction[] | string[] | undefined | null,
+): string[] {
+  return coerceAllergenRestrictions(value).map((item) => item.name);
+}
+
+export function normalizeAllergenRestrictions(
+  value: MenuAllergenRestriction[],
+  maxGuests = 300,
+): MenuAllergenRestriction[] {
+  const cappedMax = Math.max(1, Math.floor(maxGuests));
+  return coerceAllergenRestrictions(value).map((item) => ({
+    name: item.name,
+    guestCount: Math.min(Math.max(1, item.guestCount), cappedMax),
+  }));
+}
 
 export interface MenuCourseItem {
   id: string;
