@@ -208,10 +208,11 @@ input[type="number"]::-webkit-outer-spin-button {
   --postit-paper: #ffffff;
   --postit-paper-deep: #f7f7f8;
   --postit-ink: #1c2430;
-  --postit-ink-muted: rgba(28, 36, 48, 0.62);
+  --postit-ink-muted: rgba(28, 36, 48, 0.72);
   --postit-zag: 14px;
   position: relative;
   color: var(--postit-ink);
+  font-weight: 600;
   background-color: var(--postit-paper);
   background-image: linear-gradient(
     180deg,

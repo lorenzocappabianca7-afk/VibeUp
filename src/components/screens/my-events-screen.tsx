@@ -452,7 +452,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
         <div className="event-postit-section min-w-0 border-b px-3 sm:px-4">
           <div className="min-w-0 overflow-hidden">
             <p
-              className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${statusColors[event.status]}`}
+              className={`text-[11px] font-bold uppercase tracking-[0.14em] ${statusColors[event.status]}`}
             >
               {EVENT_STATUS_LABELS[event.status]}
             </p>
@@ -475,11 +475,11 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                     }
                   }}
                   placeholder="Nome evento"
-                  className="box-border min-w-0 flex-1 bg-transparent text-lg font-semibold leading-snug text-[color:var(--postit-ink)] outline-none placeholder:text-[color:var(--postit-ink-muted)] sm:text-xl"
+                  className="box-border min-w-0 flex-1 bg-transparent text-lg font-bold leading-snug text-[color:var(--postit-ink)] outline-none placeholder:text-[color:var(--postit-ink-muted)] sm:text-xl"
                   aria-label="Titolo evento"
                 />
               ) : (
-                <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-snug text-[color:var(--postit-ink)] sm:text-xl">
+                <h3 className="min-w-0 flex-1 truncate text-lg font-bold leading-snug text-[color:var(--postit-ink)] sm:text-xl">
                   {event.title}
                 </h3>
               )}
@@ -506,13 +506,13 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
               </button>
             </div>
             {event.description && (
-              <p className="mt-1 line-clamp-2 break-words text-sm text-[color:var(--postit-ink-muted)]">
+              <p className="mt-1 line-clamp-2 break-words text-sm font-semibold text-[color:var(--postit-ink-muted)]">
                 {event.description}
               </p>
             )}
           </div>
 
-          <div className="mt-4 min-w-0 space-y-1.5 text-sm text-[color:var(--postit-ink)]">
+          <div className="mt-4 min-w-0 space-y-1.5 text-sm font-semibold text-[color:var(--postit-ink)]">
             <p className="flex min-w-0 items-center gap-1.5">
               <Calendar
                 className="h-4 w-4 shrink-0 text-brand-teal-strong"
@@ -544,7 +544,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
         />
 
         <div className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
-          <h3 className="text-sm font-semibold text-[color:var(--postit-ink)]">
+          <h3 className="text-sm font-bold text-[color:var(--postit-ink)]">
             Da pagare
           </h3>
 
@@ -552,12 +552,12 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
             {event.services.map((service) => (
               <li
                 key={service.id}
-                className="flex min-w-0 items-baseline justify-between gap-3 text-sm text-[color:var(--postit-ink)]"
+                className="flex min-w-0 items-baseline justify-between gap-3 text-sm font-semibold text-[color:var(--postit-ink)]"
               >
-                <span className="min-w-0 truncate font-medium">
+                <span className="min-w-0 truncate font-bold">
                   {service.name}
                 </span>
-                <span className="shrink-0 tabular-nums">
+                <span className="shrink-0 font-bold tabular-nums">
                   {formatCurrency(service.amountPaid)}
                 </span>
               </li>
@@ -566,18 +566,18 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
 
           <dl className="mt-4 min-w-0 space-y-2 border-t border-black/10 pt-4 text-sm">
             <div className="flex min-w-0 items-center justify-between gap-3">
-              <dt className="min-w-0 text-[color:var(--postit-ink-muted)]">
+              <dt className="min-w-0 font-semibold text-[color:var(--postit-ink-muted)]">
                 Caparra location
               </dt>
-              <dd className="shrink-0 font-medium tabular-nums text-[color:var(--postit-ink)]">
+              <dd className="shrink-0 font-bold tabular-nums text-[color:var(--postit-ink)]">
                 {formatCurrency(depositAmount)}
               </dd>
             </div>
             <div className="flex min-w-0 items-center justify-between gap-3">
-              <dt className="font-semibold text-[color:var(--postit-ink)]">
+              <dt className="font-bold text-[color:var(--postit-ink)]">
                 Totale
               </dt>
-              <dd className="shrink-0 text-base font-semibold tabular-nums text-[color:var(--postit-ink)]">
+              <dd className="shrink-0 text-base font-extrabold tabular-nums text-[color:var(--postit-ink)]">
                 {formatCurrency(totalCost)}
               </dd>
             </div>
@@ -587,10 +587,10 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
         {missingSuggestions.length > 0 && (
           <section className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
             <div className="event-postit-dark p-3.5">
-              <p className="text-sm font-medium text-white">
+              <p className="text-sm font-bold text-white">
                 Potrebbe mancare
               </p>
-              <p className="event-postit-dark-muted mt-0.5 text-xs">
+              <p className="event-postit-dark-muted mt-0.5 text-xs font-semibold">
                 Aggiungi altri servizi alla festa
               </p>
               <div className="scrollbar-hidden mt-3 flex max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1">
@@ -604,7 +604,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                         event,
                         suggestion.exploreCategory,
                       )}
-                      className="inline-flex shrink-0 items-center gap-2 rounded-full bg-brand-pink px-3.5 py-2 text-sm font-medium text-ink-inverse transition-colors hover:bg-brand-pink/90"
+                      className="inline-flex shrink-0 items-center gap-2 rounded-full bg-brand-pink px-3.5 py-2 text-sm font-bold text-ink-inverse transition-colors hover:bg-brand-pink/90"
                     >
                       <Icon className="h-4 w-4 text-ink-inverse" aria-hidden />
                       {suggestion.label}
@@ -714,10 +714,10 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
       <div className="event-postit-dark p-3.5">
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-white">
+            <p className="text-sm font-bold text-white">
               Caparra {formatCurrency(depositAmount)}
             </p>
-            <p className="event-postit-dark-muted mt-0.5 break-words text-xs">
+            <p className="event-postit-dark-muted mt-0.5 break-words text-xs font-semibold">
               Entro {formatDepositDeadline(deadline)}
               {!countdown.isPast && (
                 <>
@@ -732,20 +732,20 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
 
           <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-auto sm:max-w-[14rem] sm:items-end">
             {!payment.paid && (
-              <p className="event-postit-dark-muted text-[11px] leading-snug sm:text-right">
+              <p className="event-postit-dark-muted text-[11px] font-semibold leading-snug sm:text-right">
                 Entro 36 ore dalla creazione: blocca {event.locationName} per il{" "}
                 {formatDate(event.date)}. Se non la paghi, perdi la priorità.
               </p>
             )}
             {payment.paid ? (
-              <span className="inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-semibold text-ink-inverse sm:w-fit">
+              <span className="inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-bold text-ink-inverse sm:w-fit">
                 Caparra pagata
               </span>
             ) : (
               <button
                 type="button"
                 onClick={onPayDeposit}
-                className={`inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-semibold text-ink-inverse transition-colors hover:bg-brand-teal/90 sm:w-fit ${
+                className={`inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-bold text-ink-inverse transition-colors hover:bg-brand-teal/90 sm:w-fit ${
                   countdown.isPast ? "ring-2 ring-brand-teal/40" : ""
                 }`}
               >

@@ -76,7 +76,7 @@ export function EventCountdown({
         <p
           className={
             embedded
-              ? "text-sm font-medium text-[color:var(--postit-ink)]"
+              ? "text-sm font-bold text-[color:var(--postit-ink)]"
               : "text-sm font-medium text-white"
           }
         >
@@ -114,14 +114,14 @@ export function EventCountdown({
       <p
         className={
           embedded
-            ? "text-sm font-medium text-[color:var(--postit-ink)]"
+            ? "text-sm font-bold text-[color:var(--postit-ink)]"
             : "text-center text-xs font-semibold uppercase tracking-widest text-brand-teal"
         }
       >
         {embedded ? "Manca all'evento" : "Countdown all'evento"}
       </p>
       {embedded && (
-        <p className="mt-0.5 text-xs text-[color:var(--postit-ink-muted)]">
+        <p className="mt-0.5 text-xs font-semibold text-[color:var(--postit-ink-muted)]">
           Aggiornato in tempo reale
         </p>
       )}
@@ -138,14 +138,14 @@ export function EventCountdown({
             key={unit.label}
             className={
               embedded
-                ? "event-postit-chip flex flex-col items-center rounded-xl py-2.5 sm:py-3"
+                ? "flex flex-col items-center rounded-xl bg-black py-2.5 sm:py-3"
                 : "flex flex-col items-center rounded-xl bg-background py-2.5 sm:py-3"
             }
           >
             <span
               className={
                 embedded
-                  ? "text-xl font-bold tabular-nums text-[color:var(--postit-ink)] sm:text-2xl"
+                  ? "text-xl font-bold tabular-nums text-white sm:text-2xl"
                   : "text-xl font-bold tabular-nums text-white sm:text-2xl"
               }
             >
@@ -154,7 +154,7 @@ export function EventCountdown({
             <span
               className={
                 embedded
-                  ? "mt-0.5 text-[10px] font-medium uppercase text-[color:var(--postit-ink-muted)]"
+                  ? "mt-0.5 text-[10px] font-semibold uppercase text-white/55"
                   : "mt-0.5 text-[10px] font-medium uppercase text-primary-black/50"
               }
             >
