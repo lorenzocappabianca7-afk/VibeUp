@@ -359,21 +359,21 @@ export function SmartLocationDetailsSection({
           </ul>
         </div>
 
-        <div className="rounded-3xl border border-primary-black/8 bg-primary-black/[0.02] p-4">
+        <div className="rounded-3xl border border-white/20 bg-brand-teal p-4">
           <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-pink/15 text-brand-pink">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-brand-teal">
               <GlassWater className="h-5 w-5" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-black text-primary-black">Bevande</h3>
-              <p className="text-xs text-primary-black/55">
+              <h3 className="text-sm font-black text-ink-inverse">Bevande</h3>
+              <p className="text-xs text-ink-inverse/70">
                 Scegli drink a invitato oppure open bar: il costo è compreso nel
                 prezzo del locale.
               </p>
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-3 gap-1.5 rounded-2xl bg-primary-black/[0.04] p-1">
+          <div className="mt-3 grid grid-cols-3 gap-1.5 rounded-2xl bg-white/15 p-1">
             {(
               [
                 { id: "none", label: "Nessuna" },
@@ -388,8 +388,8 @@ export function SmartLocationDetailsSection({
                 className={cn(
                   "rounded-xl px-2 py-2.5 text-center text-[11px] font-bold transition-colors sm:text-xs",
                   drinkMode === option.id
-                    ? "bg-white/12 text-primary-black shadow-sm"
-                    : "text-primary-black/55 hover:text-primary-black",
+                    ? "bg-white text-ink-inverse shadow-sm"
+                    : "bg-transparent text-ink-inverse/65 hover:bg-white/20 hover:text-ink-inverse",
                 )}
               >
                 {option.label}
@@ -398,12 +398,12 @@ export function SmartLocationDetailsSection({
           </div>
 
           {drinkMode === "per_invitee" && (
-            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5">
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-white px-3 py-2.5">
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-primary-black">
+                <p className="text-sm font-semibold text-ink-inverse">
                   Drink per invitato
                 </p>
-                <p className="text-[11px] text-primary-black/45">
+                <p className="text-[11px] text-ink-inverse/55">
                   {formatCurrency(DRINK_UNIT_PRICE)} ciascuno
                 </p>
               </div>
@@ -414,12 +414,12 @@ export function SmartLocationDetailsSection({
                     onDrinksPerInviteeChange(drinksPerInvitee - 1)
                   }
                   disabled={drinksPerInvitee <= MIN_DRINKS_PER_INVITEE}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-primary-black/15 text-primary-black disabled:opacity-35"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-teal/15 text-brand-teal-strong disabled:opacity-35"
                   aria-label="Riduci drink per invitato"
                 >
                   <Minus className="h-3.5 w-3.5" aria-hidden />
                 </button>
-                <span className="min-w-[2rem] text-center text-lg font-black tabular-nums text-primary-black">
+                <span className="min-w-[2rem] text-center text-lg font-black tabular-nums text-ink-inverse">
                   {drinksPerInvitee}
                 </span>
                 <button
@@ -428,7 +428,7 @@ export function SmartLocationDetailsSection({
                     onDrinksPerInviteeChange(drinksPerInvitee + 1)
                   }
                   disabled={drinksPerInvitee >= MAX_DRINKS_PER_INVITEE}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-brand-pink/30 bg-brand-pink/10 text-brand-pink disabled:opacity-35"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-teal text-ink-inverse disabled:opacity-35"
                   aria-label="Aumenta drink per invitato"
                 >
                   <Plus className="h-3.5 w-3.5" aria-hidden />
@@ -438,18 +438,18 @@ export function SmartLocationDetailsSection({
           )}
 
           {drinkMode === "open_bar" && (
-            <p className="mt-3 rounded-xl bg-brand-teal/8 px-3 py-2 text-xs font-semibold text-primary-black/70">
+            <p className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-ink-inverse/80">
               Open bar stimato a {formatCurrency(OPEN_BAR_PER_INVITEE)}/invitato
               per tutta la serata.
             </p>
           )}
 
           {drinkMode !== "none" && (
-            <div className="mt-3 flex items-center justify-between gap-3 border-t border-primary-black/8 pt-3 text-sm">
-              <span className="text-primary-black/55">
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/25 pt-3 text-sm">
+              <span className="text-ink-inverse/70">
                 Incluso nel costo locale
               </span>
-              <span className="font-bold text-primary-black">
+              <span className="font-bold text-ink-inverse">
                 {formatCurrency(
                   calculateDrinksCost({
                     mode: drinkMode,
