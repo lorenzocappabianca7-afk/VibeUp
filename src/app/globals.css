@@ -203,14 +203,15 @@ input[type="number"]::-webkit-outer-spin-button {
   display: none;
 }
 
-/* —— My Events: post-it panel (lined paper + zigzag tear) —— */
+/* —— My Events: lined paper panel (white + zigzag tear) —— */
 .event-postit {
-  --postit-paper: #ffe56a;
-  --postit-paper-deep: #f5d84f;
-  --postit-line: rgba(62, 110, 170, 0.28);
-  --postit-margin: rgba(232, 84, 110, 0.45);
+  --postit-paper: #ffffff;
+  --postit-paper-deep: #f4f5f7;
+  --postit-line: rgba(90, 130, 180, 0.22);
+  --postit-margin: rgba(232, 84, 110, 0.4);
   --postit-ink: #1c2430;
   --postit-ink-muted: rgba(28, 36, 48, 0.62);
+  --postit-line-gap: 40px;
   --postit-zag: 14px;
   position: relative;
   color: var(--postit-ink);
@@ -226,15 +227,17 @@ input[type="number"]::-webkit-outer-spin-button {
     ),
     repeating-linear-gradient(
       transparent 0,
-      transparent 27px,
-      var(--postit-line) 27px,
-      var(--postit-line) 28px
+      transparent calc(var(--postit-line-gap) - 1px),
+      var(--postit-line) calc(var(--postit-line-gap) - 1px),
+      var(--postit-line) var(--postit-line-gap)
     ),
-    linear-gradient(165deg, #fff4a8 0%, var(--postit-paper) 42%, var(--postit-paper-deep) 100%);
-  background-size: 100% 100%, 100% 28px, 100% 100%;
+    linear-gradient(180deg, var(--postit-paper) 0%, var(--postit-paper-deep) 100%);
+  background-size: 100% 100%, 100% var(--postit-line-gap), 100% 100%;
+  /* Offset so text baselines fall mid-band between rules */
+  background-position: 0 0, 0 calc(var(--postit-line-gap) * 0.55), 0 0;
   border-radius: 3px 3px 0 0;
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
     0 14px 28px -18px rgba(0, 0, 0, 0.65),
     0 2px 6px rgba(0, 0, 0, 0.18);
   /* Torn zigzag bottom edge */
@@ -287,14 +290,18 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .event-postit-section {
-  border-color: rgba(28, 36, 48, 0.12) !important;
+  border-color: rgba(28, 36, 48, 0.1) !important;
   background: transparent !important;
+  /* Keep section rhythm on ruled bands */
+  padding-top: calc(var(--postit-line-gap) * 0.35) !important;
+  padding-bottom: calc(var(--postit-line-gap) * 0.35) !important;
 }
 
 .event-postit-chip {
-  background: rgba(28, 36, 48, 0.06);
+  background: rgba(28, 36, 48, 0.04);
   color: var(--postit-ink);
-  box-shadow: inset 0 0 0 1px rgba(28, 36, 48, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(28, 36, 48, 0.08);
+  line-height: 1.35;
 }
 
 /* Splash keyframes / overlay live in SplashScreen (scoped <style>) */

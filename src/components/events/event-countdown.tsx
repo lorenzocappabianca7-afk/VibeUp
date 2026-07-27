@@ -69,7 +69,7 @@ export function EventCountdown({
       <section
         className={
           embedded
-            ? "event-postit-section min-w-0 overflow-hidden border-t px-3 py-4 text-center sm:px-4"
+            ? "event-postit-section min-w-0 overflow-hidden border-t px-3 text-center sm:px-4"
             : "rounded-2xl border border-primary-black/10 bg-primary-black/[0.03] p-5 text-center"
         }
       >
@@ -107,7 +107,7 @@ export function EventCountdown({
     <section
       className={
         embedded
-          ? "event-postit-section min-w-0 overflow-hidden border-t px-3 py-4 sm:px-4"
+          ? "event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4"
           : "rounded-2xl border border-brand-teal/20 bg-gradient-to-br from-brand-teal/10 to-brand-pink/10 p-5"
       }
     >

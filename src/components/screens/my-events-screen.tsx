@@ -409,7 +409,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
           <h2 className="text-base font-semibold text-primary-black">
             In programma
           </h2>
-          <ul className="grid min-w-0 gap-5 sm:gap-6">
+          <ul className="mx-auto grid min-w-0 max-w-[20.5rem] gap-5 px-1 sm:max-w-[22rem] sm:gap-6">
             {activeEvents.map((event) => (
               <li key={event.id} className="min-w-0 max-w-full">
                 <ExpandedEventCard
@@ -513,15 +513,15 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
 
   return (
     <>
-      <article className="event-postit box-border w-full min-w-0 max-w-full">
-        <div className="event-postit-section min-w-0 border-b px-3 py-4 sm:px-4">
+      <article className="event-postit box-border mx-auto w-full min-w-0 max-w-full">
+        <div className="event-postit-section min-w-0 border-b px-3 sm:px-4">
           <div className="min-w-0 overflow-hidden pl-3 sm:pl-4">
             <p
               className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${statusColors[event.status]}`}
             >
               {EVENT_STATUS_LABELS[event.status]}
             </p>
-            <div className="mt-1 flex min-w-0 items-center gap-2">
+            <div className="mt-1 flex min-w-0 items-center gap-2 leading-none">
               {isEditingTitle ? (
                 <input
                   ref={titleInputRef}
@@ -540,11 +540,11 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                     }
                   }}
                   placeholder="Nome evento"
-                  className="box-border min-w-0 flex-1 bg-transparent text-lg font-semibold leading-snug text-[color:var(--postit-ink)] outline-none placeholder:text-[color:var(--postit-ink-muted)] sm:text-xl"
+                  className="box-border min-w-0 flex-1 bg-transparent text-lg font-semibold leading-[var(--postit-line-gap)] text-[color:var(--postit-ink)] outline-none placeholder:text-[color:var(--postit-ink-muted)] sm:text-xl"
                   aria-label="Titolo evento"
                 />
               ) : (
-                <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-snug text-[color:var(--postit-ink)] sm:text-xl">
+                <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-[var(--postit-line-gap)] text-[color:var(--postit-ink)] sm:text-xl">
                   {event.title}
                 </h3>
               )}
@@ -577,7 +577,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
             )}
           </div>
 
-          <div className="mt-4 min-w-0 space-y-1.5 pl-3 text-sm text-[color:var(--postit-ink)] sm:pl-4">
+          <div className="mt-4 min-w-0 space-y-0 pl-3 text-sm leading-[var(--postit-line-gap)] text-[color:var(--postit-ink)] sm:pl-4">
             <p className="flex min-w-0 items-center gap-1.5">
               <Calendar
                 className="h-4 w-4 shrink-0 text-brand-teal-strong"
@@ -609,7 +609,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
         />
 
         {showMenuSection && (
-          <section className="event-postit-section min-w-0 border-t px-3 py-4 sm:px-4">
+          <section className="event-postit-section min-w-0 border-t px-3 sm:px-4">
             <div className="flex items-center justify-between gap-2 pl-3 sm:pl-4">
               <div className="flex min-w-0 items-center gap-2">
                 <UtensilsCrossed
@@ -715,7 +715,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
           }}
         />
 
-        <div className="event-postit-section min-w-0 overflow-hidden border-t px-3 py-4 sm:px-4">
+        <div className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
           <h3 className="pl-3 text-sm font-semibold text-[color:var(--postit-ink)] sm:pl-4">
             Da pagare
           </h3>
@@ -757,7 +757,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
         </div>
 
         {missingSuggestions.length > 0 && (
-          <section className="event-postit-section min-w-0 overflow-hidden border-t px-3 py-4 sm:px-4">
+          <section className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
             <p className="pl-3 text-sm font-medium text-[color:var(--postit-ink)] sm:pl-4">
               Potrebbe mancare
             </p>
@@ -880,7 +880,7 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
   }, [deadline, isActive]);
 
   return (
-    <section className="event-postit-section min-w-0 overflow-hidden border-b px-3 py-3 sm:px-4">
+    <section className="event-postit-section min-w-0 overflow-hidden border-b px-3 sm:px-4">
       <div className="flex min-w-0 flex-col gap-3 pl-3 sm:flex-row sm:items-center sm:justify-between sm:pl-4">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-[color:var(--postit-ink)]">
@@ -1039,7 +1039,7 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
                         onClick={() => toggleSelection(course, item)}
                         className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                           selected
-                            ? "bg-[color:var(--postit-ink)] text-[#ffe56a]"
+                            ? "bg-[color:var(--postit-ink)] text-[color:var(--postit-paper)]"
                             : "bg-black/5 text-[color:var(--postit-ink)] ring-1 ring-black/10 hover:bg-black/10"
                         }`}
                       >
