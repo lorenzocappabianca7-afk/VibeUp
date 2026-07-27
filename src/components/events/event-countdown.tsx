@@ -69,11 +69,17 @@ export function EventCountdown({
       <section
         className={
           embedded
-            ? "min-w-0 overflow-hidden border-t border-primary-black/8 bg-primary-black/[0.03] px-3 py-4 text-center sm:px-4"
+            ? "event-postit-section min-w-0 overflow-hidden border-t px-3 py-4 text-center sm:px-4"
             : "rounded-2xl border border-primary-black/10 bg-primary-black/[0.03] p-5 text-center"
         }
       >
-        <p className="text-sm font-medium text-white">
+        <p
+          className={
+            embedded
+              ? "text-sm font-medium text-[color:var(--postit-ink)]"
+              : "text-sm font-medium text-white"
+          }
+        >
           L&apos;evento è passato
         </p>
         {!embedded && (
@@ -101,21 +107,21 @@ export function EventCountdown({
     <section
       className={
         embedded
-          ? "min-w-0 overflow-hidden border-t border-brand-teal/25 bg-gradient-to-br from-brand-teal/10 to-brand-pink/10 px-3 py-4 sm:px-4"
+          ? "event-postit-section min-w-0 overflow-hidden border-t px-3 py-4 sm:px-4"
           : "rounded-2xl border border-brand-teal/20 bg-gradient-to-br from-brand-teal/10 to-brand-pink/10 p-5"
       }
     >
       <p
         className={
           embedded
-            ? "text-sm font-medium text-white"
+            ? "pl-3 text-sm font-medium text-[color:var(--postit-ink)] sm:pl-4"
             : "text-center text-xs font-semibold uppercase tracking-widest text-brand-teal"
         }
       >
         {embedded ? "Manca all'evento" : "Countdown all'evento"}
       </p>
       {embedded && (
-        <p className="mt-0.5 text-xs text-primary-black/55">
+        <p className="mt-0.5 pl-3 text-xs text-[color:var(--postit-ink-muted)] sm:pl-4">
           Aggiornato in tempo reale
         </p>
       )}
@@ -123,22 +129,32 @@ export function EventCountdown({
       <div
         className={
           embedded
-            ? "mt-3 grid grid-cols-4 gap-1.5 sm:gap-2"
+            ? "mt-3 grid grid-cols-4 gap-1.5 pl-3 sm:gap-2 sm:pl-4"
             : "mt-4 grid grid-cols-4 gap-1.5 sm:gap-2"
         }
       >
         {units.map((unit) => (
           <div
             key={unit.label}
-            className="flex flex-col items-center rounded-xl bg-background py-2.5 sm:py-3"
+            className={
+              embedded
+                ? "event-postit-chip flex flex-col items-center rounded-xl py-2.5 sm:py-3"
+                : "flex flex-col items-center rounded-xl bg-background py-2.5 sm:py-3"
+            }
           >
-            <span className="text-xl font-bold tabular-nums text-white sm:text-2xl">
+            <span
+              className={
+                embedded
+                  ? "text-xl font-bold tabular-nums text-[color:var(--postit-ink)] sm:text-2xl"
+                  : "text-xl font-bold tabular-nums text-white sm:text-2xl"
+              }
+            >
               {String(unit.value).padStart(2, "0")}
             </span>
             <span
               className={
                 embedded
-                  ? "mt-0.5 text-[10px] font-medium uppercase text-white"
+                  ? "mt-0.5 text-[10px] font-medium uppercase text-[color:var(--postit-ink-muted)]"
                   : "mt-0.5 text-[10px] font-medium uppercase text-primary-black/50"
               }
             >

@@ -565,11 +565,11 @@ export function SmartLocationDetailsSection({
                 {generatedQuote ? formatCurrency(generatedQuote.total) : "Da generare"}
               </p>
             </div>
-            <div className="shrink-0 rounded-xl border border-white/20 bg-surface-2 px-2.5 py-1.5 text-right">
-              <p className="text-[9px] uppercase tracking-wide text-white/60">
+            <div className="shrink-0 rounded-xl border border-white/35 bg-white px-2.5 py-1.5 text-right">
+              <p className="text-[9px] uppercase tracking-wide text-ink-inverse/55">
                 Caparra 30%
               </p>
-              <p className="text-xs font-bold text-brand-teal">
+              <p className="text-xs font-bold text-brand-teal-strong">
                 {generatedQuote
                   ? formatCurrency(generatedQuote.depositAmount)
                   : "—"}
@@ -581,19 +581,19 @@ export function SmartLocationDetailsSection({
             <button
               type="button"
               onClick={() => togglePicker("date")}
-              className="w-full rounded-xl border border-white/20 bg-surface-2 px-2.5 py-2 text-left"
+              className="w-full rounded-xl border border-white/35 bg-white px-2.5 py-2 text-left"
             >
-              <span className="flex items-center gap-1 text-[10px] font-semibold text-white/60">
+              <span className="flex items-center gap-1 text-[10px] font-semibold text-ink-inverse/55">
                 <Calendar className="h-3 w-3" aria-hidden />
                 Data
               </span>
               <span className="mt-0.5 flex items-center justify-between gap-2">
-                <span className="text-sm font-black text-white">
+                <span className="text-sm font-black text-ink-inverse">
                   {formatDateLabel(date)}
                 </span>
                 <ChevronDown
                   className={cn(
-                    "h-3.5 w-3.5 text-brand-teal transition-transform",
+                    "h-3.5 w-3.5 text-brand-teal-strong transition-transform",
                     openPicker === "date" && "rotate-180",
                   )}
                   aria-hidden
@@ -616,33 +616,33 @@ export function SmartLocationDetailsSection({
               <button
                 type="button"
                 onClick={() => togglePicker("start")}
-                className="rounded-xl border border-white/20 bg-surface-2 px-2.5 py-2 text-left"
+                className="rounded-xl border border-white/35 bg-white px-2.5 py-2 text-left"
               >
-                <span className="flex items-center gap-1 text-[10px] font-semibold text-white/60">
+                <span className="flex items-center gap-1 text-[10px] font-semibold text-ink-inverse/55">
                   <Clock className="h-3 w-3" aria-hidden />
                   Inizio
                 </span>
-                <span className="mt-0.5 block text-sm font-black text-white">
+                <span className="mt-0.5 block text-sm font-black text-ink-inverse">
                   {startTime}
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => togglePicker("end")}
-                className="rounded-xl border border-white/20 bg-surface-2 px-2.5 py-2 text-left"
+                className="rounded-xl border border-white/35 bg-white px-2.5 py-2 text-left"
               >
-                <span className="flex items-center gap-1 text-[10px] font-semibold text-white/60">
+                <span className="flex items-center gap-1 text-[10px] font-semibold text-ink-inverse/55">
                   <Clock className="h-3 w-3" aria-hidden />
                   Fine
                 </span>
-                <span className="mt-0.5 block text-sm font-black text-white">
+                <span className="mt-0.5 block text-sm font-black text-ink-inverse">
                   {endTime}
                 </span>
               </button>
             </div>
 
-            <div className="rounded-xl border border-white/20 bg-surface-2 px-2.5 py-2">
-              <span className="text-[10px] font-semibold text-white/60">
+            <div className="rounded-xl border border-white/35 bg-white px-2.5 py-2">
+              <span className="text-[10px] font-semibold text-ink-inverse/55">
                 Invitati
               </span>
               <div className="mt-0.5 flex items-center justify-between gap-2">
@@ -684,7 +684,7 @@ export function SmartLocationDetailsSection({
                       setGuestCountInput(String(guestCount));
                     }
                   }}
-                  className="min-w-[3rem] flex-1 bg-transparent text-center text-sm font-black tabular-nums text-white outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  className="min-w-[3rem] flex-1 bg-transparent text-center text-sm font-black tabular-nums text-ink-inverse outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   aria-label="Numero invitati"
                 />
                 <button
@@ -695,7 +695,7 @@ export function SmartLocationDetailsSection({
                     onGuestCountChange(nextValue);
                   }}
                   disabled={guestCount >= maxGuests}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-teal-strong text-ink-inverse disabled:opacity-40"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-teal-strong text-white disabled:opacity-40"
                   aria-label="Aumenta invitati di 10"
                 >
                   <Plus className="h-3 w-3" aria-hidden />
@@ -729,7 +729,7 @@ export function SmartLocationDetailsSection({
           </button>
 
           {quoteNeedsRefresh && (
-            <p className="mt-2 rounded-lg border border-white/15 bg-surface-2 px-2.5 py-1.5 text-[11px] font-semibold text-white">
+            <p className="mt-2 rounded-lg border border-white/35 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-ink-inverse">
               Hai modificato i dettagli: rigenera il preventivo per vedere il costo aggiornato.
             </p>
           )}
@@ -784,7 +784,7 @@ export function SmartLocationDetailsSection({
             </>
           )}
           {hasTimeIssue && (
-            <p className="mt-2 rounded-lg border border-white/15 bg-surface-2 px-2.5 py-1.5 text-[11px] font-semibold text-white">
+            <p className="mt-2 rounded-lg border border-white/35 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-ink-inverse">
               Durata minima richiesta: {minHours} ore.
             </p>
           )}

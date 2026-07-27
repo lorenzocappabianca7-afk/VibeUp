@@ -203,6 +203,100 @@ input[type="number"]::-webkit-outer-spin-button {
   display: none;
 }
 
+/* —— My Events: post-it panel (lined paper + zigzag tear) —— */
+.event-postit {
+  --postit-paper: #ffe56a;
+  --postit-paper-deep: #f5d84f;
+  --postit-line: rgba(62, 110, 170, 0.28);
+  --postit-margin: rgba(232, 84, 110, 0.45);
+  --postit-ink: #1c2430;
+  --postit-ink-muted: rgba(28, 36, 48, 0.62);
+  --postit-zag: 14px;
+  position: relative;
+  color: var(--postit-ink);
+  background-color: var(--postit-paper);
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 1.15rem,
+      var(--postit-margin) 1.15rem,
+      var(--postit-margin) calc(1.15rem + 1.5px),
+      transparent calc(1.15rem + 1.5px)
+    ),
+    repeating-linear-gradient(
+      transparent 0,
+      transparent 27px,
+      var(--postit-line) 27px,
+      var(--postit-line) 28px
+    ),
+    linear-gradient(165deg, #fff4a8 0%, var(--postit-paper) 42%, var(--postit-paper-deep) 100%);
+  background-size: 100% 100%, 100% 28px, 100% 100%;
+  border-radius: 3px 3px 0 0;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 14px 28px -18px rgba(0, 0, 0, 0.65),
+    0 2px 6px rgba(0, 0, 0, 0.18);
+  /* Torn zigzag bottom edge */
+  clip-path: polygon(
+    0% 0%,
+    100% 0%,
+    100% calc(100% - var(--postit-zag)),
+    97.5% 100%,
+    95% calc(100% - var(--postit-zag)),
+    92.5% 100%,
+    90% calc(100% - var(--postit-zag)),
+    87.5% 100%,
+    85% calc(100% - var(--postit-zag)),
+    82.5% 100%,
+    80% calc(100% - var(--postit-zag)),
+    77.5% 100%,
+    75% calc(100% - var(--postit-zag)),
+    72.5% 100%,
+    70% calc(100% - var(--postit-zag)),
+    67.5% 100%,
+    65% calc(100% - var(--postit-zag)),
+    62.5% 100%,
+    60% calc(100% - var(--postit-zag)),
+    57.5% 100%,
+    55% calc(100% - var(--postit-zag)),
+    52.5% 100%,
+    50% calc(100% - var(--postit-zag)),
+    47.5% 100%,
+    45% calc(100% - var(--postit-zag)),
+    42.5% 100%,
+    40% calc(100% - var(--postit-zag)),
+    37.5% 100%,
+    35% calc(100% - var(--postit-zag)),
+    32.5% 100%,
+    30% calc(100% - var(--postit-zag)),
+    27.5% 100%,
+    25% calc(100% - var(--postit-zag)),
+    22.5% 100%,
+    20% calc(100% - var(--postit-zag)),
+    17.5% 100%,
+    15% calc(100% - var(--postit-zag)),
+    12.5% 100%,
+    10% calc(100% - var(--postit-zag)),
+    7.5% 100%,
+    5% calc(100% - var(--postit-zag)),
+    2.5% 100%,
+    0% calc(100% - var(--postit-zag))
+  );
+  padding-bottom: calc(0.85rem + var(--postit-zag));
+}
+
+.event-postit-section {
+  border-color: rgba(28, 36, 48, 0.12) !important;
+  background: transparent !important;
+}
+
+.event-postit-chip {
+  background: rgba(28, 36, 48, 0.06);
+  color: var(--postit-ink);
+  box-shadow: inset 0 0 0 1px rgba(28, 36, 48, 0.1);
+}
+
 /* Splash keyframes / overlay live in SplashScreen (scoped <style>) */
 
 @media (prefers-reduced-motion: reduce) {
