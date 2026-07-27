@@ -203,38 +203,21 @@ input[type="number"]::-webkit-outer-spin-button {
   display: none;
 }
 
-/* —— My Events: lined paper panel (white + zigzag tear) —— */
+/* —— My Events: white paper panel (zigzag tear) —— */
 .event-postit {
   --postit-paper: #ffffff;
-  --postit-paper-deep: #f4f5f7;
-  --postit-line: rgba(90, 130, 180, 0.22);
-  --postit-margin: rgba(232, 84, 110, 0.4);
+  --postit-paper-deep: #f7f7f8;
   --postit-ink: #1c2430;
   --postit-ink-muted: rgba(28, 36, 48, 0.62);
-  --postit-line-gap: 40px;
   --postit-zag: 14px;
   position: relative;
   color: var(--postit-ink);
   background-color: var(--postit-paper);
-  background-image:
-    linear-gradient(
-      90deg,
-      transparent 0,
-      transparent 1.15rem,
-      var(--postit-margin) 1.15rem,
-      var(--postit-margin) calc(1.15rem + 1.5px),
-      transparent calc(1.15rem + 1.5px)
-    ),
-    repeating-linear-gradient(
-      transparent 0,
-      transparent calc(var(--postit-line-gap) - 1px),
-      var(--postit-line) calc(var(--postit-line-gap) - 1px),
-      var(--postit-line) var(--postit-line-gap)
-    ),
-    linear-gradient(180deg, var(--postit-paper) 0%, var(--postit-paper-deep) 100%);
-  background-size: 100% 100%, 100% var(--postit-line-gap), 100% 100%;
-  /* Offset so text baselines fall mid-band between rules */
-  background-position: 0 0, 0 calc(var(--postit-line-gap) * 0.55), 0 0;
+  background-image: linear-gradient(
+    180deg,
+    var(--postit-paper) 0%,
+    var(--postit-paper-deep) 100%
+  );
   border-radius: 3px 3px 0 0;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.9) inset,
@@ -292,9 +275,8 @@ input[type="number"]::-webkit-outer-spin-button {
 .event-postit-section {
   border-color: rgba(28, 36, 48, 0.1) !important;
   background: transparent !important;
-  /* Keep section rhythm on ruled bands */
-  padding-top: calc(var(--postit-line-gap) * 0.35) !important;
-  padding-bottom: calc(var(--postit-line-gap) * 0.35) !important;
+  padding-top: 0.85rem !important;
+  padding-bottom: 0.85rem !important;
 }
 
 .event-postit-chip {
@@ -302,6 +284,17 @@ input[type="number"]::-webkit-outer-spin-button {
   color: var(--postit-ink);
   box-shadow: inset 0 0 0 1px rgba(28, 36, 48, 0.08);
   line-height: 1.35;
+}
+
+.event-postit-dark {
+  background: #0a0a0a;
+  color: #f5f5f7;
+  border-radius: 0.85rem;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.event-postit-dark-muted {
+  color: rgba(245, 245, 247, 0.62);
 }
 
 /* Splash keyframes / overlay live in SplashScreen (scoped <style>) */

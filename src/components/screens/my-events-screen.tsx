@@ -2,17 +2,12 @@
 
 import { DiscountInviteBanner } from "@/components/discount-invite-banner";
 import { EventCountdown } from "@/components/events/event-countdown";
-import { AllergenPickerSheet } from "@/components/location/allergen-picker-sheet";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { useAppState } from "@/context/app-state-context";
 import { getCountdown, isEventPast } from "@/lib/event";
 import {
-  coerceAllergenRestrictions,
-} from "@/lib/menu-allergens";
-import {
   EVENT_STATUS_LABELS,
   type BookedService,
-  type MenuAllergenRestriction,
   type UserEvent,
 } from "@/types/event";
 import {
@@ -155,14 +150,6 @@ function getMissingServiceSuggestions(event: UserEvent) {
   });
 }
 
-function getMenuServices(event: UserEvent) {
-  return event.services.filter(
-    (service) =>
-      service.status !== "cancelled" &&
-      (service.category === "menu" || service.category === "catering"),
-  );
-}
-
 function getLocationService(event: UserEvent) {
   return (
     event.services.find(
@@ -177,32 +164,6 @@ function locationIncludesVenueMenu(event: UserEvent) {
   if (!locationService) return false;
   if (locationService.allergens !== undefined) return true;
   return /menu|catering|buffet|food/i.test(locationService.name);
-}
-
-function getEventMenuAllergens(event: UserEvent): MenuAllergenRestriction[] {
-  const merged = [
-    ...getMenuServices(event).flatMap((service) =>
-      coerceAllergenRestrictions(service.allergens),
-    ),
-    ...coerceAllergenRestrictions(getLocationService(event)?.allergens),
-  ];
-
-  const byName = new Map<string, number>();
-  for (const item of merged) {
-    byName.set(
-      item.name,
-      Math.max(byName.get(item.name) ?? 0, item.guestCount),
-    );
-  }
-
-  return Array.from(byName.entries()).map(([name, guestCount]) => ({
-    name,
-    guestCount,
-  }));
-}
-
-function eventHasEditableMenuAllergens(event: UserEvent) {
-  return getMenuServices(event).length > 0 || locationIncludesVenueMenu(event);
 }
 
 function buildSuggestionHref(
@@ -251,7 +212,6 @@ export const MyEventsScreen = memo(function MyEventsScreen({
     markServicePaid: markServicePaidInState,
     paymentStates,
     prunePastEvents,
-    updateEventMenuAllergens,
     updateEventTitle,
   } = useAppState();
   const [paymentModal, setPaymentModal] = useState<{
@@ -403,7 +363,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
           <h2 className="text-base font-semibold text-primary-black">
             In programma
           </h2>
-          <ul className="mx-auto grid min-w-0 max-w-[20.5rem] gap-5 px-1 sm:max-w-[22rem] sm:gap-6">
+          <ul className="mx-auto grid min-w-0 max-w-[24rem] gap-5 px-1 sm:max-w-[26.5rem] sm:gap-6">
             {activeEvents.map((event) => (
               <li key={event.id} className="min-w-0 max-w-full">
                 <ExpandedEventCard
@@ -412,7 +372,6 @@ export const MyEventsScreen = memo(function MyEventsScreen({
                   paymentStates={paymentStates}
                   onOpenDepositPayment={openDepositPayment}
                   onTitleChange={updateEventTitle}
-                  onMenuAllergensChange={updateEventMenuAllergens}
                   onDeleteEvent={deleteEvent}
                 />
               </li>
@@ -436,7 +395,6 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   paymentStates,
   onOpenDepositPayment,
   onTitleChange,
-  onMenuAllergensChange,
   onDeleteEvent,
 }: {
   event: UserEvent;
@@ -444,15 +402,10 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   paymentStates: Record<string, ServicePaymentState>;
   onOpenDepositPayment: (event: UserEvent) => void;
   onTitleChange: (eventId: string, title: string) => void;
-  onMenuAllergensChange: (
-    eventId: string,
-    allergens: MenuAllergenRestriction[],
-  ) => void;
   onDeleteEvent: (eventId: string) => void;
 }) {
   const [titleDraft, setTitleDraft] = useState(event.title);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [allergenSheetOpen, setAllergenSheetOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const totalCost =
@@ -466,11 +419,6 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
     paid: false,
   };
   const missingSuggestions = getMissingServiceSuggestions(event);
-  const menuServices = getMenuServices(event);
-  const restrictedAllergens = getEventMenuAllergens(event);
-  const canEditAllergens = eventHasEditableMenuAllergens(event);
-  const showMenuSection =
-    menuServices.length > 0 || locationIncludesVenueMenu(event);
   const payDeposit = useCallback(() => {
     onOpenDepositPayment(event);
   }, [event, onOpenDepositPayment]);
@@ -502,7 +450,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
     <>
       <article className="event-postit box-border mx-auto w-full min-w-0 max-w-full">
         <div className="event-postit-section min-w-0 border-b px-3 sm:px-4">
-          <div className="min-w-0 overflow-hidden pl-3 sm:pl-4">
+          <div className="min-w-0 overflow-hidden">
             <p
               className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${statusColors[event.status]}`}
             >
@@ -527,11 +475,11 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                     }
                   }}
                   placeholder="Nome evento"
-                  className="box-border min-w-0 flex-1 bg-transparent text-lg font-semibold leading-[var(--postit-line-gap)] text-[color:var(--postit-ink)] outline-none placeholder:text-[color:var(--postit-ink-muted)] sm:text-xl"
+                  className="box-border min-w-0 flex-1 bg-transparent text-lg font-semibold leading-snug text-[color:var(--postit-ink)] outline-none placeholder:text-[color:var(--postit-ink-muted)] sm:text-xl"
                   aria-label="Titolo evento"
                 />
               ) : (
-                <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-[var(--postit-line-gap)] text-[color:var(--postit-ink)] sm:text-xl">
+                <h3 className="min-w-0 flex-1 truncate text-lg font-semibold leading-snug text-[color:var(--postit-ink)] sm:text-xl">
                   {event.title}
                 </h3>
               )}
@@ -564,7 +512,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
             )}
           </div>
 
-          <div className="mt-4 min-w-0 space-y-0 pl-3 text-sm leading-[var(--postit-line-gap)] text-[color:var(--postit-ink)] sm:pl-4">
+          <div className="mt-4 min-w-0 space-y-1.5 text-sm text-[color:var(--postit-ink)]">
             <p className="flex min-w-0 items-center gap-1.5">
               <Calendar
                 className="h-4 w-4 shrink-0 text-brand-teal-strong"
@@ -595,111 +543,12 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
           onPayDeposit={payDeposit}
         />
 
-        {showMenuSection && (
-          <section className="event-postit-section min-w-0 border-t px-3 sm:px-4">
-            <div className="flex items-center justify-between gap-2 pl-3 sm:pl-4">
-              <div className="flex min-w-0 items-center gap-2">
-                <UtensilsCrossed
-                  className="h-4 w-4 text-[color:var(--postit-ink-muted)]"
-                  aria-hidden
-                />
-                <h3 className="text-sm font-semibold text-[color:var(--postit-ink)]">
-                  Menu
-                </h3>
-              </div>
-              {canEditAllergens && (
-                <button
-                  type="button"
-                  onClick={() => setAllergenSheetOpen(true)}
-                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-black/5 px-2.5 text-[11px] font-semibold text-[color:var(--postit-ink)] ring-1 ring-black/10 transition-colors hover:bg-black/10"
-                  aria-label="Modifica allergeni"
-                >
-                  <Pencil className="h-3.5 w-3.5" aria-hidden />
-                  Allergeni
-                </button>
-              )}
-            </div>
-
-            <div className="mt-3 space-y-3 pl-3 sm:pl-4">
-              {menuServices.map((service) => (
-                <div
-                  key={service.id}
-                  className="event-postit-chip min-w-0 rounded-xl p-3"
-                >
-                  <div className="flex min-w-0 items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-[color:var(--postit-ink)]">
-                        {service.name}
-                      </p>
-                      <p className="truncate text-xs text-[color:var(--postit-ink-muted)]">
-                        {service.providerName}
-                      </p>
-                    </div>
-                    <p className="shrink-0 text-sm font-medium tabular-nums text-[color:var(--postit-ink)]">
-                      {formatCurrency(service.amountPaid)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-
-              {menuServices.length === 0 && locationIncludesVenueMenu(event) && (
-                <div className="event-postit-chip min-w-0 rounded-xl p-3">
-                  <p className="text-sm font-medium text-[color:var(--postit-ink)]">
-                    Menu incluso nella location
-                  </p>
-                  <p className="mt-0.5 text-xs text-[color:var(--postit-ink-muted)]">
-                    Il costo è compreso nel totale location.
-                  </p>
-                </div>
-              )}
-
-              <div className="event-postit-chip min-w-0 rounded-xl p-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-[color:var(--postit-ink-muted)]">
-                  Da evitare
-                </p>
-                {restrictedAllergens.length > 0 ? (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {restrictedAllergens.map((allergen) => (
-                      <span
-                        key={allergen.name}
-                        className="rounded-full bg-brand-pink/25 px-2.5 py-0.5 text-[11px] font-medium text-[color:var(--postit-ink)] ring-1 ring-brand-pink/40"
-                      >
-                        {allergen.name}
-                        <span className="ml-1 tabular-nums text-[color:var(--postit-ink-muted)]">
-                          · {allergen.guestCount}
-                        </span>
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-1 text-xs text-[color:var(--postit-ink-muted)]">
-                    Nessuna restrizione selezionata
-                  </p>
-                )}
-              </div>
-            </div>
-          </section>
-        )}
-
-        <AllergenPickerSheet
-          open={allergenSheetOpen}
-          initialSelected={restrictedAllergens}
-          maxGuests={event.guestCount}
-          title="Modifica allergeni"
-          confirmLabel="Aggiorna menu"
-          onClose={() => setAllergenSheetOpen(false)}
-          onConfirm={(allergens) => {
-            onMenuAllergensChange(event.id, allergens);
-            setAllergenSheetOpen(false);
-          }}
-        />
-
         <div className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
-          <h3 className="pl-3 text-sm font-semibold text-[color:var(--postit-ink)] sm:pl-4">
+          <h3 className="text-sm font-semibold text-[color:var(--postit-ink)]">
             Da pagare
           </h3>
 
-          <ul className="mt-3 min-w-0 space-y-2 pl-3 sm:pl-4">
+          <ul className="mt-3 min-w-0 space-y-2">
             {event.services.map((service) => (
               <li
                 key={service.id}
@@ -715,7 +564,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
             ))}
           </ul>
 
-          <dl className="mt-4 min-w-0 space-y-2 border-t border-black/10 pt-4 pl-3 text-sm sm:pl-4">
+          <dl className="mt-4 min-w-0 space-y-2 border-t border-black/10 pt-4 text-sm">
             <div className="flex min-w-0 items-center justify-between gap-3">
               <dt className="min-w-0 text-[color:var(--postit-ink-muted)]">
                 Caparra location
@@ -737,30 +586,32 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
 
         {missingSuggestions.length > 0 && (
           <section className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
-            <p className="pl-3 text-sm font-medium text-[color:var(--postit-ink)] sm:pl-4">
-              Potrebbe mancare
-            </p>
-            <p className="mt-0.5 pl-3 text-xs text-[color:var(--postit-ink-muted)] sm:pl-4">
-              Aggiungi altri servizi alla festa
-            </p>
-            <div className="scrollbar-hidden mt-3 flex max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1 pl-3 sm:pl-4">
-              {missingSuggestions.map((suggestion) => {
-                const Icon = suggestion.icon;
+            <div className="event-postit-dark p-3.5">
+              <p className="text-sm font-medium text-white">
+                Potrebbe mancare
+              </p>
+              <p className="event-postit-dark-muted mt-0.5 text-xs">
+                Aggiungi altri servizi alla festa
+              </p>
+              <div className="scrollbar-hidden mt-3 flex max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1">
+                {missingSuggestions.map((suggestion) => {
+                  const Icon = suggestion.icon;
 
-                return (
-                  <HardNavLink
-                    key={suggestion.id}
-                    href={buildSuggestionHref(
-                      event,
-                      suggestion.exploreCategory,
-                    )}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-full bg-brand-pink px-3.5 py-2 text-sm font-medium text-ink-inverse transition-colors hover:bg-brand-pink/90"
-                  >
-                    <Icon className="h-4 w-4 text-ink-inverse" aria-hidden />
-                    {suggestion.label}
-                  </HardNavLink>
-                );
-              })}
+                  return (
+                    <HardNavLink
+                      key={suggestion.id}
+                      href={buildSuggestionHref(
+                        event,
+                        suggestion.exploreCategory,
+                      )}
+                      className="inline-flex shrink-0 items-center gap-2 rounded-full bg-brand-pink px-3.5 py-2 text-sm font-medium text-ink-inverse transition-colors hover:bg-brand-pink/90"
+                    >
+                      <Icon className="h-4 w-4 text-ink-inverse" aria-hidden />
+                      {suggestion.label}
+                    </HardNavLink>
+                  );
+                })}
+              </div>
             </div>
           </section>
         )}
@@ -860,46 +711,48 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
 
   return (
     <section className="event-postit-section min-w-0 overflow-hidden border-b px-3 sm:px-4">
-      <div className="flex min-w-0 flex-col gap-3 pl-3 sm:flex-row sm:items-center sm:justify-between sm:pl-4">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-[color:var(--postit-ink)]">
-            Caparra {formatCurrency(depositAmount)}
-          </p>
-          <p className="mt-0.5 break-words text-xs text-[color:var(--postit-ink-muted)]">
-            Entro {formatDepositDeadline(deadline)}
-            {!countdown.isPast && (
-              <>
-                {" "}
-                · {String(countdown.days).padStart(2, "0")}g{" "}
-                {String(countdown.hours).padStart(2, "0")}h{" "}
-                {String(countdown.minutes).padStart(2, "0")}m
-              </>
-            )}
-          </p>
-        </div>
-
-        <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-auto sm:max-w-[14rem] sm:items-end">
-          {!payment.paid && (
-            <p className="text-[11px] leading-snug text-[color:var(--postit-ink-muted)] sm:text-right">
-              Entro 36 ore dalla creazione: blocca {event.locationName} per il{" "}
-              {formatDate(event.date)}. Se non la paghi, perdi la priorità.
+      <div className="event-postit-dark p-3.5">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-white">
+              Caparra {formatCurrency(depositAmount)}
             </p>
-          )}
-          {payment.paid ? (
-            <span className="inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-semibold text-ink-inverse sm:w-fit">
-              Caparra pagata
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={onPayDeposit}
-              className={`inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-semibold text-ink-inverse transition-colors hover:bg-brand-teal/90 sm:w-fit ${
-                countdown.isPast ? "ring-2 ring-brand-teal/40" : ""
-              }`}
-            >
-              {countdown.isPast ? "Paga caparra in ritardo" : "Paga caparra"}
-            </button>
-          )}
+            <p className="event-postit-dark-muted mt-0.5 break-words text-xs">
+              Entro {formatDepositDeadline(deadline)}
+              {!countdown.isPast && (
+                <>
+                  {" "}
+                  · {String(countdown.days).padStart(2, "0")}g{" "}
+                  {String(countdown.hours).padStart(2, "0")}h{" "}
+                  {String(countdown.minutes).padStart(2, "0")}m
+                </>
+              )}
+            </p>
+          </div>
+
+          <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-auto sm:max-w-[14rem] sm:items-end">
+            {!payment.paid && (
+              <p className="event-postit-dark-muted text-[11px] leading-snug sm:text-right">
+                Entro 36 ore dalla creazione: blocca {event.locationName} per il{" "}
+                {formatDate(event.date)}. Se non la paghi, perdi la priorità.
+              </p>
+            )}
+            {payment.paid ? (
+              <span className="inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-semibold text-ink-inverse sm:w-fit">
+                Caparra pagata
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={onPayDeposit}
+                className={`inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-semibold text-ink-inverse transition-colors hover:bg-brand-teal/90 sm:w-fit ${
+                  countdown.isPast ? "ring-2 ring-brand-teal/40" : ""
+                }`}
+              >
+                {countdown.isPast ? "Paga caparra in ritardo" : "Paga caparra"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </section>

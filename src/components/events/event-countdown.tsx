@@ -114,14 +114,14 @@ export function EventCountdown({
       <p
         className={
           embedded
-            ? "pl-3 text-sm font-medium text-[color:var(--postit-ink)] sm:pl-4"
+            ? "text-sm font-medium text-[color:var(--postit-ink)]"
             : "text-center text-xs font-semibold uppercase tracking-widest text-brand-teal"
         }
       >
         {embedded ? "Manca all'evento" : "Countdown all'evento"}
       </p>
       {embedded && (
-        <p className="mt-0.5 pl-3 text-xs text-[color:var(--postit-ink-muted)] sm:pl-4">
+        <p className="mt-0.5 text-xs text-[color:var(--postit-ink-muted)]">
           Aggiornato in tempo reale
         </p>
       )}
@@ -129,7 +129,7 @@ export function EventCountdown({
       <div
         className={
           embedded
-            ? "mt-3 grid grid-cols-4 gap-1.5 pl-3 sm:gap-2 sm:pl-4"
+            ? "mt-3 grid grid-cols-4 gap-1.5 sm:gap-2"
             : "mt-4 grid grid-cols-4 gap-1.5 sm:gap-2"
         }
       >
