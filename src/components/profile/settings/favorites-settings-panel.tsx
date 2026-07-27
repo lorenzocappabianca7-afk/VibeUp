@@ -13,7 +13,7 @@ import type {
   ManagedServiceListing,
 } from "@/types/admin";
 import { isManagedListingLive } from "@/types/admin";
-import { HardNavLink } from "@/components/navigation/hard-nav-link";
+import { SoftNavLink } from "@/components/navigation/soft-nav-link";
 import { formatCurrency, getLocationPricePresentation } from "@/lib/utils";
 import { Briefcase, Heart, MapPin, X } from "lucide-react";
 import { useMemo } from "react";
@@ -118,7 +118,7 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
                   key={location.id}
                   className="relative overflow-hidden rounded-2xl border border-primary-black/8 bg-background"
                 >
-                  <HardNavLink
+                  <SoftNavLink
                     href={`/location/${location.id}`}
                     className="flex gap-3 p-2 pr-11"
                   >
@@ -148,7 +148,7 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
                         {price.badge}
                       </p>
                     </div>
-                  </HardNavLink>
+                  </SoftNavLink>
                   <button
                     type="button"
                     onClick={() => removeFavoriteLocation(location.id)}
@@ -197,7 +197,7 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
                 key={service.id}
                 className="relative overflow-hidden rounded-2xl border border-primary-black/8 bg-background"
               >
-                <HardNavLink
+                <SoftNavLink
                   href={`/service/${service.id}?category=${service.category}`}
                   className="flex gap-3 p-2 pr-11"
                 >
@@ -226,7 +226,7 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
                       {formatCurrency(service.price)}/{service.priceSuffix}
                     </p>
                   </div>
-                </HardNavLink>
+                </SoftNavLink>
                 <button
                   type="button"
                   onClick={() => removeFavoriteService(service.id)}

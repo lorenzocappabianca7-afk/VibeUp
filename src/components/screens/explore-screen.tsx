@@ -55,7 +55,7 @@ import {
 } from "react";
 import type { ManagedListing, ManagedLocationListing } from "@/types/admin";
 import { isManagedListingLive } from "@/types/admin";
-import { HardNavLink } from "@/components/navigation/hard-nav-link";
+import { SoftNavLink } from "@/components/navigation/soft-nav-link";
 import { SafeImage } from "@/components/ui/safe-image";
 import { useSearchParams } from "next/navigation";
 
@@ -960,7 +960,7 @@ const ServiceCard = memo(function ServiceCard({
 
   return (
     <article className="h-full overflow-hidden rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-colors duration-150 hover:border-primary-black">
-      <HardNavLink
+      <SoftNavLink
         href={href}
         className={cn(
           "block",
@@ -1019,7 +1019,7 @@ const ServiceCard = memo(function ServiceCard({
             {getServicePriceLabel(service)}
           </span>
         </div>
-      </HardNavLink>
+      </SoftNavLink>
       <div className={cn("px-4 pb-4", showProfilePhoto && "pt-0")}>
         <button
           type="button"

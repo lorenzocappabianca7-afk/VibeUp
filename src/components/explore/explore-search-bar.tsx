@@ -468,7 +468,19 @@ export function ExploreSearchBar({
           transition: "opacity 280ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
         data-overlay-open={open ? "true" : undefined}
-        onClick={() => closeSearch()}
+        onClick={(event) => {
+          const { clientX, clientY } = event;
+          // Let the same tap reach a card underneath after closing search.
+          event.currentTarget.style.pointerEvents = "none";
+          closeSearch();
+          requestAnimationFrame(() => {
+            const under = document.elementFromPoint(clientX, clientY);
+            const link = under?.closest("a");
+            if (link instanceof HTMLAnchorElement) {
+              link.click();
+            }
+          });
+        }}
       />
 
       <div

@@ -1,7 +1,7 @@
 "use client";
 
 import { SettingsShell } from "@/components/profile/settings/settings-shell";
-import { HardNavLink } from "@/components/navigation/hard-nav-link";
+import { SoftNavLink } from "@/components/navigation/soft-nav-link";
 import { SafeImage } from "@/components/ui/safe-image";
 import { useAppState } from "@/context/app-state-context";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -248,12 +248,12 @@ function SavedQuoteCard({
             </div>
           </dl>
 
-          <HardNavLink
+          <SoftNavLink
             href={`/location/${quote.locationId}`}
             className="flex w-full items-center justify-center rounded-2xl bg-brand-teal px-4 py-2.5 text-sm font-semibold text-ink-inverse"
           >
             Apri location
-          </HardNavLink>
+          </SoftNavLink>
         </div>
       )}
     </article>

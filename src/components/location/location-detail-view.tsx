@@ -49,7 +49,7 @@ import {
   Heart,
   MapPin,
 } from "lucide-react";
-import { HardNavLink } from "@/components/navigation/hard-nav-link";
+import { SoftNavLink } from "@/components/navigation/soft-nav-link";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
@@ -794,7 +794,7 @@ function SimilarLocationsCarousel({ locations }: { locations: Location[] }) {
               key={similarLocation.id}
               className="w-[15rem] shrink-0 lg:w-[17rem]"
             >
-              <HardNavLink
+              <SoftNavLink
                 href={`/location/${similarLocation.id}`}
                 className="block h-full overflow-hidden rounded-3xl border border-primary-black/10 bg-background shadow-sm transition-colors duration-150 hover:border-primary-black"
               >
@@ -825,7 +825,7 @@ function SimilarLocationsCarousel({ locations }: { locations: Location[] }) {
                     {price.badge}
                   </p>
                 </div>
-              </HardNavLink>
+              </SoftNavLink>
             </li>
             );
           })}
@@ -857,7 +857,7 @@ function RecommendedDjsCarousel({
         <ul className="flex w-max gap-3">
           {djs.map((dj) => (
             <li key={dj.id} className="w-[15rem] shrink-0 lg:w-[17rem]">
-              <HardNavLink
+              <SoftNavLink
                 href={`/service/${dj.id}?category=dj`}
                 className="flex h-full gap-3 rounded-3xl border border-primary-black/10 bg-surface p-4 shadow-sm transition-colors duration-150 hover:border-primary-black"
               >
@@ -903,7 +903,7 @@ function RecommendedDjsCarousel({
                     da {dj.price} €/{dj.priceSuffix}
                   </p>
                 </div>
-              </HardNavLink>
+              </SoftNavLink>
             </li>
           ))}
         </ul>
