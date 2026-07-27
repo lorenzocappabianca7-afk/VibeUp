@@ -13,7 +13,11 @@ import {
   OPEN_BAR_PER_INVITEE,
   type DrinkPackageMode,
 } from "@/lib/drinks-quote";
-import { getExtraServicePrice } from "@/lib/location";
+import {
+  getExtraServicePrice,
+  isEndTimeAfterStart,
+  suggestEndTimeAfterStart,
+} from "@/lib/location";
 import { EXTRA_SERVICES } from "@/lib/mock/extra-services";
 import { cn, formatCurrency } from "@/lib/utils";
 import { VibeUpCalendar } from "@/components/ui/vibeup-calendar";
@@ -67,25 +71,23 @@ const INTERNAL_SERVICE_ICONS: Record<InternalLocationServiceType, LucideIcon> = 
 const TIME_GROUPS = [
   {
     title: "Pranzo",
-    description: "Per eventi diurni",
     times: ["12:00", "13:00", "14:00"],
   },
   {
     title: "Pomeriggio",
-    description: "Aperitivi e feste leggere",
     times: ["15:00", "16:00", "17:00", "18:00"],
   },
   {
     title: "Sera",
-    description: "Le fasce piu' richieste",
     times: ["19:00", "20:00", "21:00", "22:00", "23:00"],
   },
   {
     title: "Notte",
-    description: "Per party e after",
-    times: ["00:00", "01:00", "02:00"],
+    times: ["00:00", "01:00", "02:00", "03:00"],
   },
 ] as const;
+
+const ALL_BOOKING_TIMES = TIME_GROUPS.flatMap((group) => [...group.times]);
 
 type PickerPanel = "date" | "start" | "end" | null;
 
@@ -161,62 +163,59 @@ function clampGuestCount(value: number, maxGuests: number) {
 function BookingTimePicker({
   activeValue,
   mode,
+  startTime,
   onSelect,
 }: {
   activeValue: string;
   mode: "start" | "end";
+  startTime: string;
   onSelect: (time: string) => void;
 }) {
   return (
-    <div className="rounded-3xl border border-primary-black/10 bg-surface p-4">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-black text-primary-black">
-            Scegli orario {mode === "start" ? "di inizio" : "di fine"}
-          </p>
-          <p className="mt-1 text-xs font-semibold text-primary-black/45">
-            Tocca una fascia come nei siti di prenotazione.
-          </p>
-        </div>
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-teal/12 text-brand-teal">
-          <Clock className="h-4 w-4" aria-hidden />
-        </span>
-      </div>
-
-      <div className="space-y-3">
+    <div className="rounded-2xl border border-primary-black/10 bg-white p-2.5 shadow-sm">
+      <p className="mb-2 text-[11px] font-bold text-ink-inverse/70">
+        {mode === "start" ? "Orario inizio" : "Orario fine (fino alle 03:00)"}
+      </p>
+      <div className="space-y-2">
         {TIME_GROUPS.map((group) => (
-          <section
-            key={group.title}
-            className="rounded-2xl bg-primary-black/[0.03] p-3"
-          >
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-primary-black">
-                {group.title}
-              </p>
-              <p className="text-[11px] font-semibold text-primary-black/45">
-                {group.description}
-              </p>
+          <div key={group.title} className="flex items-center gap-2">
+            <span className="w-14 shrink-0 text-[10px] font-bold uppercase tracking-wide text-ink-inverse/45">
+              {group.title}
+            </span>
+            <div className="flex min-w-0 flex-1 flex-wrap gap-1">
+              {group.times.map((time) => {
+                const disabled =
+                  mode === "end" && !isEndTimeAfterStart(startTime, time);
+                const selected = activeValue === time;
+
+                return (
+                  <button
+                    key={`${mode}-${time}`}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => onSelect(time)}
+                    className={cn(
+                      "rounded-lg px-2 py-1 text-[11px] font-bold tabular-nums transition-colors",
+                      selected
+                        ? "bg-brand-teal text-ink-inverse"
+                        : "bg-primary-black/[0.04] text-ink-inverse hover:bg-brand-teal/15",
+                      disabled && "cursor-not-allowed opacity-30 hover:bg-primary-black/[0.04]",
+                    )}
+                  >
+                    {time}
+                  </button>
+                );
+              })}
             </div>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-              {group.times.map((time) => (
-                <button
-                  key={`${mode}-${time}`}
-                  type="button"
-                  onClick={() => onSelect(time)}
-                  className={cn(
-                    "rounded-2xl px-3 py-3 text-sm font-black transition-colors duration-150",
-                    activeValue === time
-                      ? "bg-white/12 text-primary-black"
-                      : "bg-surface text-primary-black shadow-sm hover:bg-brand-teal/12",
-                  )}
-                >
-                  {time}
-                </button>
-              ))}
-            </div>
-          </section>
+          </div>
         ))}
       </div>
+      {mode === "end" && (
+        <p className="mt-2 text-[10px] font-semibold text-ink-inverse/45">
+          La fine deve essere dopo l&apos;inizio (anche dopo mezzanotte, max
+          03:00).
+        </p>
+      )}
     </div>
   );
 }
@@ -256,6 +255,8 @@ export function SmartLocationDetailsSection({
   const [openPicker, setOpenPicker] = useState<PickerPanel>(null);
   const [guestCountInput, setGuestCountInput] = useState(String(guestCount));
   const hasTimeIssue = estimatedHours > 0 && estimatedHours < minHours;
+  const hasInvalidTimeOrder =
+    Boolean(startTime && endTime) && !isEndTimeAfterStart(startTime, endTime);
   const generatedQuote = quote && quote.total > 0 ? quote : null;
 
   function togglePicker(panel: PickerPanel) {
@@ -706,11 +707,22 @@ export function SmartLocationDetailsSection({
             {(openPicker === "start" || openPicker === "end") && (
               <BookingTimePicker
                 mode={openPicker}
+                startTime={startTime}
                 activeValue={openPicker === "start" ? startTime : endTime}
                 onSelect={(time) => {
                   if (openPicker === "start") {
                     onStartTimeChange(time);
-                  } else {
+                    if (!isEndTimeAfterStart(time, endTime)) {
+                      onEndTimeChange(
+                        suggestEndTimeAfterStart(
+                          time,
+                          endTime,
+                          ALL_BOOKING_TIMES,
+                          minHours,
+                        ),
+                      );
+                    }
+                  } else if (isEndTimeAfterStart(startTime, time)) {
                     onEndTimeChange(time);
                   }
                   setOpenPicker(null);
@@ -780,6 +792,12 @@ export function SmartLocationDetailsSection({
                 </button>
               )}
             </>
+          )}
+          {hasInvalidTimeOrder && (
+            <p className="mt-2 rounded-lg border border-white/35 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-ink-inverse">
+              L&apos;orario di fine deve essere successivo a quello di inizio
+              (fino alle 03:00 di notte).
+            </p>
           )}
           {hasTimeIssue && (
             <p className="mt-2 rounded-lg border border-white/35 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-ink-inverse">

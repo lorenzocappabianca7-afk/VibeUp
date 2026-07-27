@@ -12,20 +12,64 @@ export function getLocationById(id: string): Location | undefined {
   return MOCK_LOCATIONS.find((location) => location.id === id);
 }
 
+/** Latest allowed party end hour (inclusive), for overnight events. */
+export const PARTY_END_LATEST_HOUR = 3;
+
+export function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(":").map(Number);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return Number.NaN;
+  return hours * 60 + minutes;
+}
+
+/** End is after start same-day, or overnight ending by 03:00. */
+export function isEndTimeAfterStart(startTime: string, endTime: string): boolean {
+  const start = timeToMinutes(startTime);
+  const end = timeToMinutes(endTime);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
+  if (end > start) return true;
+  return end <= PARTY_END_LATEST_HOUR * 60 && start > end;
+}
+
 export function calculateHours(startTime: string, endTime: string): number {
   if (!startTime || !endTime) return 0;
+  if (!isEndTimeAfterStart(startTime, endTime)) return 0;
 
-  const [startH, startM] = startTime.split(":").map(Number);
-  const [endH, endM] = endTime.split(":").map(Number);
-
-  const startMinutes = startH * 60 + startM;
-  let endMinutes = endH * 60 + endM;
+  const startMinutes = timeToMinutes(startTime);
+  let endMinutes = timeToMinutes(endTime);
 
   if (endMinutes <= startMinutes) {
     endMinutes += 24 * 60;
   }
 
   return (endMinutes - startMinutes) / 60;
+}
+
+/** Suggest a valid end time after changing start (prefers +minHours, overnight ok). */
+export function suggestEndTimeAfterStart(
+  startTime: string,
+  preferredEnd: string,
+  candidateTimes: readonly string[],
+  minHours = 1,
+): string {
+  if (
+    isEndTimeAfterStart(startTime, preferredEnd) &&
+    calculateHours(startTime, preferredEnd) >= minHours
+  ) {
+    return preferredEnd;
+  }
+
+  const valid = candidateTimes.filter(
+    (time) =>
+      isEndTimeAfterStart(startTime, time) &&
+      calculateHours(startTime, time) >= minHours,
+  );
+  if (valid.length > 0) return valid[0];
+
+  // Fallback: first end after start, even if below minHours
+  const anyAfter = candidateTimes.find((time) =>
+    isEndTimeAfterStart(startTime, time),
+  );
+  return anyAfter ?? preferredEnd;
 }
 
 export function getExtraServicePrice(
