@@ -120,10 +120,11 @@ html.vibeup-splash-skip .vibeup-splash{
 `.replace(/\s+/g, " ").trim();
 
 /**
- * Synchronous head script — before first paint.
- * Sets black canvas + splash-skip when this session already played the intro.
+ * Synchronous boot script — sets black canvas immediately and injects a
+ * blocking <style> at the top of <head> when possible (Next often relocates
+ * layout <style> tags after the main CSS chunk, which causes a white flash).
  */
-export const CRITICAL_PAINT_SCRIPT = `(function(){try{var d=document.documentElement;d.style.backgroundColor="#000000";d.style.colorScheme="dark";if(sessionStorage.getItem(${JSON.stringify(SPLASH_STORAGE_KEY)})==="1"){d.classList.add("vibeup-splash-skip");}var b=document.body;if(b){b.style.backgroundColor="#000000";}}catch(e){}})();`;
+export const CRITICAL_PAINT_SCRIPT = `(function(){try{var d=document.documentElement;d.style.backgroundColor="#000000";d.style.colorScheme="dark";if(sessionStorage.getItem(${JSON.stringify(SPLASH_STORAGE_KEY)})==="1"){d.classList.add("vibeup-splash-skip");}var b=document.body;if(b){b.style.backgroundColor="#000000";}if(!document.getElementById("vibeup-boot-style")){var s=document.createElement("style");s.id="vibeup-boot-style";s.textContent=${JSON.stringify(CRITICAL_PAINT_CSS)};var h=document.head;if(h){h.insertBefore(s,h.firstChild);}else{d.appendChild(s);}}}catch(e){}})();`;
 
 export const CRITICAL_PAINT_ID = "vibeup-critical-paint";
 

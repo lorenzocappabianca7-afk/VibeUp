@@ -18,6 +18,11 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
+  /* Inline CSS with HTML so first paint is black immediately — kills the
+     white flash while waiting for `/_next/static/...css` (Tailwind is small). */
+  experimental: {
+    inlineCss: true,
+  },
   images: {
     remotePatterns: [
       {
@@ -34,6 +39,28 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/:all*(svg|png|jpg|jpeg|webp|ico)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        source: "/boot-paint.css",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, must-revalidate",
+          },
+          {
+            key: "Content-Type",
+            value: "text/css; charset=utf-8",
+          },
+        ],
+      },
+      {
+        source: "/splash/:path*",
         headers: [
           {
             key: "Cache-Control",

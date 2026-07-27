@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Montserrat } from "next/font/google";
+import Script from "next/script";
+import { preinit } from "react-dom";
 import { AppChrome } from "@/components/layout/app-chrome";
 import { AppProviders } from "@/components/providers/app-providers";
 import { CriticalPaint } from "@/components/splash/critical-paint";
@@ -27,6 +29,49 @@ const brandDisplay = Montserrat({
   weight: ["600", "700"],
 });
 
+const APPLE_STARTUP_IMAGES = [
+  {
+    url: "/splash/apple-startup-1290x2796.png",
+    media:
+      "(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)",
+  },
+  {
+    url: "/splash/apple-startup-1179x2556.png",
+    media:
+      "(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)",
+  },
+  {
+    url: "/splash/apple-startup-1284x2778.png",
+    media:
+      "(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)",
+  },
+  {
+    url: "/splash/apple-startup-1170x2532.png",
+    media:
+      "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)",
+  },
+  {
+    url: "/splash/apple-startup-1125x2436.png",
+    media:
+      "(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)",
+  },
+  {
+    url: "/splash/apple-startup-1242x2688.png",
+    media:
+      "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)",
+  },
+  {
+    url: "/splash/apple-startup-750x1334.png",
+    media:
+      "(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)",
+  },
+  {
+    url: "/splash/apple-startup-2048x2732.png",
+    media:
+      "(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)",
+  },
+] as const;
+
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
@@ -50,6 +95,8 @@ export const metadata: Metadata = {
     title: "VibeUp",
     /* "black" (not translucent) avoids a light strip/flash under the status bar on iOS */
     statusBarStyle: "black",
+    /* Solid black launch images — iOS otherwise flashes white before the webview */
+    startupImage: [...APPLE_STARTUP_IMAGES],
   },
   formatDetection: {
     telephone: false,
@@ -105,6 +152,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Hoist a tiny black paint stylesheet ahead of the main Next CSS chunk.
+  // Without this, Safari/Chrome keep the default white canvas while waiting
+  // for `/_next/static/...css` (our layout <style> was being moved after it).
+  preinit("/boot-paint.css", { as: "style", precedence: "vibeup-boot" });
+
   return (
     <html
       lang="it"
@@ -113,15 +165,10 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        {/* 1) Sync script before paint — same FOUC pattern as next-themes */}
-        <script
-          dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_SCRIPT }}
-        />
-        {/* 2) Inline CSS before any stylesheet link (black + constrained logo size) */}
+        {/* Fallback inline CSS — kept for browsers that paint before preinit link */}
         <style
           dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_CSS }}
         />
-        {/* 3) Fetch splash mark in parallel with HTML — avoids blank→logo gap */}
         <link
           rel="preload"
           href="/vibeup-splash-logo-boot.png"
@@ -135,6 +182,12 @@ export default function RootLayout({
         style={{ backgroundColor: "#000000" }}
         suppressHydrationWarning
       >
+        {/* Runs before hydration; injects black <style> at top of <head> */}
+        <Script
+          id="vibeup-critical-paint"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_SCRIPT }}
+        />
         {/* Black shell with inline styles — stays until splash completes */}
         <CriticalPaint />
         <SplashScreen />

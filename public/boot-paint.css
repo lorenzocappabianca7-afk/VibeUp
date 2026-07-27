@@ -1,0 +1,33 @@
+/* Earliest paint — pure black before Next CSS chunk arrives */
+html,
+body {
+  background: #000000 !important;
+  color-scheme: dark !important;
+}
+
+html.vibeup-splash-skip #vibeup-critical-paint,
+html.vibeup-splash-skip .vibeup-splash {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#vibeup-critical-paint {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9990 !important;
+  background: #000000 !important;
+  pointer-events: none !important;
+}
+
+.vibeup-splash {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10000 !important;
+  background: #000000 !important;
+  pointer-events: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
