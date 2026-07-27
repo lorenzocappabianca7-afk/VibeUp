@@ -7,16 +7,11 @@ import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { useAppState } from "@/context/app-state-context";
 import { getCountdown, isEventPast } from "@/lib/event";
 import {
-  allergenRestrictionNames,
   coerceAllergenRestrictions,
-  filterMenuCoursesByAllergens,
-  type MenuCourse,
-  type MenuCourseItem,
 } from "@/lib/menu-allergens";
 import {
   EVENT_STATUS_LABELS,
   type BookedService,
-  type EventMenuSelection,
   type MenuAllergenRestriction,
   type UserEvent,
 } from "@/types/event";
@@ -257,7 +252,6 @@ export const MyEventsScreen = memo(function MyEventsScreen({
     paymentStates,
     prunePastEvents,
     updateEventMenuAllergens,
-    updateEventMenuSelections,
     updateEventTitle,
   } = useAppState();
   const [paymentModal, setPaymentModal] = useState<{
@@ -418,7 +412,6 @@ export const MyEventsScreen = memo(function MyEventsScreen({
                   paymentStates={paymentStates}
                   onOpenDepositPayment={openDepositPayment}
                   onTitleChange={updateEventTitle}
-                  onMenuSelectionsChange={updateEventMenuSelections}
                   onMenuAllergensChange={updateEventMenuAllergens}
                   onDeleteEvent={deleteEvent}
                 />
@@ -443,7 +436,6 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   paymentStates,
   onOpenDepositPayment,
   onTitleChange,
-  onMenuSelectionsChange,
   onMenuAllergensChange,
   onDeleteEvent,
 }: {
@@ -452,10 +444,6 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   paymentStates: Record<string, ServicePaymentState>;
   onOpenDepositPayment: (event: UserEvent) => void;
   onTitleChange: (eventId: string, title: string) => void;
-  onMenuSelectionsChange: (
-    eventId: string,
-    selections: EventMenuSelection[],
-  ) => void;
   onMenuAllergensChange: (
     eventId: string,
     allergens: MenuAllergenRestriction[],
@@ -480,7 +468,6 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   const missingSuggestions = getMissingServiceSuggestions(event);
   const menuServices = getMenuServices(event);
   const restrictedAllergens = getEventMenuAllergens(event);
-  const restrictedAllergenNames = allergenRestrictionNames(restrictedAllergens);
   const canEditAllergens = eventHasEditableMenuAllergens(event);
   const showMenuSection =
     menuServices.length > 0 || locationIncludesVenueMenu(event);
@@ -691,14 +678,6 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                 )}
               </div>
             </div>
-
-            <MenuCoursePicker
-              restrictedAllergens={restrictedAllergenNames}
-              selections={event.menuSelections ?? []}
-              onChange={(selections) =>
-                onMenuSelectionsChange(event.id, selections)
-              }
-            />
           </section>
         )}
 
@@ -927,156 +906,6 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
   );
 });
 
-const MenuCoursePicker = memo(function MenuCoursePicker({
-  selections,
-  restrictedAllergens,
-  onChange,
-}: {
-  selections: EventMenuSelection[];
-  restrictedAllergens: string[];
-  onChange: (selections: EventMenuSelection[]) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const courses = useMemo(
-    () => filterMenuCoursesByAllergens(restrictedAllergens),
-    [restrictedAllergens],
-  );
-
-  function isSelected(courseId: string, itemId: string) {
-    return selections.some(
-      (selection) =>
-        selection.courseId === courseId && selection.itemId === itemId,
-    );
-  }
-
-  function toggleSelection(course: MenuCourse, item: MenuCourseItem) {
-    if (isSelected(course.id, item.id)) {
-      onChange(
-        selections.filter(
-          (selection) =>
-            selection.courseId !== course.id || selection.itemId !== item.id,
-        ),
-      );
-      return;
-    }
-
-    onChange([
-      ...selections,
-      {
-        courseId: course.id,
-        courseLabel: course.label,
-        itemId: item.id,
-        itemLabel: item.label,
-      },
-    ]);
-  }
-
-  return (
-    <div className="mt-4 border-t border-black/10 pt-4 pl-3 sm:pl-4">
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        aria-expanded={open}
-        className="event-postit-chip flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left transition-colors hover:bg-black/10"
-      >
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-[color:var(--postit-ink)]">
-            Scegli i piatti
-          </span>
-          <span className="mt-0.5 block text-xs text-[color:var(--postit-ink-muted)]">
-            {selections.length === 0
-              ? restrictedAllergens.length > 0
-                ? "Menu adattato alle tue restrizioni"
-                : "Apri per selezionare le portate"
-              : `${selections.length} ${
-                  selections.length === 1
-                    ? "piatto selezionato"
-                    : "piatti selezionati"
-                }`}
-          </span>
-        </span>
-        <ChevronDown
-          className={`h-4 w-4 shrink-0 text-[color:var(--postit-ink)] transition-transform duration-200 ${
-            open ? "rotate-180" : ""
-          }`}
-          aria-hidden
-        />
-      </button>
-
-      {open && (
-        <div className="event-postit-chip mt-3 space-y-3 rounded-2xl p-3">
-          <p className="text-xs text-[color:var(--postit-ink-muted)]">
-            {restrictedAllergens.length > 0
-              ? "Piatti disponibili senza gli allergeni da evitare"
-              : "Seleziona cosa includere nel menu"}
-          </p>
-
-          {courses.length === 0 ? (
-            <p className="rounded-xl bg-black/5 p-3 text-xs text-[color:var(--postit-ink)] ring-1 ring-black/10">
-              Nessun piatto disponibile con queste restrizioni. Modifica gli
-              allergeni per vedere altre opzioni.
-            </p>
-          ) : (
-            courses.map((course) => (
-              <div key={course.id}>
-                <p className="flex items-center gap-2 text-xs font-medium text-[color:var(--postit-ink)]">
-                  <span
-                    className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm ring-1 ${course.accentClass}`}
-                    aria-hidden
-                  >
-                    {course.emoji}
-                  </span>
-                  {course.label}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {course.items.map((item) => {
-                    const selected = isSelected(course.id, item.id);
-
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => toggleSelection(course, item)}
-                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                          selected
-                            ? "bg-[color:var(--postit-ink)] text-[color:var(--postit-paper)]"
-                            : "bg-black/5 text-[color:var(--postit-ink)] ring-1 ring-black/10 hover:bg-black/10"
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))
-          )}
-
-          {selections.length > 0 && (
-            <div className="rounded-xl bg-black/5 p-3 ring-1 ring-black/10">
-              <p className="text-sm font-semibold text-[color:var(--postit-ink)]">
-                Riepilogo
-              </p>
-              <p className="mt-0.5 text-xs text-[color:var(--postit-ink-muted)]">
-                Portate e piatti selezionati per il menu
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {selections.map((selection) => (
-                  <span
-                    key={`${selection.courseId}-${selection.itemId}`}
-                    className="rounded-full bg-black/5 px-3 py-1 text-xs text-[color:var(--postit-ink)] ring-1 ring-black/10"
-                  >
-                    {selection.courseLabel}: {selection.itemLabel}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-});
 
 const PaymentChoiceModal = memo(function PaymentChoiceModal({
   selection,
