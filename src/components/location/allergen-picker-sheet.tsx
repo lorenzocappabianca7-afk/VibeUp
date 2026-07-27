@@ -9,7 +9,7 @@ import {
 import { cn, MODAL_SAFE_BOTTOM_STYLE } from "@/lib/utils";
 import type { MenuAllergenRestriction } from "@/types/event";
 import { Check, Minus, Plus, ShieldAlert, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface AllergenPickerSheetProps {
   open: boolean;
@@ -20,6 +20,16 @@ interface AllergenPickerSheetProps {
   confirmLabel?: string;
   onClose: () => void;
   onConfirm: (allergens: MenuAllergenRestriction[]) => void;
+}
+
+function toSelectionState(
+  initialSelected: MenuAllergenRestriction[] | string[] | undefined,
+  maxGuests: number,
+) {
+  return normalizeAllergenRestrictions(
+    coerceAllergenRestrictions(initialSelected),
+    maxGuests,
+  );
 }
 
 export function AllergenPickerSheet({
@@ -33,22 +43,19 @@ export function AllergenPickerSheet({
   onConfirm,
 }: AllergenPickerSheetProps) {
   const [selected, setSelected] = useState<MenuAllergenRestriction[]>(() =>
-    normalizeAllergenRestrictions(
-      coerceAllergenRestrictions(initialSelected),
-      maxGuests,
-    ),
+    toSelectionState(initialSelected, maxGuests),
   );
+  const wasOpenRef = useRef(false);
 
   useBodyScrollLock(open);
 
+  // Reset draft only when the sheet opens — not on every parent re-render
+  // (initialSelected is often a new array reference each time).
   useEffect(() => {
-    if (!open) return;
-    setSelected(
-      normalizeAllergenRestrictions(
-        coerceAllergenRestrictions(initialSelected),
-        maxGuests,
-      ),
-    );
+    if (open && !wasOpenRef.current) {
+      setSelected(toSelectionState(initialSelected, maxGuests));
+    }
+    wasOpenRef.current = open;
   }, [open, initialSelected, maxGuests]);
 
   if (!open) return null;

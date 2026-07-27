@@ -1025,13 +1025,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const updateEventMenuAllergens = useCallback(
     (eventId: string, allergens: MenuAllergenRestriction[]) => {
-      const nextAllergens = normalizeAllergenRestrictions(allergens);
-      const nextNames = allergenRestrictionNames(nextAllergens);
-
       updateCurrentUserState((state) => ({
         ...state,
         events: state.events.map((event) => {
           if (event.id !== eventId) return event;
+
+          const nextAllergens = normalizeAllergenRestrictions(
+            allergens,
+            event.guestCount,
+          );
+          const nextNames = allergenRestrictionNames(nextAllergens);
 
           const locationService = event.services.find(
             (service) =>

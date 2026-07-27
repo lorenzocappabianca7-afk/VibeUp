@@ -513,8 +513,8 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
 
   return (
     <>
-    <article className="box-border w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/80 bg-surface-2 shadow-[0_8px_28px_-16px_rgba(0,0,0,0.55)]">
-      <div className="min-w-0 border-b border-white/15 bg-gradient-to-br from-brand-teal/[0.12] via-surface-2 to-surface-2 px-3 py-4 sm:px-4">
+      <article className="box-border w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/80 bg-surface-2 shadow-[0_8px_28px_-16px_rgba(0,0,0,0.55)]">
+        <div className="min-w-0 border-b border-white/15 bg-gradient-to-br from-brand-teal/[0.12] via-surface-2 to-surface-2 px-3 py-4 sm:px-4">
         <div className="min-w-0 overflow-hidden">
           <p className={`text-xs font-medium ${statusColors[event.status]}`}>
             {EVENT_STATUS_LABELS[event.status]}
@@ -767,11 +767,11 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       )}
 
       <EventCountdown event={event} embedded active={isActive} />
-    </article>
+      </article>
 
       <div className="mt-2 flex flex-col items-center gap-2 px-1">
         {confirmDelete ? (
-          <div className="flex w-full max-w-sm flex-col items-center gap-2 rounded-xl bg-primary-black/[0.04] px-3 py-2.5 ring-1 ring-primary-black/10">
+          <div className="flex w-full max-w-sm flex-col items-center gap-2 rounded-xl bg-white/5 px-3 py-2.5 ring-1 ring-white/10">
             <p className="text-center text-xs text-primary-black/70">
               Eliminare “{event.title}”? L’azione non si può annullare.
             </p>
@@ -796,7 +796,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
           <button
             type="button"
             onClick={() => setConfirmDelete(true)}
-            className="text-[11px] font-medium text-primary-black/40 underline-offset-2 transition-colors hover:text-brand-pink hover:underline"
+            className="text-[11px] font-medium text-primary-black/45 underline-offset-2 transition-colors hover:text-brand-pink hover:underline"
           >
             Elimina evento
           </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import {
   CRITICAL_PAINT_ID,
   SPLASH_LOGO_SRC,
@@ -56,25 +56,26 @@ function markSplashSeen() {
  *
  * Skip is applied in a blocking <head> script (`vibeup-splash-skip`) so hard
  * navigations never paint this overlay again in the same session — CSS hides
- * it before first paint; this component then unmounts in useLayoutEffect.
+ * it before first paint; this component then unmounts without a state flash.
  */
 export function SplashScreen() {
-  // Always start as "enter" on server+client for hydration match.
-  // Skip visits are invisible via html.vibeup-splash-skip CSS, then cleaned up.
+  const skipSplash = useSyncExternalStore(
+    () => () => {},
+    shouldSkipSplash,
+    () => false,
+  );
   const [phase, setPhase] = useState<Phase>("enter");
   const [showTagline, setShowTagline] = useState(false);
   const [bounceDone, setBounceDone] = useState(() => splashBounceAlreadyPlayed);
 
   useLayoutEffect(() => {
-    if (!shouldSkipSplash()) return;
+    if (!skipSplash) return;
     removeCriticalPaint();
-    setPhase("gone");
-  }, []);
+  }, [skipSplash]);
 
   useEffect(() => {
-    if (shouldSkipSplash()) {
+    if (skipSplash) {
       removeCriticalPaint();
-      setPhase("gone");
       return;
     }
 
@@ -109,9 +110,9 @@ export function SplashScreen() {
       window.clearTimeout(doneTimer);
       document.documentElement.style.overflow = previousOverflow;
     };
-  }, []);
+  }, [skipSplash]);
 
-  if (phase === "gone") return null;
+  if (skipSplash || phase === "gone") return null;
 
   return (
     <div
