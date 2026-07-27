@@ -2,7 +2,27 @@
 
 import { DiscountInviteBanner } from "@/components/discount-invite-banner";
 import { EventCountdown } from "@/components/events/event-countdown";
+import { AllergenPickerSheet } from "@/components/location/allergen-picker-sheet";
+import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { useAppState } from "@/context/app-state-context";
+import { getCountdown, isEventPast } from "@/lib/event";
+import {
+  filterMenuCoursesByAllergens,
+  type MenuCourse,
+  type MenuCourseItem,
+} from "@/lib/menu-allergens";
+import {
+  EVENT_STATUS_LABELS,
+  type BookedService,
+  type EventMenuSelection,
+  type UserEvent,
+} from "@/types/event";
+import {
+  DISCOUNT_POPOVER_CLASS,
+  formatCurrency,
+  formatDate,
+  MODAL_SAFE_BOTTOM_STYLE,
+} from "@/lib/utils";
 import {
   Calendar,
   Cake,
@@ -20,20 +40,6 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-import { getCountdown, isEventPast } from "@/lib/event";
-import {
-  EVENT_STATUS_LABELS,
-  type BookedService,
-  type EventMenuSelection,
-  type UserEvent,
-} from "@/types/event";
-import {
-  DISCOUNT_POPOVER_CLASS,
-  formatCurrency,
-  formatDate,
-  MODAL_SAFE_BOTTOM_STYLE,
-} from "@/lib/utils";
-import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 
@@ -129,64 +135,6 @@ const EVENT_SERVICE_SUGGESTIONS = [
   },
 ] as const;
 
-const MENU_COURSES = [
-  {
-    id: "antipasti",
-    label: "Antipasti",
-    emoji: "🧀",
-    accentClass: "bg-amber-100 text-amber-800 ring-amber-200/80",
-    items: [
-      { id: "taglieri", label: "Taglieri misti" },
-      { id: "finger-food", label: "Finger food" },
-      { id: "bruschette", label: "Bruschette gourmet" },
-    ],
-  },
-  {
-    id: "primi",
-    label: "Primi",
-    emoji: "🍝",
-    accentClass: "bg-orange-100 text-orange-800 ring-orange-200/80",
-    items: [
-      { id: "pasta", label: "Pasta fresca" },
-      { id: "risotto", label: "Risotto" },
-      { id: "lasagne", label: "Lasagne vegetariane" },
-    ],
-  },
-  {
-    id: "secondi",
-    label: "Secondi",
-    emoji: "🥩",
-    accentClass: "bg-rose-100 text-rose-800 ring-rose-200/80",
-    items: [
-      { id: "carne", label: "Secondo di carne" },
-      { id: "pesce", label: "Secondo di pesce" },
-      { id: "vegetariano", label: "Opzione vegetariana" },
-    ],
-  },
-  {
-    id: "dolci",
-    label: "Dolci",
-    emoji: "🍰",
-    accentClass: "bg-pink-100 text-pink-800 ring-pink-200/80",
-    items: [
-      { id: "torta", label: "Torta evento" },
-      { id: "mono-porzioni", label: "Monoporzioni" },
-      { id: "frutta", label: "Frutta fresca" },
-    ],
-  },
-  {
-    id: "bevande",
-    label: "Bevande",
-    emoji: "🥂",
-    accentClass: "bg-sky-100 text-sky-800 ring-sky-200/80",
-    items: [
-      { id: "soft-drink", label: "Soft drink" },
-      { id: "vino", label: "Vino e prosecco" },
-      { id: "open-bar", label: "Open bar" },
-    ],
-  },
-] as const;
-
 function getMissingServiceSuggestions(event: UserEvent) {
   const bookedCategories = new Set(
     event.services
@@ -229,25 +177,20 @@ function getLocationService(event: UserEvent) {
 function locationIncludesVenueMenu(event: UserEvent) {
   const locationService = getLocationService(event);
   if (!locationService) return false;
-  if ((locationService.allergens?.length ?? 0) > 0) return true;
+  if (locationService.allergens !== undefined) return true;
   return /menu|catering|buffet|food/i.test(locationService.name);
 }
 
-function inferMenuAllergens(service: BookedService): string[] {
-  if (service.allergens && service.allergens.length > 0) {
-    return service.allergens;
-  }
+function getEventMenuAllergens(event: UserEvent): string[] {
+  const fromMenuServices = getMenuServices(event).flatMap(
+    (service) => service.allergens ?? [],
+  );
+  const fromLocation = getLocationService(event)?.allergens ?? [];
+  return Array.from(new Set([...fromMenuServices, ...fromLocation]));
+}
 
-  const lowered = `${service.name} ${service.providerName}`.toLowerCase();
-
-  if (lowered.includes("vegetar")) {
-    return ["Glutine", "Latte", "Uova", "Frutta a guscio"];
-  }
-  if (lowered.includes("catering") || lowered.includes("buffet")) {
-    return ["Glutine", "Latte", "Uova", "Soia", "Sedano", "Senape"];
-  }
-
-  return ["Glutine", "Latte", "Uova", "Frutta a guscio", "Sedano", "Senape"];
+function eventHasEditableMenuAllergens(event: UserEvent) {
+  return getMenuServices(event).length > 0 || locationIncludesVenueMenu(event);
 }
 
 function buildSuggestionHref(
@@ -295,6 +238,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
     markServicePaid: markServicePaidInState,
     paymentStates,
     prunePastEvents,
+    updateEventMenuAllergens,
     updateEventMenuSelections,
     updateEventTitle,
   } = useAppState();
@@ -457,6 +401,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
                   onOpenDepositPayment={openDepositPayment}
                   onTitleChange={updateEventTitle}
                   onMenuSelectionsChange={updateEventMenuSelections}
+                  onMenuAllergensChange={updateEventMenuAllergens}
                 />
               </li>
             ))}
@@ -480,6 +425,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   onOpenDepositPayment,
   onTitleChange,
   onMenuSelectionsChange,
+  onMenuAllergensChange,
 }: {
   event: UserEvent;
   isActive: boolean;
@@ -490,9 +436,11 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
     eventId: string,
     selections: EventMenuSelection[],
   ) => void;
+  onMenuAllergensChange: (eventId: string, allergens: string[]) => void;
 }) {
   const [titleDraft, setTitleDraft] = useState(event.title);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [allergenSheetOpen, setAllergenSheetOpen] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const totalCost =
     event.totalCost ??
@@ -506,13 +454,10 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   };
   const missingSuggestions = getMissingServiceSuggestions(event);
   const menuServices = getMenuServices(event);
-  const locationService = getLocationService(event);
-  const venueMenuAllergens =
-    locationService && locationIncludesVenueMenu(event)
-      ? inferMenuAllergens(locationService)
-      : [];
+  const restrictedAllergens = getEventMenuAllergens(event);
+  const canEditAllergens = eventHasEditableMenuAllergens(event);
   const showMenuSection =
-    menuServices.length > 0 || Boolean(locationService);
+    menuServices.length > 0 || locationIncludesVenueMenu(event);
   const payDeposit = useCallback(() => {
     onOpenDepositPayment(event);
   }, [event, onOpenDepositPayment]);
@@ -631,48 +576,47 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
 
       {showMenuSection && (
         <section className="min-w-0 border-t border-primary-black/8 bg-surface px-3 py-4 sm:px-4">
-          <div className="flex items-center gap-2">
-            <UtensilsCrossed className="h-4 w-4 text-white/70" aria-hidden />
-            <h3 className="text-sm font-semibold text-white">Menu</h3>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <UtensilsCrossed className="h-4 w-4 text-white/70" aria-hidden />
+              <h3 className="text-sm font-semibold text-white">Menu</h3>
+            </div>
+            {canEditAllergens && (
+              <button
+                type="button"
+                onClick={() => setAllergenSheetOpen(true)}
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-2.5 text-[11px] font-semibold text-white ring-1 ring-white/15 transition-colors hover:bg-white/15"
+                aria-label="Modifica allergeni"
+              >
+                <Pencil className="h-3.5 w-3.5" aria-hidden />
+                Allergeni
+              </button>
+            )}
           </div>
 
           <div className="mt-3 space-y-3">
-            {menuServices.map((service) => {
-              const allergens = inferMenuAllergens(service);
-
-              return (
-                <div
-                  key={service.id}
-                  className="min-w-0 rounded-xl bg-background/70 p-3 ring-1 ring-primary-black/8"
-                >
-                  <div className="flex min-w-0 items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-white">
-                        {service.name}
-                      </p>
-                      <p className="truncate text-xs text-white">
-                        {service.providerName}
-                      </p>
-                    </div>
-                    <p className="shrink-0 text-sm font-medium tabular-nums text-white">
-                      {formatCurrency(service.amountPaid)}
+            {menuServices.map((service) => (
+              <div
+                key={service.id}
+                className="min-w-0 rounded-xl bg-background/70 p-3 ring-1 ring-primary-black/8"
+              >
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-white">
+                      {service.name}
+                    </p>
+                    <p className="truncate text-xs text-white">
+                      {service.providerName}
                     </p>
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {allergens.map((allergen) => (
-                      <span
-                        key={allergen}
-                        className="rounded-full bg-surface-2 px-2.5 py-0.5 text-[11px] text-white ring-1 ring-primary-black/10"
-                      >
-                        {allergen}
-                      </span>
-                    ))}
-                  </div>
+                  <p className="shrink-0 text-sm font-medium tabular-nums text-white">
+                    {formatCurrency(service.amountPaid)}
+                  </p>
                 </div>
-              );
-            })}
+              </div>
+            ))}
 
-            {menuServices.length === 0 && venueMenuAllergens.length > 0 && (
+            {menuServices.length === 0 && locationIncludesVenueMenu(event) && (
               <div className="min-w-0 rounded-xl bg-background/70 p-3 ring-1 ring-primary-black/8">
                 <p className="text-sm font-medium text-white">
                   Menu incluso nella location
@@ -680,21 +624,34 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                 <p className="mt-0.5 text-xs text-white">
                   Il costo è compreso nel totale location.
                 </p>
+              </div>
+            )}
+
+            <div className="min-w-0 rounded-xl bg-background/70 p-3 ring-1 ring-primary-black/8">
+              <p className="text-xs font-medium uppercase tracking-wide text-white/70">
+                Da evitare
+              </p>
+              {restrictedAllergens.length > 0 ? (
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {venueMenuAllergens.map((allergen) => (
+                  {restrictedAllergens.map((allergen) => (
                     <span
                       key={allergen}
-                      className="rounded-full bg-surface-2 px-2.5 py-0.5 text-[11px] text-white ring-1 ring-primary-black/10"
+                      className="rounded-full bg-brand-pink/20 px-2.5 py-0.5 text-[11px] font-medium text-white ring-1 ring-brand-pink/35"
                     >
                       {allergen}
                     </span>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="mt-1 text-xs text-white/70">
+                  Nessuna restrizione selezionata
+                </p>
+              )}
+            </div>
           </div>
 
           <MenuCoursePicker
+            restrictedAllergens={restrictedAllergens}
             selections={event.menuSelections ?? []}
             onChange={(selections) =>
               onMenuSelectionsChange(event.id, selections)
@@ -702,6 +659,18 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
           />
         </section>
       )}
+
+      <AllergenPickerSheet
+        open={allergenSheetOpen}
+        initialSelected={restrictedAllergens}
+        title="Modifica allergeni"
+        confirmLabel="Aggiorna menu"
+        onClose={() => setAllergenSheetOpen(false)}
+        onConfirm={(allergens) => {
+          onMenuAllergensChange(event.id, allergens);
+          setAllergenSheetOpen(false);
+        }}
+      />
 
       <div className="min-w-0 overflow-hidden border-t border-primary-black/8 bg-surface-2 px-3 py-4 sm:px-4">
         <h3 className="text-sm font-semibold text-white">Da pagare</h3>
@@ -874,12 +843,18 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
 
 const MenuCoursePicker = memo(function MenuCoursePicker({
   selections,
+  restrictedAllergens,
   onChange,
 }: {
   selections: EventMenuSelection[];
+  restrictedAllergens: string[];
   onChange: (selections: EventMenuSelection[]) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const courses = useMemo(
+    () => filterMenuCoursesByAllergens(restrictedAllergens),
+    [restrictedAllergens],
+  );
 
   function isSelected(courseId: string, itemId: string) {
     return selections.some(
@@ -888,10 +863,7 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
     );
   }
 
-  function toggleSelection(
-    course: (typeof MENU_COURSES)[number],
-    item: (typeof MENU_COURSES)[number]["items"][number],
-  ) {
+  function toggleSelection(course: MenuCourse, item: MenuCourseItem) {
     if (isSelected(course.id, item.id)) {
       onChange(
         selections.filter(
@@ -927,7 +899,9 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
           </span>
           <span className="mt-0.5 block text-xs text-white">
             {selections.length === 0
-              ? "Apri per selezionare le portate"
+              ? restrictedAllergens.length > 0
+                ? "Menu adattato alle tue restrizioni"
+                : "Apri per selezionare le portate"
               : `${selections.length} ${
                   selections.length === 1
                     ? "piatto selezionato"
@@ -946,48 +920,55 @@ const MenuCoursePicker = memo(function MenuCoursePicker({
       {open && (
         <div className="mt-3 space-y-3 rounded-2xl border border-primary-black/8 bg-primary-black/[0.02] p-3">
           <p className="text-xs text-white">
-            Seleziona cosa includere nel menu
+            {restrictedAllergens.length > 0
+              ? "Piatti disponibili senza gli allergeni da evitare"
+              : "Seleziona cosa includere nel menu"}
           </p>
 
-          {MENU_COURSES.map((course) => (
-            <div key={course.id}>
-              <p className="flex items-center gap-2 text-xs font-medium text-white">
-                <span
-                  className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm ring-1 ${course.accentClass}`}
-                  aria-hidden
-                >
-                  {course.emoji}
-                </span>
-                {course.label}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {course.items.map((item) => {
-                  const selected = isSelected(course.id, item.id);
+          {courses.length === 0 ? (
+            <p className="rounded-xl bg-surface p-3 text-xs text-white ring-1 ring-primary-black/8">
+              Nessun piatto disponibile con queste restrizioni. Modifica gli
+              allergeni per vedere altre opzioni.
+            </p>
+          ) : (
+            courses.map((course) => (
+              <div key={course.id}>
+                <p className="flex items-center gap-2 text-xs font-medium text-white">
+                  <span
+                    className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm ring-1 ${course.accentClass}`}
+                    aria-hidden
+                  >
+                    {course.emoji}
+                  </span>
+                  {course.label}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {course.items.map((item) => {
+                    const selected = isSelected(course.id, item.id);
 
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => toggleSelection(course, item)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                        selected
-                          ? "bg-white/12 text-white"
-                          : "bg-surface text-white ring-1 ring-primary-black/12 hover:ring-primary-black/25"
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  );
-                })}
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => toggleSelection(course, item)}
+                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                          selected
+                            ? "bg-white/12 text-white"
+                            : "bg-surface text-white ring-1 ring-primary-black/12 hover:ring-primary-black/25"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
 
           {selections.length > 0 && (
             <div className="rounded-xl bg-surface p-3 ring-1 ring-primary-black/8">
-              <p className="text-sm font-semibold text-white">
-                Riepilogo
-              </p>
+              <p className="text-sm font-semibold text-white">Riepilogo</p>
               <p className="mt-0.5 text-xs text-white">
                 Portate e piatti selezionati per il menu
               </p>

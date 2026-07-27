@@ -1,5 +1,6 @@
 "use client";
 
+import { AllergenPickerSheet } from "@/components/location/allergen-picker-sheet";
 import { BookingSummary } from "@/components/location/booking-summary";
 import { LocationGallery } from "@/components/location/location-gallery";
 import { LocationInfo, LocationReviewsSection } from "@/components/location/location-info";
@@ -72,17 +73,13 @@ const EXTRA_SERVICE_CATEGORY: Record<ExtraServiceId, BookedServiceCategory> = {
   audio_lights: "audio_lights",
 };
 
-function getMenuAllergens(serviceName: string): string[] | undefined {
-  const lowered = serviceName.toLowerCase();
-  const isMenuService =
-    lowered.includes("menu") ||
-    lowered.includes("catering") ||
-    lowered.includes("food") ||
-    lowered.includes("buffet");
-
-  if (!isMenuService) return undefined;
-
-  return ["Glutine", "Latte", "Uova", "Frutta a guscio", "Sedano", "Senape"];
+function isVenueMenuServiceId(
+  serviceId: string,
+  services: ReturnType<typeof getInternalLocationServices>,
+) {
+  return services.some(
+    (service) => service.id === serviceId && service.type === "menu",
+  );
 }
 
 const EMPTY_QUOTE: BookingQuote = {
@@ -141,6 +138,11 @@ export function LocationDetailView({
   const [selectedInternalServices, setSelectedInternalServices] = useState<
     string[]
   >([]);
+  const [menuAllergens, setMenuAllergens] = useState<string[]>([]);
+  const [allergenSheetOpen, setAllergenSheetOpen] = useState(false);
+  const [pendingMenuServiceId, setPendingMenuServiceId] = useState<
+    string | null
+  >(null);
   const [selectedExtras, setSelectedExtras] = useState<ExtraServiceId[]>([]);
   const [cakeKg, setCakeKg] = useState(3);
   const [drinkMode, setDrinkMode] = useState<DrinkPackageMode>("none");
@@ -436,9 +438,45 @@ export function LocationDetailView({
   }
 
   function toggleInternalService(id: string) {
+    const service = internalServices.find((item) => item.id === id);
+    const isSelected = selectedInternalServices.includes(id);
+
+    if (service?.type === "menu") {
+      if (isSelected) {
+        setSelectedInternalServices((prev) =>
+          prev.filter((serviceId) => serviceId !== id),
+        );
+        setMenuAllergens([]);
+        setPendingMenuServiceId(null);
+        setAllergenSheetOpen(false);
+        return;
+      }
+
+      setPendingMenuServiceId(id);
+      setAllergenSheetOpen(true);
+      return;
+    }
+
     setSelectedInternalServices((prev) =>
       prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id],
     );
+  }
+
+  function confirmMenuAllergens(allergens: string[]) {
+    const serviceId = pendingMenuServiceId;
+    setMenuAllergens(allergens);
+    if (serviceId) {
+      setSelectedInternalServices((prev) =>
+        prev.includes(serviceId) ? prev : [...prev, serviceId],
+      );
+    }
+    setPendingMenuServiceId(null);
+    setAllergenSheetOpen(false);
+  }
+
+  function closeAllergenSheet() {
+    setPendingMenuServiceId(null);
+    setAllergenSheetOpen(false);
   }
 
   function toggleCompare() {
@@ -508,15 +546,11 @@ export function LocationDetailView({
               ]
             : []),
         ];
-        const venueMenuAllergens = selectedInternalServices.flatMap(
-          (serviceId) => {
-            const service = internalServices.find(
-              (item) => item.id === serviceId,
-            );
-            if (!service || service.type !== "menu") return [];
-            return getMenuAllergens(service.name) ?? [];
-          },
-        );
+        const venueMenuAllergens = selectedInternalServices.some((serviceId) =>
+          isVenueMenuServiceId(serviceId, internalServices),
+        )
+          ? menuAllergens
+          : [];
 
         const services = [
           {
@@ -526,10 +560,11 @@ export function LocationDetailView({
             providerName: location.name,
             status: "confirmed" as const,
             amountPaid: quote.locationCost,
-            allergens:
-              venueMenuAllergens.length > 0
-                ? Array.from(new Set(venueMenuAllergens))
-                : undefined,
+            allergens: selectedInternalServices.some((serviceId) =>
+              isVenueMenuServiceId(serviceId, internalServices),
+            )
+              ? Array.from(new Set(venueMenuAllergens))
+              : undefined,
           },
           ...selectedExtras.flatMap((extraId) => {
             const service = EXTRA_SERVICES.find((item) => item.id === extraId);
@@ -545,7 +580,6 @@ export function LocationDetailView({
                 cakeKg,
                 guestCount,
               }),
-              allergens: getMenuAllergens(service.name),
             };
           }),
         ];
@@ -701,6 +735,12 @@ export function LocationDetailView({
       <RecommendedDjsCarousel djs={recommendedDjs} />
       <LocationReviewsSection location={location} />
 
+      <AllergenPickerSheet
+        open={allergenSheetOpen}
+        initialSelected={menuAllergens}
+        onClose={closeAllergenSheet}
+        onConfirm={confirmMenuAllergens}
+      />
     </div>
   );
 }

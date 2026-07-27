@@ -19,6 +19,7 @@ import {
   isActivationTokenExpired,
 } from "@/lib/auth/activation";
 import { isEventPast } from "@/lib/event";
+import { pruneMenuSelectionsForAllergens } from "@/lib/menu-allergens";
 import { MOCK_EVENTS } from "@/lib/mock/events";
 import {
   sanitizeAccountPaymentCards,
@@ -160,6 +161,7 @@ interface AppStateContextValue {
     eventId: string,
     selections: EventMenuSelection[],
   ) => void;
+  updateEventMenuAllergens: (eventId: string, allergens: string[]) => void;
   addServiceToEvent: (eventId: string, service: BookedService) => void;
   markServicePaid: (eventId: string, serviceId: string, method?: string) => void;
   toggleFavoriteLocation: (id: string) => void;
@@ -984,6 +986,56 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             ? { ...event, menuSelections: selections }
             : event,
         ),
+      }));
+    },
+    [updateCurrentUserState],
+  );
+
+  const updateEventMenuAllergens = useCallback(
+    (eventId: string, allergens: string[]) => {
+      const nextAllergens = Array.from(
+        new Set(allergens.map((item) => item.trim()).filter(Boolean)),
+      );
+
+      updateCurrentUserState((state) => ({
+        ...state,
+        events: state.events.map((event) => {
+          if (event.id !== eventId) return event;
+
+          const locationService = event.services.find(
+            (service) =>
+              service.status !== "cancelled" && service.category === "location",
+          );
+          const hasVenueMenu =
+            locationService?.allergens !== undefined ||
+            /menu|catering|buffet|food/i.test(locationService?.name ?? "");
+
+          const services = event.services.map((service) => {
+            if (service.status === "cancelled") return service;
+
+            const touchesMenu =
+              service.category === "menu" ||
+              service.category === "catering" ||
+              (service.category === "location" &&
+                (hasVenueMenu || nextAllergens.length > 0));
+
+            if (!touchesMenu) return service;
+
+            return {
+              ...service,
+              allergens: nextAllergens,
+            };
+          });
+
+          return {
+            ...event,
+            services,
+            menuSelections: pruneMenuSelectionsForAllergens(
+              event.menuSelections ?? [],
+              nextAllergens,
+            ),
+          };
+        }),
       }));
     },
     [updateCurrentUserState],
@@ -1891,6 +1943,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       prunePastEvents,
       updateEventTitle,
       updateEventMenuSelections,
+      updateEventMenuAllergens,
       addServiceToEvent,
       markServicePaid,
       toggleFavoriteLocation,
@@ -1942,6 +1995,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       prunePastEvents,
       updateEventTitle,
       updateEventMenuSelections,
+      updateEventMenuAllergens,
       addServiceToEvent,
       markServicePaid,
       toggleFavoriteLocation,
