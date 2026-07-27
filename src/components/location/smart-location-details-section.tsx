@@ -92,12 +92,10 @@ const ALL_BOOKING_TIMES = TIME_GROUPS.flatMap((group) => [...group.times]);
 type PickerPanel = "date" | "start" | "end" | null;
 
 interface SmartLocationDetailsSectionProps {
-  dateRangeTo?: string;
   guestCount: number;
   maxGuests: number;
   quote: BookingQuote | null;
   estimatedHours: number;
-  hourlyPrice: number;
   minHours: number;
   date: string;
   startTime: string;
@@ -221,12 +219,10 @@ function BookingTimePicker({
 }
 
 export function SmartLocationDetailsSection({
-  dateRangeTo: _dateRangeTo,
   guestCount,
   maxGuests,
   quote,
   estimatedHours,
-  hourlyPrice,
   minHours,
   date,
   startTime,

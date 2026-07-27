@@ -685,12 +685,10 @@ export function LocationDetailView({
 
         <aside className="space-y-6 xl:sticky xl:top-8">
           <SmartLocationDetailsSection
-            dateRangeTo={initialQuoteContext?.dateTo}
             guestCount={guestCount}
             maxGuests={MAX_QUOTE_GUESTS}
             quote={quote}
             estimatedHours={hours}
-            hourlyPrice={location.hourlyPrice}
             minHours={location.technicalDetails.minHours}
             date={date}
             startTime={startTime}
