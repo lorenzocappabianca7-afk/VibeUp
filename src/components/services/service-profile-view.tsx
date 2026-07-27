@@ -9,6 +9,7 @@ import {
 import { APP_SHELL_WIDTH_CLASS, cn, formatCurrency } from "@/lib/utils";
 import { isEventPast } from "@/lib/event";
 import type { ManagedListing, ManagedServiceListing } from "@/types/admin";
+import { isManagedListingLive } from "@/types/admin";
 import type { BookedServiceCategory } from "@/types/event";
 import type { MusicType, PartyType } from "@/types/location";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
@@ -120,7 +121,7 @@ function getServiceTags(service: ServiceProvider) {
 function isPublishedManagedService(
   listing: ManagedListing,
 ): listing is ManagedServiceListing {
-  return listing.category !== "locali" && listing.published;
+  return listing.category !== "locali" && isManagedListingLive(listing);
 }
 
 function managedListingToServiceProvider(

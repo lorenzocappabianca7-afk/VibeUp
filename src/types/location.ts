@@ -68,6 +68,12 @@ export interface AvailableLocationService {
   pricing: AvailableLocationServicePricing;
 }
 
+/** Venue-configured drink package rates used in instant quotes. */
+export interface LocationDrinksPricing {
+  drinkUnitPrice: number;
+  openBarPerInvitee: number;
+}
+
 export interface Location {
   id: string;
   name: string;
@@ -97,6 +103,8 @@ export interface Location {
   includedServices: string[];
   /** Optional curated list of bookable venue services. */
   availableServices?: AvailableLocationService[];
+  /** Optional drink / open-bar rates for quotes. */
+  drinksPricing?: LocationDrinksPricing;
   contactsBeenHere: {
     count: number;
     contacts: ContactPreview[];

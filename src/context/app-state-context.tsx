@@ -189,6 +189,10 @@ interface AppStateContextValue {
   upsertManagedListing: (listing: ManagedListing) => void;
   removeManagedListing: (id: string) => void;
   toggleManagedListingPublication: (id: string) => void;
+  setManagedListingStatus: (
+    id: string,
+    status: "draft" | "pending_review" | "published",
+  ) => void;
   createAccount: (account: CreateAccountInput) => Promise<CreateAccountResult>;
   createBusinessAccount: (
     input: CreateBusinessAccountInput,
@@ -1241,11 +1245,39 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const toggleManagedListingPublication = useCallback((id: string) => {
     setManagedListings((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, published: !item.published } : item,
-      ),
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const nextPublished = !item.published;
+        return {
+          ...item,
+          published: nextPublished,
+          status: nextPublished ? ("published" as const) : ("draft" as const),
+          updatedAt: new Date().toISOString(),
+        };
+      }),
     );
   }, []);
+
+  const setManagedListingStatus = useCallback(
+    (
+      id: string,
+      status: "draft" | "pending_review" | "published",
+    ) => {
+      setManagedListings((prev) =>
+        prev.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                status,
+                published: status === "published",
+                updatedAt: new Date().toISOString(),
+              }
+            : item,
+        ),
+      );
+    },
+    [],
+  );
 
   const createAccount = useCallback(
     async (account: CreateAccountInput): Promise<CreateAccountResult> => {
@@ -1993,6 +2025,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       upsertManagedListing,
       removeManagedListing,
       toggleManagedListingPublication,
+      setManagedListingStatus,
       createAccount,
       createBusinessAccount,
       activateAccountWithToken,
@@ -2046,6 +2079,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       upsertManagedListing,
       removeManagedListing,
       toggleManagedListingPublication,
+      setManagedListingStatus,
       createAccount,
       createBusinessAccount,
       activateAccountWithToken,

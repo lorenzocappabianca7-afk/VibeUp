@@ -9,6 +9,8 @@ import { Check, Clock3, ShieldCheck } from "lucide-react";
 interface BookingSummaryProps {
   quote: BookingQuote;
   hourlyPrice: number;
+  /** Override the location line label (e.g. serata / a persona). */
+  locationPriceLabel?: string;
   isReady: boolean;
   requestStatus?: AvailabilityRequestStatus | null;
   requestError?: string | null;
@@ -21,6 +23,7 @@ interface BookingSummaryProps {
 export function BookingSummary({
   quote,
   hourlyPrice,
+  locationPriceLabel,
   isReady,
   requestStatus = null,
   requestError = null,
@@ -34,16 +37,19 @@ export function BookingSummary({
   const isLocked = isPendingManager || isPendingUserConfirm;
   const canRetry =
     requestStatus === "declined" || requestStatus === "cancelled";
+  const locationLine =
+    locationPriceLabel ??
+    `${quote.hours} ore × ${formatCurrency(hourlyPrice)}`;
 
   return (
     <section className="space-y-4 rounded-2xl border border-white bg-primary-black/[0.02] p-5">
       <h2 className="text-base font-bold text-primary-black">Riepilogo</h2>
 
       <dl className="space-y-2 text-sm">
-        {quote.hours > 0 && (
+        {(quote.hours > 0 || locationPriceLabel) && (
           <div className="flex justify-between gap-3">
             <dt className="min-w-0 text-primary-black/60">
-              Location ({quote.hours} ore × {formatCurrency(hourlyPrice)}
+              Location ({locationLine}
               {(quote.drinksCost ?? 0) > 0 ? " + bevande" : ""}
               {(quote.venueServicesCost ?? 0) > 0 ? " + servizi locale" : ""})
             </dt>

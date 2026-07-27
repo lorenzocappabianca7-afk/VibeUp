@@ -34,6 +34,7 @@ import {
 } from "@/lib/quote-session-draft";
 import { getLocationPricePresentation } from "@/lib/utils";
 import type { ManagedLocationListing } from "@/types/admin";
+import { isManagedListingLive } from "@/types/admin";
 import type { BookedServiceCategory, MenuAllergenRestriction } from "@/types/event";
 import type { BookingQuote, ExtraServiceId, Location } from "@/types/location";
 import {
@@ -227,7 +228,7 @@ export function LocationDetailView({
     const managedLocations = managedListings
       .filter(
         (listing): listing is ManagedLocationListing =>
-          listing.category === "locali" && listing.published,
+          listing.category === "locali" && isManagedListingLive(listing),
       )
       .map((listing) => listing.location);
     const allLocations = [...managedLocations, ...MOCK_LOCATIONS];
@@ -272,11 +273,14 @@ export function LocationDetailView({
       selectedExtras,
       cakeKg,
       guestCount,
+      location,
     });
     const drinksCost = calculateDrinksCost({
       mode: drinkMode,
       drinksPerInvitee,
       guestCount,
+      drinkUnitPrice: location.drinksPricing?.drinkUnitPrice,
+      openBarPerInvitee: location.drinksPricing?.openBarPerInvitee,
     });
     const venueServicesCost = selectedInternalServices.reduce((sum, id) => {
       const service = internalServices.find((item) => item.id === id);
@@ -307,7 +311,7 @@ export function LocationDetailView({
       depositAmount: locationCost * 0.3,
     } satisfies BookingQuote;
   }, [
-    location.hourlyPrice,
+    location,
     startTime,
     endTime,
     selectedExtras,
@@ -718,6 +722,13 @@ export function LocationDetailView({
           <BookingSummary
             quote={quote ?? EMPTY_QUOTE}
             hourlyPrice={location.hourlyPrice}
+            locationPriceLabel={
+              location.priceModel === "person"
+                ? `a persona × ${guestCount} invitati`
+                : location.priceModel === "event" || location.eventPrice != null
+                  ? "tariffa a serata"
+                  : undefined
+            }
             isReady={isReady}
             requestStatus={activeRequest?.status ?? null}
             requestError={requestError}

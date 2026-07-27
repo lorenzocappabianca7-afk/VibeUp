@@ -1,5 +1,6 @@
 import { EXTRA_SERVICES } from "@/lib/mock/extra-services";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
+import { getLocationListBaseCost } from "@/lib/location-publish-form";
 import type {
   BookingQuote,
   ExtraService,
@@ -52,6 +53,11 @@ export function calculateBookingQuote(params: {
   selectedExtras: ExtraServiceId[];
   cakeKg?: number;
   guestCount?: number;
+  /** When set, uses event/person list price instead of hours × hourly. */
+  location?: Pick<
+    Location,
+    "priceModel" | "eventPrice" | "personPrice" | "hourlyPrice" | "capacity"
+  >;
 }): BookingQuote {
   const {
     hourlyPrice,
@@ -60,10 +66,13 @@ export function calculateBookingQuote(params: {
     selectedExtras,
     cakeKg = 3,
     guestCount = 20,
+    location,
   } = params;
 
   const hours = calculateHours(startTime, endTime);
-  const locationCost = hours * hourlyPrice;
+  const locationCost = location
+    ? getLocationListBaseCost(location, { hours, guestCount })
+    : hours * hourlyPrice;
 
   const extrasCost = selectedExtras.reduce((sum, id) => {
     const service = EXTRA_SERVICES.find((s) => s.id === id);

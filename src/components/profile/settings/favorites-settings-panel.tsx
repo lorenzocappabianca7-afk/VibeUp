@@ -12,6 +12,7 @@ import type {
   ManagedLocationListing,
   ManagedServiceListing,
 } from "@/types/admin";
+import { isManagedListingLive } from "@/types/admin";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { formatCurrency, getLocationPricePresentation } from "@/lib/utils";
 import { Briefcase, Heart, MapPin, X } from "lucide-react";
@@ -34,7 +35,7 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
     const managedLocations = managedListings
       .filter(
         (listing): listing is ManagedLocationListing =>
-          listing.category === "locali" && listing.published,
+          listing.category === "locali" && isManagedListingLive(listing),
       )
       .map((listing) => listing.location);
     const allLocations = Array.from(
@@ -57,7 +58,7 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
     const managedServices: ServiceProvider[] = managedListings
       .filter(
         (listing): listing is ManagedServiceListing =>
-          listing.category !== "locali" && listing.published,
+          listing.category !== "locali" && isManagedListingLive(listing),
       )
       .map((listing) => ({
         id: listing.id,

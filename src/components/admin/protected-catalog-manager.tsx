@@ -33,6 +33,7 @@ import {
   Wand2,
   X,
 } from "lucide-react";
+import { AdminLocationPublishPanel } from "@/components/admin/admin-location-publish-panel";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -679,187 +680,27 @@ export function ProtectedCatalogManager() {
         </div>
       </div>
 
+      {aiMessage && (
+        <p className="mt-4 rounded-2xl bg-brand-teal/10 px-4 py-3 text-xs font-semibold text-primary-black/70">
+          {aiMessage}
+        </p>
+      )}
+
+      {isLocationCategory ? (
+        <div className="mt-6">
+          <AdminLocationPublishPanel onMessage={setAiMessage} />
+        </div>
+      ) : (
       <div className="mt-6 grid min-w-0 gap-5 lg:grid-cols-[1.1fr_0.9fr]">
         <section className="min-w-0 rounded-[1.75rem] border border-primary-black/10 bg-surface p-4 shadow-sm sm:rounded-[2rem] sm:p-5">
           <div className="flex min-w-0 items-center gap-2">
             <Plus className="h-5 w-5 shrink-0 text-brand-teal" aria-hidden />
             <h2 className="min-w-0 text-base font-black text-primary-black sm:text-lg">
-              {isLocationCategory ? "Aggiungi o modifica locale" : "Aggiungi servizio"}
+              Aggiungi servizio
             </h2>
           </div>
 
-          {isLocationCategory ? (
-            <div className="mt-4 space-y-4">
-              <div className="rounded-3xl border border-dashed border-brand-teal/35 bg-brand-teal/5 p-4">
-                <div className="flex items-start gap-3">
-                  <UploadCloud className="mt-0.5 h-5 w-5 text-brand-teal" aria-hidden />
-                  <div>
-                    <p className="text-sm font-bold text-primary-black">
-                      Importa con IA da screen, testo o mail
-                    </p>
-                    <p className="mt-1 text-xs text-primary-black/60">
-                      Incolla una mail o carica screenshot/listini: VibeUp riempie i campi del locale.
-                    </p>
-                  </div>
-                </div>
-                <textarea
-                  value={aiText}
-                  onChange={(event) => setAiText(event.target.value)}
-                  rows={4}
-                  placeholder="Incolla qui testo, mail o dettagli del locale..."
-                  className="mt-3 w-full min-w-0 rounded-2xl border border-primary-black/10 bg-background px-4 py-3 text-base outline-none focus:border-brand-teal"
-                />
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                  <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-primary-black/10 bg-background px-4 py-3 text-sm font-bold text-primary-black/70">
-                    <Mail className="h-4 w-4" aria-hidden />
-                    Carica screen/documento
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*,.pdf,.txt,.csv,.md"
-                      className="sr-only"
-                      onChange={(event) => void importLocationWithAi(event.target.files)}
-                    />
-                  </label>
-                  <Button
-                    className="flex-1 rounded-2xl"
-                    disabled={aiLoading}
-                    onClick={() => void importLocationWithAi()}
-                  >
-                    <Wand2 className="mr-2 h-4 w-4" aria-hidden />
-                    {aiLoading ? "Analisi IA..." : "Apprendi dettagli"}
-                  </Button>
-                </div>
-                {aiMessage && (
-                  <p className="mt-3 text-xs font-semibold text-primary-black/60">
-                    {aiMessage}
-                  </p>
-                )}
-              </div>
-
-              <FormInput label="Nome locale" value={locationForm.name} onChange={(value) => setLocationForm((prev) => ({ ...prev, name: value }))} />
-              <FormInput label="Indirizzo" value={locationForm.address} onChange={(value) => setLocationForm((prev) => ({ ...prev, address: value }))} />
-              <div className="grid gap-3 sm:grid-cols-3">
-                <FormInput label="Citta" value={locationForm.city} onChange={(value) => setLocationForm((prev) => ({ ...prev, city: value }))} />
-                <FormInput label="Capienza" type="number" value={locationForm.capacity} onChange={(value) => setLocationForm((prev) => ({ ...prev, capacity: value }))} />
-                <FormInput label="Prezzo base evento" type="number" value={locationForm.hourlyPrice} onChange={(value) => setLocationForm((prev) => ({ ...prev, hourlyPrice: value }))} />
-              </div>
-              <FormInput label="URL foto principale" value={locationForm.imageUrl} onChange={(value) => setLocationForm((prev) => ({ ...prev, imageUrl: value }))} />
-              <PhotoUploadField
-                label="Allega foto del locale"
-                description="Carica una o più immagini: la prima sarà la copertina, le altre entreranno nella gallery."
-                images={locationForm.galleryImageUrls}
-                multiple
-                onAddPhotos={(files) => void addLocationPhotos(files)}
-                onRemovePhoto={removeLocationPhoto}
-              />
-
-              <section className="space-y-3 rounded-3xl border border-primary-black/10 bg-primary-black/[0.02] p-4">
-                <div>
-                  <h3 className="text-sm font-black text-primary-black">
-                    Dettagli tecnici
-                  </h3>
-                  <p className="mt-1 text-xs text-primary-black/55">
-                    Compariranno nella scheda del locale sotto «Dettagli tecnici».
-                  </p>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <FormInput
-                    label="Superficie (m²)"
-                    type="number"
-                    value={locationForm.surfaceSqm}
-                    onChange={(value) =>
-                      setLocationForm((prev) => ({ ...prev, surfaceSqm: value }))
-                    }
-                  />
-                  <FormInput
-                    label="Posti parcheggio"
-                    type="number"
-                    value={locationForm.parkingSpots}
-                    onChange={(value) =>
-                      setLocationForm((prev) => ({
-                        ...prev,
-                        parkingSpots: value,
-                      }))
-                    }
-                  />
-                  <FormInput
-                    label="Durata minima (ore)"
-                    type="number"
-                    value={locationForm.minHours}
-                    onChange={(value) =>
-                      setLocationForm((prev) => ({ ...prev, minHours: value }))
-                    }
-                  />
-                </div>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  <ToggleChip
-                    label="Accessibilità"
-                    checked={locationForm.accessibility}
-                    onChange={(checked) =>
-                      setLocationForm((prev) => ({
-                        ...prev,
-                        accessibility: checked,
-                      }))
-                    }
-                  />
-                  <ToggleChip
-                    label="Aria condizionata"
-                    checked={locationForm.airConditioning}
-                    onChange={(checked) =>
-                      setLocationForm((prev) => ({
-                        ...prev,
-                        airConditioning: checked,
-                      }))
-                    }
-                  />
-                  <ToggleChip
-                    label="Area esterna"
-                    checked={locationForm.outdoorArea}
-                    onChange={(checked) =>
-                      setLocationForm((prev) => ({
-                        ...prev,
-                        outdoorArea: checked,
-                      }))
-                    }
-                  />
-                </div>
-              </section>
-
-              <FormTextarea
-                label="Servizi inclusi nel prezzo (separati da virgola)"
-                value={locationForm.includedServices}
-                onChange={(value) =>
-                  setLocationForm((prev) => ({
-                    ...prev,
-                    includedServices: value,
-                  }))
-                }
-              />
-
-              <AvailableServicesEditor
-                rows={locationForm.availableServices}
-                onChange={(rows) =>
-                  setLocationForm((prev) => ({
-                    ...prev,
-                    availableServices: rows,
-                  }))
-                }
-              />
-
-              <FormTextarea label="Menu / listino" value={locationForm.menu} onChange={(value) => setLocationForm((prev) => ({ ...prev, menu: value }))} />
-              <FormTextarea label="Descrizione" value={locationForm.description} onChange={(value) => setLocationForm((prev) => ({ ...prev, description: value }))} />
-              <div className="grid gap-2 sm:grid-cols-2">
-                <Button variant="outline" className="rounded-2xl" onClick={() => saveLocation(false)}>
-                  Salva bozza
-                </Button>
-                <Button className="rounded-2xl" onClick={() => saveLocation(true)}>
-                  Salva e pubblica
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-4 space-y-4">
+          <div className="mt-4 space-y-4">
               <div className="rounded-3xl border border-dashed border-brand-teal/35 bg-brand-teal/5 p-4">
                 <div className="flex items-start gap-3">
                   <UploadCloud className="mt-0.5 h-5 w-5 text-brand-teal" aria-hidden />
@@ -960,7 +801,6 @@ export function ProtectedCatalogManager() {
                 </Button>
               </div>
             </div>
-          )}
         </section>
 
         <section className="min-w-0 rounded-[1.75rem] border border-primary-black/10 bg-primary-black/[0.02] p-4 sm:rounded-[2rem] sm:p-5">
@@ -1033,6 +873,7 @@ export function ProtectedCatalogManager() {
           </ul>
         </section>
       </div>
+      )}
     </div>
   );
 }

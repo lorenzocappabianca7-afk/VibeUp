@@ -54,6 +54,7 @@ import {
   useTransition,
 } from "react";
 import type { ManagedListing, ManagedLocationListing } from "@/types/admin";
+import { isManagedListingLive } from "@/types/admin";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { SafeImage } from "@/components/ui/safe-image";
 import { useSearchParams } from "next/navigation";
@@ -309,14 +310,14 @@ function getPublishedManagedLocations(listings: ManagedListing[]) {
   return listings
     .filter(
       (listing): listing is ManagedLocationListing =>
-        listing.category === "locali" && listing.published,
+        listing.category === "locali" && isManagedListingLive(listing),
     )
     .map((listing) => listing.location);
 }
 
 function getPublishedManagedServices(listings: ManagedListing[]): ServiceProvider[] {
   return listings.flatMap((listing) => {
-    if (listing.category === "locali" || !listing.published) return [];
+    if (listing.category === "locali" || !isManagedListingLive(listing)) return [];
 
     return {
       id: listing.id,

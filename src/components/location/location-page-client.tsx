@@ -5,6 +5,7 @@ import { useAppState } from "@/context/app-state-context";
 import { getLocationById } from "@/lib/location";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import type { ManagedLocationListing } from "@/types/admin";
+import { isManagedListingLive } from "@/types/admin";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
 
 interface LocationPageClientProps {
@@ -25,7 +26,7 @@ export function LocationPageClient({
   const managedLocation = managedListings.find(
     (listing): listing is ManagedLocationListing =>
       listing.category === "locali" &&
-      listing.published &&
+      isManagedListingLive(listing) &&
       listing.location.id === id,
   );
   const location = managedLocation?.location ?? getLocationById(id);

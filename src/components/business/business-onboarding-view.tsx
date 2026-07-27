@@ -7,16 +7,22 @@ import {
   getEmptyLocaleForm,
   getEmptyPerformerForm,
   getEmptyShopForm,
-  LocaleFields,
   PerformerFields,
   ShopFields,
   type LocaleFormData,
   type PerformerFormData,
   type ShopFormData,
 } from "@/components/business/business-form-fields";
+import { LocationPublishForm } from "@/components/location/location-publish-form";
 import { SelectField, TextField } from "@/components/ui/form-fields";
 import { useAppState } from "@/context/app-state-context";
 import { requestActivationEmail } from "@/lib/auth/request-activation-email";
+import {
+  buildManagedLocationListing,
+  EMPTY_LOCATION_PUBLISH_FORM,
+  validateLocationPublishForm,
+  type LocationPublishFormData,
+} from "@/lib/location-publish-form";
 import {
   BUSINESS_CATEGORY_LABELS,
   isPerformerCategory,
@@ -59,20 +65,27 @@ function buildProfile(
   locale: LocaleFormData,
   performer: PerformerFormData,
   shop: ShopFormData,
+  locationListing?: LocationPublishFormData,
 ): BusinessProfile | null {
   if (categoryUsesLocaleFields(category)) {
-    if (!locale.businessName.trim() || !locale.address.trim()) {
+    const name =
+      locationListing?.name.trim() || locale.businessName.trim();
+    const address =
+      locationListing?.address.trim() || locale.address.trim();
+    if (!name || !address) {
       return null;
     }
+    const capacity = Number(locationListing?.capacity || locale.maxCapacity);
+    const listPrice = Number(locationListing?.listPrice || locale.hourlyPrice);
     return {
       category: "locale",
-      businessName: locale.businessName.trim(),
-      address: locale.address.trim(),
-      ...(locale.maxCapacity
-        ? { maxCapacity: Number(locale.maxCapacity) }
+      businessName: name,
+      address,
+      ...(Number.isFinite(capacity) && capacity > 0
+        ? { maxCapacity: capacity }
         : {}),
-      ...(locale.hourlyPrice
-        ? { hourlyPrice: Number(locale.hourlyPrice) }
+      ...(Number.isFinite(listPrice) && listPrice >= 0
+        ? { hourlyPrice: listPrice }
         : {}),
     };
   }
@@ -175,6 +188,7 @@ export function BusinessOnboardingView() {
     createBusinessAccount,
     saveBusinessProfile,
     updateCurrentUser,
+    upsertManagedListing,
   } = useAppState();
 
   useEffect(() => {
@@ -209,6 +223,21 @@ export function BusinessOnboardingView() {
       : getEmptyOwnerForm(),
   );
   const [localeData, setLocaleData] = useState<LocaleFormData>(initial.locale);
+  const [locationListing, setLocationListing] = useState<LocationPublishFormData>(
+    () => {
+      const empty = EMPTY_LOCATION_PUBLISH_FORM();
+      if (initial.locale.businessName || initial.locale.address) {
+        return {
+          ...empty,
+          name: initial.locale.businessName,
+          address: initial.locale.address,
+          capacity: initial.locale.maxCapacity || empty.capacity,
+          listPrice: initial.locale.hourlyPrice || empty.listPrice,
+        };
+      }
+      return empty;
+    },
+  );
   const [performerData, setPerformerData] =
     useState<PerformerFormData>(initial.performer);
   const [shopData, setShopData] = useState<ShopFormData>(initial.shop);
@@ -273,17 +302,26 @@ export function BusinessOnboardingView() {
       }
     }
 
+    if (isLocale) {
+      const listingError = validateLocationPublishForm(locationListing);
+      if (listingError) {
+        setError(listingError);
+        return;
+      }
+    }
+
     const profile = buildProfile(
       category,
       localeData,
       performerData,
       shopData,
+      isLocale ? locationListing : undefined,
     );
 
     if (!profile) {
       setError(
         isLocale
-          ? "Inserisci nome e indirizzo della location."
+          ? "Completa la configurazione della location."
           : "Compila tutti i campi obbligatori della categoria.",
       );
       return;
@@ -296,6 +334,16 @@ export function BusinessOnboardingView() {
         phoneNumber,
       });
       saveBusinessProfile(profile);
+      if (isLocale) {
+        upsertManagedListing(
+          buildManagedLocationListing({
+            form: locationListing,
+            status: "pending_review",
+            source: "business",
+            submitterEmail: email,
+          }),
+        );
+      }
       setSuccess(true);
       if (navigateTimerRef.current != null) {
         clearTimeout(navigateTimerRef.current);
@@ -347,6 +395,17 @@ export function BusinessOnboardingView() {
         return;
       }
 
+      if (isLocale) {
+        upsertManagedListing(
+          buildManagedLocationListing({
+            form: locationListing,
+            status: "pending_review",
+            source: "business",
+            submitterEmail: email,
+          }),
+        );
+      }
+
       if (
         result.needsEmailActivation &&
         result.activationToken &&
@@ -392,7 +451,7 @@ export function BusinessOnboardingView() {
           {editingExisting
             ? "Aggiorna i dati della tua attività Pro."
             : isLocale
-              ? "Crea un account Pro separato per la location: email nuova oppure un nome diverso rispetto agli account già presenti."
+              ? "Crea l’account Pro e l’annuncio location: lo controlleremo in Gestione pubblicazioni prima di metterlo online."
               : "Crea un account Pro separato per la tua attività: email nuova oppure un nome diverso rispetto agli account già presenti."}
         </p>
       </header>
@@ -406,7 +465,9 @@ export function BusinessOnboardingView() {
           <p className="mt-4 font-semibold text-primary-black">
             {editingExisting
               ? "Profilo Business aggiornato!"
-              : "Account Pro creato!"}
+              : isLocale
+                ? "Account Pro creato! Annuncio inviato in revisione."
+                : "Account Pro creato!"}
           </p>
           <p className="mt-1 text-sm text-primary-black/60">
             Apertura dello spazio Business...
@@ -496,13 +557,25 @@ export function BusinessOnboardingView() {
 
           {category && categoryUsesLocaleFields(category) && (
             <section className="rounded-2xl border border-primary-black/10 bg-surface p-5">
-              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-primary-black/50">
-                Dettagli Location
+              <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary-black/50">
+                Annuncio location
               </h2>
-              <LocaleFields
-                data={localeData}
-                onChange={setLocaleData}
-                simplified
+              <p className="mb-4 text-xs text-primary-black/55">
+                Stessa configurazione della scheda location. Dopo l’invio resta in
+                revisione finché non lo approviamo.
+              </p>
+              <LocationPublishForm
+                value={locationListing}
+                onChange={(next) => {
+                  setLocationListing(next);
+                  setLocaleData({
+                    businessName: next.name,
+                    address: next.address,
+                    maxCapacity: next.capacity,
+                    hourlyPrice: next.listPrice,
+                  });
+                }}
+                idPrefix="business-locale"
               />
             </section>
           )}
