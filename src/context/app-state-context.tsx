@@ -164,6 +164,7 @@ interface AppStateContextValue {
   managedListings: ManagedListing[];
   addEvent: (event: UserEvent) => void;
   getEvent: (id: string) => UserEvent | undefined;
+  deleteEvent: (eventId: string) => void;
   prunePastEvents: () => void;
   updateEventTitle: (eventId: string, title: string) => void;
   updateEventMenuSelections: (
@@ -974,6 +975,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const getEvent = useCallback(
     (id: string) => events.find((event) => event.id === id),
     [events],
+  );
+
+  const deleteEvent = useCallback(
+    (eventId: string) => {
+      updateCurrentUserState((state) => {
+        const paymentStates = Object.fromEntries(
+          Object.entries(state.paymentStates ?? {}).filter(
+            ([key]) => !key.startsWith(`${eventId}:`),
+          ),
+        );
+
+        return {
+          ...state,
+          events: state.events.filter((event) => event.id !== eventId),
+          paymentStates,
+        };
+      });
+    },
+    [updateCurrentUserState],
   );
 
   const prunePastEvents = useCallback(() => {
@@ -1951,6 +1971,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       managedListings,
       addEvent,
       getEvent,
+      deleteEvent,
       prunePastEvents,
       updateEventTitle,
       updateEventMenuSelections,
@@ -2003,6 +2024,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       managedListings,
       addEvent,
       getEvent,
+      deleteEvent,
       prunePastEvents,
       updateEventTitle,
       updateEventMenuSelections,

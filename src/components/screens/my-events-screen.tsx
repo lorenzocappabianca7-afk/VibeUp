@@ -252,6 +252,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
 }: MyEventsScreenProps) {
   const {
     events,
+    deleteEvent,
     markServicePaid: markServicePaidInState,
     paymentStates,
     prunePastEvents,
@@ -419,6 +420,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
                   onTitleChange={updateEventTitle}
                   onMenuSelectionsChange={updateEventMenuSelections}
                   onMenuAllergensChange={updateEventMenuAllergens}
+                  onDeleteEvent={deleteEvent}
                 />
               </li>
             ))}
@@ -443,6 +445,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   onTitleChange,
   onMenuSelectionsChange,
   onMenuAllergensChange,
+  onDeleteEvent,
 }: {
   event: UserEvent;
   isActive: boolean;
@@ -457,10 +460,12 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
     eventId: string,
     allergens: MenuAllergenRestriction[],
   ) => void;
+  onDeleteEvent: (eventId: string) => void;
 }) {
   const [titleDraft, setTitleDraft] = useState(event.title);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [allergenSheetOpen, setAllergenSheetOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const totalCost =
     event.totalCost ??
@@ -507,6 +512,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   }, [isEditingTitle]);
 
   return (
+    <>
     <article className="box-border w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/80 bg-surface-2 shadow-[0_8px_28px_-16px_rgba(0,0,0,0.55)]">
       <div className="min-w-0 border-b border-white/15 bg-gradient-to-br from-brand-teal/[0.12] via-surface-2 to-surface-2 px-3 py-4 sm:px-4">
         <div className="min-w-0 overflow-hidden">
@@ -762,6 +768,41 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
 
       <EventCountdown event={event} embedded active={isActive} />
     </article>
+
+      <div className="mt-2 flex flex-col items-center gap-2 px-1">
+        {confirmDelete ? (
+          <div className="flex w-full max-w-sm flex-col items-center gap-2 rounded-xl bg-primary-black/[0.04] px-3 py-2.5 ring-1 ring-primary-black/10">
+            <p className="text-center text-xs text-primary-black/70">
+              Eliminare “{event.title}”? L’azione non si può annullare.
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                className="text-xs font-medium text-primary-black/55 transition-colors hover:text-primary-black"
+              >
+                Annulla
+              </button>
+              <button
+                type="button"
+                onClick={() => onDeleteEvent(event.id)}
+                className="text-xs font-semibold text-brand-pink transition-colors hover:text-brand-pink/80"
+              >
+                Conferma elimina
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            className="text-[11px] font-medium text-primary-black/40 underline-offset-2 transition-colors hover:text-brand-pink hover:underline"
+          >
+            Elimina evento
+          </button>
+        )}
+      </div>
+    </>
   );
 });
 
