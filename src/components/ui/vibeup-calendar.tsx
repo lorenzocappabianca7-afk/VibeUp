@@ -76,14 +76,14 @@ export function VibeUpCalendar({
       )}
     >
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-xs font-black capitalize text-primary-black">
+        <p className="text-xs font-black capitalize text-ink-inverse">
           {monthLabel(visibleMonth)}
         </p>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => moveMonth(-1)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-teal/10 text-brand-teal"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-teal/15 text-brand-teal-strong"
             aria-label="Mese precedente"
           >
             <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
@@ -91,7 +91,7 @@ export function VibeUpCalendar({
           <button
             type="button"
             onClick={() => moveMonth(1)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-teal/10 text-brand-teal"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-teal/15 text-brand-teal-strong"
             aria-label="Mese successivo"
           >
             <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -99,7 +99,7 @@ export function VibeUpCalendar({
         </div>
       </div>
 
-      <div className="mb-1.5 grid grid-cols-7 gap-0.5 text-center text-[11px] font-bold text-primary-black/45">
+      <div className="mb-1.5 grid grid-cols-7 gap-0.5 text-center text-[11px] font-bold text-ink-inverse/45">
         {WEEKDAYS.map((day, index) => (
           <span key={`${day}-${index}`}>{day}</span>
         ))}
@@ -129,9 +129,9 @@ export function VibeUpCalendar({
               onClick={() => onSelectDate(value)}
               className={cn(
                 "flex aspect-square items-center justify-center rounded-xl text-xs font-black transition-colors duration-150",
-                !isPast && "text-primary-black",
-                isPast && "cursor-not-allowed text-primary-black/18",
-                isInRange && "bg-brand-teal/15 text-brand-teal",
+                !isPast && "text-ink-inverse",
+                isPast && "cursor-not-allowed text-ink-inverse/25",
+                isInRange && "bg-brand-teal/15 text-brand-teal-strong",
                 isSelected && "bg-brand-teal text-ink-inverse",
               )}
             >

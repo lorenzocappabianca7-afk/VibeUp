@@ -352,7 +352,7 @@ export function ExploreFiltersSheet({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-black/5 text-primary-black/60"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-ink-inverse/70"
               aria-label="Chiudi"
             >
               <X className="h-4 w-4" />
@@ -395,8 +395,8 @@ export function ExploreFiltersSheet({
                       className={cn(
                         "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                         draftServiceFilters.musicType === null
-                          ? "bg-brand-pink text-primary-black"
-                          : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
+                          ? "bg-brand-pink text-ink-inverse"
+                          : "bg-white text-ink-inverse hover:bg-white/90",
                       )}
                     >
                       Tutti
@@ -409,8 +409,8 @@ export function ExploreFiltersSheet({
                         className={cn(
                           "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                           draftServiceFilters.musicType === type
-                            ? "bg-brand-pink text-primary-black"
-                            : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
+                            ? "bg-brand-pink text-ink-inverse"
+                            : "bg-white text-ink-inverse hover:bg-white/90",
                         )}
                       >
                         {MUSIC_TYPE_LABELS[type]}
@@ -463,8 +463,8 @@ export function ExploreFiltersSheet({
                         className={cn(
                           "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                           draftServiceFilters.partyType === null
-                            ? "bg-brand-pink text-primary-black"
-                            : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
+                            ? "bg-brand-pink text-ink-inverse"
+                            : "bg-white text-ink-inverse hover:bg-white/90",
                         )}
                       >
                         Tutti
@@ -479,8 +479,8 @@ export function ExploreFiltersSheet({
                           className={cn(
                             "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                             draftServiceFilters.partyType === type
-                              ? "bg-brand-pink text-primary-black"
-                              : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
+                              ? "bg-brand-pink text-ink-inverse"
+                              : "bg-white text-ink-inverse hover:bg-white/90",
                           )}
                         >
                           {PARTY_TYPE_LABELS[type]}
@@ -553,7 +553,7 @@ export function ExploreFiltersSheet({
                             draftServiceFilters.decorationFulfillment ===
                               fulfillment
                               ? "bg-brand-teal text-ink-inverse"
-                              : "bg-primary-black/5 text-primary-black/70",
+                              : "bg-white text-ink-inverse hover:bg-white/90",
                           )}
                         >
                           {DECORATION_FULFILLMENT_LABELS[fulfillment]}
@@ -572,10 +572,10 @@ export function ExploreFiltersSheet({
                   <button
                     type="button"
                     onClick={() => setDatePickerOpen((current) => !current)}
-                    className="flex w-full items-center justify-between gap-3 rounded-2xl border border-primary-black/10 bg-primary-black/[0.03] px-4 py-3 text-left transition-colors duration-150 hover:bg-brand-teal/8"
+                    className="flex w-full items-center justify-between gap-3 rounded-2xl border border-primary-black/10 bg-white px-4 py-3 text-left transition-colors duration-150 hover:bg-brand-teal/8"
                   >
                     <span className="flex items-center gap-2">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface text-brand-teal">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-teal/10 text-brand-teal">
                         <Calendar className="h-4 w-4" aria-hidden />
                       </span>
                       <span>
@@ -633,10 +633,10 @@ export function ExploreFiltersSheet({
             <button
               type="button"
               onClick={() => setDatePickerOpen((current) => !current)}
-              className="flex w-full items-center justify-between gap-3 rounded-2xl border border-primary-black/10 bg-primary-black/[0.03] px-4 py-3 text-left transition-colors duration-150 hover:bg-brand-teal/8"
+              className="flex w-full items-center justify-between gap-3 rounded-2xl border border-primary-black/10 bg-white px-4 py-3 text-left transition-colors duration-150 hover:bg-brand-teal/8"
             >
               <span className="flex items-center gap-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface text-brand-teal">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-teal/10 text-brand-teal">
                   <Calendar className="h-4 w-4" aria-hidden />
                 </span>
                 <span>
@@ -700,8 +700,8 @@ export function ExploreFiltersSheet({
                 className={cn(
                   "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                   draftFilters.partyType === null
-                    ? "bg-brand-pink text-primary-black"
-                    : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
+                    ? "bg-brand-pink text-ink-inverse"
+                    : "bg-white text-ink-inverse hover:bg-white/90",
                 )}
               >
                 Tutti
@@ -714,8 +714,8 @@ export function ExploreFiltersSheet({
                   className={cn(
                     "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                     draftFilters.partyType === type
-                      ? "bg-brand-pink text-primary-black"
-                      : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
+                      ? "bg-brand-pink text-ink-inverse"
+                      : "bg-white text-ink-inverse hover:bg-white/90",
                   )}
                 >
                   {PARTY_TYPE_LABELS[type]}
@@ -738,7 +738,7 @@ export function ExploreFiltersSheet({
                   "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                   draftFilters.allPiemonte
                     ? "bg-brand-teal text-ink-inverse"
-                    : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
+                    : "bg-white text-ink-inverse hover:bg-white/90",
                 )}
               >
                 Tutto il Piemonte
@@ -750,7 +750,7 @@ export function ExploreFiltersSheet({
                   "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                   torinoCityWide
                     ? "bg-brand-teal text-ink-inverse"
-                    : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
+                    : "bg-white text-ink-inverse hover:bg-white/90",
                 )}
               >
                 Torino
@@ -763,7 +763,7 @@ export function ExploreFiltersSheet({
                   "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                   draftFilters.nearMe
                     ? "bg-brand-teal text-ink-inverse"
-                    : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
+                    : "bg-white text-ink-inverse hover:bg-white/90",
                   nearMeLoading && "opacity-60",
                 )}
               >
@@ -818,7 +818,7 @@ export function ExploreFiltersSheet({
                   Area metropolitana di Torino
                 </p>
 
-                <div className="mb-4 flex rounded-2xl bg-primary-black/[0.04] p-1">
+                <div className="mb-4 flex rounded-2xl bg-white p-1">
                   {(["torino_citta", "dintorni"] as GeoArea[]).map((area) => (
                     <button
                       key={area}
@@ -827,8 +827,8 @@ export function ExploreFiltersSheet({
                       className={cn(
                         "flex-1 rounded-xl py-2.5 text-xs font-semibold transition-colors duration-150",
                         draftFilters.geoArea === area
-                          ? "bg-background text-primary-black shadow-sm"
-                          : "text-primary-black/50",
+                          ? "bg-brand-teal text-ink-inverse shadow-sm"
+                          : "text-ink-inverse/55",
                       )}
                     >
                       {GEO_AREA_LABELS[area]}
@@ -847,7 +847,7 @@ export function ExploreFiltersSheet({
                           "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                           draftFilters.district === district.value
                             ? "bg-brand-teal text-ink-inverse"
-                            : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
+                            : "bg-white text-ink-inverse hover:bg-white/90",
                         )}
                       >
                         {district.label}
@@ -868,7 +868,7 @@ export function ExploreFiltersSheet({
                           "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                           draftFilters.zone === zone.value
                             ? "bg-brand-teal text-ink-inverse"
-                            : "bg-primary-black/5 text-primary-black/70 hover:bg-primary-black/10",
+                            : "bg-white text-ink-inverse hover:bg-white/90",
                         )}
                       >
                         {zone.label}
