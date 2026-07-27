@@ -203,7 +203,7 @@ input[type="number"]::-webkit-outer-spin-button {
   display: none;
 }
 
-/* —— My Events: white paper panel (zigzag tear) —— */
+/* —— My Events: white paper panel (smooth top radius + zigzag tear) —— */
 .event-postit {
   --postit-paper: #ffffff;
   --postit-paper-deep: #f7f7f8;
@@ -220,65 +220,35 @@ input[type="number"]::-webkit-outer-spin-button {
     var(--postit-paper) 0%,
     var(--postit-paper-deep) 100%
   );
+  /* True CSS curve — not a polygon approximation */
   border-radius: var(--postit-radius) var(--postit-radius) 0 0;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.9) inset,
-    0 14px 28px -18px rgba(0, 0, 0, 0.65),
-    0 2px 6px rgba(0, 0, 0, 0.18);
-  /* Rounded top + torn zigzag bottom */
-  clip-path: polygon(
-    0% var(--postit-radius),
-    0.35% calc(var(--postit-radius) * 0.45),
-    calc(var(--postit-radius) * 0.35) 0.9%,
-    calc(var(--postit-radius) * 0.7) 0.15%,
-    var(--postit-radius) 0%,
-    calc(100% - var(--postit-radius)) 0%,
-    calc(100% - var(--postit-radius) * 0.7) 0.15%,
-    calc(100% - var(--postit-radius) * 0.35) 0.9%,
-    99.65% calc(var(--postit-radius) * 0.45),
-    100% var(--postit-radius),
-    100% calc(100% - var(--postit-zag)),
-    97.5% 100%,
-    95% calc(100% - var(--postit-zag)),
-    92.5% 100%,
-    90% calc(100% - var(--postit-zag)),
-    87.5% 100%,
-    85% calc(100% - var(--postit-zag)),
-    82.5% 100%,
-    80% calc(100% - var(--postit-zag)),
-    77.5% 100%,
-    75% calc(100% - var(--postit-zag)),
-    72.5% 100%,
-    70% calc(100% - var(--postit-zag)),
-    67.5% 100%,
-    65% calc(100% - var(--postit-zag)),
-    62.5% 100%,
-    60% calc(100% - var(--postit-zag)),
-    57.5% 100%,
-    55% calc(100% - var(--postit-zag)),
-    52.5% 100%,
-    50% calc(100% - var(--postit-zag)),
-    47.5% 100%,
-    45% calc(100% - var(--postit-zag)),
-    42.5% 100%,
-    40% calc(100% - var(--postit-zag)),
-    37.5% 100%,
-    35% calc(100% - var(--postit-zag)),
-    32.5% 100%,
-    30% calc(100% - var(--postit-zag)),
-    27.5% 100%,
-    25% calc(100% - var(--postit-zag)),
-    22.5% 100%,
-    20% calc(100% - var(--postit-zag)),
-    17.5% 100%,
-    15% calc(100% - var(--postit-zag)),
-    12.5% 100%,
-    10% calc(100% - var(--postit-zag)),
-    7.5% 100%,
-    5% calc(100% - var(--postit-zag)),
-    2.5% 100%,
-    0% calc(100% - var(--postit-zag))
-  );
+  /* Zigzag only on the bottom edge; top stays a smooth arc */
+  -webkit-mask-image:
+    linear-gradient(
+      #000 0,
+      #000 calc(100% - var(--postit-zag)),
+      transparent calc(100% - var(--postit-zag))
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 14' preserveAspectRatio='none'%3E%3Cpath fill='%23000' d='M0 0H100V0L97.5 14 95 0 92.5 14 90 0 87.5 14 85 0 82.5 14 80 0 77.5 14 75 0 72.5 14 70 0 67.5 14 65 0 62.5 14 60 0 57.5 14 55 0 52.5 14 50 0 47.5 14 45 0 42.5 14 40 0 37.5 14 35 0 32.5 14 30 0 27.5 14 25 0 22.5 14 20 0 17.5 14 15 0 12.5 14 10 0 7.5 14 5 0 2.5 14 0 0Z'/%3E%3C/svg%3E");
+  mask-image:
+    linear-gradient(
+      #000 0,
+      #000 calc(100% - var(--postit-zag)),
+      transparent calc(100% - var(--postit-zag))
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 14' preserveAspectRatio='none'%3E%3Cpath fill='%23000' d='M0 0H100V0L97.5 14 95 0 92.5 14 90 0 87.5 14 85 0 82.5 14 80 0 77.5 14 75 0 72.5 14 70 0 67.5 14 65 0 62.5 14 60 0 57.5 14 55 0 52.5 14 50 0 47.5 14 45 0 42.5 14 40 0 37.5 14 35 0 32.5 14 30 0 27.5 14 25 0 22.5 14 20 0 17.5 14 15 0 12.5 14 10 0 7.5 14 5 0 2.5 14 0 0Z'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%, 100% var(--postit-zag);
+  mask-size: 100% 100%, 100% var(--postit-zag);
+  -webkit-mask-position: 0 0, 0 100%;
+  mask-position: 0 0, 0 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+  /* drop-shadow follows the masked silhouette (incl. zigzag) */
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.18))
+    drop-shadow(0 14px 22px rgba(0, 0, 0, 0.28));
   padding-bottom: calc(0.85rem + var(--postit-zag));
 }
 
