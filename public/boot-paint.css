@@ -30,4 +30,5 @@ html.vibeup-splash-skip .vibeup-splash {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  opacity: 1 !important;
 }

@@ -127,6 +127,11 @@ export function SplashScreen() {
         left: 0,
         zIndex: 10000,
         backgroundColor: "#000000",
+        opacity: phase === "exit" ? 0 : 1,
+        transition:
+          phase === "exit"
+            ? `opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.4,0,0.2,1)`
+            : "none",
         pointerEvents: phase === "exit" ? "none" : "auto",
         display: "flex",
         alignItems: "center",

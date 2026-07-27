@@ -18,6 +18,7 @@ import {
 export const CRITICAL_PAINT_CSS = `
 html,body{
   background:#000000!important;
+  background-color:#000000!important;
   color-scheme:dark!important;
 }
 html.vibeup-splash-skip #vibeup-critical-paint,
@@ -44,12 +45,14 @@ html.vibeup-splash-skip .vibeup-splash{
   display:flex!important;
   align-items:center!important;
   justify-content:center!important;
-  opacity:1;
-  transition:opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.4,0,0.2,1);
+  /* No opacity transition on enter — transition only when exiting (avoids gray flash) */
+  opacity:1!important;
+  transition:none;
 }
 .vibeup-splash--exit{
   opacity:0!important;
   pointer-events:none!important;
+  transition:opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.4,0,0.2,1)!important;
 }
 .vibeup-splash__stage{
   box-sizing:border-box;
@@ -67,8 +70,10 @@ html.vibeup-splash-skip .vibeup-splash{
   object-fit:contain!important;
   object-position:center!important;
   opacity:1!important;
+  transform:none;
   transform-origin:center center;
   -webkit-user-drag:none;
+  /* Start at full size so iOS startup image → web handoff stays continuous */
   animation:vibeup-splash-bounce ${LOGO_BOUNCE_MS}ms cubic-bezier(0.16,1,0.3,1) both;
 }
 .vibeup-splash__logo--settled{
@@ -96,10 +101,10 @@ html.vibeup-splash-skip .vibeup-splash{
   animation:vibeup-splash-tagline-in 640ms cubic-bezier(0.16,1,0.3,1) both;
 }
 @keyframes vibeup-splash-bounce{
-  0%{transform:translate3d(0,6px,0) scale(0.62)}
-  45%{transform:translate3d(0,0,0) scale(1.05)}
-  62%{transform:translate3d(0,0,0) scale(0.98)}
-  78%{transform:translate3d(0,0,0) scale(1.015)}
+  0%{transform:translate3d(0,0,0) scale(1)}
+  35%{transform:translate3d(0,0,0) scale(1.06)}
+  55%{transform:translate3d(0,0,0) scale(0.98)}
+  75%{transform:translate3d(0,0,0) scale(1.02)}
   100%{transform:translate3d(0,0,0) scale(1)}
 }
 @keyframes vibeup-splash-tagline-in{
@@ -112,7 +117,7 @@ html.vibeup-splash-skip .vibeup-splash{
     opacity:1!important;
     transform:none!important;
   }
-  .vibeup-splash{transition:none!important}
+  .vibeup-splash--exit{transition:none!important}
 }
 @media (max-width:380px){
   .vibeup-splash__logo{width:6.25rem!important;max-width:6.25rem!important}
@@ -124,7 +129,7 @@ html.vibeup-splash-skip .vibeup-splash{
  * blocking <style> at the top of <head> when possible (Next often relocates
  * layout <style> tags after the main CSS chunk, which causes a white flash).
  */
-export const CRITICAL_PAINT_SCRIPT = `(function(){try{var d=document.documentElement;d.style.backgroundColor="#000000";d.style.colorScheme="dark";if(sessionStorage.getItem(${JSON.stringify(SPLASH_STORAGE_KEY)})==="1"){d.classList.add("vibeup-splash-skip");}var b=document.body;if(b){b.style.backgroundColor="#000000";}if(!document.getElementById("vibeup-boot-style")){var s=document.createElement("style");s.id="vibeup-boot-style";s.textContent=${JSON.stringify(CRITICAL_PAINT_CSS)};var h=document.head;if(h){h.insertBefore(s,h.firstChild);}else{d.appendChild(s);}}}catch(e){}})();`;
+export const CRITICAL_PAINT_SCRIPT = `(function(){try{var d=document.documentElement;d.style.setProperty("background-color","#000000","important");d.style.setProperty("color-scheme","dark","important");d.style.backgroundColor="#000000";d.style.colorScheme="dark";if(sessionStorage.getItem(${JSON.stringify(SPLASH_STORAGE_KEY)})==="1"){d.classList.add("vibeup-splash-skip");}var b=document.body;if(b){b.style.setProperty("background-color","#000000","important");b.style.backgroundColor="#000000";}if(!document.getElementById("vibeup-boot-style")){var s=document.createElement("style");s.id="vibeup-boot-style";s.textContent=${JSON.stringify(CRITICAL_PAINT_CSS)};var h=document.head;if(h){h.insertBefore(s,h.firstChild);}else{d.appendChild(s);}}}catch(e){}})();`;
 
 export const CRITICAL_PAINT_ID = "vibeup-critical-paint";
 
