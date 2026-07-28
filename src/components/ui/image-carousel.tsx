@@ -82,6 +82,10 @@ export function ImageCarousel({
   function handleScroll() {
     const scroller = scrollerRef.current;
     if (!scroller) return;
+    // Kill any vertical drift from touch rubber-banding.
+    if (scroller.scrollTop !== 0) {
+      scroller.scrollTop = 0;
+    }
     const width = scroller.clientWidth || 1;
     const next = Math.round(scroller.scrollLeft / width);
     const clamped = Math.max(0, Math.min(images.length - 1, next));
@@ -124,14 +128,18 @@ export function ImageCarousel({
   }
 
   return (
-    <div className={cn("relative overflow-hidden", className)}>
+    <div
+      className={cn(
+        "relative overflow-hidden",
+        frameClassName,
+        className,
+      )}
+    >
+      {/* Absolute scroller locks height to the aspect frame — only pan-x. */}
       <div
         ref={scrollerRef}
         onScroll={handleScroll}
-        className={cn(
-          "scrollbar-hidden flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth [-webkit-overflow-scrolling:touch]",
-          frameClassName,
-        )}
+        className="scrollbar-hidden absolute inset-0 flex touch-pan-x snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain overscroll-y-none scroll-smooth [-webkit-overflow-scrolling:touch]"
       >
         {images.map((image, imageIndex) => {
           const imageNode = (
@@ -139,16 +147,17 @@ export function ImageCarousel({
               src={image}
               alt={`${alt} — foto ${imageIndex + 1}`}
               fill
-              className="object-cover"
+              className="pointer-events-none select-none object-cover"
               sizes={sizes}
               priority={priority && imageIndex === 0}
+              draggable={false}
             />
           );
 
           return (
             <div
               key={`${image}-${imageIndex}`}
-              className="relative h-full w-full shrink-0 snap-center snap-always"
+              className="relative h-full w-full min-w-full max-w-full shrink-0 grow-0 basis-full snap-center snap-always"
             >
               {renderSlide
                 ? renderSlide(image, imageIndex, imageNode)
