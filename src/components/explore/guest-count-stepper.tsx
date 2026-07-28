@@ -68,11 +68,11 @@ export function GuestCountStepper({
   return (
     <div
       className={cn(
-        "flex items-center justify-between rounded-2xl border border-primary-black/10 bg-primary-black/[0.02] px-4 py-3",
+        "flex items-center justify-between rounded-2xl border border-primary-black/10 bg-white px-4 py-3",
         className,
       )}
     >
-      <span className="text-sm font-semibold text-primary-black">Invitati</span>
+      <span className="text-sm font-semibold text-ink-inverse">Invitati</span>
 
       <div className="flex items-center gap-4">
         <button
@@ -83,7 +83,7 @@ export function GuestCountStepper({
           className={cn(
             "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
             atMin
-              ? "cursor-not-allowed bg-primary-black/10 text-primary-black/25"
+              ? "cursor-not-allowed bg-ink-inverse/10 text-ink-inverse/25"
               : "bg-brand-pink text-ink-inverse hover:bg-brand-pink/90",
           )}
         >
@@ -113,7 +113,7 @@ export function GuestCountStepper({
             }
           }}
           aria-label="Numero invitati"
-          className="min-w-[3.5rem] max-w-[4.5rem] rounded-lg bg-transparent text-center text-base font-bold tabular-nums text-primary-black focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
+          className="min-w-[3.5rem] max-w-[4.5rem] rounded-lg bg-transparent text-center text-base font-bold tabular-nums text-ink-inverse focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
         />
 
         <button
@@ -124,7 +124,7 @@ export function GuestCountStepper({
           className={cn(
             "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
             atMax
-              ? "cursor-not-allowed bg-primary-black/10 text-primary-black/25"
+              ? "cursor-not-allowed bg-ink-inverse/10 text-ink-inverse/25"
               : "bg-brand-teal text-ink-inverse hover:bg-brand-teal-strong",
           )}
         >

@@ -24,7 +24,7 @@ import {
   DEFAULT_EXPLORE_FILTERS,
   DEFAULT_SERVICE_EXPLORE_FILTERS,
   EXPLORE_GUEST_MIN,
-  EXPLORE_PRICE_MAX,
+  DEFAULT_EXPLORE_MAX_PRICE,
   EXPLORE_PRICE_MIN,
   type ExploreCategory,
   type ExploreFilters,
@@ -168,7 +168,7 @@ function countActiveFilters(filters: ExploreFilters): number {
   let count = 0;
   if (
     filters.minHourlyPrice > EXPLORE_PRICE_MIN ||
-    filters.maxHourlyPrice < EXPLORE_PRICE_MAX
+    filters.maxHourlyPrice !== DEFAULT_EXPLORE_MAX_PRICE
   ) {
     count++;
   }

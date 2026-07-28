@@ -786,12 +786,12 @@ export function ExploreFiltersSheet({
               className={cn(
                 "rounded-2xl border p-4 transition-colors duration-150",
                 draftFilters.selectedComune
-                  ? "border-brand-teal bg-brand-teal/5"
-                  : "border-primary-black/10",
+                  ? "border-brand-teal bg-white"
+                  : "border-primary-black/10 bg-white",
                 comuneSearchDisabled && "opacity-60",
               )}
             >
-              <p className="mb-3 text-sm font-semibold text-primary-black">
+              <p className="mb-3 text-sm font-semibold text-ink-inverse">
                 Cerca per comune
               </p>
               <CityAutocomplete
@@ -800,14 +800,14 @@ export function ExploreFiltersSheet({
                 disabled={comuneSearchDisabled}
               />
               {comuneSearchDisabled && (
-                <p className="mt-2 text-xs text-primary-black/50">
+                <p className="mt-2 text-xs text-ink-inverse/50">
                   {draftFilters.nearMe
                     ? "Non disponibile con il filtro Vicino a me attivo"
                     : "Disponibile solo senza il filtro Torino attivo"}
                 </p>
               )}
               {draftFilters.selectedComune && (
-                <p className="mt-2 text-xs text-brand-teal">
+                <p className="mt-2 text-xs font-semibold text-brand-teal-strong">
                   Filtro attivo: {draftFilters.selectedComune}
                 </p>
               )}
@@ -928,7 +928,7 @@ export function ExploreFiltersSheet({
               }
               rows={4}
               placeholder="Es. spazio all'aperto, possibilità di musica fino a tardi, parcheggio vicino, stile elegante..."
-              className="w-full resize-none rounded-2xl border border-primary-black/10 bg-background px-4 py-3 text-base text-primary-black placeholder:text-primary-black/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
+              className="w-full resize-none rounded-2xl border border-primary-black/10 bg-white px-4 py-3 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
             />
             <p className="mt-2 text-xs text-primary-black/50">
               Queste note non restringono automaticamente i risultati: servono

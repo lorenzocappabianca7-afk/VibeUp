@@ -166,6 +166,8 @@ export interface ServiceExploreFilters {
 }
 export const EXPLORE_PRICE_MIN = 0;
 export const EXPLORE_PRICE_MAX = 100_000;
+/** Default max budget shown in explore filters. */
+export const DEFAULT_EXPLORE_MAX_PRICE = 3_000;
 export const EXPLORE_PRICE_STEP = 50;
 export const EXPLORE_GUEST_MIN = 10;
 export const EXPLORE_GUEST_MAX = 300;
@@ -218,7 +220,7 @@ export const ZONE_LABELS: Record<DintorniZone, string> = {
 
 export const DEFAULT_EXPLORE_FILTERS: ExploreFilters = {
   minHourlyPrice: EXPLORE_PRICE_MIN,
-  maxHourlyPrice: EXPLORE_PRICE_MAX,
+  maxHourlyPrice: DEFAULT_EXPLORE_MAX_PRICE,
   guestCount: EXPLORE_GUEST_MIN,
   partyType: null,
   dateFrom: null,
