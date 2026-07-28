@@ -104,6 +104,12 @@ export const SERVICE_PROVIDERS: ServiceProvider[] = [
     partyTypes: ["compleanno", "laurea", "festa"],
     supportsInPerson: true,
     fulfillments: ["delivery", "pickup"],
+    imageUrl:
+      "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=800&q=80",
+    galleryImageUrls: [
+      "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&q=80",
+      "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&q=80",
+    ],
   },
   {
     id: "deco-bloom",
@@ -116,6 +122,12 @@ export const SERVICE_PROVIDERS: ServiceProvider[] = [
     partyTypes: ["matrimonio", "aziendale", "festa"],
     supportsInPerson: true,
     fulfillments: ["delivery"],
+    imageUrl:
+      "https://images.unsplash.com/photo-1478146896981-b80fe463b330?w=800&q=80",
+    galleryImageUrls: [
+      "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&q=80",
+      "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800&q=80",
+    ],
   },
   {
     id: "deco-festa-box",
@@ -128,6 +140,12 @@ export const SERVICE_PROVIDERS: ServiceProvider[] = [
     partyTypes: ["compleanno", "laurea", "festa"],
     supportsInPerson: false,
     fulfillments: ["pickup"],
+    imageUrl:
+      "https://images.unsplash.com/photo-1607344645866-009c320c5ab0?w=800&q=80",
+    galleryImageUrls: [
+      "https://images.unsplash.com/photo-1527529482831-46939a1c8c90?w=800&q=80",
+      "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80",
+    ],
   },
   {
     id: "service-catering-sapori",
