@@ -5,6 +5,7 @@ import {
   demoteCriticalPaint,
   SPLASH_LOGO_SRC,
 } from "@/lib/critical-paint";
+import { recoverInteractiveSession } from "@/lib/session-health";
 import {
   HOLD_AFTER_TAGLINE_MS,
   LOGO_BOUNCE_MS,
@@ -54,10 +55,15 @@ function markSplashSeen() {
  */
 function revealAppUnderlay() {
   demoteCriticalPaint();
+  // Ensure splash html overflow never survives into the session.
+  if (typeof document !== "undefined") {
+    document.documentElement.style.overflow = "";
+  }
   requestAnimationFrame(() => {
     demoteCriticalPaint();
     requestAnimationFrame(() => {
       demoteCriticalPaint();
+      recoverInteractiveSession();
     });
   });
 }

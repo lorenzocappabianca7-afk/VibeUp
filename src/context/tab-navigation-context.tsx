@@ -3,6 +3,7 @@
 import { useAppState } from "@/context/app-state-context";
 import { isBodyScrollLocked } from "@/lib/body-scroll-lock";
 import { assignHomeHref } from "@/lib/home-navigation";
+import { recoverInteractiveSession } from "@/lib/session-health";
 import {
   ALL_TAB_IDS,
   BUSINESS_TABS,
@@ -201,6 +202,9 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
       scrollByTabRef.current[previousTabRef.current] = window.scrollY;
     }
     previousTabRef.current = activeTab;
+
+    // Drop orphan overlay locks when leaving a tab (search/filters/modals).
+    recoverInteractiveSession();
 
     if (skipNextScrollRestoreRef.current) {
       skipNextScrollRestoreRef.current = false;

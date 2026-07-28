@@ -15,7 +15,7 @@ export function isBodyScrollLocked() {
  * Overlays inside `hidden` / `aria-hidden` tab panels must not block unlock —
  * otherwise leaving Explore with search open freezes the whole app forever.
  */
-function hasVisibleOverlay(): boolean {
+export function hasVisibleOverlay(): boolean {
   if (typeof document === "undefined") return false;
 
   const nodes = document.querySelectorAll('[data-overlay-open="true"]');
@@ -81,4 +81,6 @@ export function forceUnlockBodyScrollIfIdle() {
   lockGeneration += 1;
   lockCount = 0;
   document.body.style.overflow = "";
+  // Splash and some sheets also touch <html>; clear orphan freezes.
+  document.documentElement.style.overflow = "";
 }
