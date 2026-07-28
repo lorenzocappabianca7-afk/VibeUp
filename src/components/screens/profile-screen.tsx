@@ -777,8 +777,8 @@ export function ProfileScreen({
               }}
               className={`flex w-full touch-manipulation items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-colors select-none ${
                 account.id === currentUser.id
-                  ? "border-brand-teal bg-brand-teal/8"
-                  : "border-primary-black/8 bg-primary-black/[0.02]"
+                  ? "border-brand-teal bg-white"
+                  : "border-primary-black/10 bg-white"
               }`}
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-pink/20 text-brand-pink">
@@ -794,10 +794,10 @@ export function ProfileScreen({
                 )}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold text-primary-black">
+                <span className="block truncate text-sm font-semibold text-ink-inverse">
                   {account.name}
                 </span>
-                <span className="block truncate text-xs text-primary-black/55">
+                <span className="block truncate text-xs text-ink-inverse/55">
                   {account.email}
                 </span>
               </span>
