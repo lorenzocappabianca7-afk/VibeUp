@@ -64,7 +64,7 @@ function ActivateAccountContent() {
       </p>
       <Link
         href="/"
-        className="mt-6 inline-flex rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-ink-inverse"
+        className="mt-6 inline-flex rounded-2xl bg-paper px-5 py-3 text-sm font-semibold text-ink-inverse"
       >
         Torna a VibeUp
       </Link>

@@ -171,7 +171,7 @@ export function ImageCarousel({
               key={dotIndex}
               className={cn(
                 "h-1.5 w-1.5 rounded-full transition-colors",
-                dotIndex === currentIndex ? "bg-white" : "bg-white/45",
+                dotIndex === currentIndex ? "bg-paper" : "bg-white/45",
               )}
             />
           ))}

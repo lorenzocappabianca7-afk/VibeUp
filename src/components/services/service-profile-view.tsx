@@ -640,7 +640,7 @@ export function ServiceProfileView({
                 );
               }}
               className={cn(
-                "mt-4 w-full rounded-2xl bg-white px-4 py-3 text-sm font-black text-ink-inverse transition-opacity",
+                "mt-4 w-full rounded-2xl bg-paper px-4 py-3 text-sm font-black text-ink-inverse transition-opacity",
                 !canGenerate && "opacity-50",
               )}
             >

@@ -166,7 +166,7 @@ export function HelpSettingsPanel({ onBack }: HelpSettingsPanelProps) {
           type="button"
           onClick={sendReport}
           disabled={!reportDraft.message.trim()}
-          className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-black text-ink-inverse transition-colors hover:bg-surface/90 disabled:opacity-50"
+          className="w-full rounded-2xl bg-paper px-4 py-3 text-sm font-black text-ink-inverse transition-colors hover:bg-surface/90 disabled:opacity-50"
         >
           Invia segnalazione
         </button>

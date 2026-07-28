@@ -17,6 +17,9 @@ module.exports = {
         "surface-2": "#2A2C33",
         /* Text on solid light CTAs */
         "ink-inverse": "#0F1115",
+        /* Soft paper surfaces (buttons/banners) — less bright than #fff */
+        paper: "#ececef",
+        "paper-deep": "#e4e5e9",
         /* Brand accents — use sparingly */
         "brand-teal": "#3ECFCF",
         "brand-teal-strong": "#32B4B4",

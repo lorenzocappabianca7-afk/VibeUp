@@ -290,7 +290,7 @@ export function PaymentsSettingsPanel({ onBack }: PaymentsSettingsPanelProps) {
             <button
               type="button"
               onClick={handleSaveCard}
-              className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-black text-ink-inverse transition-colors hover:bg-surface/90"
+              className="w-full rounded-2xl bg-paper px-4 py-3 text-sm font-black text-ink-inverse transition-colors hover:bg-surface/90"
             >
               {currentUser.paymentCard
                 ? "Aggiorna carta salvata"

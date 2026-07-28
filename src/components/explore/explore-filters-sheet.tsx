@@ -354,7 +354,7 @@ export function ExploreFiltersSheet({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-ink-inverse/70"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-paper text-ink-inverse/70"
               aria-label="Chiudi"
             >
               <X className="h-4 w-4" />
@@ -398,7 +398,7 @@ export function ExploreFiltersSheet({
                         "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                         draftServiceFilters.musicType === null
                           ? "bg-brand-pink text-ink-inverse"
-                          : "bg-white text-ink-inverse hover:bg-white/90",
+                          : "bg-paper text-ink-inverse hover:bg-paper-deep",
                       )}
                     >
                       Tutti
@@ -412,7 +412,7 @@ export function ExploreFiltersSheet({
                           "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                           draftServiceFilters.musicType === type
                             ? "bg-brand-pink text-ink-inverse"
-                            : "bg-white text-ink-inverse hover:bg-white/90",
+                            : "bg-paper text-ink-inverse hover:bg-paper-deep",
                         )}
                       >
                         {MUSIC_TYPE_LABELS[type]}
@@ -466,7 +466,7 @@ export function ExploreFiltersSheet({
                           "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                           draftServiceFilters.partyType === null
                             ? "bg-brand-pink text-ink-inverse"
-                            : "bg-white text-ink-inverse hover:bg-white/90",
+                            : "bg-paper text-ink-inverse hover:bg-paper-deep",
                         )}
                       >
                         Tutti
@@ -482,7 +482,7 @@ export function ExploreFiltersSheet({
                             "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                             draftServiceFilters.partyType === type
                               ? "bg-brand-pink text-ink-inverse"
-                              : "bg-white text-ink-inverse hover:bg-white/90",
+                              : "bg-paper text-ink-inverse hover:bg-paper-deep",
                           )}
                         >
                           {PARTY_TYPE_LABELS[type]}
@@ -555,7 +555,7 @@ export function ExploreFiltersSheet({
                             draftServiceFilters.decorationFulfillment ===
                               fulfillment
                               ? "bg-brand-teal text-ink-inverse"
-                              : "bg-white text-ink-inverse hover:bg-white/90",
+                              : "bg-paper text-ink-inverse hover:bg-paper-deep",
                           )}
                         >
                           {DECORATION_FULFILLMENT_LABELS[fulfillment]}
@@ -574,7 +574,7 @@ export function ExploreFiltersSheet({
                   <button
                     type="button"
                     onClick={() => setDatePickerOpen((current) => !current)}
-                    className="flex w-full items-center justify-between gap-3 rounded-2xl border border-primary-black/10 bg-white px-4 py-3 text-left transition-colors duration-150 hover:bg-brand-teal/8"
+                    className="flex w-full items-center justify-between gap-3 rounded-2xl border border-primary-black/10 bg-paper px-4 py-3 text-left transition-colors duration-150 hover:bg-brand-teal/8"
                   >
                     <span className="flex items-center gap-2">
                       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-teal/10 text-brand-teal">
@@ -635,7 +635,7 @@ export function ExploreFiltersSheet({
             <button
               type="button"
               onClick={() => setDatePickerOpen((current) => !current)}
-              className="flex w-full items-center justify-between gap-3 rounded-2xl border border-primary-black/10 bg-white px-4 py-3 text-left transition-colors duration-150 hover:bg-brand-teal/8"
+              className="flex w-full items-center justify-between gap-3 rounded-2xl border border-primary-black/10 bg-paper px-4 py-3 text-left transition-colors duration-150 hover:bg-brand-teal/8"
             >
               <span className="flex items-center gap-2">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-teal/10 text-brand-teal">
@@ -703,7 +703,7 @@ export function ExploreFiltersSheet({
                   "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                   draftFilters.partyType === null
                     ? "bg-brand-pink text-ink-inverse"
-                    : "bg-white text-ink-inverse hover:bg-white/90",
+                    : "bg-paper text-ink-inverse hover:bg-paper-deep",
                 )}
               >
                 Tutti
@@ -717,7 +717,7 @@ export function ExploreFiltersSheet({
                     "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                     draftFilters.partyType === type
                       ? "bg-brand-pink text-ink-inverse"
-                      : "bg-white text-ink-inverse hover:bg-white/90",
+                      : "bg-paper text-ink-inverse hover:bg-paper-deep",
                   )}
                 >
                   {PARTY_TYPE_LABELS[type]}
@@ -740,7 +740,7 @@ export function ExploreFiltersSheet({
                   "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                   draftFilters.allPiemonte
                     ? "bg-brand-teal text-ink-inverse"
-                    : "bg-white text-ink-inverse hover:bg-white/90",
+                    : "bg-paper text-ink-inverse hover:bg-paper-deep",
                 )}
               >
                 Tutto il Piemonte
@@ -752,7 +752,7 @@ export function ExploreFiltersSheet({
                   "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                   torinoCityWide
                     ? "bg-brand-teal text-ink-inverse"
-                    : "bg-white text-ink-inverse hover:bg-white/90",
+                    : "bg-paper text-ink-inverse hover:bg-paper-deep",
                 )}
               >
                 Torino
@@ -765,7 +765,7 @@ export function ExploreFiltersSheet({
                   "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                   draftFilters.nearMe
                     ? "bg-brand-teal text-ink-inverse"
-                    : "bg-white text-ink-inverse hover:bg-white/90",
+                    : "bg-paper text-ink-inverse hover:bg-paper-deep",
                   nearMeLoading && "opacity-60",
                 )}
               >
@@ -786,8 +786,8 @@ export function ExploreFiltersSheet({
               className={cn(
                 "rounded-2xl border p-4 transition-colors duration-150",
                 draftFilters.selectedComune
-                  ? "border-brand-teal bg-white"
-                  : "border-primary-black/10 bg-white",
+                  ? "border-brand-teal bg-paper"
+                  : "border-primary-black/10 bg-paper",
                 comuneSearchDisabled && "opacity-60",
               )}
             >
@@ -820,7 +820,7 @@ export function ExploreFiltersSheet({
                   Area metropolitana di Torino
                 </p>
 
-                <div className="mb-4 flex rounded-2xl bg-white p-1">
+                <div className="mb-4 flex rounded-2xl bg-paper p-1">
                   {(["torino_citta", "dintorni"] as GeoArea[]).map((area) => (
                     <button
                       key={area}
@@ -849,7 +849,7 @@ export function ExploreFiltersSheet({
                           "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                           draftFilters.district === district.value
                             ? "bg-brand-teal text-ink-inverse"
-                            : "bg-white text-ink-inverse hover:bg-white/90",
+                            : "bg-paper text-ink-inverse hover:bg-paper-deep",
                         )}
                       >
                         {district.label}
@@ -870,7 +870,7 @@ export function ExploreFiltersSheet({
                           "rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
                           draftFilters.zone === zone.value
                             ? "bg-brand-teal text-ink-inverse"
-                            : "bg-white text-ink-inverse hover:bg-white/90",
+                            : "bg-paper text-ink-inverse hover:bg-paper-deep",
                         )}
                       >
                         {zone.label}
@@ -928,7 +928,7 @@ export function ExploreFiltersSheet({
               }
               rows={4}
               placeholder="Es. spazio all'aperto, possibilità di musica fino a tardi, parcheggio vicino, stile elegante..."
-              className="w-full resize-none rounded-2xl border border-primary-black/10 bg-white px-4 py-3 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
+              className="w-full resize-none rounded-2xl border border-primary-black/10 bg-paper px-4 py-3 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
             />
             <p className="mt-2 text-xs text-primary-black/50">
               Queste note non restringono automaticamente i risultati: servono

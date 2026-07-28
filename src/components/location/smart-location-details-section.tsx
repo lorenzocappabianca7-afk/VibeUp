@@ -170,7 +170,7 @@ function BookingTimePicker({
   onSelect: (time: string) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-primary-black/10 bg-white p-2.5 shadow-sm">
+    <div className="rounded-2xl border border-primary-black/10 bg-paper p-2.5 shadow-sm">
       <p className="mb-2 text-[11px] font-bold text-ink-inverse/70">
         {mode === "start" ? "Orario inizio" : "Orario fine (fino alle 03:00)"}
       </p>
@@ -274,7 +274,7 @@ export function SmartLocationDetailsSection({
               Seleziona giorno, orario, invitati e servizi: poi genera il preventivo.
             </p>
           </div>
-          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-ink-inverse">
+          <span className="rounded-full bg-paper px-3 py-1.5 text-xs font-bold text-ink-inverse">
             AI ready
           </span>
         </div>
@@ -357,7 +357,7 @@ export function SmartLocationDetailsSection({
 
         <div className="rounded-3xl border border-white/20 bg-brand-teal p-4">
           <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-brand-teal">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-paper text-brand-teal">
               <GlassWater className="h-5 w-5" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
@@ -384,7 +384,7 @@ export function SmartLocationDetailsSection({
                 className={cn(
                   "rounded-xl px-2 py-2.5 text-center text-[11px] font-bold transition-colors sm:text-xs",
                   drinkMode === option.id
-                    ? "bg-white text-ink-inverse shadow-sm"
+                    ? "bg-paper text-ink-inverse shadow-sm"
                     : "bg-transparent text-ink-inverse/65 hover:bg-white/20 hover:text-ink-inverse",
                 )}
               >
@@ -394,7 +394,7 @@ export function SmartLocationDetailsSection({
           </div>
 
           {drinkMode === "per_invitee" && (
-            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-white px-3 py-2.5">
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-paper px-3 py-2.5">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-ink-inverse">
                   Drink per invitato
@@ -434,7 +434,7 @@ export function SmartLocationDetailsSection({
           )}
 
           {drinkMode === "open_bar" && (
-            <p className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-ink-inverse/80">
+            <p className="mt-3 rounded-xl bg-paper px-3 py-2 text-xs font-semibold text-ink-inverse/80">
               Open bar stimato a {formatCurrency(OPEN_BAR_PER_INVITEE)}/invitato
               per tutta la serata.
             </p>
@@ -562,7 +562,7 @@ export function SmartLocationDetailsSection({
                 {generatedQuote ? formatCurrency(generatedQuote.total) : "Da generare"}
               </p>
             </div>
-            <div className="shrink-0 rounded-xl border border-white/35 bg-white px-2.5 py-1.5 text-right">
+            <div className="shrink-0 rounded-xl border border-white/35 bg-paper px-2.5 py-1.5 text-right">
               <p className="text-[9px] uppercase tracking-wide text-ink-inverse/55">
                 Caparra 30%
               </p>
@@ -578,7 +578,7 @@ export function SmartLocationDetailsSection({
             <button
               type="button"
               onClick={() => togglePicker("date")}
-              className="w-full rounded-xl border border-white/35 bg-white px-2.5 py-2 text-left"
+              className="w-full rounded-xl border border-white/35 bg-paper px-2.5 py-2 text-left"
             >
               <span className="flex items-center gap-1 text-[10px] font-semibold text-ink-inverse/55">
                 <Calendar className="h-3 w-3" aria-hidden />
@@ -613,7 +613,7 @@ export function SmartLocationDetailsSection({
               <button
                 type="button"
                 onClick={() => togglePicker("start")}
-                className="rounded-xl border border-white/35 bg-white px-2.5 py-2 text-left"
+                className="rounded-xl border border-white/35 bg-paper px-2.5 py-2 text-left"
               >
                 <span className="flex items-center gap-1 text-[10px] font-semibold text-ink-inverse/55">
                   <Clock className="h-3 w-3" aria-hidden />
@@ -626,7 +626,7 @@ export function SmartLocationDetailsSection({
               <button
                 type="button"
                 onClick={() => togglePicker("end")}
-                className="rounded-xl border border-white/35 bg-white px-2.5 py-2 text-left"
+                className="rounded-xl border border-white/35 bg-paper px-2.5 py-2 text-left"
               >
                 <span className="flex items-center gap-1 text-[10px] font-semibold text-ink-inverse/55">
                   <Clock className="h-3 w-3" aria-hidden />
@@ -638,7 +638,7 @@ export function SmartLocationDetailsSection({
               </button>
             </div>
 
-            <div className="rounded-xl border border-white/35 bg-white px-2.5 py-2">
+            <div className="rounded-xl border border-white/35 bg-paper px-2.5 py-2">
               <span className="text-[10px] font-semibold text-ink-inverse/55">
                 Invitati
               </span>
@@ -731,13 +731,13 @@ export function SmartLocationDetailsSection({
             type="button"
             disabled={!canGenerateQuote}
             onClick={onGenerateQuote}
-            className="mt-2.5 w-full rounded-xl bg-white px-3 py-2.5 text-xs font-black text-ink-inverse transition-opacity disabled:opacity-50"
+            className="mt-2.5 w-full rounded-xl bg-paper px-3 py-2.5 text-xs font-black text-ink-inverse transition-opacity disabled:opacity-50"
           >
             Genera preventivo istantaneo
           </button>
 
           {quoteNeedsRefresh && (
-            <p className="mt-2 rounded-lg border border-white/35 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-ink-inverse">
+            <p className="mt-2 rounded-lg border border-white/35 bg-paper px-2.5 py-1.5 text-[11px] font-semibold text-ink-inverse">
               Hai modificato i dettagli: rigenera il preventivo per vedere il costo aggiornato.
             </p>
           )}
@@ -790,13 +790,13 @@ export function SmartLocationDetailsSection({
             </>
           )}
           {hasInvalidTimeOrder && (
-            <p className="mt-2 rounded-lg border border-white/35 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-ink-inverse">
+            <p className="mt-2 rounded-lg border border-white/35 bg-paper px-2.5 py-1.5 text-[11px] font-semibold text-ink-inverse">
               L&apos;orario di fine deve essere successivo a quello di inizio
               (fino alle 03:00 di notte).
             </p>
           )}
           {hasTimeIssue && (
-            <p className="mt-2 rounded-lg border border-white/35 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-ink-inverse">
+            <p className="mt-2 rounded-lg border border-white/35 bg-paper px-2.5 py-1.5 text-[11px] font-semibold text-ink-inverse">
               Durata minima richiesta: {minHours} ore.
             </p>
           )}

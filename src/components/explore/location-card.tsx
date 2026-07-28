@@ -129,7 +129,7 @@ export const LocationCard = memo(function LocationCard({
             </p>
           </div>
           <p className="shrink-0 self-start sm:text-right">
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-ink-inverse">
+            <span className="rounded-full bg-paper px-3 py-1 text-xs font-bold text-ink-inverse">
               {price.eyebrow} {price.price}
             </span>
             <span className="mt-1 block text-[10px] font-bold text-primary-black/50">

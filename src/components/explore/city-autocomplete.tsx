@@ -79,7 +79,7 @@ export function CityAutocomplete({
           }}
           placeholder="Cerca un comune del Piemonte..."
           className={cn(
-            "w-full rounded-2xl border border-primary-black/10 bg-white py-3 pl-10 pr-10 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20",
+            "w-full rounded-2xl border border-primary-black/10 bg-paper py-3 pl-10 pr-10 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20",
             disabled && "cursor-not-allowed opacity-50",
           )}
         />
@@ -96,7 +96,7 @@ export function CityAutocomplete({
       </div>
 
       {open && !disabled && suggestions.length > 0 && (
-        <ul className="relative z-20 mt-2 max-h-48 w-full overflow-y-auto rounded-2xl border border-primary-black/10 bg-white py-1 shadow-lg">
+        <ul className="relative z-20 mt-2 max-h-48 w-full overflow-y-auto rounded-2xl border border-primary-black/10 bg-paper py-1 shadow-lg">
           {suggestions.map((city) => (
             <li key={city}>
               <button
@@ -116,7 +116,7 @@ export function CityAutocomplete({
       )}
 
       {open && !disabled && inputValue.trim() && suggestions.length === 0 && (
-        <p className="absolute z-20 mt-2 w-full rounded-2xl border border-primary-black/10 bg-white px-4 py-3 text-sm text-ink-inverse/50 shadow-lg">
+        <p className="absolute z-20 mt-2 w-full rounded-2xl border border-primary-black/10 bg-paper px-4 py-3 text-sm text-ink-inverse/50 shadow-lg">
           Nessun comune trovato nel Piemonte
         </p>
       )}

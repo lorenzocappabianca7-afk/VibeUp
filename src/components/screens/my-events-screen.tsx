@@ -350,7 +350,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
             <button
               type="button"
               onClick={onCreateEvent}
-              className="mt-4 inline-flex rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-ink-inverse"
+              className="mt-4 inline-flex rounded-2xl bg-paper px-4 py-2.5 text-sm font-semibold text-ink-inverse"
             >
               Esplora location
             </button>

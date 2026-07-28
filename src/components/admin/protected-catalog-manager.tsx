@@ -666,7 +666,7 @@ function PhotoUploadField({
                 <X className="h-3.5 w-3.5" aria-hidden />
               </button>
               {index === 0 && (
-                <span className="absolute bottom-2 left-2 rounded-full bg-white px-2 py-1 text-[10px] font-black text-ink-inverse">
+                <span className="absolute bottom-2 left-2 rounded-full bg-paper px-2 py-1 text-[10px] font-black text-ink-inverse">
                   Copertina
                 </span>
               )}

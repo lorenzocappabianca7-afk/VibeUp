@@ -16,7 +16,7 @@ export function Hero() {
       />
 
       <div className="relative mx-auto max-w-3xl text-center">
-        <p className="mb-4 inline-flex rounded-full bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-ink-inverse">
+        <p className="mb-4 inline-flex rounded-full bg-paper px-4 py-2 text-xs font-black uppercase tracking-widest text-ink-inverse">
           Organizzazione feste
         </p>
         <h1 className="text-4xl font-bold tracking-tight text-primary-black sm:text-5xl">

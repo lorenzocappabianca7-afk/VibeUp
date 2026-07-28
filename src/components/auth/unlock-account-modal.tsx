@@ -168,7 +168,7 @@ export function UnlockAccountModal({
           <button
             type="submit"
             disabled={submitting || biometricSubmitting}
-            className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-ink-inverse disabled:opacity-60"
+            className="w-full rounded-2xl bg-paper px-4 py-3 text-sm font-semibold text-ink-inverse disabled:opacity-60"
           >
             {submitting ? "Verifico…" : "Sblocca con password"}
           </button>

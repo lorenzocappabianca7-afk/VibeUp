@@ -71,7 +71,7 @@ export function VibeUpCalendar({
   return (
     <div
       className={cn(
-        "max-w-[20rem] rounded-[1.35rem] border border-primary-black/10 bg-white p-3 shadow-sm",
+        "max-w-[20rem] rounded-[1.35rem] border border-primary-black/10 bg-paper p-3 shadow-sm",
         className,
       )}
     >

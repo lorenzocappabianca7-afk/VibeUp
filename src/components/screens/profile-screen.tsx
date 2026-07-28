@@ -577,7 +577,7 @@ export function ProfileScreen({
                   Aggiorna foto, nome utente e contatti principali.
                 </p>
               </div>
-              <label className="flex shrink-0 cursor-pointer items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-black text-ink-inverse">
+              <label className="flex shrink-0 cursor-pointer items-center gap-2 rounded-full bg-paper px-3 py-2 text-xs font-black text-ink-inverse">
                 <Camera className="h-3.5 w-3.5" aria-hidden />
                 Foto
                 <input
@@ -777,8 +777,8 @@ export function ProfileScreen({
               }}
               className={`flex w-full touch-manipulation items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-colors select-none ${
                 account.id === currentUser.id
-                  ? "border-brand-teal bg-white"
-                  : "border-primary-black/10 bg-white"
+                  ? "border-brand-teal bg-paper"
+                  : "border-primary-black/10 bg-paper"
               }`}
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-pink/20 text-brand-pink">
@@ -874,7 +874,7 @@ export function ProfileScreen({
               type="button"
               disabled={creatingAccount}
               onClick={() => void handleCreateAccount()}
-              className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-ink-inverse disabled:opacity-60"
+              className="w-full rounded-2xl bg-paper px-4 py-3 text-sm font-semibold text-ink-inverse disabled:opacity-60"
             >
               {creatingAccount
                 ? "Creo account…"

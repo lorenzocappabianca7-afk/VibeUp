@@ -708,7 +708,7 @@ export function ExploreSearchBar({
                 <button
                   type="button"
                   onClick={() => commitSearch(draft)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-ink-inverse"
+                  className="inline-flex items-center gap-2 rounded-xl bg-paper px-4 py-2.5 text-sm font-semibold text-ink-inverse"
                 >
                   <Search className="h-4 w-4" aria-hidden />
                   Cerca

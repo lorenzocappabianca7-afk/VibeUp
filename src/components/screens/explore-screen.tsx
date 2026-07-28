@@ -997,7 +997,7 @@ const ServiceCard = memo(function ServiceCard({
                 {service.providerZone}
               </p>
             </div>
-            <span className="shrink-0 self-start rounded-full bg-white px-3 py-1.5 text-xs font-bold text-ink-inverse">
+            <span className="shrink-0 self-start rounded-full bg-paper px-3 py-1.5 text-xs font-bold text-ink-inverse">
               {getServicePriceLabel(service)}
             </span>
           </div>
@@ -1033,7 +1033,7 @@ const ServiceCard = memo(function ServiceCard({
                 {service.providerZone}
               </p>
             </div>
-            <span className="shrink-0 self-start rounded-full bg-white px-3 py-1.5 text-xs font-bold text-ink-inverse">
+            <span className="shrink-0 self-start rounded-full bg-paper px-3 py-1.5 text-xs font-bold text-ink-inverse">
               {getServicePriceLabel(service)}
             </span>
           </SoftNavLink>
@@ -1047,7 +1047,7 @@ const ServiceCard = memo(function ServiceCard({
             "flex w-full items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-black transition-colors",
             isFavorite
               ? "border-brand-pink bg-brand-pink text-white"
-              : "border-primary-black/10 bg-white text-ink-inverse hover:border-brand-pink/40 hover:text-brand-pink",
+              : "border-primary-black/10 bg-paper text-ink-inverse hover:border-brand-pink/40 hover:text-brand-pink",
           )}
           aria-label={
             isFavorite

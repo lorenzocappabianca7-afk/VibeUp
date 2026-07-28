@@ -10,7 +10,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const variantStyles: Record<ButtonVariant, string> = {
   /* Solid light CTA on night canvas — Instagram-style */
   primary:
-    "bg-white text-ink-inverse hover:bg-white/90 focus-visible:ring-offset-background",
+    "bg-paper text-ink-inverse hover:bg-paper-deep focus-visible:ring-offset-background",
   /* Soft brand accent — use sparingly */
   secondary:
     "bg-brand-pink/20 text-brand-pink ring-1 ring-brand-pink/35 hover:bg-brand-pink/28",

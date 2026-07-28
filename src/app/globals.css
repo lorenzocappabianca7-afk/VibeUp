@@ -8,6 +8,9 @@
   --surface: #1a1c21;
   --surface-2: #2a2c33;
   --ink-inverse: #0f1115;
+  /* Soft paper — less bright than pure white (matches My Events panels) */
+  --paper: #ececef;
+  --paper-deep: #e4e5e9;
   --border-subtle: rgba(245, 245, 247, 0.12);
   --vibe-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --vibe-duration-fast: 140ms;
@@ -21,6 +24,8 @@
   --color-surface: #1a1c21;
   --color-surface-2: #2a2c33;
   --color-ink-inverse: #0f1115;
+  --color-paper: #ececef;
+  --color-paper-deep: #e4e5e9;
   --color-brand-teal: #3ecfcf;
   --color-brand-pink: #f091b2;
   --font-sans: var(--font-geist-sans);
@@ -205,8 +210,8 @@ input[type="number"]::-webkit-outer-spin-button {
 
 /* —— My Events: white paper panel (smooth top radius + zigzag tear) —— */
 .event-postit {
-  --postit-paper: #ececef;
-  --postit-paper-deep: #e4e5e9;
+  --postit-paper: var(--paper);
+  --postit-paper-deep: var(--paper-deep);
   --postit-ink: #1c2430;
   --postit-ink-muted: rgba(28, 36, 48, 0.72);
   --postit-zag: 14px;
