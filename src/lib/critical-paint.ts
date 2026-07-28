@@ -8,12 +8,12 @@ import {
  * Blocking first-paint CSS — must live in <head> before any stylesheet link.
  *
  * Layering:
- *   critical paint  z-index 9990  → black safety net UNDER the splash
+ *   critical paint  z-index 9990 → black safety net UNDER the splash (first visit)
  *   splash overlay  z-index 10000 → logo + tagline on top
+ *   app shell       z-index 1     → real UI above a demoted black net
  *
- * `html.vibeup-splash-skip` is set by the blocking head script when this
- * session already saw the splash — hides overlays BEFORE first paint so
- * hard navigations (location/event/service) never flash the loader again.
+ * After splash (or on skip), critical paint drops to z-index:-1 and STAYS.
+ * Never `display:none` it — that was exposing the browser white canvas for a frame.
  */
 export const CRITICAL_PAINT_CSS = `
 html,body{
@@ -21,11 +21,14 @@ html,body{
   background-color:#000000!important;
   color-scheme:dark!important;
 }
-html.vibeup-splash-skip #vibeup-critical-paint,
 html.vibeup-splash-skip .vibeup-splash{
   display:none!important;
   visibility:hidden!important;
   opacity:0!important;
+  pointer-events:none!important;
+}
+html.vibeup-splash-skip #vibeup-critical-paint{
+  z-index:-1!important;
   pointer-events:none!important;
 }
 #vibeup-critical-paint{
@@ -33,6 +36,7 @@ html.vibeup-splash-skip .vibeup-splash{
   inset:0!important;
   z-index:9990!important;
   background:#000000!important;
+  background-color:#000000!important;
   pointer-events:none!important;
 }
 .vibeup-splash{
@@ -40,12 +44,11 @@ html.vibeup-splash-skip .vibeup-splash{
   inset:0!important;
   z-index:10000!important;
   background:#000000!important;
-  /* Block taps/scroll on the app underneath during the intro */
+  background-color:#000000!important;
   pointer-events:auto!important;
   display:flex!important;
   align-items:center!important;
   justify-content:center!important;
-  /* No opacity transition on enter — transition only when exiting (avoids gray flash) */
   opacity:1!important;
   transition:none;
 }
@@ -73,7 +76,6 @@ html.vibeup-splash-skip .vibeup-splash{
   transform:none;
   transform-origin:center center;
   -webkit-user-drag:none;
-  /* Start at full size so iOS startup image → web handoff stays continuous */
   animation:vibeup-splash-bounce ${LOGO_BOUNCE_MS}ms cubic-bezier(0.16,1,0.3,1) both;
 }
 .vibeup-splash__logo--settled{
@@ -122,6 +124,12 @@ html.vibeup-splash-skip .vibeup-splash{
 @media (max-width:380px){
   .vibeup-splash__logo{width:6.25rem!important;max-width:6.25rem!important}
 }
+#vibeup-app-shell{
+  position:relative;
+  z-index:1;
+  min-height:100dvh;
+  background-color:#0f1115;
+}
 `.replace(/\s+/g, " ").trim();
 
 /**
@@ -146,3 +154,13 @@ export const CRITICAL_PAINT_INLINE_STYLE = {
   backgroundColor: "#000000",
   pointerEvents: "none" as const,
 };
+
+/** Drop the black net behind the app — never remove (avoids white canvas gap). */
+export function demoteCriticalPaint() {
+  if (typeof document === "undefined") return;
+  const el = document.getElementById(CRITICAL_PAINT_ID);
+  if (!el) return;
+  el.style.setProperty("z-index", "-1", "important");
+  el.style.setProperty("pointer-events", "none", "important");
+  el.style.setProperty("background-color", "#000000", "important");
+}

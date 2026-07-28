@@ -5,7 +5,7 @@ import {
 
 /**
  * Server-only black full-screen shell with INLINE styles (no CSS file wait).
- * Stays until SplashScreen finishes — never remove early or a white gap appears.
+ * After splash it is demoted to z-index:-1 — never removed, or a white gap appears.
  */
 export function CriticalPaint() {
   return (

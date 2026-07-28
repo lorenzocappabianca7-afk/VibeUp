@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import {
-  CRITICAL_PAINT_ID,
+  demoteCriticalPaint,
   SPLASH_LOGO_SRC,
 } from "@/lib/critical-paint";
 import {
@@ -38,10 +38,6 @@ function shouldSkipSplash() {
   return false;
 }
 
-function removeCriticalPaint() {
-  document.getElementById(CRITICAL_PAINT_ID)?.remove();
-}
-
 function markSplashSeen() {
   try {
     sessionStorage.setItem(SPLASH_STORAGE_KEY, "1");
@@ -52,11 +48,26 @@ function markSplashSeen() {
 }
 
 /**
+ * Reveal the app without exposing the browser white canvas:
+ * wait two animation frames after the splash is gone, then demote (not remove)
+ * the black critical-paint layer behind the app shell.
+ */
+function revealAppUnderlay() {
+  demoteCriticalPaint();
+  requestAnimationFrame(() => {
+    demoteCriticalPaint();
+    requestAnimationFrame(() => {
+      demoteCriticalPaint();
+    });
+  });
+}
+
+/**
  * Cold-start intro.
  *
  * Skip is applied in a blocking <head> script (`vibeup-splash-skip`) so hard
  * navigations never paint this overlay again in the same session — CSS hides
- * it before first paint; this component then unmounts without a state flash.
+ * only the splash; the black net stays under the app (z-index:-1).
  */
 export function SplashScreen() {
   const skipSplash = useSyncExternalStore(
@@ -70,12 +81,12 @@ export function SplashScreen() {
 
   useLayoutEffect(() => {
     if (!skipSplash) return;
-    removeCriticalPaint();
+    revealAppUnderlay();
   }, [skipSplash]);
 
   useEffect(() => {
     if (skipSplash) {
-      removeCriticalPaint();
+      revealAppUnderlay();
       return;
     }
 
@@ -99,8 +110,8 @@ export function SplashScreen() {
     const doneTimer = window.setTimeout(() => {
       markSplashSeen();
       document.documentElement.style.overflow = previousOverflow;
-      removeCriticalPaint();
       setPhase("gone");
+      revealAppUnderlay();
     }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS + SPLASH_EXIT_MS);
 
     return () => {
@@ -131,7 +142,7 @@ export function SplashScreen() {
         opacity: phase === "exit" ? 0 : 1,
         transition:
           phase === "exit"
-            ? `opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.4,0,0.2,1)`
+            ? `opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`
             : "none",
         pointerEvents: phase === "exit" ? "none" : "auto",
         display: "flex",

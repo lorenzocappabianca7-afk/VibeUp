@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Montserrat } from "next/font/google";
 import Script from "next/script";
-import { preinit } from "react-dom";
 import { AppChrome } from "@/components/layout/app-chrome";
 import { AppProviders } from "@/components/providers/app-providers";
 import { CriticalPaint } from "@/components/splash/critical-paint";
@@ -172,11 +171,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Hoist a tiny black paint stylesheet ahead of the main Next CSS chunk.
-  // Without this, Safari/Chrome keep the default white canvas while waiting
-  // for `/_next/static/...css` (our layout <style> was being moved after it).
-  preinit("/boot-paint.css", { as: "style", precedence: "vibeup-boot" });
-
   return (
     <html
       lang="it"
@@ -185,9 +179,17 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        {/* Fallback inline CSS — kept for browsers that paint before preinit link */}
+        {/* Render-blocking black paint — must stay before Next CSS chunks.
+            next/no-css-tags is intentional: preinit was too late for Safari FOUC. */}
+        {/* eslint-disable-next-line @next/next/no-css-tags -- boot FOUC shield */}
+        <link rel="stylesheet" href="/boot-paint.css" />
+        {/* Fallback inline CSS if the link is delayed/relocated */}
         <style
           dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_CSS }}
+        />
+        {/* Runs ASAP: black canvas + splash-skip class before first paint */}
+        <script
+          dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_SCRIPT }}
         />
         <link
           rel="preload"
@@ -202,17 +204,25 @@ export default function RootLayout({
         style={{ backgroundColor: "#000000" }}
         suppressHydrationWarning
       >
-        {/* Runs before hydration; injects black <style> at top of <head> */}
+        {/* Also via next/script for clients that re-exec on soft recovery */}
         <Script
           id="vibeup-critical-paint"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_SCRIPT }}
         />
-        {/* Black shell with inline styles — stays until splash completes */}
+        {/* Black shell with inline styles — demoted behind app after splash */}
         <CriticalPaint />
         <SplashScreen />
         <AppProviders>
-          <div className="flex min-h-dvh min-w-0 max-w-full flex-col overflow-x-hidden bg-background">
+          <div
+            id="vibeup-app-shell"
+            className="flex min-h-dvh min-w-0 max-w-full flex-col overflow-x-hidden bg-background"
+            style={{
+              backgroundColor: "#0F1115",
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
             <AppChrome>{children}</AppChrome>
           </div>
         </AppProviders>

@@ -1,15 +1,23 @@
-/* Earliest paint — pure black before Next CSS chunk arrives */
+/* Earliest paint — pure black before Next CSS chunk arrives.
+   Render-blocking on purpose: must win over the browser default white canvas. */
 html,
 body {
   background: #000000 !important;
+  background-color: #000000 !important;
   color-scheme: dark !important;
 }
 
-html.vibeup-splash-skip #vibeup-critical-paint,
+/* Repeat visits: hide splash only. Keep the black safety net UNDER the app
+   (z-index:-1). display:none on the net was exposing a white flash. */
 html.vibeup-splash-skip .vibeup-splash {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+html.vibeup-splash-skip #vibeup-critical-paint {
+  z-index: -1 !important;
   pointer-events: none !important;
 }
 
@@ -18,6 +26,7 @@ html.vibeup-splash-skip .vibeup-splash {
   inset: 0 !important;
   z-index: 9990 !important;
   background: #000000 !important;
+  background-color: #000000 !important;
   pointer-events: none !important;
 }
 
@@ -26,9 +35,17 @@ html.vibeup-splash-skip .vibeup-splash {
   inset: 0 !important;
   z-index: 10000 !important;
   background: #000000 !important;
+  background-color: #000000 !important;
   pointer-events: auto !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   opacity: 1 !important;
+}
+
+#vibeup-app-shell {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  background-color: #0f1115;
 }
