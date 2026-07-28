@@ -205,8 +205,8 @@ input[type="number"]::-webkit-outer-spin-button {
 
 /* —— My Events: white paper panel (smooth top radius + zigzag tear) —— */
 .event-postit {
-  --postit-paper: #ffffff;
-  --postit-paper-deep: #f7f7f8;
+  --postit-paper: #ececef;
+  --postit-paper-deep: #e4e5e9;
   --postit-ink: #1c2430;
   --postit-ink-muted: rgba(28, 36, 48, 0.72);
   --postit-zag: 14px;
