@@ -49,31 +49,31 @@ function markSplashSeen() {
 }
 
 /**
- * Reveal the app without exposing the browser white canvas:
- * wait two animation frames after the splash is gone, then demote (not remove)
- * the black critical-paint layer behind the app shell.
+ * Reveal Explore without a white frame:
+ * 1) splash already unmounted / solid black plate held
+ * 2) demote critical paint
+ * 3) THEN set vibeup-splash-skip (reveals #vibeup-app-shell)
  */
-function revealAppUnderlay() {
-  demoteCriticalPaint();
-  // Ensure splash html overflow never survives into the session.
+function revealExplore() {
   if (typeof document !== "undefined") {
     document.documentElement.style.overflow = "";
   }
+  demoteCriticalPaint();
   requestAnimationFrame(() => {
     demoteCriticalPaint();
     requestAnimationFrame(() => {
       demoteCriticalPaint();
+      markSplashSeen();
       recoverInteractiveSession();
     });
   });
 }
 
 /**
- * Cold-start intro.
+ * Cold-start intro from Home Screen bookmark → Explore.
  *
- * Skip is applied in a blocking <head> script (`vibeup-splash-skip`) so hard
- * navigations never paint this overlay again in the same session — CSS hides
- * only the splash; the black net stays under the app (z-index:-1).
+ * The black splash plate never fades to transparent (that caused a white flash
+ * when skip-class demoted the underlay). Only the logo/tagline stage fades.
  */
 export function SplashScreen() {
   const skipSplash = useSyncExternalStore(
@@ -87,12 +87,16 @@ export function SplashScreen() {
 
   useLayoutEffect(() => {
     if (!skipSplash) return;
-    revealAppUnderlay();
+    demoteCriticalPaint();
+    markSplashSeen();
+    recoverInteractiveSession();
   }, [skipSplash]);
 
   useEffect(() => {
     if (skipSplash) {
-      revealAppUnderlay();
+      demoteCriticalPaint();
+      markSplashSeen();
+      recoverInteractiveSession();
       return;
     }
 
@@ -114,10 +118,11 @@ export function SplashScreen() {
     }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS);
 
     const doneTimer = window.setTimeout(() => {
-      markSplashSeen();
       document.documentElement.style.overflow = previousOverflow;
       setPhase("gone");
-      revealAppUnderlay();
+      // Reveal only after the solid splash node is gone — critical paint still
+      // covers at z-index 9990 until revealExplore demotes it.
+      revealExplore();
     }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS + SPLASH_EXIT_MS);
 
     return () => {
@@ -145,18 +150,24 @@ export function SplashScreen() {
         left: 0,
         zIndex: 10000,
         backgroundColor: "#000000",
-        opacity: phase === "exit" ? 0 : 1,
-        transition:
-          phase === "exit"
-            ? `opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`
-            : "none",
+        opacity: 1,
+        transition: "none",
         pointerEvents: phase === "exit" ? "none" : "auto",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <div className="vibeup-splash__stage">
+      <div
+        className="vibeup-splash__stage"
+        style={{
+          opacity: phase === "exit" ? 0 : 1,
+          transition:
+            phase === "exit"
+              ? `opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`
+              : "none",
+        }}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={SPLASH_LOGO_SRC}

@@ -62,6 +62,7 @@ export function MobileShell() {
         "relative mx-auto box-border min-h-dvh overflow-x-hidden bg-background shadow-none sm:shadow-[0_0_60px_-15px_rgba(0,0,0,0.55)]",
         APP_SHELL_WIDTH_CLASS,
       )}
+      style={{ backgroundColor: "#0F1115" }}
     >
       <main
         className="box-border min-w-0 w-full max-w-full overflow-x-hidden pt-6 lg:pt-8"

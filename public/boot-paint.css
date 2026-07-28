@@ -7,6 +7,11 @@ body {
   color-scheme: dark !important;
 }
 
+/* First visit: keep Explore hidden under the black splash plate */
+html:not(.vibeup-splash-skip) #vibeup-app-shell {
+  visibility: hidden !important;
+}
+
 /* Repeat visits: hide splash only. Keep the black safety net UNDER the app
    (z-index:-1). display:none on the net was exposing a white flash. */
 html.vibeup-splash-skip .vibeup-splash {
@@ -41,6 +46,14 @@ html.vibeup-splash-skip #vibeup-critical-paint {
   align-items: center !important;
   justify-content: center !important;
   opacity: 1 !important;
+  transition: none !important;
+}
+
+/* Never fade the black plate — only the logo stage (see full CRITICAL_PAINT_CSS) */
+.vibeup-splash--exit {
+  opacity: 1 !important;
+  pointer-events: none !important;
+  transition: none !important;
 }
 
 #vibeup-app-shell {

@@ -7,19 +7,22 @@ import {
 /**
  * Blocking first-paint CSS — must live in <head> before any stylesheet link.
  *
- * Layering:
- *   critical paint  z-index 9990 → black safety net UNDER the splash (first visit)
- *   splash overlay  z-index 10000 → logo + tagline on top
- *   app shell       z-index 1     → real UI above a demoted black net
+ * Layering (bookmark / PWA cold start):
+ *   critical paint  z-index 9990 → black safety net
+ *   splash overlay  z-index 10000 → logo + tagline (solid black, never fades)
+ *   app shell       z-index 1     → Explore (hidden until vibeup-splash-skip)
  *
- * After splash (or on skip), critical paint drops to z-index:-1 and STAYS.
- * Never `display:none` it — that was exposing the browser white canvas for a frame.
+ * Critical paint is demoted to z-index:-1 after splash — never display:none
+ * (that exposed the browser white canvas for a frame).
  */
 export const CRITICAL_PAINT_CSS = `
 html,body{
   background:#000000!important;
   background-color:#000000!important;
   color-scheme:dark!important;
+}
+html:not(.vibeup-splash-skip) #vibeup-app-shell{
+  visibility:hidden!important;
 }
 html.vibeup-splash-skip .vibeup-splash{
   display:none!important;
@@ -50,11 +53,16 @@ html.vibeup-splash-skip #vibeup-critical-paint{
   align-items:center!important;
   justify-content:center!important;
   opacity:1!important;
-  transition:none;
+  transition:none!important;
 }
 .vibeup-splash--exit{
-  opacity:0!important;
+  /* Keep the black plate solid — only the stage fades (avoids white compositing) */
+  opacity:1!important;
   pointer-events:none!important;
+  transition:none!important;
+}
+.vibeup-splash--exit .vibeup-splash__stage{
+  opacity:0!important;
   transition:opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.4,0,0.2,1)!important;
 }
 .vibeup-splash__stage{
@@ -63,6 +71,7 @@ html.vibeup-splash-skip #vibeup-critical-paint{
   flex-direction:column;
   align-items:center;
   margin-bottom:14vh;
+  opacity:1;
 }
 .vibeup-splash__logo{
   display:block!important;
@@ -119,7 +128,7 @@ html.vibeup-splash-skip #vibeup-critical-paint{
     opacity:1!important;
     transform:none!important;
   }
-  .vibeup-splash--exit{transition:none!important}
+  .vibeup-splash--exit .vibeup-splash__stage{transition:none!important}
 }
 @media (max-width:380px){
   .vibeup-splash__logo{width:6.25rem!important;max-width:6.25rem!important}

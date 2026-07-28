@@ -10,5 +10,5 @@ export const TAGLINE_DELAY_MS = 520;
 /** Hold after the tagline is visible, then start exit */
 export const HOLD_AFTER_TAGLINE_MS = 2500;
 
-/** Soft fade-out before revealing Explore */
-export const SPLASH_EXIT_MS = 480;
+/** Soft fade of logo/tagline only — the black plate stays solid until cut */
+export const SPLASH_EXIT_MS = 420;
