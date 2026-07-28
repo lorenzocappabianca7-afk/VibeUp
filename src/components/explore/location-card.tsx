@@ -2,11 +2,14 @@
 
 import { DistanceBadge } from "@/components/explore/distance-badge";
 import { SoftNavLink } from "@/components/navigation/soft-nav-link";
-import { SafeImage } from "@/components/ui/safe-image";
+import {
+  ImageCarousel,
+  uniqueImages,
+} from "@/components/ui/image-carousel";
 import { cn, getLocationPricePresentation } from "@/lib/utils";
 import type { ContactPreview, Location } from "@/types/location";
 import { GitCompareArrows, Heart, MapPin } from "lucide-react";
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 
 interface LocationCardProps {
   location: Location;
@@ -29,22 +32,26 @@ export const LocationCard = memo(function LocationCard({
   const hasContacts = contactsBeenHere.count > 0;
   const price = getLocationPricePresentation(location);
   const [contactsOpen, setContactsOpen] = useState(false);
+  const photos = useMemo(
+    () => uniqueImages([location.imageUrl, ...(location.gallery ?? [])]),
+    [location.gallery, location.imageUrl],
+  );
 
   return (
     <article className="render-contained h-full overflow-hidden rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-[border-color,transform,box-shadow] duration-150 hover:border-primary-black active:scale-[0.995]">
-      <div className="relative aspect-[16/10] w-full">
-        <SoftNavLink
-          href={href}
-          className="relative block h-full w-full"
-        >
-          <SafeImage
-            src={location.imageUrl}
-            alt={location.name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 448px) 100vw, 448px"
-          />
-        </SoftNavLink>
+      <div className="relative">
+        <ImageCarousel
+          images={photos}
+          alt={location.name}
+          frameClassName="aspect-[16/10]"
+          sizes="(max-width: 448px) 100vw, 448px"
+          showDots={photos.length > 1}
+          renderSlide={(_image, _index, imageNode) => (
+            <SoftNavLink href={href} className="absolute inset-0 block">
+              {imageNode}
+            </SoftNavLink>
+          )}
+        />
 
         {location.distanceBadge && (
           <div className="absolute left-3 top-3 z-10">
@@ -116,7 +123,8 @@ export const LocationCard = memo(function LocationCard({
             <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-primary-black/50">
               <MapPin className="h-3 w-3 shrink-0" aria-hidden />
               <span className="truncate">
-                {location.zoneLabel} · {location.comune} · fino a {location.capacity} ospiti
+                {location.zoneLabel} · {location.comune} · fino a{" "}
+                {location.capacity} ospiti
               </span>
             </p>
           </div>
@@ -132,7 +140,6 @@ export const LocationCard = memo(function LocationCard({
             </span>
           </p>
         </div>
-
       </SoftNavLink>
 
       {hasContacts && (

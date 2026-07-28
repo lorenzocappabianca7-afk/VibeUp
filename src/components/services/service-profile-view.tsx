@@ -13,8 +13,11 @@ import { isManagedListingLive } from "@/types/admin";
 import type { BookedServiceCategory } from "@/types/event";
 import type { MusicType, PartyType } from "@/types/location";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
+import {
+  ImageCarousel,
+  uniqueImages,
+} from "@/components/ui/image-carousel";
 import { ArrowLeft, Calendar, Check, Clock, MapPin, Star } from "lucide-react";
-import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface ServiceProfileViewProps {
@@ -248,9 +251,10 @@ export function ServiceProfileView({
     return calculateServiceQuote(service, days, validHours, quoteGuests);
   }, [days, quoteGuests, service, validHours]);
   const canGenerate = Boolean(service && quoteDate && quoteAddress.trim() && validHours > 0);
-  const serviceImages = [service?.imageUrl, ...(service?.galleryImageUrls ?? [])]
-    .filter((image): image is string => Boolean(image))
-    .filter((image, index, images) => images.indexOf(image) === index);
+  const serviceImages = uniqueImages([
+    service?.imageUrl,
+    ...(service?.galleryImageUrls ?? []),
+  ]);
 
   function addGeneratedServiceToEvent() {
     if (!service || !generatedQuote || !selectedEventId) return;
@@ -323,34 +327,15 @@ export function ServiceProfileView({
           <div className="space-y-3 sm:space-y-4">
             {serviceImages.length > 0 && (
               <section className="render-contained overflow-hidden rounded-2xl border border-primary-black/10 bg-primary-black/[0.02] sm:rounded-3xl">
-                <div className="relative aspect-[16/9]">
-                  <Image
-                    src={serviceImages[0]}
-                    alt={service.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 448px) 100vw, 720px"
-                    priority
-                  />
-                </div>
-                {serviceImages.length > 1 && (
-                  <div className="grid grid-cols-3 gap-1.5 p-2 sm:gap-2 sm:p-3">
-                    {serviceImages.slice(1, 4).map((image, index) => (
-                      <div
-                        key={image}
-                        className="relative aspect-[4/3] overflow-hidden rounded-xl sm:rounded-2xl"
-                      >
-                        <Image
-                          src={image}
-                          alt={`${service.name} ${index + 2}`}
-                          fill
-                          className="object-cover"
-                          sizes="180px"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <ImageCarousel
+                  images={serviceImages}
+                  alt={service.name}
+                  frameClassName="aspect-[16/9]"
+                  sizes="(max-width: 448px) 100vw, 720px"
+                  priority
+                  showDots={serviceImages.length > 1}
+                  showCounter={serviceImages.length > 1}
+                />
               </section>
             )}
 

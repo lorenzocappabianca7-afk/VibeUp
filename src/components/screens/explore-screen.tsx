@@ -56,6 +56,10 @@ import {
 import type { ManagedListing, ManagedLocationListing } from "@/types/admin";
 import { isManagedListingLive } from "@/types/admin";
 import { SoftNavLink } from "@/components/navigation/soft-nav-link";
+import {
+  ImageCarousel,
+  uniqueImages,
+} from "@/components/ui/image-carousel";
 import { SafeImage } from "@/components/ui/safe-image";
 import { useSearchParams } from "next/navigation";
 
@@ -957,17 +961,15 @@ const ServiceCard = memo(function ServiceCard({
     service.category === "dj" || service.category === "fotografo";
   const ProfileFallbackIcon =
     service.category === "fotografo" ? Camera : Disc3;
+  const photos = uniqueImages([
+    service.imageUrl,
+    ...(service.galleryImageUrls ?? []),
+  ]);
 
   return (
     <article className="h-full overflow-hidden rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-colors duration-150 hover:border-primary-black">
-      <SoftNavLink
-        href={href}
-        className={cn(
-          "block",
-          showProfilePhoto && "flex items-start gap-3 p-4",
-        )}
-      >
-        {showProfilePhoto ? (
+      {showProfilePhoto ? (
+        <SoftNavLink href={href} className="flex items-start gap-3 p-4">
           <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-primary-black/10 bg-primary-black/[0.04]">
             {service.imageUrl ? (
               <SafeImage
@@ -983,43 +985,60 @@ const ServiceCard = memo(function ServiceCard({
               </span>
             )}
           </span>
-        ) : (
-          service.imageUrl && (
-            <div className="relative aspect-[16/9] bg-primary-black/[0.03]">
-              <SafeImage
-                src={service.imageUrl}
-                alt={service.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 448px) 100vw, 360px"
-              />
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <div className="min-w-0">
+              <h3 className="truncate font-semibold text-primary-black">
+                {service.name}
+              </h3>
+              <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-primary-black/60">
+                {service.description}
+              </p>
+              <p className="mt-2 truncate text-xs text-primary-black/45">
+                {service.providerZone}
+              </p>
             </div>
-          )
-        )}
-        <div
-          className={cn(
-            "min-w-0 flex-1",
-            showProfilePhoto
-              ? "flex flex-col gap-2"
-              : "flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-3",
-          )}
-        >
-          <div className="min-w-0">
-            <h3 className="truncate font-semibold text-primary-black">
-              {service.name}
-            </h3>
-            <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-primary-black/60">
-              {service.description}
-            </p>
-            <p className="mt-2 truncate text-xs text-primary-black/45">
-              {service.providerZone}
-            </p>
+            <span className="shrink-0 self-start rounded-full bg-white px-3 py-1.5 text-xs font-bold text-ink-inverse">
+              {getServicePriceLabel(service)}
+            </span>
           </div>
-          <span className="shrink-0 self-start rounded-full bg-white px-3 py-1.5 text-xs font-bold text-ink-inverse">
-            {getServicePriceLabel(service)}
-          </span>
-        </div>
-      </SoftNavLink>
+        </SoftNavLink>
+      ) : (
+        <>
+          {photos.length > 0 && (
+            <ImageCarousel
+              images={photos}
+              alt={service.name}
+              frameClassName="aspect-[16/9]"
+              sizes="(max-width: 448px) 100vw, 360px"
+              showDots={photos.length > 1}
+              renderSlide={(_image, _index, imageNode) => (
+                <SoftNavLink href={href} className="absolute inset-0 block">
+                  {imageNode}
+                </SoftNavLink>
+              )}
+            />
+          )}
+          <SoftNavLink
+            href={href}
+            className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-3"
+          >
+            <div className="min-w-0">
+              <h3 className="truncate font-semibold text-primary-black">
+                {service.name}
+              </h3>
+              <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-primary-black/60">
+                {service.description}
+              </p>
+              <p className="mt-2 truncate text-xs text-primary-black/45">
+                {service.providerZone}
+              </p>
+            </div>
+            <span className="shrink-0 self-start rounded-full bg-white px-3 py-1.5 text-xs font-bold text-ink-inverse">
+              {getServicePriceLabel(service)}
+            </span>
+          </SoftNavLink>
+        </>
+      )}
       <div className={cn("px-4 pb-4", showProfilePhoto && "pt-0")}>
         <button
           type="button"
