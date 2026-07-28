@@ -1,5 +1,4 @@
-/* Earliest paint — pure black before Next CSS chunk arrives.
-   Render-blocking on purpose: must win over the browser default white canvas. */
+/* Earliest paint — pure black before Next CSS chunk arrives. */
 html,
 body {
   background: #000000 !important;
@@ -7,13 +6,11 @@ body {
   color-scheme: dark !important;
 }
 
-/* First visit: keep Explore hidden under the black splash plate */
-html:not(.vibeup-splash-skip) #vibeup-app-shell {
+/* Explore stays hidden until explicitly ready (under the black plate). */
+html:not(.vibeup-app-ready) #vibeup-app-shell {
   visibility: hidden !important;
 }
 
-/* Repeat visits: hide splash only. Keep the black safety net UNDER the app
-   (z-index:-1). display:none on the net was exposing a white flash. */
 html.vibeup-splash-skip .vibeup-splash {
   display: none !important;
   visibility: hidden !important;
@@ -21,7 +18,8 @@ html.vibeup-splash-skip .vibeup-splash {
   pointer-events: none !important;
 }
 
-html.vibeup-splash-skip #vibeup-critical-paint {
+/* Demote only with this class — never tie it to splash-skip (white flash). */
+html.vibeup-paint-demoted #vibeup-critical-paint {
   z-index: -1 !important;
   pointer-events: none !important;
 }
@@ -49,7 +47,6 @@ html.vibeup-splash-skip #vibeup-critical-paint {
   transition: none !important;
 }
 
-/* Never fade the black plate — only the logo stage (see full CRITICAL_PAINT_CSS) */
 .vibeup-splash--exit {
   opacity: 1 !important;
   pointer-events: none !important;
@@ -60,5 +57,5 @@ html.vibeup-splash-skip #vibeup-critical-paint {
   position: relative;
   z-index: 1;
   min-height: 100dvh;
-  background-color: #0f1115;
+  background-color: #000000;
 }

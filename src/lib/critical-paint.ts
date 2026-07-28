@@ -5,15 +5,17 @@ import {
 } from "@/lib/splash";
 
 /**
- * Blocking first-paint CSS — must live in <head> before any stylesheet link.
+ * Blocking first-paint CSS for Home Screen / PWA cold start.
  *
- * Layering (bookmark / PWA cold start):
- *   critical paint  z-index 9990 → black safety net
- *   splash overlay  z-index 10000 → logo + tagline (solid black, never fades)
- *   app shell       z-index 1     → Explore (hidden until vibeup-splash-skip)
+ * Classes (must stay separate — combining them caused a white flash):
+ *   vibeup-splash-skip   → hide React splash overlay
+ *   vibeup-app-ready     → show #vibeup-app-shell (Explore)
+ *   vibeup-paint-demoted → drop black safety net behind the app
  *
- * Critical paint is demoted to z-index:-1 after splash — never display:none
- * (that exposed the browser white canvas for a frame).
+ * Reveal order on first launch:
+ *   1) splash unmounts (black critical paint still covers at z-index 9990)
+ *   2) vibeup-app-ready  (Explore paints UNDER the black plate)
+ *   3) vibeup-paint-demoted + demoteCriticalPaint() (uncover Explore)
  */
 export const CRITICAL_PAINT_CSS = `
 html,body{
@@ -21,7 +23,7 @@ html,body{
   background-color:#000000!important;
   color-scheme:dark!important;
 }
-html:not(.vibeup-splash-skip) #vibeup-app-shell{
+html:not(.vibeup-app-ready) #vibeup-app-shell{
   visibility:hidden!important;
 }
 html.vibeup-splash-skip .vibeup-splash{
@@ -30,7 +32,7 @@ html.vibeup-splash-skip .vibeup-splash{
   opacity:0!important;
   pointer-events:none!important;
 }
-html.vibeup-splash-skip #vibeup-critical-paint{
+html.vibeup-paint-demoted #vibeup-critical-paint{
   z-index:-1!important;
   pointer-events:none!important;
 }
@@ -56,7 +58,6 @@ html.vibeup-splash-skip #vibeup-critical-paint{
   transition:none!important;
 }
 .vibeup-splash--exit{
-  /* Keep the black plate solid — only the stage fades (avoids white compositing) */
   opacity:1!important;
   pointer-events:none!important;
   transition:none!important;
@@ -137,20 +138,21 @@ html.vibeup-splash-skip #vibeup-critical-paint{
   position:relative;
   z-index:1;
   min-height:100dvh;
-  background-color:#0f1115;
+  background-color:#000000;
 }
 `.replace(/\s+/g, " ").trim();
 
 /**
- * Synchronous boot script — sets black canvas immediately and injects a
- * blocking <style> at the top of <head> when possible (Next often relocates
- * layout <style> tags after the main CSS chunk, which causes a white flash).
+ * Boot script: black canvas + restore completed-splash state for return launches.
+ *
+ * Session skip sets splash-skip + app-ready only. Critical paint stays on top
+ * until React demotes it after Explore has painted — demoting in <head> caused
+ * a white Home Screen frame before body existed.
  */
-export const CRITICAL_PAINT_SCRIPT = `(function(){try{var d=document.documentElement;d.style.setProperty("background-color","#000000","important");d.style.setProperty("color-scheme","dark","important");d.style.backgroundColor="#000000";d.style.colorScheme="dark";if(sessionStorage.getItem(${JSON.stringify(SPLASH_STORAGE_KEY)})==="1"){d.classList.add("vibeup-splash-skip");}var b=document.body;if(b){b.style.setProperty("background-color","#000000","important");b.style.backgroundColor="#000000";}if(!document.getElementById("vibeup-boot-style")){var s=document.createElement("style");s.id="vibeup-boot-style";s.textContent=${JSON.stringify(CRITICAL_PAINT_CSS)};var h=document.head;if(h){h.insertBefore(s,h.firstChild);}else{d.appendChild(s);}}}catch(e){}})();`;
+export const CRITICAL_PAINT_SCRIPT = `(function(){try{var d=document.documentElement;d.style.setProperty("background-color","#000000","important");d.style.setProperty("color-scheme","dark","important");d.style.backgroundColor="#000000";d.style.colorScheme="dark";if(sessionStorage.getItem(${JSON.stringify(SPLASH_STORAGE_KEY)})==="1"){d.classList.add("vibeup-splash-skip");d.classList.add("vibeup-app-ready");}var b=document.body;if(b){b.style.setProperty("background-color","#000000","important");b.style.backgroundColor="#000000";}if(!document.getElementById("vibeup-boot-style")){var s=document.createElement("style");s.id="vibeup-boot-style";s.textContent=${JSON.stringify(CRITICAL_PAINT_CSS)};var h=document.head;if(h){h.insertBefore(s,h.firstChild);}else{d.appendChild(s);}}}catch(e){}})();`;
 
 export const CRITICAL_PAINT_ID = "vibeup-critical-paint";
 
-/** Splash mark (preloaded in layout). Kept as the approved brand asset. */
 export const SPLASH_LOGO_SRC = "/vibeup-splash-logo-boot.png";
 
 export const CRITICAL_PAINT_INLINE_STYLE = {
@@ -164,7 +166,6 @@ export const CRITICAL_PAINT_INLINE_STYLE = {
   pointerEvents: "none" as const,
 };
 
-/** Drop the black net behind the app — never remove (avoids white canvas gap). */
 export function demoteCriticalPaint() {
   if (typeof document === "undefined") return;
   const el = document.getElementById(CRITICAL_PAINT_ID);
@@ -172,4 +173,15 @@ export function demoteCriticalPaint() {
   el.style.setProperty("z-index", "-1", "important");
   el.style.setProperty("pointer-events", "none", "important");
   el.style.setProperty("background-color", "#000000", "important");
+  document.documentElement.classList.add("vibeup-paint-demoted");
+}
+
+export function revealAppShell() {
+  if (typeof document === "undefined") return;
+  document.documentElement.classList.add("vibeup-app-ready");
+}
+
+export function markSplashOverlaySkip() {
+  if (typeof document === "undefined") return;
+  document.documentElement.classList.add("vibeup-splash-skip");
 }

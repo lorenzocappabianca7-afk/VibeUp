@@ -29,6 +29,10 @@ const brandDisplay = Montserrat({
 });
 
 const APPLE_STARTUP_IMAGES = [
+  /* Fallback first — unmatched devices otherwise flash a white native splash */
+  {
+    url: "/splash/apple-startup-1170x2532.png",
+  },
   {
     url: "/splash/apple-startup-1320x2868.png",
     media:
@@ -114,7 +118,7 @@ export const metadata: Metadata = {
     title: "VibeUp",
     /* "black" (not translucent) avoids a light strip/flash under the status bar on iOS */
     statusBarStyle: "black",
-    /* Solid black launch images — iOS otherwise flashes white before the webview */
+    /* Black + logo launch images — continuous icon→splash handoff on Home Screen */
     startupImage: [...APPLE_STARTUP_IMAGES],
   },
   formatDetection: {
@@ -212,13 +216,71 @@ export default function RootLayout({
         />
         {/* Black shell with inline styles — demoted behind app after splash */}
         <CriticalPaint />
+        {/* Static splash in first HTML — must match React splash geometry
+            (stage + tagline slot + 14vh lift) or the logo jumps on hydrate. */}
+        <div
+          id="vibeup-boot-splash"
+          className="vibeup-splash"
+          aria-hidden
+          style={{
+            position: "fixed",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            zIndex: 10000,
+            backgroundColor: "#000000",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            className="vibeup-splash__stage"
+            style={{
+              boxSizing: "border-box",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              marginBottom: "14vh",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/vibeup-splash-logo-boot.png"
+              alt=""
+              width={112}
+              height={112}
+              className="vibeup-splash__logo vibeup-splash__logo--settled"
+              decoding="sync"
+              fetchPriority="high"
+              style={{
+                width: "7rem",
+                maxWidth: "7rem",
+                height: "auto",
+                display: "block",
+              }}
+            />
+            {/* Reserve tagline height so handoff to React does not shift the logo */}
+            <p
+              className="vibeup-splash__tagline"
+              style={{
+                margin: "1rem 0 0",
+                minHeight: "1.15em",
+                opacity: 0,
+              }}
+            >
+              VibeUp your life
+            </p>
+          </div>
+        </div>
         <SplashScreen />
         <AppProviders>
           <div
             id="vibeup-app-shell"
             className="flex min-h-dvh min-w-0 max-w-full flex-col overflow-x-hidden bg-background"
             style={{
-              backgroundColor: "#0F1115",
+              backgroundColor: "#000000",
               position: "relative",
               zIndex: 1,
             }}

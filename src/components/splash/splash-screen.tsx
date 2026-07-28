@@ -3,6 +3,8 @@
 import { useEffect, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import {
   demoteCriticalPaint,
+  markSplashOverlaySkip,
+  revealAppShell,
   SPLASH_LOGO_SRC,
 } from "@/lib/critical-paint";
 import { recoverInteractiveSession } from "@/lib/session-health";
@@ -18,6 +20,10 @@ import {
 let splashBounceAlreadyPlayed = false;
 
 type Phase = "enter" | "exit" | "gone";
+
+function removeBootSplash() {
+  document.getElementById("vibeup-boot-splash")?.remove();
+}
 
 function shouldSkipSplash() {
   if (typeof document !== "undefined") {
@@ -39,41 +45,50 @@ function shouldSkipSplash() {
   return false;
 }
 
-function markSplashSeen() {
+function persistSplashSeen() {
   try {
     sessionStorage.setItem(SPLASH_STORAGE_KEY, "1");
   } catch {
     /* ignore */
   }
-  document.documentElement.classList.add("vibeup-splash-skip");
 }
 
 /**
- * Reveal Explore without a white frame:
- * 1) splash already unmounted / solid black plate held
- * 2) demote critical paint
- * 3) THEN set vibeup-splash-skip (reveals #vibeup-app-shell)
+ * Home-screen handoff without a white frame:
+ * 1) Hide splash overlay; critical paint still covers at z-index 9990
+ * 2) Reveal Explore UNDER the black plate (vibeup-app-ready)
+ * 3) After two frames, demote the plate (Explore is already painted)
  */
-function revealExplore() {
+function handoffToApp() {
   if (typeof document !== "undefined") {
     document.documentElement.style.overflow = "";
   }
-  demoteCriticalPaint();
+
+  removeBootSplash();
+  persistSplashSeen();
+  markSplashOverlaySkip();
+  revealAppShell();
+
   requestAnimationFrame(() => {
-    demoteCriticalPaint();
     requestAnimationFrame(() => {
       demoteCriticalPaint();
-      markSplashSeen();
       recoverInteractiveSession();
     });
   });
 }
 
+function skipStraightToApp() {
+  handoffToApp();
+}
+
+function revealExplore() {
+  handoffToApp();
+}
+
 /**
  * Cold-start intro from Home Screen bookmark → Explore.
- *
- * The black splash plate never fades to transparent (that caused a white flash
- * when skip-class demoted the underlay). Only the logo/tagline stage fades.
+ * Black plate stays solid; only logo/tagline fade. Cover is removed only after
+ * Explore has been revealed underneath.
  */
 export function SplashScreen() {
   const skipSplash = useSyncExternalStore(
@@ -86,21 +101,22 @@ export function SplashScreen() {
   const [bounceDone, setBounceDone] = useState(() => splashBounceAlreadyPlayed);
 
   useLayoutEffect(() => {
-    if (!skipSplash) return;
-    demoteCriticalPaint();
-    markSplashSeen();
-    recoverInteractiveSession();
+    if (skipSplash) {
+      skipStraightToApp();
+      return;
+    }
+    // Hand off from static HTML splash to the animated React splash.
+    removeBootSplash();
   }, [skipSplash]);
 
   useEffect(() => {
     if (skipSplash) {
-      demoteCriticalPaint();
-      markSplashSeen();
-      recoverInteractiveSession();
+      skipStraightToApp();
       return;
     }
 
     splashBounceAlreadyPlayed = true;
+    removeBootSplash();
 
     const previousOverflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = "hidden";
@@ -120,8 +136,6 @@ export function SplashScreen() {
     const doneTimer = window.setTimeout(() => {
       document.documentElement.style.overflow = previousOverflow;
       setPhase("gone");
-      // Reveal only after the solid splash node is gone — critical paint still
-      // covers at z-index 9990 until revealExplore demotes it.
       revealExplore();
     }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS + SPLASH_EXIT_MS);
 
