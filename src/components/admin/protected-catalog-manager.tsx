@@ -576,11 +576,19 @@ export function ProtectedCatalogManager() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => removeManagedListing(listing.id)}
-                    className="flex min-w-0 items-center justify-center gap-2 rounded-xl border border-brand-pink/25 px-3 py-2.5 text-xs font-bold text-brand-pink"
+                    onClick={() => {
+                      const name = listingName(listing);
+                      const confirmed = window.confirm(
+                        `Eliminare la pubblicazione di “${name}”? Verrà rimossa da Esplora e dal catalogo.`,
+                      );
+                      if (!confirmed) return;
+                      removeManagedListing(listing.id);
+                      setAiMessage(`Pubblicazione di “${name}” eliminata.`);
+                    }}
+                    className="flex min-w-0 items-center justify-center gap-2 rounded-xl border border-brand-pink/30 bg-brand-pink/10 px-3 py-2.5 text-xs font-bold text-brand-pink"
                   >
                     <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                    Rimuovi
+                    Elimina
                   </button>
                 </div>
               </li>

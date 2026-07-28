@@ -350,10 +350,16 @@ export function AdminLocationPublishPanel({
                   <button
                     type="button"
                     onClick={() => {
+                      const name = listing.location.name;
+                      const confirmed = window.confirm(
+                        `Eliminare la pubblicazione di “${name}”? Verrà rimossa da Esplora e dal catalogo.`,
+                      );
+                      if (!confirmed) return;
                       removeManagedListing(listing.id);
                       if (editingId === listing.id) resetForm();
+                      onMessage(`Pubblicazione di “${name}” eliminata.`);
                     }}
-                    className="inline-flex items-center gap-1 rounded-full bg-brand-pink/15 px-3 py-1.5 text-xs font-bold text-brand-pink"
+                    className="inline-flex items-center gap-1 rounded-full border border-brand-pink/30 bg-brand-pink/15 px-3 py-1.5 text-xs font-bold text-brand-pink"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden />
                     Elimina
