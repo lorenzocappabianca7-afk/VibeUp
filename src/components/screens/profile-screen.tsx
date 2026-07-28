@@ -778,10 +778,16 @@ export function ProfileScreen({
               className={`flex w-full touch-manipulation items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-colors select-none ${
                 account.id === currentUser.id
                   ? "border-brand-teal bg-paper"
-                  : "border-primary-black/10 bg-paper"
+                  : "border-primary-black/10 bg-background"
               }`}
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-pink/20 text-brand-pink">
+              <span
+                className={`flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full ${
+                  account.id === currentUser.id
+                    ? "bg-brand-pink/20 text-brand-pink"
+                    : "bg-white/10 text-primary-black/70"
+                }`}
+              >
                 {account.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -794,15 +800,33 @@ export function ProfileScreen({
                 )}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold text-ink-inverse">
+                <span
+                  className={`block truncate text-sm font-semibold ${
+                    account.id === currentUser.id
+                      ? "text-ink-inverse"
+                      : "text-primary-black"
+                  }`}
+                >
                   {account.name}
                 </span>
-                <span className="block truncate text-xs text-ink-inverse/55">
+                <span
+                  className={`block truncate text-xs ${
+                    account.id === currentUser.id
+                      ? "text-ink-inverse/55"
+                      : "text-primary-black/55"
+                  }`}
+                >
                   {account.email}
                 </span>
               </span>
               {isProAccount(account) && (
-                <span className="shrink-0 rounded-md bg-amber-400/25 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                <span
+                  className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                    account.id === currentUser.id
+                      ? "bg-amber-400/25 text-amber-700"
+                      : "bg-amber-400/20 text-amber-300"
+                  }`}
+                >
                   Pro
                 </span>
               )}
