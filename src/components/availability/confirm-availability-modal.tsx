@@ -28,18 +28,19 @@ export function ConfirmAvailabilityModal() {
   function handleConfirm() {
     if (submittingId) return;
     setSubmittingId(request.id);
-    const result = confirmAvailabilityRequest(request.id);
-    if (!result.ok) {
-      setSubmittingId(null);
-      return;
-    }
-    addDepositReminder({
-      eventId: result.eventId,
-      eventTitle: payload.title,
-      locationName: payload.locationName,
-      date: formatDate(payload.date),
+    void confirmAvailabilityRequest(request.id).then((result) => {
+      if (!result.ok) {
+        setSubmittingId(null);
+        return;
+      }
+      addDepositReminder({
+        eventId: result.eventId,
+        eventTitle: payload.title,
+        locationName: payload.locationName,
+        date: formatDate(payload.date),
+      });
+      setTab("events");
     });
-    setTab("events");
   }
 
   return (

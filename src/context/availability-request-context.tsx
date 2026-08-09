@@ -2,6 +2,11 @@
 
 import { useAppState } from "@/context/app-state-context";
 import { useInboxBadge } from "@/context/inbox-badge-context";
+import {
+  createAvailabilityRequestRemote,
+  fetchAvailabilityRequests,
+  patchAvailabilityRequestRemote,
+} from "@/lib/bookings/client";
 import type {
   AvailabilityEventPayload,
   AvailabilityRequest,
@@ -29,18 +34,22 @@ const TERMINAL_STATUSES = new Set([
 
 interface AvailabilityRequestContextValue {
   requests: AvailabilityRequest[];
+  cloudSyncEnabled: boolean;
   sendAvailabilityRequest: (input: {
     locationId: string;
     locationName: string;
     eventPayload: AvailabilityEventPayload;
-  }) => { ok: true; requestId: string } | { ok: false; error: string };
-  acceptAvailabilityRequest: (requestId: string) => void;
-  declineAvailabilityRequest: (requestId: string) => void;
-  confirmAvailabilityRequest: (requestId: string) => {
-    ok: true;
-    eventId: string;
-  } | { ok: false; error: string };
-  cancelAvailabilityRequest: (requestId: string) => void;
+  }) => Promise<{ ok: true; requestId: string } | { ok: false; error: string }>;
+  acceptAvailabilityRequest: (requestId: string) => Promise<void>;
+  declineAvailabilityRequest: (requestId: string) => Promise<void>;
+  confirmAvailabilityRequest: (requestId: string) => Promise<
+    | {
+        ok: true;
+        eventId: string;
+      }
+    | { ok: false; error: string }
+  >;
+  cancelAvailabilityRequest: (requestId: string) => Promise<void>;
   /** Hide confirm modal for now without cancelling the manager acceptance. */
   snoozeAvailabilityConfirm: (requestId: string) => void;
   /** Show the confirm modal again after a snooze. */
@@ -121,6 +130,14 @@ export function formatAvailabilityRequestTime(iso: string) {
   return formatRequestTime(iso);
 }
 
+function upsertRequest(
+  list: AvailabilityRequest[],
+  next: AvailabilityRequest,
+): AvailabilityRequest[] {
+  const without = list.filter((item) => item.id !== next.id);
+  return pruneAvailabilityRequests([next, ...without]);
+}
+
 export function AvailabilityRequestProvider({
   children,
 }: {
@@ -144,6 +161,8 @@ export function AvailabilityRequestProvider({
   const confirmLockRef = useRef<Set<string>>(new Set());
   const requestsRef = useRef<AvailabilityRequest[]>([]);
 
+  const cloudSyncEnabled = currentUser.authProvider === "supabase";
+
   useEffect(() => {
     currentUserIdRef.current = currentUser.id;
   }, [currentUser.id]);
@@ -156,6 +175,25 @@ export function AvailabilityRequestProvider({
     setRequests(readStoredRequests());
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || !cloudSyncEnabled || isGuest) return;
+
+    let cancelled = false;
+    void fetchAvailabilityRequests().then((result) => {
+      if (cancelled || !result.ok) return;
+      setRequests((prev) => {
+        const byId = new Map<string, AvailabilityRequest>();
+        for (const item of prev) byId.set(item.id, item);
+        for (const item of result.requests) byId.set(item.id, item);
+        return pruneAvailabilityRequests(Array.from(byId.values()));
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cloudSyncEnabled, hydrated, isGuest, currentUser.id]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -183,7 +221,15 @@ export function AvailabilityRequestProvider({
     const pending = requests.filter(
       (item) => item.status === "pending_manager",
     );
-    if (!isBusinessUser) return [];
+    if (!isBusinessUser && currentUser.role !== "admin") return [];
+
+    // Cloud inbox: server already scopes to owned listings / admin.
+    if (cloudSyncEnabled) {
+      return pending.filter(
+        (item) => item.requesterUserId !== currentUser.id,
+      );
+    }
+
     if (managedLocationIds.size > 0) {
       return pending.filter((item) => managedLocationIds.has(item.locationId));
     }
@@ -198,6 +244,9 @@ export function AvailabilityRequestProvider({
     return pending;
   }, [
     businessProfile?.businessName,
+    cloudSyncEnabled,
+    currentUser.id,
+    currentUser.role,
     isBusinessUser,
     managedLocationIds,
     requests,
@@ -228,19 +277,32 @@ export function AvailabilityRequestProvider({
   }, [isBusinessUser, pendingManagerRequests.length, syncUnreadNotifications]);
 
   const sendAvailabilityRequest = useCallback(
-    (input: {
+    async (input: {
       locationId: string;
       locationName: string;
       eventPayload: AvailabilityEventPayload;
     }) => {
       if (isGuest) {
-        return { ok: false as const, error: "Crea un account per inviare la richiesta." };
+        return {
+          ok: false as const,
+          error: "Crea un account per inviare la richiesta.",
+        };
       }
       if (isBusinessUser) {
         return {
           ok: false as const,
-          error: "Passa a un account organizzatore per richiedere disponibilità.",
+          error:
+            "Passa a un account organizzatore per richiedere disponibilità.",
         };
+      }
+
+      if (cloudSyncEnabled) {
+        const remote = await createAvailabilityRequestRemote(input);
+        if (!remote.ok) {
+          return { ok: false as const, error: remote.error };
+        }
+        setRequests((prev) => upsertRequest(prev, remote.request));
+        return { ok: true as const, requestId: remote.request.id };
       }
 
       const now = new Date().toISOString();
@@ -258,10 +320,10 @@ export function AvailabilityRequestProvider({
       };
 
       setRequests((prev) => [request, ...prev]);
-      // Manager sees the request in Notifiche Pro; avoid notifying the requester's tab.
       return { ok: true as const, requestId: request.id };
     },
     [
+      cloudSyncEnabled,
       currentUser.email,
       currentUser.id,
       currentUser.name,
@@ -270,38 +332,64 @@ export function AvailabilityRequestProvider({
     ],
   );
 
-  const acceptAvailabilityRequest = useCallback((requestId: string) => {
-    setRequests((prev) =>
-      prev.map((item) =>
-        item.id === requestId && item.status === "pending_manager"
-          ? {
-              ...item,
-              status: "pending_user_confirm" as const,
-              updatedAt: new Date().toISOString(),
-            }
-          : item,
-      ),
-    );
-    // Clear snooze so the consumer sees the confirm modal again after accept.
-    setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
-  }, []);
+  const acceptAvailabilityRequest = useCallback(
+    async (requestId: string) => {
+      if (cloudSyncEnabled) {
+        const remote = await patchAvailabilityRequestRemote({
+          requestId,
+          action: "accept",
+        });
+        if (!remote.ok) return;
+        setRequests((prev) => upsertRequest(prev, remote.request));
+        setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+        return;
+      }
 
-  const declineAvailabilityRequest = useCallback((requestId: string) => {
-    setRequests((prev) =>
-      prev.map((item) =>
-        item.id === requestId && item.status === "pending_manager"
-          ? {
-              ...item,
-              status: "declined" as const,
-              updatedAt: new Date().toISOString(),
-            }
-          : item,
-      ),
-    );
-  }, []);
+      setRequests((prev) =>
+        prev.map((item) =>
+          item.id === requestId && item.status === "pending_manager"
+            ? {
+                ...item,
+                status: "pending_user_confirm" as const,
+                updatedAt: new Date().toISOString(),
+              }
+            : item,
+        ),
+      );
+      setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+    },
+    [cloudSyncEnabled],
+  );
+
+  const declineAvailabilityRequest = useCallback(
+    async (requestId: string) => {
+      if (cloudSyncEnabled) {
+        const remote = await patchAvailabilityRequestRemote({
+          requestId,
+          action: "decline",
+        });
+        if (!remote.ok) return;
+        setRequests((prev) => upsertRequest(prev, remote.request));
+        return;
+      }
+
+      setRequests((prev) =>
+        prev.map((item) =>
+          item.id === requestId && item.status === "pending_manager"
+            ? {
+                ...item,
+                status: "declined" as const,
+                updatedAt: new Date().toISOString(),
+              }
+            : item,
+        ),
+      );
+    },
+    [cloudSyncEnabled],
+  );
 
   const confirmAvailabilityRequest = useCallback(
-    (requestId: string) => {
+    async (requestId: string) => {
       if (confirmLockRef.current.has(requestId)) {
         return {
           ok: false as const,
@@ -323,6 +411,28 @@ export function AvailabilityRequestProvider({
       }
 
       confirmLockRef.current.add(requestId);
+
+      if (cloudSyncEnabled) {
+        const remote = await patchAvailabilityRequestRemote({
+          requestId,
+          action: "confirm",
+        });
+        confirmLockRef.current.delete(requestId);
+        if (!remote.ok) {
+          return { ok: false as const, error: remote.error };
+        }
+        setRequests((prev) => upsertRequest(prev, remote.request));
+        const event = remote.event;
+        if (!event) {
+          return {
+            ok: false as const,
+            error: "Evento non creato sul server.",
+          };
+        }
+        addEvent(event);
+        setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+        return { ok: true as const, eventId: event.id };
+      }
 
       let didClaim = false;
       setRequests((prev) => {
@@ -381,25 +491,40 @@ export function AvailabilityRequestProvider({
       confirmLockRef.current.delete(requestId);
       return { ok: true as const, eventId };
     },
-    [addEvent],
+    [addEvent, cloudSyncEnabled],
   );
 
-  const cancelAvailabilityRequest = useCallback((requestId: string) => {
-    setRequests((prev) =>
-      prev.map((item) =>
-        item.id === requestId &&
-        (item.status === "pending_manager" ||
-          item.status === "pending_user_confirm")
-          ? {
-              ...item,
-              status: "cancelled" as const,
-              updatedAt: new Date().toISOString(),
-            }
-          : item,
-      ),
-    );
-    setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
-  }, []);
+  const cancelAvailabilityRequest = useCallback(
+    async (requestId: string) => {
+      if (cloudSyncEnabled) {
+        const remote = await patchAvailabilityRequestRemote({
+          requestId,
+          action: "cancel",
+        });
+        if (remote.ok) {
+          setRequests((prev) => upsertRequest(prev, remote.request));
+        }
+        setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+        return;
+      }
+
+      setRequests((prev) =>
+        prev.map((item) =>
+          item.id === requestId &&
+          (item.status === "pending_manager" ||
+            item.status === "pending_user_confirm")
+            ? {
+                ...item,
+                status: "cancelled" as const,
+                updatedAt: new Date().toISOString(),
+              }
+            : item,
+        ),
+      );
+      setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+    },
+    [cloudSyncEnabled],
+  );
 
   const snoozeAvailabilityConfirm = useCallback((requestId: string) => {
     setSnoozedConfirmIds((prev) =>
@@ -414,6 +539,7 @@ export function AvailabilityRequestProvider({
   const value = useMemo(
     () => ({
       requests,
+      cloudSyncEnabled,
       sendAvailabilityRequest,
       acceptAvailabilityRequest,
       declineAvailabilityRequest,
@@ -426,6 +552,7 @@ export function AvailabilityRequestProvider({
     }),
     [
       requests,
+      cloudSyncEnabled,
       sendAvailabilityRequest,
       acceptAvailabilityRequest,
       declineAvailabilityRequest,

@@ -193,6 +193,7 @@ export async function listPublishedCatalogLocations(): Promise<Location[]> {
 export async function upsertCatalogLocation(params: {
   location: Location;
   status: ManagedListingStatus;
+  ownerId?: string | null;
 }): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Supabase non configurato." };
@@ -200,7 +201,7 @@ export async function upsertCatalogLocation(params: {
 
   try {
     const supabase = getSupabaseAdmin();
-    const row = {
+    const row: Record<string, unknown> = {
       id: params.location.id,
       kind: "location" as const,
       category: "locali" as const,
@@ -217,6 +218,10 @@ export async function upsertCatalogLocation(params: {
       },
       updated_at: new Date().toISOString(),
     };
+
+    if (params.ownerId) {
+      row.owner_id = params.ownerId;
+    }
 
     const { error } = await supabase.from("listings").upsert(row, {
       onConflict: "id",

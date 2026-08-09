@@ -4,6 +4,7 @@ import {
   upsertCatalogLocation,
 } from "@/server/repositories/catalog";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { getSupabaseServer } from "@/lib/supabase/server";
 import { rateLimit } from "@/server/http/rate-limit";
 import { rejectLargeRequest } from "@/server/http/request-limits";
 import type { Location } from "@/types/location";
@@ -93,7 +94,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Status non valido." }, { status: 400 });
   }
 
-  const result = await upsertCatalogLocation({ location, status });
+  let ownerId: string | null = null;
+  try {
+    const supabase = await getSupabaseServer();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    ownerId = user?.id ?? null;
+  } catch {
+    ownerId = null;
+  }
+
+  const result = await upsertCatalogLocation({ location, status, ownerId });
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 500 });
   }

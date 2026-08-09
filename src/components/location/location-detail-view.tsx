@@ -605,17 +605,17 @@ export function LocationDetailView({
           depositAmount: quote.depositAmount,
         };
 
-        const result = sendAvailabilityRequest({
+        void sendAvailabilityRequest({
           locationId: location.id,
           locationName: location.name,
           eventPayload,
+        }).then((result) => {
+          if (!result.ok) {
+            setRequestError(result.error);
+            return;
+          }
+          setRequestError(null);
         });
-
-        if (!result.ok) {
-          setRequestError(result.error);
-          return;
-        }
-        setRequestError(null);
       },
       "Per inviare una richiesta di disponibilità crea un account.",
     );

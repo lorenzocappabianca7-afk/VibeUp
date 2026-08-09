@@ -185,8 +185,8 @@ export const BusinessNotificationsScreen = memo(
                 <AvailabilityRequestCard
                   key={request.id}
                   request={request}
-                  onAccept={() => acceptAvailabilityRequest(request.id)}
-                  onDecline={() => declineAvailabilityRequest(request.id)}
+                  onAccept={() => void acceptAvailabilityRequest(request.id)}
+                  onDecline={() => void declineAvailabilityRequest(request.id)}
                 />
               ))}
             </ul>
