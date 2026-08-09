@@ -9,6 +9,10 @@ import type {
   ManagedListing,
   ManagedServiceListing,
 } from "@/types/admin";
+import {
+  getManagedListingStatus,
+  isManagedListingLive,
+} from "@/types/admin";
 import type { ExploreCategory } from "@/types/location";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -22,6 +26,7 @@ import {
   Lock,
   Mail,
   Music,
+  Pencil,
   Plus,
   Trash2,
   UploadCloud,
@@ -30,7 +35,7 @@ import {
 } from "lucide-react";
 import { AdminLocationPublishPanel } from "@/components/admin/admin-location-publish-panel";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 const ADMIN_PASSWORD = "1234!";
 
@@ -128,14 +133,64 @@ export function ProtectedCatalogManager() {
   const [passwordError, setPasswordError] = useState("");
   const [activeCategory, setActiveCategory] = useState<ExploreCategory>("locali");
   const [serviceForm, setServiceForm] = useState(EMPTY_SERVICE_FORM);
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
+  const serviceFormRef = useRef<HTMLElement>(null);
 
   const categoryListings = useMemo(
-    () => managedListings.filter((listing) => listing.category === activeCategory),
+    () =>
+      managedListings
+        .filter((listing) => listing.category === activeCategory)
+        .sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        ),
     [managedListings, activeCategory],
   );
+
+  const liveCount = useMemo(
+    () => categoryListings.filter((listing) => isManagedListingLive(listing)).length,
+    [categoryListings],
+  );
+
+  function resetServiceForm() {
+    setServiceForm(EMPTY_SERVICE_FORM);
+    setEditingServiceId(null);
+    setAiText("");
+  }
+
+  function selectCategory(category: ExploreCategory) {
+    setActiveCategory(category);
+    resetServiceForm();
+    setAiMessage(null);
+  }
+
+  function loadServiceListing(listing: ManagedServiceListing) {
+    setEditingServiceId(listing.id);
+    setServiceForm({
+      name: listing.name,
+      description: listing.description,
+      providerZone: listing.providerZone,
+      price: String(listing.price || 0),
+      priceSuffix: listing.priceSuffix || "servizio",
+      imageUrl: listing.imageUrl?.startsWith("data:")
+        ? ""
+        : listing.imageUrl ?? "",
+      uploadedImageUrl: listing.imageUrl?.startsWith("data:")
+        ? listing.imageUrl
+        : "",
+      galleryImageUrls: listing.galleryImageUrls ?? [],
+    });
+    setAiMessage(`Modifica caricata: ${listing.name}`);
+    requestAnimationFrame(() => {
+      serviceFormRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }
 
   if (!canAccessAdminCatalog(currentUser.email)) {
     return (
@@ -178,9 +233,11 @@ export function ProtectedCatalogManager() {
   }
 
   function saveService(published = false) {
+    if (activeCategory === "locali") return;
+
     const listing: ManagedServiceListing = {
-      id: `managed-${activeCategory}-${Date.now()}`,
-      category: activeCategory === "locali" ? "altri" : activeCategory,
+      id: editingServiceId ?? `managed-${activeCategory}-${Date.now()}`,
+      category: activeCategory,
       name: serviceForm.name.trim() || "Nuovo servizio",
       description:
         serviceForm.description.trim() ||
@@ -199,12 +256,22 @@ export function ProtectedCatalogManager() {
               ? [serviceForm.imageUrl.trim()]
               : undefined,
       published,
+      status: published ? "published" : "draft",
       updatedAt: new Date().toISOString(),
     };
 
+    const wasEditing = Boolean(editingServiceId);
     upsertManagedListing(listing);
-    setServiceForm(EMPTY_SERVICE_FORM);
-    setAiMessage("Servizio salvato. Puoi pubblicarlo quando sei pronto.");
+    resetServiceForm();
+    setAiMessage(
+      wasEditing
+        ? published
+          ? "Pubblicazione aggiornata e online in Esplora."
+          : "Modifiche salvate in bozza."
+        : published
+          ? "Servizio pubblicato in Esplora. Lo trovi nell’elenco a destra."
+          : "Bozza salvata. Puoi modificarla o pubblicarla quando vuoi.",
+    );
   }
 
   async function addServicePhoto(files?: FileList | null) {
@@ -359,7 +426,8 @@ export function ProtectedCatalogManager() {
             Gestione pubblicazioni VibeUp
           </h1>
           <p className="mt-1 text-sm text-primary-black/60">
-            Salva bozze, modifica dettagli e pubblica solo quando le informazioni sono pronte.
+            Qui restano salvate tutte le tue pubblicazioni: puoi rivederle e
+            modificarle quando vuoi, poi ripubblicarle.
           </p>
         </div>
         <Button
@@ -379,7 +447,7 @@ export function ProtectedCatalogManager() {
               <button
                 key={category.id}
                 type="button"
-                onClick={() => setActiveCategory(category.id)}
+                onClick={() => selectCategory(category.id)}
                 className={cn(
                   "flex shrink-0 items-center gap-2 rounded-2xl px-3.5 py-2.5 text-sm font-bold transition-colors sm:px-4",
                   activeCategory === category.id
@@ -407,13 +475,26 @@ export function ProtectedCatalogManager() {
         </div>
       ) : (
       <div className="mt-6 grid min-w-0 gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="min-w-0 rounded-[1.75rem] border border-primary-black/10 bg-surface p-4 shadow-sm sm:rounded-[2rem] sm:p-5">
+        <section
+          ref={serviceFormRef}
+          className="min-w-0 rounded-[1.75rem] border border-primary-black/10 bg-surface p-4 shadow-sm sm:rounded-[2rem] sm:p-5"
+        >
           <div className="flex min-w-0 items-center gap-2">
-            <Plus className="h-5 w-5 shrink-0 text-brand-teal" aria-hidden />
+            {editingServiceId ? (
+              <Pencil className="h-5 w-5 shrink-0 text-brand-teal" aria-hidden />
+            ) : (
+              <Plus className="h-5 w-5 shrink-0 text-brand-teal" aria-hidden />
+            )}
             <h2 className="min-w-0 text-base font-black text-primary-black sm:text-lg">
-              Aggiungi servizio
+              {editingServiceId ? "Modifica pubblicazione" : "Nuova pubblicazione"}
             </h2>
           </div>
+          {editingServiceId && (
+            <p className="mt-1 text-xs font-semibold text-primary-black/55">
+              Stai aggiornando una pubblicazione già salvata. Le modifiche
+              sostituiscono la versione precedente.
+            </p>
+          )}
 
           <div className="mt-4 space-y-4">
               <div className="rounded-3xl border border-dashed border-brand-teal/35 bg-brand-teal/5 p-4">
@@ -512,31 +593,59 @@ export function ProtectedCatalogManager() {
                   Salva bozza
                 </Button>
                 <Button className="rounded-2xl" onClick={() => saveService(true)}>
-                  Salva e pubblica
+                  {editingServiceId ? "Aggiorna e pubblica" : "Salva e pubblica"}
                 </Button>
               </div>
+              {editingServiceId && (
+                <button
+                  type="button"
+                  onClick={resetServiceForm}
+                  className="w-full text-center text-xs font-semibold text-primary-black/50 underline-offset-2 hover:underline"
+                >
+                  Annulla modifica e svuota form
+                </button>
+              )}
             </div>
         </section>
 
         <section className="min-w-0 rounded-[1.75rem] border border-primary-black/10 bg-primary-black/[0.02] p-4 sm:rounded-[2rem] sm:p-5">
-          <div className="flex min-w-0 items-center justify-between gap-3">
-            <h2 className="min-w-0 text-base font-black text-primary-black sm:text-lg">
-              Pubblicazioni {CATEGORIES.find((item) => item.id === activeCategory)?.label}
-            </h2>
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="min-w-0 text-base font-black text-primary-black sm:text-lg">
+                Le tue pubblicazioni
+              </h2>
+              <p className="mt-1 text-xs font-semibold text-primary-black/55">
+                Memoria di{" "}
+                {CATEGORIES.find((item) => item.id === activeCategory)?.label}:
+                tocca Modifica per rivederle in qualsiasi momento.
+              </p>
+            </div>
             <span className="shrink-0 rounded-full bg-background px-3 py-1 text-xs font-bold text-primary-black/55">
-              {categoryListings.length}
+              {liveCount}/{categoryListings.length} live
             </span>
           </div>
           <ul className="mt-4 space-y-3">
             {categoryListings.length === 0 && (
               <li className="rounded-2xl border border-dashed border-primary-black/15 bg-surface p-6 text-center text-sm text-primary-black/55">
-                Nessuna pubblicazione in questa categoria.
+                Nessuna pubblicazione salvata in questa categoria. Creane una a
+                sinistra: resterà qui per modifiche future.
               </li>
             )}
-            {categoryListings.map((listing) => (
+            {categoryListings.map((listing) => {
+              if (listing.category === "locali") return null;
+              const status = getManagedListingStatus(listing);
+              const isLive = status === "published";
+              const isEditing = editingServiceId === listing.id;
+
+              return (
               <li
                 key={listing.id}
-                className="min-w-0 rounded-2xl border border-primary-black/10 bg-surface p-4"
+                className={cn(
+                  "min-w-0 rounded-2xl border bg-surface p-4",
+                  isEditing
+                    ? "border-brand-teal ring-1 ring-brand-teal/30"
+                    : "border-primary-black/10",
+                )}
               >
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -544,34 +653,43 @@ export function ProtectedCatalogManager() {
                       {listingName(listing)}
                     </p>
                     <p className="mt-1 text-xs text-primary-black/55">
-                      {listing.published ? "Pubblicato in Esplora" : "Bozza privata"} · Aggiornato{" "}
+                      {isLive ? "Pubblicato in Esplora" : "Bozza privata"} ·
+                      Aggiornato{" "}
                       {new Date(listing.updatedAt).toLocaleDateString("it-IT")}
                     </p>
                   </div>
                   <span
                     className={cn(
                       "shrink-0 rounded-full px-3 py-1 text-xs font-bold",
-                      listing.published
+                      isLive
                         ? "bg-brand-teal/10 text-brand-teal"
                         : "bg-primary-black/5 text-primary-black/45",
                     )}
                   >
-                    {listing.published ? "Live" : "Bozza"}
+                    {isLive ? "Live" : "Bozza"}
                   </span>
                 </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <button
+                    type="button"
+                    onClick={() => loadServiceListing(listing)}
+                    className="flex min-w-0 items-center justify-center gap-2 rounded-xl border border-brand-teal/30 bg-brand-teal/10 px-3 py-2.5 text-xs font-bold text-brand-teal"
+                  >
+                    <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    Modifica
+                  </button>
                   <button
                     type="button"
                     onClick={() => toggleManagedListingPublication(listing.id)}
                     className="flex min-w-0 items-center justify-center gap-2 rounded-xl border border-primary-black/10 px-3 py-2.5 text-xs font-bold text-primary-black/70"
                   >
-                    {listing.published ? (
+                    {isLive ? (
                       <EyeOff className="h-3.5 w-3.5 shrink-0" aria-hidden />
                     ) : (
                       <Eye className="h-3.5 w-3.5 shrink-0" aria-hidden />
                     )}
                     <span className="truncate">
-                      {listing.published ? "Togli pubblicazione" : "Pubblica"}
+                      {isLive ? "Togli live" : "Pubblica"}
                     </span>
                   </button>
                   <button
@@ -583,6 +701,7 @@ export function ProtectedCatalogManager() {
                       );
                       if (!confirmed) return;
                       removeManagedListing(listing.id);
+                      if (editingServiceId === listing.id) resetServiceForm();
                       setAiMessage(`Pubblicazione di “${name}” eliminata.`);
                     }}
                     className="flex min-w-0 items-center justify-center gap-2 rounded-xl border border-brand-pink/30 bg-brand-pink/10 px-3 py-2.5 text-xs font-bold text-brand-pink"
@@ -592,7 +711,8 @@ export function ProtectedCatalogManager() {
                   </button>
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </section>
       </div>

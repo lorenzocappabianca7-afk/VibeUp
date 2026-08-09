@@ -263,12 +263,19 @@ export function AdminLocationPublishPanel({
       </div>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-black text-primary-black">
-          Catalogo locali ({locationListings.length})
-        </h3>
+        <div>
+          <h3 className="text-sm font-black text-primary-black">
+            Le tue pubblicazioni locali ({locationListings.length})
+          </h3>
+          <p className="mt-1 text-xs font-semibold text-primary-black/55">
+            Memoria delle location create: tocca Modifica per aggiornarle quando
+            vuoi.
+          </p>
+        </div>
         {locationListings.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-primary-black/15 px-4 py-6 text-center text-sm text-primary-black/50">
-            Nessuna location ancora. Configura e pubblica qui sopra.
+            Nessuna location salvata. Pubblicane una qui sopra: resterà in
+            elenco per modifiche future.
           </p>
         ) : (
           locationListings.map((listing) => {

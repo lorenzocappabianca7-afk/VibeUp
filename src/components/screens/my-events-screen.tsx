@@ -22,6 +22,7 @@ import {
   Camera,
   Check,
   ChevronDown,
+  CircleAlert,
   CreditCard,
   Gift,
   MapPin,
@@ -35,6 +36,19 @@ import {
 } from "lucide-react";
 import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
+
+/** Platform fee applied on top of the location deposit. */
+const DEPOSIT_APP_FEE_RATE = 0.05;
+
+function getDepositCheckoutAmounts(depositAmount: number) {
+  const base = Number.isFinite(depositAmount) ? Math.max(0, depositAmount) : 0;
+  const fee = Math.round(base * DEPOSIT_APP_FEE_RATE);
+  return {
+    base,
+    fee,
+    total: base + fee,
+  };
+}
 
 interface MyEventsScreenProps {
   onCreateEvent?: () => void;
@@ -280,6 +294,9 @@ export const MyEventsScreen = memo(function MyEventsScreen({
     const locationAmount =
       selectedEvent.services.find((service) => service.category === "location")
         ?.amountPaid ?? 0;
+    const depositBase =
+      selectedEvent.depositAmount ?? locationAmount * 0.3;
+    const { total } = getDepositCheckoutAmounts(depositBase);
 
     setPaymentModal({
       event: selectedEvent,
@@ -289,7 +306,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
         name: "Caparra location",
         providerName: selectedEvent.locationName,
         status: "pending",
-        amountPaid: selectedEvent.depositAmount ?? locationAmount * 0.3,
+        amountPaid: total,
       },
     });
   }, []);
@@ -671,6 +688,12 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
 }) {
   const deadline = useMemo(() => getDepositDeadline(event), [event]);
   const [countdown, setCountdown] = useState(() => getCountdown(deadline));
+  const [feeInfoOpen, setFeeInfoOpen] = useState(false);
+  const feeInfoRef = useRef<HTMLDivElement>(null);
+  const { base, fee, total } = useMemo(
+    () => getDepositCheckoutAmounts(depositAmount),
+    [depositAmount],
+  );
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -709,14 +732,83 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
     };
   }, [deadline, isActive]);
 
+  useEffect(() => {
+    if (!feeInfoOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!feeInfoRef.current?.contains(event.target as Node)) {
+        setFeeInfoOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFeeInfoOpen(false);
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [feeInfoOpen]);
+
   return (
     <section className="event-postit-section min-w-0 overflow-hidden border-b px-3 sm:px-4">
       <div className="event-postit-dark p-3.5">
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-white">
-              Caparra {formatCurrency(depositAmount)}
-            </p>
+            <div className="flex min-w-0 items-center gap-2">
+              <p className="min-w-0 text-sm font-bold text-white">
+                Caparra {formatCurrency(total)}
+              </p>
+              <div className="relative shrink-0" ref={feeInfoRef}>
+                <button
+                  type="button"
+                  onClick={() => setFeeInfoOpen((open) => !open)}
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/35 text-white/70 transition-colors hover:border-white/55 hover:text-white"
+                  aria-label="Dettaglio commissioni VibeUp"
+                  aria-expanded={feeInfoOpen}
+                >
+                  <CircleAlert className="h-3 w-3" aria-hidden />
+                </button>
+                {feeInfoOpen && (
+                  <div
+                    role="dialog"
+                    aria-label="Dettaglio commissioni VibeUp"
+                    className="absolute left-0 top-[calc(100%+0.4rem)] z-20 w-[min(16.5rem,calc(100vw-3rem))] rounded-xl border border-white/15 bg-[#1A1C21] p-3 shadow-xl"
+                  >
+                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">
+                      Dettaglio importo
+                    </p>
+                    <dl className="mt-2 space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between gap-3">
+                        <dt className="font-semibold text-white/65">Caparra</dt>
+                        <dd className="font-bold tabular-nums text-white">
+                          {formatCurrency(base)}
+                        </dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <dt className="font-semibold text-white/65">
+                          Commissioni VibeUp (5%)
+                        </dt>
+                        <dd className="font-bold tabular-nums text-white">
+                          {formatCurrency(fee)}
+                        </dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 border-t border-white/10 pt-1.5">
+                        <dt className="font-bold text-white">Totale</dt>
+                        <dd className="font-extrabold tabular-nums text-white">
+                          {formatCurrency(total)}
+                        </dd>
+                      </div>
+                    </dl>
+                    <p className="mt-2 text-[11px] font-semibold leading-snug text-white/55">
+                      Il 5% aggiunto alla caparra sono le commissioni VibeUp.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
             <p className="event-postit-dark-muted mt-0.5 break-words text-xs font-semibold">
               Entro {formatDepositDeadline(deadline)}
               {!countdown.isPast && (
