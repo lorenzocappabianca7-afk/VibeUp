@@ -7,6 +7,7 @@ import {
   ChevronRight,
   HelpCircle,
   LockKeyhole,
+  LogIn,
   LogOut,
   Pencil,
   Plus,
@@ -22,6 +23,7 @@ import {
 import { AvatarCropModal } from "@/components/profile/avatar-crop-modal";
 import { ProfileSettingsView } from "@/components/profile/settings/profile-settings-view";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
+import { useAccountGate } from "@/context/account-gate-context";
 import { GUEST_USER, isProAccount, useAppState } from "@/context/app-state-context";
 import { useProfileCommunications } from "@/context/profile-communications-context";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
@@ -96,6 +98,7 @@ export function ProfileScreen({
     updateCurrentUser,
     isStorageHydrated,
   } = useAppState();
+  const { openAuth } = useAccountGate();
   const {
     communications,
     hasUnread: hasUnreadProfileComms,
@@ -336,6 +339,19 @@ export function ProfileScreen({
       longPressTriggeredRef.current = false;
       return;
     }
+    const account = accounts.find((item) => item.id === accountId);
+    if (!account) return;
+
+    // Guest or another Supabase identity → real login (never silent switch).
+    if (isGuest || (account.authProvider === "supabase" && account.id !== currentUser.id)) {
+      openAuth({
+        mode: "login",
+        email: account.email,
+        reason: `Accedi con ${account.email}`,
+      });
+      return;
+    }
+
     switchAccount(accountId);
   }
 
@@ -728,31 +744,66 @@ export function ProfileScreen({
         <div className="flex min-w-0 items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h2 className="text-sm font-bold text-primary-black">
-              {isGuest ? "Crea il tuo account" : "Account disponibili"}
+              {isGuest ? "Il tuo account" : "Account disponibili"}
             </h2>
             <p className="mt-1 text-xs text-primary-black/55">
               {isGuest
-                ? "Crea un account per salvare preferiti, confrontare locali e generare preventivi."
+                ? "Hai già un account? Accedi. Altrimenti registrati in pochi secondi."
                 : "Tocca per cambiare account. Tieni premuto per eliminarlo."}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setAddAccountOpen((current) => !current);
-              setAccountPendingDelete(null);
-            }}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/12 text-primary-black transition-colors hover:bg-surface/85"
-            aria-label={addAccountOpen ? "Chiudi form nuovo account" : "Aggiungi account"}
-            aria-expanded={addAccountOpen}
-          >
-            {addAccountOpen ? (
-              <X className="h-4 w-4" aria-hidden />
-            ) : (
-              <Plus className="h-4 w-4" aria-hidden />
-            )}
-          </button>
+          {!isGuest && (
+            <button
+              type="button"
+              onClick={() => {
+                setAddAccountOpen((current) => !current);
+                setAccountPendingDelete(null);
+              }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/12 text-primary-black transition-colors hover:bg-surface/85"
+              aria-label={
+                addAccountOpen ? "Chiudi form nuovo account" : "Aggiungi account"
+              }
+              aria-expanded={addAccountOpen}
+            >
+              {addAccountOpen ? (
+                <X className="h-4 w-4" aria-hidden />
+              ) : (
+                <Plus className="h-4 w-4" aria-hidden />
+              )}
+            </button>
+          )}
         </div>
+
+        {isGuest && (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() =>
+                openAuth({
+                  mode: "login",
+                  reason: "Accedi al tuo account VibeUp.",
+                })
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-teal px-4 py-3 text-sm font-bold text-ink-inverse transition-colors hover:bg-brand-teal/90"
+            >
+              <LogIn className="h-4 w-4" aria-hidden />
+              Accedi
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                openAuth({
+                  mode: "register",
+                  reason: "Crea un account per salvare preferiti e preventivi.",
+                })
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-primary-black/15 bg-background px-4 py-3 text-sm font-bold text-primary-black transition-colors hover:bg-primary-black/[0.04]"
+            >
+              <User className="h-4 w-4" aria-hidden />
+              Registrati
+            </button>
+          </div>
+        )}
 
         <div className="space-y-2">
           {accounts.map((account) => {

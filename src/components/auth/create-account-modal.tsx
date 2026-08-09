@@ -18,6 +18,9 @@ export interface CreateAccountFormValues {
 interface CreateAccountModalProps {
   open: boolean;
   reason?: string;
+  /** Defaults to login so returning users can sign in without registering again. */
+  initialMode?: AuthModalMode;
+  initialEmail?: string;
   onClose: () => void;
   onSubmit: (account: CreateAccountFormValues) => void | Promise<void>;
 }
@@ -25,12 +28,14 @@ interface CreateAccountModalProps {
 export function CreateAccountModal({
   open,
   reason = "Per continuare ti chiediamo di creare un account.",
+  initialMode = "login",
+  initialEmail = "",
   onClose,
   onSubmit,
 }: CreateAccountModalProps) {
-  const [mode, setMode] = useState<AuthModalMode>("register");
+  const [mode, setMode] = useState<AuthModalMode>(initialMode);
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -44,9 +49,9 @@ export function CreateAccountModal({
     if (!open) return;
 
     queueMicrotask(() => {
-      setMode("register");
+      setMode(initialMode);
       setName("");
-      setEmail("");
+      setEmail(initialEmail.trim().toLowerCase());
       setPhoneNumber("");
       setPassword("");
       setConfirmPassword("");
@@ -54,7 +59,7 @@ export function CreateAccountModal({
       setInfo("");
       setSubmitting(false);
     });
-  }, [open]);
+  }, [open, initialMode, initialEmail]);
 
   if (!open) return null;
 

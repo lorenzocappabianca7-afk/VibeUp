@@ -1,6 +1,9 @@
 "use client";
 
-import { CreateAccountModal } from "@/components/auth/create-account-modal";
+import {
+  CreateAccountModal,
+  type AuthModalMode,
+} from "@/components/auth/create-account-modal";
 import { GUEST_USER, useAppState } from "@/context/app-state-context";
 import { requestActivationEmail } from "@/lib/auth/request-activation-email";
 import {
@@ -15,14 +18,22 @@ import {
 
 type PendingAction = () => void;
 
+interface OpenAuthOptions {
+  mode?: AuthModalMode;
+  email?: string;
+  reason?: string;
+}
+
 interface AccountGateContextValue {
   requireAccount: (action: PendingAction, reason?: string) => boolean;
+  /** Open auth sheet without a pending action (e.g. Profilo → Accedi). */
+  openAuth: (options?: OpenAuthOptions) => void;
 }
 
 const AccountGateContext = createContext<AccountGateContextValue | null>(null);
 
 const DEFAULT_REASON =
-  "Per continuare ti chiediamo di creare un account. Ci vuole un momento.";
+  "Per continuare accedi al tuo account oppure creane uno nuovo.";
 
 export function AccountGateProvider({ children }: { children: ReactNode }) {
   const {
@@ -33,6 +44,8 @@ export function AccountGateProvider({ children }: { children: ReactNode }) {
     isAccountLocked,
   } = useAppState();
   const [modalReason, setModalReason] = useState<string | null>(null);
+  const [modalMode, setModalMode] = useState<AuthModalMode>("login");
+  const [modalEmail, setModalEmail] = useState("");
   const pendingActionRef = useRef<PendingAction | null>(null);
   const runAfterAccountRef = useRef(false);
   const pendingReasonRef = useRef(DEFAULT_REASON);
@@ -88,6 +101,12 @@ export function AccountGateProvider({ children }: { children: ReactNode }) {
     }
   }, [canUseAccount, isGuest, isStorageHydrated, runPendingAction]);
 
+  const openAuth = useCallback((options?: OpenAuthOptions) => {
+    setModalMode(options?.mode ?? "login");
+    setModalEmail(options?.email?.trim().toLowerCase() ?? "");
+    setModalReason(options?.reason ?? "Accedi al tuo account VibeUp.");
+  }, []);
+
   const requireAccount = useCallback(
     (action: PendingAction, nextReason = DEFAULT_REASON) => {
       if (!isStorageHydrated) {
@@ -110,6 +129,8 @@ export function AccountGateProvider({ children }: { children: ReactNode }) {
 
       pendingActionRef.current = action;
       pendingReasonRef.current = nextReason;
+      setModalMode("login");
+      setModalEmail("");
       setModalReason(nextReason);
       return false;
     },
@@ -118,6 +139,7 @@ export function AccountGateProvider({ children }: { children: ReactNode }) {
 
   function handleClose() {
     setModalReason(null);
+    setModalEmail("");
     pendingActionRef.current = null;
     runAfterAccountRef.current = false;
     waitingForHydrationRef.current = false;
@@ -156,24 +178,25 @@ export function AccountGateProvider({ children }: { children: ReactNode }) {
           token: result.activationToken,
         });
         if (!emailResult.ok) {
-          // Account is created; surface mail issues without blocking entry.
           console.warn("[activation-email]", emailResult.error);
         }
       }
       if (result.needsEmailActivation && !result.activationToken) {
-        // Supabase email confirmation — user must confirm before session exists.
         runAfterAccountRef.current = false;
       }
       setModalReason(null);
+      setModalEmail("");
     })();
   }
 
   return (
-    <AccountGateContext.Provider value={{ requireAccount }}>
+    <AccountGateContext.Provider value={{ requireAccount, openAuth }}>
       {children}
       <CreateAccountModal
         open={open}
         reason={modalReason ?? DEFAULT_REASON}
+        initialMode={modalMode}
+        initialEmail={modalEmail}
         onClose={handleClose}
         onSubmit={handleSubmit}
       />
