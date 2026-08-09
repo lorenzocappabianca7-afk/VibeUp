@@ -34,6 +34,7 @@ import {
   X,
 } from "lucide-react";
 import { AdminLocationPublishPanel } from "@/components/admin/admin-location-publish-panel";
+import { uploadListingPhotos } from "@/lib/storage/upload-client";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
@@ -94,30 +95,6 @@ async function readImportText(files?: FileList | null): Promise<string> {
   return fileTexts.join("\n");
 }
 
-async function readImageFiles(files?: FileList | null): Promise<string[]> {
-  const imageFiles = Array.from(files ?? []).filter((file) =>
-    file.type.startsWith("image/"),
-  );
-
-  return Promise.all(
-    imageFiles.map(
-      (file) =>
-        new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            if (typeof reader.result === "string") {
-              resolve(reader.result);
-              return;
-            }
-            reject(new Error("Formato immagine non valido"));
-          };
-          reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(file);
-        }),
-    ),
-  );
-}
-
 export function ProtectedCatalogManager() {
   const {
     currentUser,
@@ -132,6 +109,7 @@ export function ProtectedCatalogManager() {
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const serviceFormRef = useRef<HTMLElement>(null);
 
   const categoryListings = useMemo(
@@ -262,9 +240,19 @@ export function ProtectedCatalogManager() {
   }
 
   async function addServicePhoto(files?: FileList | null) {
-    const images = await readImageFiles(files);
-    if (images.length === 0) return;
+    setPhotoUploading(true);
+    setAiMessage(null);
+    const result = await uploadListingPhotos(files, {
+      folder: `services/${activeCategory}`,
+    });
+    setPhotoUploading(false);
 
+    if (!result.ok) {
+      setAiMessage(result.error);
+      return;
+    }
+
+    const images = result.urls;
     setServiceForm((prev) => ({
       ...prev,
       uploadedImageUrl:
@@ -278,8 +266,8 @@ export function ProtectedCatalogManager() {
     }));
     setAiMessage(
       activeCategory === "decorazioni"
-        ? `${images.length} foto negozio aggiunte alla pubblicazione.`
-        : "Foto profilo aggiunta alla pubblicazione.",
+        ? `${images.length} foto caricate su cloud.`
+        : "Foto profilo caricata su cloud.",
     );
   }
 
@@ -500,11 +488,13 @@ export function ProtectedCatalogManager() {
                       : "Allega foto/portfolio"
                 }
                 description={
-                  activeCategory === "decorazioni"
-                    ? "Carica una o più foto del punto vendita, come per le location."
-                    : activeCategory === "dj" || activeCategory === "fotografo"
-                      ? "Carica una foto profilo che comparirà nelle card e nel profilo servizio."
-                      : "Carica una foto: verrà usata come immagine della pubblicazione."
+                  photoUploading
+                    ? "Caricamento su Supabase Storage…"
+                    : activeCategory === "decorazioni"
+                      ? "JPG/PNG/WebP, max 5 MB — salvate su cloud, come le location."
+                      : activeCategory === "dj" || activeCategory === "fotografo"
+                        ? "JPG/PNG/WebP, max 5 MB — foto profilo su cloud."
+                        : "JPG/PNG/WebP, max 5 MB — immagine pubblicazione su cloud."
                 }
                 images={
                   serviceForm.galleryImageUrls.length > 0
@@ -514,6 +504,7 @@ export function ProtectedCatalogManager() {
                       : []
                 }
                 multiple={activeCategory === "decorazioni"}
+                uploading={photoUploading}
                 onAddPhotos={(files) => void addServicePhoto(files)}
                 onRemovePhoto={removeServicePhoto}
               />
@@ -655,6 +646,7 @@ function PhotoUploadField({
   description,
   images,
   multiple = false,
+  uploading = false,
   onAddPhotos,
   onRemovePhoto,
 }: {
@@ -662,6 +654,7 @@ function PhotoUploadField({
   description: string;
   images: string[];
   multiple?: boolean;
+  uploading?: boolean;
   onAddPhotos: (files: FileList | null) => void;
   onRemovePhoto: (index: number) => void;
 }) {
@@ -674,13 +667,19 @@ function PhotoUploadField({
             {description}
           </p>
         </div>
-        <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-2xl bg-brand-teal px-3 py-2 text-xs font-black text-ink-inverse transition-colors hover:bg-brand-teal/90">
+        <label
+          className={cn(
+            "flex shrink-0 cursor-pointer items-center gap-1.5 rounded-2xl bg-brand-teal px-3 py-2 text-xs font-black text-ink-inverse transition-colors hover:bg-brand-teal/90",
+            uploading && "pointer-events-none opacity-60",
+          )}
+        >
           <UploadCloud className="h-4 w-4" aria-hidden />
-          Carica
+          {uploading ? "…" : "Carica"}
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,image/gif"
             multiple={multiple}
+            disabled={uploading}
             className="sr-only"
             onChange={(event) => {
               onAddPhotos(event.target.files);

@@ -5,6 +5,7 @@ import {
   EMPTY_AVAILABLE_SERVICE_ROW,
   type LocationPublishFormData,
 } from "@/lib/location-publish-form";
+import { uploadListingPhotos } from "@/lib/storage/upload-client";
 import {
   DISTRICT_LABELS,
   GEO_AREA_LABELS,
@@ -16,30 +17,7 @@ import {
   type TorinoDistrict,
 } from "@/types/location";
 import { Plus, Trash2, UploadCloud, X } from "lucide-react";
-
-async function readImageFiles(files?: FileList | null): Promise<string[]> {
-  const imageFiles = Array.from(files ?? []).filter((file) =>
-    file.type.startsWith("image/"),
-  );
-
-  return Promise.all(
-    imageFiles.map(
-      (file) =>
-        new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            if (typeof reader.result === "string") {
-              resolve(reader.result);
-              return;
-            }
-            reject(new Error("Formato immagine non valido"));
-          };
-          reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(file);
-        }),
-    ),
-  );
-}
+import { useState } from "react";
 
 function FieldLabel({
   children,
@@ -130,6 +108,9 @@ export function LocationPublishForm({
   onChange,
   idPrefix = "location-publish",
 }: LocationPublishFormProps) {
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
   function patch(partial: Partial<LocationPublishFormData>) {
     onChange({ ...value, ...partial });
   }
@@ -142,9 +123,20 @@ export function LocationPublishForm({
   }
 
   async function addPhotos(files?: FileList | null) {
-    const images = await readImageFiles(files);
-    if (images.length === 0) return;
-    patch({ galleryImageUrls: [...value.galleryImageUrls, ...images] });
+    setUploadError(null);
+    setUploading(true);
+    const result = await uploadListingPhotos(files, {
+      folder: `drafts/${idPrefix}`,
+    });
+    setUploading(false);
+    if (!result.ok) {
+      setUploadError(result.error);
+      return;
+    }
+    patch({
+      galleryImageUrls: [...value.galleryImageUrls, ...result.urls],
+      imageUrl: value.imageUrl || result.urls[0] || "",
+    });
   }
 
   function removePhoto(index: number) {
@@ -526,15 +518,16 @@ export function LocationPublishForm({
         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-primary-black/15 bg-primary-black/[0.02] px-4 py-6 text-center">
           <UploadCloud className="h-5 w-5 text-brand-teal" aria-hidden />
           <span className="text-sm font-bold text-primary-black">
-            Carica foto
+            {uploading ? "Caricamento su cloud…" : "Carica foto"}
           </span>
           <span className="text-xs text-primary-black/50">
-            JPG, PNG — puoi selezionarne più di una
+            JPG, PNG, WebP — max 5 MB — salvate su Supabase Storage
           </span>
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,image/gif"
             multiple
+            disabled={uploading}
             className="sr-only"
             onChange={(event) => {
               void addPhotos(event.target.files);
@@ -542,6 +535,9 @@ export function LocationPublishForm({
             }}
           />
         </label>
+        {uploadError && (
+          <p className="text-xs font-semibold text-brand-pink">{uploadError}</p>
+        )}
         {value.galleryImageUrls.length > 0 && (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {value.galleryImageUrls.map((src, index) => (

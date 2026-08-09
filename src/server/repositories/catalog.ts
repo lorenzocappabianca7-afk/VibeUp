@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { syncListingMediaRows } from "@/lib/storage/listing-media";
 import type { ManagedListingStatus } from "@/types/admin";
 import type {
   ExploreCategory,
@@ -225,6 +226,15 @@ export async function upsertCatalogLocation(params: {
       console.error("[catalog] upsertCatalogLocation", error.message);
       return { ok: false, error: error.message };
     }
+
+    await syncListingMediaRows({
+      listingId: params.location.id,
+      imageUrls: params.location.gallery?.length
+        ? params.location.gallery
+        : params.location.imageUrl
+          ? [params.location.imageUrl]
+          : [],
+    });
 
     return { ok: true, id: params.location.id };
   } catch (error) {
