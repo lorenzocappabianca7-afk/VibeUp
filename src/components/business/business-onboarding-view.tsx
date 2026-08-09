@@ -333,7 +333,7 @@ export function BusinessOnboardingView() {
         email,
         phoneNumber,
       });
-      saveBusinessProfile(profile);
+    saveBusinessProfile(profile);
       if (isLocale) {
         upsertManagedListing(
           buildManagedLocationListing({
@@ -418,7 +418,7 @@ export function BusinessOnboardingView() {
         });
       }
 
-      setSuccess(true);
+    setSuccess(true);
       if (navigateTimerRef.current != null) {
         clearTimeout(navigateTimerRef.current);
       }

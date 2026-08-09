@@ -1263,8 +1263,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       id: string,
       status: "draft" | "pending_review" | "published",
     ) => {
-      setManagedListings((prev) =>
-        prev.map((item) =>
+    setManagedListings((prev) =>
+      prev.map((item) =>
           item.id === id
             ? {
                 ...item,
@@ -1389,12 +1389,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         return { ok: true };
       }
 
-      const id = `account-${Date.now()}`;
+    const id = `account-${Date.now()}`;
       const activationToken = createActivationToken();
       const nextAccount = normalizeAccount({
-        id,
+      id,
         name: nextName,
-        email: normalizedEmail,
+      email: normalizedEmail,
         phoneNumber: safePhone,
         avatarUrl: safeAvatar,
         instagramHandle: safeInstagram,
@@ -1486,7 +1486,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
       setAccounts((prev) => [nextAccount, ...prev]);
       setUserStatesMap((map) => claimGuestStateInto(map, id));
-      setCurrentUserId(id);
+    setCurrentUserId(id);
       setIsAccountLocked(false);
       setUnlockError(null);
       void promptBiometricSetupIfAvailable();

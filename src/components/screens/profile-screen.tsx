@@ -751,87 +751,83 @@ export function ProfileScreen({
         </div>
 
         <div className="space-y-2">
-          {accounts.map((account) => (
-            <button
-              key={account.id}
-              type="button"
-              onClick={() => handleAccountClick(account.id)}
-              onPointerDown={() =>
-                startAccountLongPress({
-                  id: account.id,
-                  name: account.name,
-                  email: account.email,
-                })
-              }
-              onPointerUp={clearLongPressTimer}
-              onPointerLeave={clearLongPressTimer}
-              onPointerCancel={clearLongPressTimer}
-              onContextMenu={(event) => {
-                event.preventDefault();
-                clearLongPressTimer();
-                setAccountPendingDelete({
-                  id: account.id,
-                  name: account.name,
-                  email: account.email,
-                });
-              }}
-              className={`flex w-full touch-manipulation items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-colors select-none ${
-                account.id === currentUser.id
-                  ? "border-brand-teal bg-paper"
-                  : "border-primary-black/10 bg-background"
-              }`}
-            >
-              <span
-                className={`flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full ${
-                  account.id === currentUser.id
-                    ? "bg-brand-pink/20 text-brand-pink"
-                    : "bg-white/10 text-primary-black/70"
+          {accounts.map((account) => {
+            const isSelected = account.id === currentUser.id;
+
+            return (
+              <button
+                key={account.id}
+                type="button"
+                onClick={() => handleAccountClick(account.id)}
+                onPointerDown={() =>
+                  startAccountLongPress({
+                    id: account.id,
+                    name: account.name,
+                    email: account.email,
+                  })
+                }
+                onPointerUp={clearLongPressTimer}
+                onPointerLeave={clearLongPressTimer}
+                onPointerCancel={clearLongPressTimer}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  clearLongPressTimer();
+                  setAccountPendingDelete({
+                    id: account.id,
+                    name: account.name,
+                    email: account.email,
+                  });
+                }}
+                className={`flex w-full touch-manipulation items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-colors select-none ${
+                  isSelected
+                    ? "border-brand-teal bg-paper"
+                    : "border-primary-black/10 bg-background"
                 }`}
               >
-                {account.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={account.avatarUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <User className="h-4 w-4" aria-hidden />
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-pink/20 text-brand-pink">
+                  {account.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={account.avatarUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-4 w-4" aria-hidden />
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={`block truncate text-sm font-semibold ${
+                      isSelected ? "text-ink-inverse" : "text-primary-black"
+                    }`}
+                  >
+                    {account.name}
+                  </span>
+                  <span
+                    className={`block truncate text-xs ${
+                      isSelected
+                        ? "text-ink-inverse/55"
+                        : "text-primary-black/55"
+                    }`}
+                  >
+                    {account.email}
+                  </span>
+                </span>
+                {isProAccount(account) && (
+                  <span
+                    className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                      isSelected
+                        ? "bg-amber-400/25 text-amber-700"
+                        : "bg-amber-400/20 text-amber-300"
+                    }`}
+                  >
+                    Pro
+                  </span>
                 )}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span
-                  className={`block truncate text-sm font-semibold ${
-                    account.id === currentUser.id
-                      ? "text-ink-inverse"
-                      : "text-primary-black"
-                  }`}
-                >
-                  {account.name}
-                </span>
-                <span
-                  className={`block truncate text-xs ${
-                    account.id === currentUser.id
-                      ? "text-ink-inverse/55"
-                      : "text-primary-black/55"
-                  }`}
-                >
-                  {account.email}
-                </span>
-              </span>
-              {isProAccount(account) && (
-                <span
-                  className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-                    account.id === currentUser.id
-                      ? "bg-amber-400/25 text-amber-700"
-                      : "bg-amber-400/20 text-amber-300"
-                  }`}
-                >
-                  Pro
-                </span>
-              )}
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
 
         {addAccountOpen && (

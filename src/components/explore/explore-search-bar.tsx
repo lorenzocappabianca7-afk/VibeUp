@@ -565,21 +565,21 @@ export function ExploreSearchBar({
               style={{ opacity: open ? 1 : 0 }}
             >
               <div className="flex w-full items-center gap-2 rounded-2xl bg-transparent px-3 py-2.5">
-                <Search
+        <Search
                   className="h-4 w-4 shrink-0 text-primary-black/45"
-                  aria-hidden
-                />
-                <input
+          aria-hidden
+        />
+        <input
                   id={inputId}
                   ref={inputRef}
-                  type="search"
+          type="search"
                   value={draft}
                   onChange={(event) => {
                     setDraft(event.target.value);
                     onQueryChange(event.target.value);
                   }}
                   onKeyDown={handleInputKeyDown}
-                  placeholder={placeholder}
+          placeholder={placeholder}
                   autoComplete="off"
                   enterKeyHint="search"
                   tabIndex={open ? 0 : -1}
@@ -716,15 +716,15 @@ export function ExploreSearchBar({
               </div>
             </div>
           </div>
-        </div>
+      </div>
 
-        <button
-          type="button"
-          onClick={onOpenFilters}
+      <button
+        type="button"
+        onClick={onOpenFilters}
           aria-label={`Filtri${activeFilterCount > 0 ? `, ${activeFilterCount} attivi` : ""}`}
           tabIndex={open ? -1 : 0}
           aria-hidden={open}
-          className={cn(
+        className={cn(
             "absolute top-0 flex items-center justify-center rounded-full border border-brand-teal bg-brand-teal text-ink-inverse",
             open
               ? "pointer-events-none opacity-0"
@@ -739,11 +739,11 @@ export function ExploreSearchBar({
           <SlidersHorizontal className="h-5 w-5 shrink-0" aria-hidden />
           {activeFilterCount > 0 && !open && (
             <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-pink px-1 text-[10px] font-bold text-ink-inverse">
-              {activeFilterCount}
-            </span>
-          )}
-        </button>
-      </div>
+            {activeFilterCount}
+          </span>
+        )}
+      </button>
+    </div>
     </>
   );
 }
