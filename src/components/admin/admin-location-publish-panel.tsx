@@ -67,7 +67,32 @@ export function AdminLocationPublishPanel({
     setFormError(null);
   }
 
-  function save(status: "draft" | "published") {
+  async function syncListingToSupabase(
+    listing: ManagedLocationListing,
+    status: "draft" | "published",
+  ) {
+    try {
+      const response = await fetch("/api/catalog/listings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          location: listing.location,
+          status,
+        }),
+      });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        return payload?.error ?? "Salvataggio su Supabase non riuscito.";
+      }
+      return null;
+    } catch {
+      return "Connessione a Supabase non disponibile.";
+    }
+  }
+
+  async function save(status: "draft" | "published") {
     const error = validateLocationPublishForm(form);
     if (error) {
       setFormError(error);
@@ -89,11 +114,21 @@ export function AdminLocationPublishPanel({
       existingId: editingId ?? undefined,
     });
     upsertManagedListing(listing);
+
+    const syncError = await syncListingToSupabase(listing, status);
     resetForm();
+    if (syncError) {
+      onMessage(
+        status === "published"
+          ? `Location salvata in locale. Supabase: ${syncError}`
+          : `Bozza salvata in locale. Supabase: ${syncError}`,
+      );
+      return;
+    }
     onMessage(
       status === "published"
-        ? "Location pubblicata in Esplora."
-        : "Bozza location salvata.",
+        ? "Location pubblicata in Esplora e salvata su Supabase."
+        : "Bozza location salvata anche su Supabase.",
     );
   }
 
@@ -218,7 +253,7 @@ export function AdminLocationPublishPanel({
             <div className="mt-3 flex gap-2">
               <Button
                 className="flex-1 rounded-2xl"
-                onClick={() => save("published")}
+                onClick={() => void save("published")}
               >
                 Sì, pubblica
               </Button>
@@ -238,13 +273,13 @@ export function AdminLocationPublishPanel({
             <Button
               variant="outline"
               className="flex-1 rounded-2xl"
-              onClick={() => save("draft")}
+              onClick={() => void save("draft")}
             >
               Salva bozza
             </Button>
             <Button
               className="flex-1 rounded-2xl"
-              onClick={() => save("published")}
+              onClick={() => void save("published")}
             >
               Pubblica
             </Button>
@@ -363,6 +398,9 @@ export function AdminLocationPublishPanel({
                       );
                       if (!confirmed) return;
                       removeManagedListing(listing.id);
+                      void fetch(`/api/catalog/listings/${listing.id}`, {
+                        method: "DELETE",
+                      }).catch(() => undefined);
                       if (editingId === listing.id) resetForm();
                       onMessage(`Pubblicazione di “${name}” eliminata.`);
                     }}

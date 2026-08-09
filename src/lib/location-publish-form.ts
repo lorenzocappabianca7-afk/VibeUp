@@ -264,7 +264,7 @@ export function buildLocationFromPublishForm(
       : Math.round((listPrice * capacity) / Math.max(minHours, 1) / 4) || listPrice;
 
   return {
-    id: options?.id ?? `managed-location-${Date.now()}`,
+    id: options?.id ?? crypto.randomUUID(),
     name: form.name.trim() || "Nuova location",
     city,
     comune: city,

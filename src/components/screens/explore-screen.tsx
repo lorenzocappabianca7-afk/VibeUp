@@ -475,6 +475,30 @@ export function ExploreScreen({
     };
   }, [eventContext]);
 
+  const [catalogLocations, setCatalogLocations] = useState<Location[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void fetch("/api/catalog/listings")
+      .then(async (response) => {
+        if (!response.ok) return;
+        const payload = (await response.json()) as {
+          locations?: Location[];
+        };
+        if (!cancelled && Array.isArray(payload.locations)) {
+          setCatalogLocations(payload.locations);
+        }
+      })
+      .catch(() => {
+        /* keep mock + local managed listings */
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const publishedManagedLocations = useMemo(
     () => getPublishedManagedLocations(managedListings),
     [managedListings],
@@ -487,13 +511,14 @@ export function ExploreScreen({
     () =>
       Array.from(
         new Map(
-          [...publishedManagedLocations, ...MOCK_LOCATIONS].map((location) => [
-            location.id,
-            location,
-          ]),
+          [
+            ...MOCK_LOCATIONS,
+            ...catalogLocations,
+            ...publishedManagedLocations,
+          ].map((location) => [location.id, location]),
         ).values(),
       ),
-    [publishedManagedLocations],
+    [catalogLocations, publishedManagedLocations],
   );
   const allServices = useMemo(
     () => [...publishedManagedServices, ...SERVICE_PROVIDERS],
