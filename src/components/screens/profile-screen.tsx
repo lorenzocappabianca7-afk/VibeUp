@@ -142,7 +142,10 @@ export function ProfileScreen({
   });
   const lastSyncedUserId = useRef(currentUser.id);
   const hasHydratedProfileDraft = useRef(false);
-  const canManagePublications = canAccessAdminCatalog(currentUser.email);
+  const canManagePublications = canAccessAdminCatalog(
+    currentUser.email,
+    currentUser.role,
+  );
 
   // Render-phase clear (same pattern as Events payment modal) so scroll unlocks
   // in the same commit as the tab hide — no one-frame freeze window.
@@ -265,6 +268,7 @@ export function ProfileScreen({
       phoneNumber: newAccountPhone.trim(),
       password: newAccountPassword,
       requireNew: true,
+      mode: "register",
     });
     setCreatingAccount(false);
 

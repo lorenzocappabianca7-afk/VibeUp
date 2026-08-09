@@ -14,6 +14,20 @@ import {
   verifyPassword,
 } from "@/lib/auth/password";
 import {
+  fetchSupabaseProfile,
+  mapProfileRoleToAccountType,
+  supabaseResetPassword,
+  supabaseSignIn,
+  supabaseSignOut,
+  supabaseSignUp,
+  supabaseUpdatePassword,
+  type AppRole,
+} from "@/lib/auth/supabase-auth";
+import {
+  getSupabaseBrowser,
+  isSupabaseBrowserConfigured,
+} from "@/lib/supabase/browser";
+import {
   createActivationToken,
   getActivationExpiryIso,
   isActivationTokenExpired,
@@ -76,6 +90,8 @@ export interface CurrentUser {
   paymentCard?: SavedPaymentCard;
   /** Consumer by default; business accounts unlock the Pro shell */
   accountType?: "consumer" | "business";
+  /** Supabase profiles.role when auth is cloud-backed */
+  role?: "guest" | "consumer" | "business" | "admin";
   businessProfile?: BusinessProfile | null;
   /** Preferenze impostazioni persistite per account */
   settings?: UserSettings;
@@ -89,6 +105,8 @@ export interface CurrentUser {
   emailVerified?: boolean;
   activationToken?: string;
   activationTokenExpiresAt?: string;
+  /** True when identity comes from Supabase Auth */
+  authProvider?: "local" | "supabase";
 }
 
 export interface CreateAccountInput {
@@ -102,6 +120,8 @@ export interface CreateAccountInput {
   instagramHandle?: string;
   /** When true, reject if an account with the same email already exists. */
   requireNew?: boolean;
+  /** Modal mode: register (default), login, or password reset */
+  mode?: "register" | "login" | "reset";
 }
 
 export type CreateAccountResult =
@@ -1279,27 +1299,63 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const applySupabaseIdentity = useCallback(
+    async (params: {
+      userId: string;
+      email: string;
+      displayName: string;
+      phone?: string;
+      emailVerified?: boolean;
+      preferredRole?: AppRole;
+    }) => {
+      const profile = await fetchSupabaseProfile(params.userId);
+      const role: AppRole =
+        profile?.role ?? params.preferredRole ?? "consumer";
+      const accountType = mapProfileRoleToAccountType(role);
+      const now = new Date().toISOString();
+      const nextAccount = normalizeAccount({
+        id: params.userId,
+        name:
+          profile?.display_name ||
+          sanitizePlainText(params.displayName, 80) ||
+          params.email,
+        email: profile?.email || params.email,
+        phoneNumber: profile?.phone || params.phone,
+        avatarUrl: profile?.avatar_url ?? undefined,
+        accountType,
+        role,
+        authProvider: "supabase",
+        emailVerified: params.emailVerified ?? true,
+        lastActiveAt: now,
+      });
+
+      setAccounts((prev) => {
+        const withoutDupes = prev.filter(
+          (item) =>
+            item.id !== nextAccount.id &&
+            item.email.toLowerCase() !== nextAccount.email.toLowerCase(),
+        );
+        return [nextAccount, ...withoutDupes];
+      });
+      setUserStatesMap((map) => claimGuestStateInto(map, nextAccount.id));
+      setCurrentUserId(nextAccount.id);
+      setIsAccountLocked(false);
+      setUnlockError(null);
+      return nextAccount;
+    },
+    [],
+  );
+
   const createAccount = useCallback(
     async (account: CreateAccountInput): Promise<CreateAccountResult> => {
       const normalizedEmail = sanitizeEmail(account.email);
       const password = account.password;
+      const mode = account.mode ?? (account.requireNew ? "register" : "login");
+
       if (!normalizedEmail || !normalizedEmail.includes("@")) {
         return { ok: false, error: "Inserisci un’email valida." };
       }
-      if (!password || password.length < 8) {
-        return {
-          ok: false,
-          error: "La password deve avere almeno 8 caratteri.",
-        };
-      }
-      if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
-        return {
-          ok: false,
-          error: "La password deve contenere almeno una lettera e un numero.",
-        };
-      }
 
-      const passwordHash = await hashPassword(password);
       const nextName =
         sanitizePlainText(account.name, 80) || normalizedEmail;
       const nextAccountType =
@@ -1318,11 +1374,125 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         ? sanitizeUrl(account.avatarUrl) ?? undefined
         : undefined;
 
+      if (isSupabaseBrowserConfigured()) {
+        if (mode === "reset") {
+          const result = await supabaseResetPassword(normalizedEmail);
+          if (!result.ok) return result;
+          return { ok: true };
+        }
+
+        if (mode === "login" && !account.requireNew) {
+          const result = await supabaseSignIn({
+            email: normalizedEmail,
+            password,
+          });
+          if (!result.ok) {
+            return {
+              ok: false,
+              error:
+                result.error === "Invalid login credentials"
+                  ? "Email o password non corretti."
+                  : result.error,
+            };
+          }
+          await applySupabaseIdentity({
+            userId: result.user.id,
+            email: result.user.email ?? normalizedEmail,
+            displayName:
+              (result.user.user_metadata?.display_name as string | undefined) ||
+              nextName,
+            phone: safePhone,
+            emailVerified: Boolean(result.user.email_confirmed_at),
+          });
+          return { ok: true };
+        }
+
+        if (phoneDigits.length < 8) {
+          return {
+            ok: false,
+            error: "Inserisci un numero di telefono valido.",
+          };
+        }
+        if (!password || password.length < 8) {
+          return {
+            ok: false,
+            error: "La password deve avere almeno 8 caratteri.",
+          };
+        }
+        if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+          return {
+            ok: false,
+            error: "La password deve contenere almeno una lettera e un numero.",
+          };
+        }
+
+        const signUp = await supabaseSignUp({
+          email: normalizedEmail,
+          password,
+          displayName: nextName,
+          phone: safePhone,
+          role: nextAccountType === "business" ? "business" : "consumer",
+        });
+        if (!signUp.ok) {
+          const message = signUp.error.toLowerCase();
+          if (message.includes("already") || message.includes("registered")) {
+            return {
+              ok: false,
+              error: "Esiste già un account con questa email. Usa Accedi.",
+            };
+          }
+          return { ok: false, error: signUp.error };
+        }
+
+        if (signUp.user && signUp.session) {
+          await applySupabaseIdentity({
+            userId: signUp.user.id,
+            email: signUp.user.email ?? normalizedEmail,
+            displayName: nextName,
+            phone: safePhone,
+            emailVerified: Boolean(signUp.user.email_confirmed_at),
+            preferredRole:
+              nextAccountType === "business" ? "business" : "consumer",
+          });
+          void promptBiometricSetupIfAvailable();
+          return { ok: true };
+        }
+
+        return {
+          ok: true,
+          needsEmailActivation: true,
+          email: normalizedEmail,
+          name: nextName,
+        };
+      }
+
+      /* ——— Local fallback (no Supabase env) ——— */
+      if (mode === "reset") {
+        return {
+          ok: false,
+          error: "Recupero password disponibile solo con Supabase Auth.",
+        };
+      }
+
+      if (!password || password.length < 8) {
+        return {
+          ok: false,
+          error: "La password deve avere almeno 8 caratteri.",
+        };
+      }
+      if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+        return {
+          ok: false,
+          error: "La password deve contenere almeno una lettera e un numero.",
+        };
+      }
+
+      const passwordHash = await hashPassword(password);
       const existing = accounts.find(
         (item) => item.email.toLowerCase() === normalizedEmail,
       );
 
-      if (!existing && phoneDigits.length < 8) {
+      if (!existing && phoneDigits.length < 8 && mode !== "login") {
         return {
           ok: false,
           error: "Inserisci un numero di telefono valido.",
@@ -1330,7 +1500,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       }
 
       if (existing) {
-        if (account.requireNew) {
+        if (account.requireNew || mode === "register") {
           return {
             ok: false,
             error: "Esiste già un account con questa email.",
@@ -1347,7 +1517,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // Keep existing account type/profile unless this call explicitly upgrades to business.
         const upgradedToBusiness = nextAccountType === "business";
         const resolvedAccountType = upgradedToBusiness
           ? ("business" as const)
@@ -1359,7 +1528,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             item.id === existing.id
               ? normalizeAccount({
                   ...item,
-                  // Preserve identity on sign-in; only fill missing profile fields.
                   name: existing.name || nextName,
                   email: normalizedEmail,
                   accountType: resolvedAccountType,
@@ -1375,6 +1543,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
                     ? passwordHash
                     : (existing.passwordHash ?? passwordHash),
                   lastActiveAt: now,
+                  authProvider: "local",
                 })
               : item,
           ),
@@ -1389,12 +1558,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         return { ok: true };
       }
 
-    const id = `account-${Date.now()}`;
+      if (mode === "login") {
+        return {
+          ok: false,
+          error: "Nessun account con questa email. Registrati prima.",
+        };
+      }
+
+      const id = `account-${Date.now()}`;
       const activationToken = createActivationToken();
       const nextAccount = normalizeAccount({
-      id,
+        id,
         name: nextName,
-      email: normalizedEmail,
+        email: normalizedEmail,
         phoneNumber: safePhone,
         avatarUrl: safeAvatar,
         instagramHandle: safeInstagram,
@@ -1408,6 +1584,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         emailVerified: false,
         activationToken,
         activationTokenExpiresAt: getActivationExpiryIso(),
+        authProvider: "local",
       });
 
       setAccounts((prev) => [nextAccount, ...prev]);
@@ -1424,8 +1601,66 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         name: nextName,
       };
     },
-    [accounts, promptBiometricSetupIfAvailable],
+    [accounts, applySupabaseIdentity, promptBiometricSetupIfAvailable],
   );
+
+  useEffect(() => {
+    if (!hydratedFromStorage || !isSupabaseBrowserConfigured()) return;
+
+    let cancelled = false;
+    const supabase = getSupabaseBrowser();
+
+    const syncSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (cancelled || !session?.user) return;
+      await applySupabaseIdentity({
+        userId: session.user.id,
+        email: session.user.email ?? "",
+        displayName:
+          (session.user.user_metadata?.display_name as string | undefined) ||
+          session.user.email?.split("@")[0] ||
+          "Utente VibeUp",
+        phone:
+          typeof session.user.user_metadata?.phone === "string"
+            ? session.user.user_metadata.phone
+            : undefined,
+        emailVerified: Boolean(session.user.email_confirmed_at),
+      });
+    };
+
+    void syncSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+      if (event === "SIGNED_OUT" || !session?.user) {
+        setCurrentUserId(GUEST_USER.id);
+        setIsAccountLocked(false);
+        return;
+      }
+      void applySupabaseIdentity({
+        userId: session.user.id,
+        email: session.user.email ?? "",
+        displayName:
+          (session.user.user_metadata?.display_name as string | undefined) ||
+          session.user.email?.split("@")[0] ||
+          "Utente VibeUp",
+        phone:
+          typeof session.user.user_metadata?.phone === "string"
+            ? session.user.user_metadata.phone
+            : undefined,
+        emailVerified: Boolean(session.user.email_confirmed_at),
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [applySupabaseIdentity, hydratedFromStorage]);
 
   const createBusinessAccount = useCallback(
     async (
@@ -1620,6 +1855,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setPendingBiometricSetup(false);
       unlockSessionRef.current += 1;
       if (id === GUEST_USER.id) {
+        void supabaseSignOut();
         setCurrentUserId(GUEST_USER.id);
         setIsAccountLocked(false);
         setUnlockError(null);
@@ -1628,7 +1864,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const target = accounts.find((account) => account.id === id);
       if (!target) return;
       setCurrentUserId((current) => (current === id ? current : id));
-      if (target.passwordHash && isAccountIdle(target.lastActiveAt)) {
+      if (
+        target.authProvider !== "supabase" &&
+        target.passwordHash &&
+        isAccountIdle(target.lastActiveAt)
+      ) {
         setIsAccountLocked(true);
         setUnlockError(null);
       } else {
@@ -1833,16 +2073,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         return { ok: false, error: "Account non trovato." };
       }
 
-      if (account.passwordHash) {
-        const matches = await verifyPassword(
-          currentPassword,
-          account.passwordHash,
-        );
-        if (!matches) {
-          return { ok: false, error: "Password attuale non corretta." };
-        }
-      }
-
       if (nextPassword.length < 8) {
         return {
           ok: false,
@@ -1855,6 +2085,42 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           error:
             "La nuova password deve contenere almeno una lettera e un numero.",
         };
+      }
+
+      if (
+        account.authProvider === "supabase" ||
+        isSupabaseBrowserConfigured()
+      ) {
+        const verify = await supabaseSignIn({
+          email: account.email,
+          password: currentPassword,
+        });
+        if (!verify.ok) {
+          return { ok: false, error: "Password attuale non corretta." };
+        }
+        const updated = await supabaseUpdatePassword(nextPassword);
+        if (!updated.ok) return updated;
+        setAccounts((prev) =>
+          prev.map((item) =>
+            item.id === userId
+              ? normalizeAccount({
+                  ...item,
+                  lastActiveAt: new Date().toISOString(),
+                })
+              : item,
+          ),
+        );
+        return { ok: true };
+      }
+
+      if (account.passwordHash) {
+        const matches = await verifyPassword(
+          currentPassword,
+          account.passwordHash,
+        );
+        if (!matches) {
+          return { ok: false, error: "Password attuale non corretta." };
+        }
       }
 
       const passwordHash = await hashPassword(nextPassword);

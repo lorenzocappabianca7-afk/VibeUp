@@ -128,13 +128,22 @@ export function AccountGateProvider({ children }: { children: ReactNode }) {
     email: string;
     phoneNumber: string;
     password: string;
+    mode: "register" | "login" | "reset";
   }) {
-    runAfterAccountRef.current = true;
+    if (account.mode !== "reset") {
+      runAfterAccountRef.current = true;
+    }
     return (async () => {
-      const result = await createAccount(account);
+      const result = await createAccount({
+        ...account,
+        requireNew: account.mode === "register",
+      });
       if (!result.ok) {
         runAfterAccountRef.current = false;
         throw new Error(result.error);
+      }
+      if (account.mode === "reset") {
+        return;
       }
       if (
         result.needsEmailActivation &&
@@ -150,6 +159,10 @@ export function AccountGateProvider({ children }: { children: ReactNode }) {
           // Account is created; surface mail issues without blocking entry.
           console.warn("[activation-email]", emailResult.error);
         }
+      }
+      if (result.needsEmailActivation && !result.activationToken) {
+        // Supabase email confirmation — user must confirm before session exists.
+        runAfterAccountRef.current = false;
       }
       setModalReason(null);
     })();

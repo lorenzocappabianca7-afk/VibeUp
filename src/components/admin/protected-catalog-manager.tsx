@@ -37,8 +37,6 @@ import { AdminLocationPublishPanel } from "@/components/admin/admin-location-pub
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
-const ADMIN_PASSWORD = "1234!";
-
 const CATEGORIES: {
   id: ExploreCategory;
   label: string;
@@ -128,9 +126,6 @@ export function ProtectedCatalogManager() {
     removeManagedListing,
     toggleManagedListingPublication,
   } = useAppState();
-  const [password, setPassword] = useState("");
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [passwordError, setPasswordError] = useState("");
   const [activeCategory, setActiveCategory] = useState<ExploreCategory>("locali");
   const [serviceForm, setServiceForm] = useState(EMPTY_SERVICE_FORM);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
@@ -192,7 +187,7 @@ export function ProtectedCatalogManager() {
     });
   }
 
-  if (!canAccessAdminCatalog(currentUser.email)) {
+  if (!canAccessAdminCatalog(currentUser.email, currentUser.role)) {
     return (
       <div
         className={cn(
@@ -215,21 +210,13 @@ export function ProtectedCatalogManager() {
             Accesso non autorizzato
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-primary-black/60">
-            L&apos;area gestione pubblicazioni e&apos; disponibile solo per
-            l&apos;account vibeup.planner@gmail.com.
+            Accedi con l&apos;account admin (
+            vibeup.planner@gmail.com oppure un profilo con ruolo{" "}
+            <span className="font-semibold">admin</span> su Supabase).
           </p>
         </div>
       </div>
     );
-  }
-
-  function unlock() {
-    if (password === ADMIN_PASSWORD) {
-      setIsUnlocked(true);
-      setPasswordError("");
-      return;
-    }
-    setPasswordError("Password non corretta.");
   }
 
   function saveService(published = false) {
@@ -350,57 +337,6 @@ export function ProtectedCatalogManager() {
     }
   }
 
-  if (!isUnlocked) {
-    return (
-      <div
-        className={cn(
-          "mx-auto box-border min-h-dvh min-w-0 overflow-x-clip bg-background px-4 pt-8",
-          APP_SHELL_WIDTH_CLASS,
-        )}
-      >
-        <div className="rounded-[2rem] border border-primary-black/10 bg-primary-black/[0.02] p-6">
-          <Link
-            href="/"
-            className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-background px-3 py-2 text-xs font-bold text-primary-black/55 transition-colors hover:text-primary-black"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-            Torna alla home
-          </Link>
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/12 text-primary-black">
-            <Lock className="h-5 w-5" aria-hidden />
-          </span>
-          <h1 className="mt-4 text-2xl font-black text-primary-black">
-            Area gestione VibeUp
-          </h1>
-          <p className="mt-2 text-sm leading-relaxed text-primary-black/60">
-            Inserisci la password per gestire location, DJ, fotografi,
-            decorazioni e altri servizi.
-          </p>
-          <div className="mt-5 space-y-3">
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") unlock();
-              }}
-              placeholder="Password"
-              className="w-full min-w-0 rounded-2xl border border-primary-black/10 bg-background px-4 py-3 text-base outline-none focus:border-brand-teal"
-            />
-            {passwordError && (
-              <p className="text-xs font-semibold text-brand-pink">
-                {passwordError}
-              </p>
-            )}
-            <Button className="w-full rounded-2xl" onClick={unlock}>
-              Entra
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const isLocationCategory = activeCategory === "locali";
 
   return (
@@ -426,17 +362,10 @@ export function ProtectedCatalogManager() {
             Gestione pubblicazioni VibeUp
           </h1>
           <p className="mt-1 text-sm text-primary-black/60">
-            Qui restano salvate tutte le tue pubblicazioni: puoi rivederle e
-            modificarle quando vuoi, poi ripubblicarle.
+            Accesso con account admin autenticato. Qui restano salvate tutte le
+            tue pubblicazioni: puoi rivederle e modificarle quando vuoi.
           </p>
         </div>
-        <Button
-          variant="outline"
-          className="w-full shrink-0 sm:w-auto"
-          onClick={() => setIsUnlocked(false)}
-        >
-          Blocca area
-        </Button>
       </header>
 
       <div className="mt-6 min-w-0 max-w-full overflow-x-auto overscroll-x-contain rounded-3xl bg-primary-black/[0.04] p-2 [-webkit-overflow-scrolling:touch]">

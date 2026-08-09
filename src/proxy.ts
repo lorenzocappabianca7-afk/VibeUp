@@ -1,3 +1,4 @@
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const BLOCKED_PATH_PATTERNS = [
@@ -20,14 +21,27 @@ const BLOCKED_PATH_PATTERNS = [
  * be allowed — `script-src 'self'` alone blanks the client UI after SSR chrome.
  */
 function buildCsp(isDev: boolean): string {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  let supabaseConnect = "";
+  let supabaseImg = "";
+  if (supabaseUrl) {
+    try {
+      const host = new URL(supabaseUrl).origin;
+      supabaseConnect = ` ${host} ${host.replace("https://", "wss://")}`;
+      supabaseImg = ` ${host}`;
+    } catch {
+      /* ignore invalid URL */
+    }
+  }
+
   const directives = [
     "default-src 'self'",
     // 'unsafe-inline' is required for Next.js flight/hydration scripts without a nonce pipeline.
     `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' blob: data: https://images.unsplash.com",
+    `img-src 'self' blob: data: https://images.unsplash.com${supabaseImg}`,
     "font-src 'self' data:",
-    "connect-src 'self'",
+    `connect-src 'self'${supabaseConnect}`,
     "worker-src 'self'",
     "manifest-src 'self'",
     "media-src 'self' blob:",
@@ -68,7 +82,7 @@ function applySecurityHeaders(response: NextResponse, csp: string, isDev: boolea
   response.headers.delete("x-powered-by");
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const method = request.method.toUpperCase();
 
@@ -86,11 +100,38 @@ export function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("Content-Security-Policy", csp);
 
-  const response = NextResponse.next({
+  let response = NextResponse.next({
     request: {
       headers: requestHeaders,
     },
   });
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  if (supabaseUrl && supabaseAnon) {
+    const supabase = createServerClient(supabaseUrl, supabaseAnon, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => {
+            request.cookies.set(name, value);
+          });
+          response = NextResponse.next({
+            request: {
+              headers: requestHeaders,
+            },
+          });
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    });
+    // Refresh session so Server Components see a valid user.
+    await supabase.auth.getUser();
+  }
 
   applySecurityHeaders(response, csp, isDev);
   return response;
