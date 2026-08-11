@@ -40,8 +40,12 @@ interface AvailabilityRequestContextValue {
     locationName: string;
     eventPayload: AvailabilityEventPayload;
   }) => Promise<{ ok: true; requestId: string } | { ok: false; error: string }>;
-  acceptAvailabilityRequest: (requestId: string) => Promise<void>;
-  declineAvailabilityRequest: (requestId: string) => Promise<void>;
+  acceptAvailabilityRequest: (
+    requestId: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
+  declineAvailabilityRequest: (
+    requestId: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
   confirmAvailabilityRequest: (requestId: string) => Promise<
     | {
         ok: true;
@@ -353,10 +357,12 @@ export function AvailabilityRequestProvider({
           requestId,
           action: "accept",
         });
-        if (!remote.ok) return;
+        if (!remote.ok) {
+          return { ok: false as const, error: remote.error };
+        }
         setRequests((prev) => upsertRequest(prev, remote.request));
         setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
-        return;
+        return { ok: true as const };
       }
 
       setRequests((prev) =>
@@ -371,6 +377,7 @@ export function AvailabilityRequestProvider({
         ),
       );
       setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+      return { ok: true as const };
     },
     [cloudSyncEnabled],
   );
@@ -382,9 +389,11 @@ export function AvailabilityRequestProvider({
           requestId,
           action: "decline",
         });
-        if (!remote.ok) return;
+        if (!remote.ok) {
+          return { ok: false as const, error: remote.error };
+        }
         setRequests((prev) => upsertRequest(prev, remote.request));
-        return;
+        return { ok: true as const };
       }
 
       setRequests((prev) =>
@@ -398,6 +407,7 @@ export function AvailabilityRequestProvider({
             : item,
         ),
       );
+      return { ok: true as const };
     },
     [cloudSyncEnabled],
   );

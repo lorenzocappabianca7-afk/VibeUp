@@ -16,36 +16,19 @@ interface LocationInfoProps {
   location: Location;
 }
 
-export function getLocationReviews(location: Location) {
-  const contacts = location.contactsBeenHere.contacts;
-  const fallbackNames = ["Giulia R.", "Marco B.", "Sara M."];
-  const names =
-    contacts.length > 0 ? contacts.map((contact) => contact.name) : fallbackNames;
-
-  return [
-    {
-      id: `${location.id}-review-1`,
-      author: names[0] ?? "Utente VibeUp",
-      rating: 5,
-      text: "Location molto curata e gestione semplice. Gli spazi erano pronti e il personale disponibile.",
-    },
-    {
-      id: `${location.id}-review-2`,
-      author: names[1] ?? "Cliente verificato",
-      rating: 4,
-      text: "Ottima soluzione per una festa privata. Buona organizzazione e preventivo chiaro.",
-    },
-    {
-      id: `${location.id}-review-3`,
-      author: names[2] ?? "Organizzatore evento",
-      rating: 5,
-      text: "Servizi disponibili comodi e ambiente adatto agli invitati. La consiglierei per eventi simili.",
-    },
-  ];
+export function getLocationReviews(_location: Location) {
+  // Real verified reviews are not wired yet — do not invent social proof.
+  return [] as Array<{
+    id: string;
+    author: string;
+    rating: number;
+    text: string;
+  }>;
 }
 
 export function getLocationAverageRating(location: Location) {
   const reviews = getLocationReviews(location);
+  if (reviews.length === 0) return 0;
   return (
     reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
   );
@@ -89,6 +72,7 @@ function PinkStarRating({
 
 export function LocationInfo({ location }: LocationInfoProps) {
   const { technicalDetails: tech } = location;
+  const reviews = getLocationReviews(location);
   const averageRating = getLocationAverageRating(location);
 
   const specs = [
@@ -120,7 +104,9 @@ export function LocationInfo({ location }: LocationInfoProps) {
           <h1 className="text-2xl font-bold text-primary-black">
             {location.name}
           </h1>
-          <PinkStarRating rating={averageRating} showValue />
+          {reviews.length > 0 ? (
+            <PinkStarRating rating={averageRating} showValue />
+          ) : null}
         </div>
         <p className="mt-1 flex min-w-0 items-start gap-1 text-sm text-primary-black/60">
           <MapPin className="h-4 w-4 shrink-0" aria-hidden />
@@ -202,6 +188,20 @@ export function LocationInfo({ location }: LocationInfoProps) {
 export function LocationReviewsSection({ location }: LocationInfoProps) {
   const reviews = getLocationReviews(location);
   const averageRating = getLocationAverageRating(location);
+
+  if (reviews.length === 0) {
+    return (
+      <section className="rounded-3xl border border-dashed border-primary-black/15 bg-primary-black/[0.02] p-5">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-primary-black/50">
+          Recensioni del luogo
+        </h2>
+        <p className="mt-2 text-sm text-primary-black/60">
+          Ancora nessuna recensione verificata. Compariranno dopo eventi
+          completati su VibeUp.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="rounded-3xl border border-white bg-primary-black/[0.02] p-5">

@@ -201,18 +201,12 @@ function countServiceFilters(
 
   let count = 0;
   if (category === "dj" && filters.musicType !== null) count++;
-  if (
-    (category === "dj" || category === "fotografo") &&
-    filters.activityHours !== DEFAULT_SERVICE_EXPLORE_FILTERS.activityHours
-  ) {
-    count++;
-  }
+  // activityHours / eventAddress are quote context only — not list filters.
   if (category === "decorazioni") {
     if (filters.partyType !== null) count++;
     if (filters.viewDecorationsInPerson) count++;
     if (filters.decorationFulfillment !== null) count++;
   }
-  if (filters.eventAddress.trim()) count++;
   return count;
 }
 

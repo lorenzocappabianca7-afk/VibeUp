@@ -200,7 +200,12 @@ function getDepositDeadline(event: UserEvent) {
   if (idStamp) {
     return new Date(Number(idStamp[1]) + THIRTY_SIX_HOURS_MS);
   }
-  return new Date(Date.now() + THIRTY_SIX_HOURS_MS);
+  // Stable fallback for UUID bookings without createdAt (avoid Date.now() drift).
+  const dateStamp = Date.parse(event.date);
+  if (!Number.isNaN(dateStamp)) {
+    return new Date(dateStamp);
+  }
+  return new Date(0);
 }
 
 function formatDepositDeadline(deadline: Date) {

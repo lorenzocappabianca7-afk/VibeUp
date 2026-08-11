@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { canAccessAdminCatalog } from "@/lib/admin-access";
 import {
   DEPOSIT_APP_FEE_RATE,
   roundCurrency,
@@ -293,6 +294,19 @@ export async function canManageLocationRequest(params: {
   if (!isSupabaseConfigured()) return false;
 
   const supabase = getSupabaseAdmin();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("email, role")
+    .eq("id", params.userId)
+    .maybeSingle();
+
+  if (
+    profile &&
+    canAccessAdminCatalog(profile.email ?? "", profile.role as "admin" | null)
+  ) {
+    return true;
+  }
 
   if (params.listingId) {
     const { data } = await supabase

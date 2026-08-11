@@ -19,7 +19,7 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-import { memo } from "react";
+import { memo, useState } from "react";
 
 const KIND_ICON = {
   booking: CalendarCheck2,
@@ -71,14 +71,19 @@ function NotificationRow({ item }: { item: BusinessNotification }) {
 
 function AvailabilityRequestCard({
   request,
+  busy,
+  error,
   onAccept,
   onDecline,
 }: {
   request: AvailabilityRequest;
+  busy: boolean;
+  error?: string | null;
   onAccept: () => void;
   onDecline: () => void;
 }) {
   const payload = request.eventPayload;
+  const isServiceRequest = payload.requestKind === "service";
 
   return (
     <li className="rounded-2xl border border-brand-teal/25 bg-brand-teal/5 p-4">
@@ -89,7 +94,9 @@ function AvailabilityRequestCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <p className="text-sm font-semibold text-primary-black">
-              Richiesta di disponibilità
+              {isServiceRequest
+                ? "Richiesta servizio"
+                : "Richiesta di disponibilità"}
             </p>
             <span
               className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-pink"
@@ -100,11 +107,23 @@ function AvailabilityRequestCard({
             <span className="font-semibold text-primary-black">
               {request.requesterName}
             </span>{" "}
-            vuole festeggiare a{" "}
-            <span className="font-semibold text-primary-black">
-              {request.locationName}
-            </span>
-            .
+            {isServiceRequest ? (
+              <>
+                chiede{" "}
+                <span className="font-semibold text-primary-black">
+                  {request.locationName}
+                </span>{" "}
+                per un evento.
+              </>
+            ) : (
+              <>
+                vuole festeggiare a{" "}
+                <span className="font-semibold text-primary-black">
+                  {request.locationName}
+                </span>
+                .
+              </>
+            )}
           </p>
           <div className="mt-2 space-y-1 rounded-xl bg-background/70 px-3 py-2 text-xs text-primary-black/65">
             <p className="font-medium text-primary-black">{payload.title}</p>
@@ -120,18 +139,23 @@ function AvailabilityRequestCard({
           <p className="mt-1.5 text-xs text-primary-black/40">
             {formatAvailabilityRequestTime(request.createdAt)}
           </p>
+          {error ? (
+            <p className="mt-2 text-xs font-semibold text-brand-pink">{error}</p>
+          ) : null}
           <div className="mt-3 flex gap-2">
             <button
               type="button"
+              disabled={busy}
               onClick={onDecline}
-              className="flex-1 rounded-xl border border-primary-black/12 px-3 py-2.5 text-sm font-semibold text-primary-black/70"
+              className="flex-1 rounded-xl border border-primary-black/12 px-3 py-2.5 text-sm font-semibold text-primary-black/70 disabled:opacity-60"
             >
               Rifiuta
             </button>
             <button
               type="button"
+              disabled={busy}
               onClick={onAccept}
-              className="flex-1 rounded-xl bg-brand-teal px-3 py-2.5 text-sm font-bold text-primary-black"
+              className="flex-1 rounded-xl bg-brand-teal px-3 py-2.5 text-sm font-bold text-primary-black disabled:opacity-60"
             >
               Accetta
             </button>
@@ -150,9 +174,41 @@ export const BusinessNotificationsScreen = memo(
       acceptAvailabilityRequest,
       declineAvailabilityRequest,
     } = useAvailabilityRequests();
+    const [actionErrorById, setActionErrorById] = useState<
+      Record<string, string>
+    >({});
+    const [busyId, setBusyId] = useState<string | null>(null);
 
     const locationName =
       businessProfile?.businessName ?? currentUser.name ?? "la tua location";
+
+    async function handleAccept(requestId: string) {
+      setBusyId(requestId);
+      setActionErrorById((prev) => {
+        const next = { ...prev };
+        delete next[requestId];
+        return next;
+      });
+      const result = await acceptAvailabilityRequest(requestId);
+      setBusyId(null);
+      if (!result.ok) {
+        setActionErrorById((prev) => ({ ...prev, [requestId]: result.error }));
+      }
+    }
+
+    async function handleDecline(requestId: string) {
+      setBusyId(requestId);
+      setActionErrorById((prev) => {
+        const next = { ...prev };
+        delete next[requestId];
+        return next;
+      });
+      const result = await declineAvailabilityRequest(requestId);
+      setBusyId(null);
+      if (!result.ok) {
+        setActionErrorById((prev) => ({ ...prev, [requestId]: result.error }));
+      }
+    }
 
     return (
       <div className="min-w-0 space-y-6">
@@ -185,8 +241,10 @@ export const BusinessNotificationsScreen = memo(
                 <AvailabilityRequestCard
                   key={request.id}
                   request={request}
-                  onAccept={() => void acceptAvailabilityRequest(request.id)}
-                  onDecline={() => void declineAvailabilityRequest(request.id)}
+                  busy={busyId === request.id}
+                  error={actionErrorById[request.id]}
+                  onAccept={() => void handleAccept(request.id)}
+                  onDecline={() => void handleDecline(request.id)}
                 />
               ))}
             </ul>
