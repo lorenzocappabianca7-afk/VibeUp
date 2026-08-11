@@ -581,7 +581,7 @@ export async function respondToAvailabilityRequestByToken(params: {
   if (params.action === "accept" || params.action === "decline") {
     try {
       const { notifyOrganizerOfManagerDecision } = await import(
-        "@/server/notifications/organizer-decision-notifier"
+        "@/server/notifications/organizer-notifier"
       );
       const notify = await notifyOrganizerOfManagerDecision(request);
       if (!notify.ok) {
@@ -653,6 +653,8 @@ export async function updateAvailabilityRequestStatus(params: {
   nextStatus: AvailabilityRequestStatus;
   actorUserId: string;
   actorRole?: string;
+  userSelectedDate?: string | null;
+  userSelectedPrice?: number | null;
 }): Promise<
   { ok: true; request: AvailabilityRequest } | { ok: false; error: string }
 > {
@@ -686,7 +688,7 @@ export async function updateAvailabilityRequestStatus(params: {
       "declined",
       "cancelled",
     ],
-    pending_user_review_proposal: ["confirmed", "cancelled"],
+    pending_user_review_proposal: ["confirmed", "declined", "cancelled"],
     pending_user_confirm: ["confirmed", "cancelled"],
     declined: [],
     confirmed: [],
@@ -697,10 +699,16 @@ export async function updateAvailabilityRequestStatus(params: {
     return { ok: false, error: "Transizione di stato non valida." };
   }
 
+  const requesterRejectingProposal =
+    params.nextStatus === "declined" &&
+    row.status === "pending_user_review_proposal" &&
+    isRequester;
+
   if (
     (params.nextStatus === "pending_user_confirm" ||
       params.nextStatus === "declined") &&
-    !isManager
+    !isManager &&
+    !requesterRejectingProposal
   ) {
     return { ok: false, error: "Solo il gestore può rispondere." };
   }
@@ -713,10 +721,18 @@ export async function updateAvailabilityRequestStatus(params: {
     return { ok: false, error: "Solo il richiedente può aggiornare." };
   }
 
+  const patch: Record<string, unknown> = { status: params.nextStatus };
+  if (params.userSelectedDate !== undefined) {
+    patch.user_selected_date = params.userSelectedDate;
+  }
+  if (params.userSelectedPrice !== undefined) {
+    patch.user_selected_price = params.userSelectedPrice;
+  }
+
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("availability_requests")
-    .update({ status: params.nextStatus })
+    .update(patch)
     .eq("id", params.requestId)
     .select("*")
     .single();
@@ -734,6 +750,13 @@ export async function updateAvailabilityRequestStatus(params: {
 export async function createBookingFromRequest(params: {
   request: AvailabilityRequest;
   organizerId: string;
+  /** When confirming a manager proposal, use the organizer's chosen slot/price. */
+  override?: {
+    date?: string;
+    time?: string;
+    endTime?: string;
+    totalCost?: number;
+  };
 }): Promise<{ ok: true; event: UserEvent } | { ok: false; error: string }> {
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Supabase non configurato." };
@@ -750,6 +773,14 @@ export async function createBookingFromRequest(params: {
       : `${bookingId}-${service.id}`,
   }));
 
+  const eventDate = params.override?.date ?? payload.date;
+  const startTime = params.override?.time ?? payload.time;
+  const endTime = params.override?.endTime ?? payload.endTime ?? "";
+  const totalCost =
+    typeof params.override?.totalCost === "number"
+      ? params.override.totalCost
+      : payload.totalCost;
+
   const { data, error } = await supabase
     .from("bookings")
     .insert({
@@ -764,12 +795,12 @@ export async function createBookingFromRequest(params: {
       location_name: payload.locationName,
       title: payload.title,
       description: payload.description ?? "",
-      event_date: payload.date,
-      start_time: payload.time,
-      end_time: payload.endTime ?? "",
+      event_date: eventDate,
+      start_time: startTime,
+      end_time: endTime,
       city: payload.city,
       guest_count: payload.guestCount,
-      total_cost: payload.totalCost,
+      total_cost: totalCost,
       deposit_amount: payload.depositAmount,
       services,
       deposit_due_at: new Date(Date.now() + 36 * 60 * 60 * 1000).toISOString(),
@@ -840,6 +871,112 @@ export async function listOwnedLocationIds(userId: string): Promise<string[]> {
     .select("id")
     .eq("owner_id", userId);
   return (data ?? []).map((row) => row.id as string);
+}
+
+export type AdminReviewAction = "forward" | "discard";
+
+/**
+ * Admin validates a manager proposal (pending_admin_review).
+ * forward → pending_user_review_proposal; discard → declined.
+ */
+export async function adminReviewAvailabilityRequest(params: {
+  requestId: string;
+  action: AdminReviewAction;
+  adminUserId: string;
+  adminRole?: string | null;
+  adminEmail?: string | null;
+  adminNote?: string | null;
+}): Promise<
+  { ok: true; request: AvailabilityRequest } | { ok: false; error: string }
+> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Supabase non configurato." };
+  }
+  if (!isUuid(params.requestId)) {
+    return { ok: false, error: "ID richiesta non valido." };
+  }
+
+  if (
+    !canAccessAdminCatalog(params.adminEmail ?? "", params.adminRole as "admin" | null)
+  ) {
+    return { ok: false, error: "Solo gli admin possono validare le proposte." };
+  }
+
+  const row = await getAvailabilityRequest(params.requestId);
+  if (!row) return { ok: false, error: "Richiesta non trovata." };
+  if (row.status !== "pending_admin_review") {
+    return {
+      ok: false,
+      error: "La richiesta non è in attesa di revisione admin.",
+    };
+  }
+
+  const now = new Date().toISOString();
+  const note =
+    typeof params.adminNote === "string" && params.adminNote.trim()
+      ? params.adminNote.trim().slice(0, 2000)
+      : null;
+
+  const nextStatus: AvailabilityRequestStatus =
+    params.action === "forward" ? "pending_user_review_proposal" : "declined";
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("availability_requests")
+    .update({
+      status: nextStatus,
+      admin_reviewed_by: params.adminUserId,
+      admin_reviewed_at: now,
+      admin_note: note,
+    })
+    .eq("id", params.requestId)
+    .eq("status", "pending_admin_review")
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+  if (!data) {
+    return {
+      ok: false,
+      error: "La richiesta non è più in revisione admin.",
+    };
+  }
+
+  const request = rowToAvailabilityRequest(data as AvailabilityRequestRow);
+
+  try {
+    if (params.action === "forward") {
+      const { notifyOrganizerOfProposal } = await import(
+        "@/server/notifications/organizer-notifier"
+      );
+      const notify = await notifyOrganizerOfProposal(request);
+      if (!notify.ok) {
+        console.error(
+          "[bookings] notifyOrganizerOfProposal failed",
+          request.id,
+          notify.error,
+        );
+      }
+    } else {
+      const { notifyOrganizerOfManagerDecision } = await import(
+        "@/server/notifications/organizer-notifier"
+      );
+      const notify = await notifyOrganizerOfManagerDecision(request);
+      if (!notify.ok) {
+        console.error(
+          "[bookings] notifyOrganizerOfManagerDecision failed",
+          request.id,
+          notify.error,
+        );
+      }
+    }
+  } catch (err) {
+    console.error("[bookings] admin review notify exception", request.id, err);
+  }
+
+  return { ok: true, request };
 }
 
 /**

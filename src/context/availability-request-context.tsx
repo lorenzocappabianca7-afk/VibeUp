@@ -54,6 +54,19 @@ interface AvailabilityRequestContextValue {
       }
     | { ok: false; error: string }
   >;
+  confirmProposedAvailability: (
+    requestId: string,
+    choice: { selectedDate: string; selectedPrice: number | null },
+  ) => Promise<
+    | {
+        ok: true;
+        eventId: string;
+      }
+    | { ok: false; error: string }
+  >;
+  rejectProposedAvailability: (
+    requestId: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
   cancelAvailabilityRequest: (requestId: string) => Promise<void>;
   /** Hide confirm modal for now without cancelling the manager acceptance. */
   snoozeAvailabilityConfirm: (requestId: string) => void;
@@ -277,7 +290,8 @@ export function AvailabilityRequestProvider({
     if (isGuest || isBusinessUser) return [];
     return requests.filter(
       (item) =>
-        item.status === "pending_user_confirm" &&
+        (item.status === "pending_user_confirm" ||
+          item.status === "pending_user_review_proposal") &&
         item.requesterUserId === currentUser.id &&
         !snoozedConfirmIds.includes(item.id),
     );
@@ -565,6 +579,215 @@ export function AvailabilityRequestProvider({
     [addEvent, addServiceToEvent, cloudSyncEnabled],
   );
 
+  const confirmProposedAvailability = useCallback(
+    async (
+      requestId: string,
+      choice: { selectedDate: string; selectedPrice: number | null },
+    ) => {
+      if (confirmLockRef.current.has(requestId)) {
+        return {
+          ok: false as const,
+          error: "Conferma già in corso.",
+        };
+      }
+
+      const existing = requestsRef.current.find(
+        (item) =>
+          item.id === requestId &&
+          item.status === "pending_user_review_proposal" &&
+          item.requesterUserId === currentUserIdRef.current,
+      );
+      if (!existing) {
+        return {
+          ok: false as const,
+          error: "La proposta non è pronta per la conferma.",
+        };
+      }
+
+      const selectedDate = choice.selectedDate.trim();
+      if (!selectedDate) {
+        return {
+          ok: false as const,
+          error: "Seleziona una data proposta.",
+        };
+      }
+
+      confirmLockRef.current.add(requestId);
+
+      if (cloudSyncEnabled) {
+        const remote = await patchAvailabilityRequestRemote({
+          requestId,
+          action: "confirm_proposal",
+          selectedDate,
+          selectedPrice: choice.selectedPrice,
+        });
+        confirmLockRef.current.delete(requestId);
+        if (!remote.ok) {
+          return { ok: false as const, error: remote.error };
+        }
+        setRequests((prev) => upsertRequest(prev, remote.request));
+
+        const payload = remote.request.eventPayload;
+        if (
+          payload.requestKind === "service" &&
+          payload.targetEventId &&
+          payload.pendingService
+        ) {
+          addServiceToEvent(payload.targetEventId, {
+            ...payload.pendingService,
+            status: "confirmed",
+          });
+          setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+          return { ok: true as const, eventId: payload.targetEventId };
+        }
+
+        const event = remote.event;
+        if (!event) {
+          return {
+            ok: false as const,
+            error: "Evento non creato sul server.",
+          };
+        }
+        addEvent(event);
+        setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+        return { ok: true as const, eventId: event.id };
+      }
+
+      const proposed =
+        existing.managerProposedDates?.find(
+          (slot) => slot.date === selectedDate,
+        ) ?? null;
+      const totalCost =
+        typeof choice.selectedPrice === "number"
+          ? choice.selectedPrice
+          : existing.eventPayload.totalCost;
+
+      let didClaim = false;
+      setRequests((prev) => {
+        const stillPending = prev.some(
+          (item) =>
+            item.id === requestId &&
+            item.status === "pending_user_review_proposal",
+        );
+        if (!stillPending) return prev;
+        didClaim = true;
+        return prev.map((item) =>
+          item.id === requestId
+            ? {
+                ...item,
+                status: "confirmed" as const,
+                userSelectedDate: selectedDate,
+                userSelectedPrice:
+                  typeof choice.selectedPrice === "number"
+                    ? choice.selectedPrice
+                    : null,
+                updatedAt: new Date().toISOString(),
+              }
+            : item,
+        );
+      });
+
+      if (!didClaim) {
+        confirmLockRef.current.delete(requestId);
+        return {
+          ok: false as const,
+          error: "La proposta non è pronta per la conferma.",
+        };
+      }
+
+      const payload = existing.eventPayload;
+      if (
+        payload.requestKind === "service" &&
+        payload.targetEventId &&
+        payload.pendingService
+      ) {
+        addServiceToEvent(payload.targetEventId, {
+          ...payload.pendingService,
+          status: "confirmed",
+        });
+        setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+        confirmLockRef.current.delete(requestId);
+        return { ok: true as const, eventId: payload.targetEventId };
+      }
+
+      const eventId = `evt-${Date.now()}`;
+      const event: UserEvent = {
+        id: eventId,
+        title: payload.title,
+        description: payload.description,
+        date: selectedDate,
+        time: proposed?.time ?? payload.time,
+        endTime: proposed?.endTime ?? payload.endTime,
+        locationId: payload.locationId,
+        locationName: payload.locationName,
+        city: payload.city,
+        status: "organizing",
+        guestCount: payload.guestCount,
+        services: payload.services.map((service) => ({
+          ...service,
+          id: service.id.startsWith("draft-")
+            ? service.id.replace(/^draft-/, `${eventId}-`)
+            : `${eventId}-${service.id}`,
+        })),
+        totalCost,
+        depositAmount: payload.depositAmount,
+        createdAt: new Date().toISOString(),
+      };
+
+      addEvent(event);
+      setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+      confirmLockRef.current.delete(requestId);
+      return { ok: true as const, eventId };
+    },
+    [addEvent, addServiceToEvent, cloudSyncEnabled],
+  );
+
+  const rejectProposedAvailability = useCallback(
+    async (requestId: string) => {
+      const existing = requestsRef.current.find(
+        (item) =>
+          item.id === requestId &&
+          item.status === "pending_user_review_proposal" &&
+          item.requesterUserId === currentUserIdRef.current,
+      );
+      if (!existing) {
+        return {
+          ok: false as const,
+          error: "La proposta non è più disponibile.",
+        };
+      }
+
+      if (cloudSyncEnabled) {
+        const remote = await patchAvailabilityRequestRemote({
+          requestId,
+          action: "reject_proposal",
+        });
+        if (!remote.ok) {
+          return { ok: false as const, error: remote.error };
+        }
+        setRequests((prev) => upsertRequest(prev, remote.request));
+        setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+        return { ok: true as const };
+      }
+
+      setRequests((prev) =>
+        prev.map((item) =>
+          item.id === requestId &&
+          item.status === "pending_user_review_proposal"
+            ? {
+                ...item,
+                status: "declined" as const,
+                updatedAt: new Date().toISOString(),
+              }
+            : item,
+        ),
+      );
+      setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+      return { ok: true as const };
+    },
+    [cloudSyncEnabled],
+  );
+
   const cancelAvailabilityRequest = useCallback(
     async (requestId: string) => {
       if (cloudSyncEnabled) {
@@ -615,6 +838,8 @@ export function AvailabilityRequestProvider({
       acceptAvailabilityRequest,
       declineAvailabilityRequest,
       confirmAvailabilityRequest,
+      confirmProposedAvailability,
+      rejectProposedAvailability,
       cancelAvailabilityRequest,
       snoozeAvailabilityConfirm,
       resumeAvailabilityConfirm,
@@ -628,6 +853,8 @@ export function AvailabilityRequestProvider({
       acceptAvailabilityRequest,
       declineAvailabilityRequest,
       confirmAvailabilityRequest,
+      confirmProposedAvailability,
+      rejectProposedAvailability,
       cancelAvailabilityRequest,
       snoozeAvailabilityConfirm,
       resumeAvailabilityConfirm,

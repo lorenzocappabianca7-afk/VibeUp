@@ -15,8 +15,21 @@ const ACTIONS: Record<string, AvailabilityRequestStatus> = {
   accept: "pending_user_confirm",
   decline: "declined",
   confirm: "confirmed",
+  confirm_proposal: "confirmed",
+  reject_proposal: "declined",
   cancel: "cancelled",
 };
+
+function asOptionalNumber(value: unknown): number | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return undefined;
+}
 
 export async function PATCH(
   request: NextRequest,
@@ -60,16 +73,33 @@ export async function PATCH(
     return NextResponse.json({ error: "JSON non valido." }, { status: 400 });
   }
 
-  const action =
+  const record =
     body && typeof body === "object"
-      ? String((body as Record<string, unknown>).action ?? "")
-      : "";
+      ? (body as Record<string, unknown>)
+      : null;
+  const action = record ? String(record.action ?? "") : "";
   const nextStatus = ACTIONS[action];
   if (!nextStatus) {
     return NextResponse.json(
-      { error: "Azione non valida. Usa accept|decline|confirm|cancel." },
+      {
+        error:
+          "Azione non valida. Usa accept|decline|confirm|confirm_proposal|reject_proposal|cancel.",
+      },
       { status: 400 },
     );
+  }
+
+  const selectedDateRaw =
+    typeof record?.selectedDate === "string" ? record.selectedDate.trim() : "";
+  const selectedPrice = asOptionalNumber(record?.selectedPrice);
+
+  if (action === "confirm_proposal") {
+    if (!selectedDateRaw) {
+      return NextResponse.json(
+        { error: "Seleziona una data proposta." },
+        { status: 400 },
+      );
+    }
   }
 
   const role = await getProfileRole(user.id);
@@ -78,13 +108,20 @@ export async function PATCH(
     nextStatus,
     actorUserId: user.id,
     actorRole: role ?? undefined,
+    ...(action === "confirm_proposal"
+      ? {
+          userSelectedDate: selectedDateRaw,
+          userSelectedPrice:
+            selectedPrice === undefined ? null : selectedPrice,
+        }
+      : {}),
   });
 
   if (!updated.ok) {
     return NextResponse.json({ error: updated.error }, { status: 400 });
   }
 
-  if (action !== "confirm") {
+  if (action !== "confirm" && action !== "confirm_proposal") {
     return NextResponse.json({
       ok: true,
       configured: true,
@@ -101,9 +138,37 @@ export async function PATCH(
     });
   }
 
+  let bookingOverride:
+    | {
+        date?: string;
+        time?: string;
+        endTime?: string;
+        totalCost?: number;
+      }
+    | undefined;
+
+  if (action === "confirm_proposal") {
+    const proposed =
+      updated.request.managerProposedDates?.find(
+        (slot) => slot.date === selectedDateRaw,
+      ) ?? null;
+    bookingOverride = {
+      date: selectedDateRaw,
+      time: proposed?.time,
+      endTime: proposed?.endTime,
+      totalCost:
+        typeof selectedPrice === "number"
+          ? selectedPrice
+          : typeof updated.request.userSelectedPrice === "number"
+            ? updated.request.userSelectedPrice
+            : undefined,
+    };
+  }
+
   const booking = await createBookingFromRequest({
     request: updated.request,
     organizerId: user.id,
+    override: bookingOverride,
   });
 
   if (!booking.ok) {

@@ -20,6 +20,7 @@ import {
   Building2,
   Camera,
   Disc3,
+  ClipboardCheck,
   Eye,
   EyeOff,
   Gift,
@@ -34,6 +35,7 @@ import {
   X,
 } from "lucide-react";
 import { AdminLocationPublishPanel } from "@/components/admin/admin-location-publish-panel";
+import { AdminProposalsPanel } from "@/components/admin/admin-proposals-panel";
 import { uploadListingPhotos } from "@/lib/storage/upload-client";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
@@ -104,6 +106,9 @@ export function ProtectedCatalogManager() {
     toggleManagedListingPublication,
   } = useAppState();
   const [activeCategory, setActiveCategory] = useState<ExploreCategory>("locali");
+  const [adminSection, setAdminSection] = useState<"catalog" | "proposals">(
+    "catalog",
+  );
   const [serviceForm, setServiceForm] = useState(EMPTY_SERVICE_FORM);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [aiText, setAiText] = useState("");
@@ -356,6 +361,38 @@ export function ProtectedCatalogManager() {
         </div>
       </header>
 
+      <div className="mt-6 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setAdminSection("catalog")}
+          className={cn(
+            "rounded-2xl px-4 py-2.5 text-sm font-bold transition-colors",
+            adminSection === "catalog"
+              ? "bg-paper text-ink-inverse"
+              : "bg-primary-black/[0.04] text-primary-black/65",
+          )}
+        >
+          Catalogo
+        </button>
+        <button
+          type="button"
+          onClick={() => setAdminSection("proposals")}
+          className={cn(
+            "inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold transition-colors",
+            adminSection === "proposals"
+              ? "bg-brand-teal text-primary-black"
+              : "bg-primary-black/[0.04] text-primary-black/65",
+          )}
+        >
+          <ClipboardCheck className="h-4 w-4" aria-hidden />
+          Proposte da validare
+        </button>
+      </div>
+
+      {adminSection === "proposals" ? (
+        <AdminProposalsPanel />
+      ) : (
+        <>
       <div className="mt-6 min-w-0 max-w-full overflow-x-auto overscroll-x-contain rounded-3xl bg-primary-black/[0.04] p-2 [-webkit-overflow-scrolling:touch]">
         <div className="flex w-max max-w-none gap-2">
           {CATEGORIES.map((category) => {
@@ -636,6 +673,8 @@ export function ProtectedCatalogManager() {
           </ul>
         </section>
       </div>
+      )}
+        </>
       )}
     </div>
   );
