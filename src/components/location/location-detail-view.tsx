@@ -8,6 +8,8 @@ import { SmartLocationDetailsSection } from "@/components/location/smart-locatio
 import { useAccountGate } from "@/context/account-gate-context";
 import { useAppState } from "@/context/app-state-context";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
+import { useChat } from "@/context/chat-context";
+import { useTabNavigation } from "@/context/tab-navigation-context";
 import type { AvailabilityEventPayload } from "@/types/availability-request";
 import {
   calculateBookingQuote,
@@ -49,6 +51,7 @@ import {
   GitCompareArrows,
   Heart,
   MapPin,
+  MessageCircle,
 } from "lucide-react";
 import { SoftNavLink } from "@/components/navigation/soft-nav-link";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
@@ -114,6 +117,9 @@ export function LocationDetailView({
     toggleFavoriteLocation,
   } = useAppState();
   const { requireAccount } = useAccountGate();
+  const { startVendorConversation } = useChat();
+  const { setTab } = useTabNavigation();
+  const [chatError, setChatError] = useState<string | null>(null);
   const {
     requests,
     sendAvailabilityRequest,
@@ -622,6 +628,23 @@ export function LocationDetailView({
     );
   }
 
+  function contactVenue() {
+    requireAccount(() => {
+      setChatError(null);
+      void startVendorConversation({
+        displayName: location.name,
+        locationId: location.id,
+        category: "locali",
+      }).then((result) => {
+        if (!result.ok) {
+          setChatError(result.error);
+          return;
+        }
+        setTab("messages");
+      });
+    }, "Per messaggiare la location crea un account.");
+  }
+
   return (
     <div className="space-y-6 pb-8 lg:pb-12">
       <div className="flex items-center justify-between gap-3">
@@ -633,6 +656,14 @@ export function LocationDetailView({
           Torna a Esplora
         </HomeTabLink>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={contactVenue}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-brand-teal-strong/30 bg-surface text-brand-teal-strong backdrop-blur-md transition-colors hover:bg-brand-teal/10"
+            aria-label={`Messaggia ${location.name}`}
+          >
+            <MessageCircle className="h-4 w-4" aria-hidden />
+          </button>
           <button
             type="button"
             onClick={toggleCompare}
@@ -676,6 +707,9 @@ export function LocationDetailView({
           </button>
         </div>
       </div>
+      {chatError ? (
+        <p className="text-xs font-semibold text-brand-pink">{chatError}</p>
+      ) : null}
 
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)] xl:items-start">
         <div className="space-y-6">

@@ -51,6 +51,14 @@ interface ChatContextValue {
   closeConversation: () => void;
   sendMessage: (conversationId: string, body: string) => void;
   markAllConversationsRead: () => void;
+  /** Open or create an in-app vendor thread (Supabase). */
+  startVendorConversation: (input: {
+    displayName: string;
+    locationId?: string;
+    serviceId?: string;
+    category?: string;
+  }) => Promise<{ ok: true; conversationId: string } | { ok: false; error: string }>;
+  cloudChatEnabled: boolean;
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -297,11 +305,13 @@ export function formatChatTime(iso: string) {
 export { formatPreviewTime };
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const { currentUser } = useAppState();
+  const { currentUser, isGuest } = useAppState();
   const { syncUnreadMessages } = useInboxBadge();
   const pushEnabled = normalizeUserSettings(currentUser.settings).notifications
     .pushEnabled;
   const userId = currentUser.id;
+  const cloudChatEnabled =
+    currentUser.authProvider === "supabase" && !isGuest;
 
   const [conversations, setConversations] = useState<ChatConversation[]>(() => {
     if (typeof window === "undefined") return SEED_CONVERSATIONS;
@@ -374,6 +384,78 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     );
     syncUnreadMessages(total);
   }, [conversations, syncUnreadMessages]);
+
+  useEffect(() => {
+    if (!cloudChatEnabled) return;
+
+    let cancelled = false;
+    void fetch("/api/chat/conversations", { credentials: "same-origin" })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return (await response.json().catch(() => null)) as {
+          conversations?: Array<{
+            id: string;
+            title: string;
+            preview: string;
+            updatedAt: string;
+            unreadCount: number;
+          }>;
+        } | null;
+      })
+      .then((payload) => {
+        if (cancelled || !payload?.conversations) return;
+        const remote = payload.conversations.map((item) => ({
+          id: item.id,
+          title: item.title,
+          preview: item.preview,
+          kind: "vendor" as const,
+          updatedAt: item.updatedAt,
+          unreadCount: item.unreadCount ?? 0,
+        }));
+        setConversations((prev) => {
+          const seedOnly = prev.filter((item) => item.id.startsWith("msg-"));
+          const byId = new Map<string, ChatConversation>();
+          for (const item of seedOnly) byId.set(item.id, item);
+          for (const item of remote) byId.set(item.id, item);
+          return Array.from(byId.values()).sort(
+            (a, b) =>
+              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+          );
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cloudChatEnabled, userId]);
+
+  useEffect(() => {
+    if (!cloudChatEnabled || !openConversationId) return;
+    if (openConversationId.startsWith("msg-")) return;
+
+    let cancelled = false;
+    void fetch(
+      `/api/chat/messages?conversationId=${encodeURIComponent(openConversationId)}`,
+      { credentials: "same-origin" },
+    )
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return (await response.json().catch(() => null)) as {
+          messages?: ChatMessage[];
+        } | null;
+      })
+      .then((payload) => {
+        if (cancelled || !payload?.messages) return;
+        setMessagesById((prev) => ({
+          ...prev,
+          [openConversationId]: payload.messages ?? [],
+        }));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cloudChatEnabled, openConversationId]);
 
   useEffect(() => {
     return () => {
@@ -527,6 +609,35 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           ),
       );
 
+      const isCloudThread =
+        cloudChatEnabled && !conversationId.startsWith("msg-");
+
+      if (isCloudThread) {
+        void fetch("/api/chat/messages", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conversationId, body }),
+        })
+          .then(async (response) => {
+            const payload = (await response.json().catch(() => null)) as {
+              message?: ChatMessage;
+              error?: string;
+            } | null;
+            if (!response.ok || !payload?.message) return;
+            setMessagesById((prev) => {
+              const list = prev[conversationId] ?? [];
+              return {
+                ...prev,
+                [conversationId]: list.map((item) =>
+                  item.id === messageId ? { ...payload.message!, status: "delivered" } : item,
+                ),
+              };
+            });
+          });
+        return;
+      }
+
       const deliveredTimer = window.setTimeout(() => {
         releaseTimer(deliveredTimer);
         setMessagesById((prev) => {
@@ -555,7 +666,66 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       }, delay);
       trackTimer(timer);
     },
-    [receiveIncoming, releaseTimer, trackTimer],
+    [cloudChatEnabled, receiveIncoming, releaseTimer, trackTimer],
+  );
+
+  const startVendorConversation = useCallback(
+    async (input: {
+      displayName: string;
+      locationId?: string;
+      serviceId?: string;
+      category?: string;
+    }) => {
+      if (!cloudChatEnabled) {
+        return {
+          ok: false as const,
+          error: "Accedi con un account VibeUp per messaggiare i fornitori.",
+        };
+      }
+
+      try {
+        const response = await fetch("/api/chat/conversations", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        });
+        const payload = (await response.json().catch(() => null)) as {
+          conversationId?: string;
+          error?: string;
+        } | null;
+        if (!response.ok || !payload?.conversationId) {
+          return {
+            ok: false as const,
+            error: payload?.error ?? "Impossibile aprire la chat.",
+          };
+        }
+
+        const conversationId = payload.conversationId;
+        setConversations((prev) => {
+          if (prev.some((item) => item.id === conversationId)) return prev;
+          return [
+            {
+              id: conversationId,
+              title: input.displayName,
+              preview: "Nuova conversazione",
+              kind: "vendor",
+              updatedAt: new Date().toISOString(),
+              unreadCount: 0,
+            },
+            ...prev,
+          ];
+        });
+        setOpenConversationId(conversationId);
+        return { ok: true as const, conversationId };
+      } catch {
+        return {
+          ok: false as const,
+          error: "Connessione chat non disponibile.",
+        };
+      }
+    },
+    [cloudChatEnabled],
   );
 
   const value = useMemo(
@@ -567,6 +737,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       closeConversation,
       sendMessage,
       markAllConversationsRead,
+      startVendorConversation,
+      cloudChatEnabled,
     }),
     [
       conversations,
@@ -576,6 +748,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       closeConversation,
       sendMessage,
       markAllConversationsRead,
+      startVendorConversation,
+      cloudChatEnabled,
     ],
   );
 
