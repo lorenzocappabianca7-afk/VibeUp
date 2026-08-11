@@ -4,8 +4,20 @@ export type AvailabilityRequestStatus =
   | "pending_manager"
   | "declined"
   | "pending_user_confirm"
+  | "pending_admin_review"
+  | "pending_user_review_proposal"
   | "confirmed"
   | "cancelled";
+
+export type ManagerDecision = "accept" | "decline" | "propose";
+
+/** Alternative date/time slot proposed by the manager. */
+export interface ManagerProposedDate {
+  date: string;
+  time?: string;
+  endTime?: string;
+  note?: string;
+}
 
 /** Snapshot used to create the UserEvent after both sides confirm. */
 export interface AvailabilityEventPayload {
@@ -39,4 +51,58 @@ export interface AvailabilityRequest {
   createdAt: string;
   updatedAt: string;
   eventPayload: AvailabilityEventPayload;
+  /** Manager response path: accept as-is, decline, or propose alternatives. */
+  managerDecision: ManagerDecision | null;
+  managerNote: string | null;
+  managerProposedDates: ManagerProposedDate[] | null;
+  managerProposedPrice: number | null;
+  managerRespondedAt: string | null;
+  /** Opaque token for the public manager-response page (no login). */
+  responseToken: string;
+  responseTokenExpiresAt: string;
+  responseTokenUsedAt: string | null;
+  adminReviewedBy: string | null;
+  adminReviewedAt: string | null;
+  adminNote: string | null;
+  /** Date the organizer picked among manager proposals (ISO date string). */
+  userSelectedDate: string | null;
+  userSelectedPrice: number | null;
+}
+
+/** Fill V2 fields for localStorage / partial payloads from older clients. */
+export function normalizeAvailabilityRequest(
+  item: AvailabilityRequest,
+): AvailabilityRequest {
+  const createdMs = Date.parse(item.createdAt);
+  const expiresFallback = Number.isFinite(createdMs)
+    ? new Date(createdMs + 7 * 24 * 60 * 60 * 1000).toISOString()
+    : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  return {
+    ...item,
+    managerDecision: item.managerDecision ?? null,
+    managerNote: item.managerNote ?? null,
+    managerProposedDates: item.managerProposedDates ?? null,
+    managerProposedPrice:
+      typeof item.managerProposedPrice === "number"
+        ? item.managerProposedPrice
+        : null,
+    managerRespondedAt: item.managerRespondedAt ?? null,
+    responseToken:
+      typeof item.responseToken === "string" && item.responseToken.length > 0
+        ? item.responseToken
+        : item.id,
+    responseTokenExpiresAt:
+      typeof item.responseTokenExpiresAt === "string" &&
+      item.responseTokenExpiresAt.length > 0
+        ? item.responseTokenExpiresAt
+        : expiresFallback,
+    responseTokenUsedAt: item.responseTokenUsedAt ?? null,
+    adminReviewedBy: item.adminReviewedBy ?? null,
+    adminReviewedAt: item.adminReviewedAt ?? null,
+    adminNote: item.adminNote ?? null,
+    userSelectedDate: item.userSelectedDate ?? null,
+    userSelectedPrice:
+      typeof item.userSelectedPrice === "number" ? item.userSelectedPrice : null,
+  };
 }

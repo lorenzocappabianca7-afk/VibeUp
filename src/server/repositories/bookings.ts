@@ -5,10 +5,14 @@ import {
   DEPOSIT_APP_FEE_RATE,
   roundCurrency,
 } from "@/lib/booking-money";
+import { notifyManagerAboutAvailabilityRequest } from "@/server/notifications/availability-request-notify";
+import { randomBytes } from "crypto";
 import type {
   AvailabilityEventPayload,
   AvailabilityRequest,
   AvailabilityRequestStatus,
+  ManagerDecision,
+  ManagerProposedDate,
 } from "@/types/availability-request";
 import type { BookedService, UserEvent } from "@/types/event";
 
@@ -19,8 +23,16 @@ const REQUEST_STATUSES = new Set<AvailabilityRequestStatus>([
   "pending_manager",
   "declined",
   "pending_user_confirm",
+  "pending_admin_review",
+  "pending_user_review_proposal",
   "confirmed",
   "cancelled",
+]);
+
+const MANAGER_DECISIONS = new Set<ManagerDecision>([
+  "accept",
+  "decline",
+  "propose",
 ]);
 
 export interface AvailabilityRequestRow {
@@ -35,6 +47,19 @@ export interface AvailabilityRequestRow {
   event_payload: AvailabilityEventPayload;
   created_at: string;
   updated_at: string;
+  manager_decision?: string | null;
+  manager_note?: string | null;
+  manager_proposed_dates?: unknown;
+  manager_proposed_price?: number | string | null;
+  manager_responded_at?: string | null;
+  response_token?: string | null;
+  response_token_expires_at?: string | null;
+  response_token_used_at?: string | null;
+  admin_reviewed_by?: string | null;
+  admin_reviewed_at?: string | null;
+  admin_note?: string | null;
+  user_selected_date?: string | null;
+  user_selected_price?: number | string | null;
 }
 
 export interface BookingRow {
@@ -105,6 +130,66 @@ function asPayload(value: unknown): AvailabilityEventPayload {
   };
 }
 
+function asManagerDecision(value: unknown): ManagerDecision | null {
+  return typeof value === "string" &&
+    MANAGER_DECISIONS.has(value as ManagerDecision)
+    ? (value as ManagerDecision)
+    : null;
+}
+
+function asNullableString(value: unknown): string | null {
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function asNullableNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function asProposedDates(value: unknown): ManagerProposedDate[] | null {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const dates: ManagerProposedDate[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const raw = item as Record<string, unknown>;
+    const date = typeof raw.date === "string" ? raw.date.trim() : "";
+    if (!date) continue;
+    dates.push({
+      date,
+      time: typeof raw.time === "string" ? raw.time : undefined,
+      endTime: typeof raw.endTime === "string" ? raw.endTime : undefined,
+      note: typeof raw.note === "string" ? raw.note : undefined,
+    });
+  }
+  return dates.length > 0 ? dates : null;
+}
+
+function asResponseToken(row: AvailabilityRequestRow): string {
+  if (typeof row.response_token === "string" && row.response_token.length > 0) {
+    return row.response_token;
+  }
+  // Pre-V2 rows should be backfilled by BOOKINGS_SCHEMA_V2.sql; keep mapping safe.
+  return row.id;
+}
+
+function asResponseTokenExpiresAt(row: AvailabilityRequestRow): string {
+  if (
+    typeof row.response_token_expires_at === "string" &&
+    row.response_token_expires_at.length > 0
+  ) {
+    return row.response_token_expires_at;
+  }
+  const created = Date.parse(row.created_at);
+  if (Number.isFinite(created)) {
+    return new Date(created + 7 * 24 * 60 * 60 * 1000).toISOString();
+  }
+  return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+}
+
 export function rowToAvailabilityRequest(
   row: AvailabilityRequestRow,
 ): AvailabilityRequest {
@@ -122,6 +207,19 @@ export function rowToAvailabilityRequest(
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     eventPayload: asPayload(row.event_payload),
+    managerDecision: asManagerDecision(row.manager_decision),
+    managerNote: asNullableString(row.manager_note),
+    managerProposedDates: asProposedDates(row.manager_proposed_dates),
+    managerProposedPrice: asNullableNumber(row.manager_proposed_price),
+    managerRespondedAt: asNullableString(row.manager_responded_at),
+    responseToken: asResponseToken(row),
+    responseTokenExpiresAt: asResponseTokenExpiresAt(row),
+    responseTokenUsedAt: asNullableString(row.response_token_used_at),
+    adminReviewedBy: asNullableString(row.admin_reviewed_by),
+    adminReviewedAt: asNullableString(row.admin_reviewed_at),
+    adminNote: asNullableString(row.admin_note),
+    userSelectedDate: asNullableString(row.user_selected_date),
+    userSelectedPrice: asNullableNumber(row.user_selected_price),
   };
 }
 
@@ -161,6 +259,19 @@ async function resolveListingId(locationId: string): Promise<string | null> {
   return data?.id ?? null;
 }
 
+function createResponseTokenPair(): {
+  responseToken: string;
+  responseTokenExpiresAt: string;
+} {
+  return {
+    // 48 hex chars (>= 32), URL-safe
+    responseToken: randomBytes(24).toString("hex"),
+    responseTokenExpiresAt: new Date(
+      Date.now() + 7 * 24 * 60 * 60 * 1000,
+    ).toISOString(),
+  };
+}
+
 export async function createAvailabilityRequest(params: {
   requesterId: string;
   requesterName: string;
@@ -176,6 +287,7 @@ export async function createAvailabilityRequest(params: {
   }
 
   const listingId = await resolveListingId(params.locationId);
+  const { responseToken, responseTokenExpiresAt } = createResponseTokenPair();
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("availability_requests")
@@ -188,17 +300,55 @@ export async function createAvailabilityRequest(params: {
       listing_id: listingId,
       location_name: params.locationName,
       event_payload: params.eventPayload,
+      response_token: responseToken,
+      response_token_expires_at: responseTokenExpiresAt,
+      response_token_used_at: null,
     })
     .select("*")
     .single();
 
   if (error || !data) {
-    return { ok: false, error: error?.message ?? "Creazione richiesta fallita." };
+    const raw = error?.message ?? "Creazione richiesta fallita.";
+    const lower = raw.toLowerCase();
+    if (lower.includes("invalid api key")) {
+      return {
+        ok: false,
+        error:
+          "Configurazione Supabase non valida sul server (API key). Controlla le variabili su Vercel e rifai il deploy.",
+      };
+    }
+    if (
+      lower.includes("permission denied") ||
+      lower.includes("42501") ||
+      lower.includes("grant")
+    ) {
+      return {
+        ok: false,
+        error:
+          "Permessi database mancanti sulle tabelle bookings. Esegui docs/FIX_TABLE_GRANTS.sql su Supabase.",
+      };
+    }
+    return { ok: false, error: raw };
+  }
+
+  const request = rowToAvailabilityRequest(data as AvailabilityRequestRow);
+
+  // Notification is best-effort: request already exists even if notify fails.
+  const notify = await notifyManagerAboutAvailabilityRequest(
+    request,
+    listingId,
+  );
+  if (!notify.ok) {
+    console.error(
+      "[bookings] notifica gestore non inviata per",
+      request.id,
+      notify.error,
+    );
   }
 
   return {
     ok: true,
-    request: rowToAvailabilityRequest(data as AvailabilityRequestRow),
+    request,
   };
 }
 
@@ -284,6 +434,175 @@ export async function getAvailabilityRequest(
   return data as AvailabilityRequestRow;
 }
 
+export type AvailabilityTokenAccess =
+  | { status: "ok"; request: AvailabilityRequest; row: AvailabilityRequestRow }
+  | { status: "missing" | "expired" | "used" };
+
+/**
+ * Public token lookup for /r/[token] (service-role). Does not consume the token.
+ */
+export async function getAvailabilityRequestByToken(
+  token: string,
+): Promise<AvailabilityTokenAccess> {
+  const trimmed = token.trim();
+  if (!trimmed || !isSupabaseConfigured()) return { status: "missing" };
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("availability_requests")
+    .select("*")
+    .eq("response_token", trimmed)
+    .maybeSingle();
+
+  if (error || !data) return { status: "missing" };
+
+  const row = data as AvailabilityRequestRow;
+  if (row.response_token_used_at) return { status: "used" };
+
+  const expiresAt = Date.parse(
+    typeof row.response_token_expires_at === "string"
+      ? row.response_token_expires_at
+      : "",
+  );
+  if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) {
+    return { status: "expired" };
+  }
+
+  if (row.status !== "pending_manager") {
+    // Already answered through another path.
+    return { status: "used" };
+  }
+
+  return {
+    status: "ok",
+    request: rowToAvailabilityRequest(row),
+    row,
+  };
+}
+
+export type ManagerRespondAction = "accept" | "decline" | "propose";
+
+export async function respondToAvailabilityRequestByToken(params: {
+  token: string;
+  action: ManagerRespondAction;
+  managerNote?: string | null;
+  proposedDates?: ManagerProposedDate[] | null;
+  proposedPrice?: number | null;
+}): Promise<
+  { ok: true; request: AvailabilityRequest } | { ok: false; error: string }
+> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Supabase non configurato." };
+  }
+
+  const access = await getAvailabilityRequestByToken(params.token);
+  if (access.status !== "ok") {
+    if (access.status === "expired") {
+      return { ok: false, error: "Link scaduto." };
+    }
+    if (access.status === "used") {
+      return { ok: false, error: "Link già utilizzato." };
+    }
+    return { ok: false, error: "Link non valido." };
+  }
+
+  const now = new Date().toISOString();
+  const note =
+    typeof params.managerNote === "string" && params.managerNote.trim()
+      ? params.managerNote.trim().slice(0, 2000)
+      : null;
+
+  let nextStatus: AvailabilityRequestStatus;
+  let decision: ManagerDecision;
+  let proposedDates: ManagerProposedDate[] | null = null;
+  let proposedPrice: number | null = null;
+
+  if (params.action === "accept") {
+    nextStatus = "pending_user_confirm";
+    decision = "accept";
+  } else if (params.action === "decline") {
+    nextStatus = "declined";
+    decision = "decline";
+  } else {
+    const dates = Array.isArray(params.proposedDates)
+      ? params.proposedDates.filter(
+          (item) => item && typeof item.date === "string" && item.date.trim(),
+        )
+      : [];
+    if (dates.length === 0 && params.proposedPrice == null && !note) {
+      return {
+        ok: false,
+        error:
+          "Per proporre una modifica indica almeno una data, un prezzo o una nota.",
+      };
+    }
+    nextStatus = "pending_admin_review";
+    decision = "propose";
+    proposedDates = dates.length > 0 ? dates : null;
+    proposedPrice =
+      typeof params.proposedPrice === "number" &&
+      Number.isFinite(params.proposedPrice) &&
+      params.proposedPrice >= 0
+        ? params.proposedPrice
+        : null;
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("availability_requests")
+    .update({
+      status: nextStatus,
+      manager_decision: decision,
+      manager_note: note,
+      manager_proposed_dates: proposedDates,
+      manager_proposed_price: proposedPrice,
+      manager_responded_at: now,
+      response_token_used_at: now,
+    })
+    .eq("id", access.row.id)
+    .eq("response_token", params.token.trim())
+    .is("response_token_used_at", null)
+    .eq("status", "pending_manager")
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+  if (!data) {
+    return {
+      ok: false,
+      error: "La richiesta è già stata gestita o il link non è più valido.",
+    };
+  }
+
+  const request = rowToAvailabilityRequest(data as AvailabilityRequestRow);
+
+  if (params.action === "accept" || params.action === "decline") {
+    try {
+      const { notifyOrganizerOfManagerDecision } = await import(
+        "@/server/notifications/organizer-decision-notifier"
+      );
+      const notify = await notifyOrganizerOfManagerDecision(request);
+      if (!notify.ok) {
+        console.error(
+          "[bookings] notifyOrganizerOfManagerDecision failed",
+          request.id,
+          notify.error,
+        );
+      }
+    } catch (err) {
+      console.error(
+        "[bookings] notifyOrganizerOfManagerDecision exception",
+        request.id,
+        err,
+      );
+    }
+  }
+
+  return { ok: true, request };
+}
+
 export async function canManageLocationRequest(params: {
   userId: string;
   role?: string;
@@ -356,7 +675,18 @@ export async function updateAvailabilityRequestStatus(params: {
     AvailabilityRequestStatus,
     AvailabilityRequestStatus[]
   > = {
-    pending_manager: ["pending_user_confirm", "declined", "cancelled"],
+    pending_manager: [
+      "pending_user_confirm",
+      "pending_admin_review",
+      "declined",
+      "cancelled",
+    ],
+    pending_admin_review: [
+      "pending_user_review_proposal",
+      "declined",
+      "cancelled",
+    ],
+    pending_user_review_proposal: ["confirmed", "cancelled"],
     pending_user_confirm: ["confirmed", "cancelled"],
     declined: [],
     confirmed: [],
@@ -510,4 +840,63 @@ export async function listOwnedLocationIds(userId: string): Promise<string[]> {
     .select("id")
     .eq("owner_id", userId);
   return (data ?? []).map((row) => row.id as string);
+}
+
+/**
+ * Admin / ops: re-send the manager notification for an existing request.
+ * Extends response_token_expires_at by 7 days if already expired and clears used_at.
+ */
+export async function resendAvailabilityRequestNotification(
+  requestId: string,
+): Promise<{ ok: boolean; error?: string; channel?: string }> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Supabase non configurato." };
+  }
+  if (!isUuid(requestId)) {
+    return { ok: false, error: "ID richiesta non valido." };
+  }
+
+  const row = await getAvailabilityRequest(requestId);
+  if (!row) {
+    return { ok: false, error: "Richiesta non trovata." };
+  }
+
+  let request = rowToAvailabilityRequest(row);
+  const expiresAt = Date.parse(request.responseTokenExpiresAt);
+  if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) {
+    const nextExpires = new Date(
+      Date.now() + 7 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from("availability_requests")
+      .update({
+        response_token_expires_at: nextExpires,
+        response_token_used_at: null,
+      })
+      .eq("id", requestId)
+      .select("*")
+      .maybeSingle();
+
+    if (error) {
+      return {
+        ok: false,
+        error: `Impossibile rinnovare il token: ${error.message}`,
+      };
+    }
+    if (data) {
+      request = rowToAvailabilityRequest(data as AvailabilityRequestRow);
+    } else {
+      request = {
+        ...request,
+        responseTokenExpiresAt: nextExpires,
+        responseTokenUsedAt: null,
+      };
+    }
+  }
+
+  return notifyManagerAboutAvailabilityRequest(
+    request,
+    row.listing_id ?? null,
+  );
 }

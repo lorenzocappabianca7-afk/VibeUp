@@ -122,5 +122,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: result.error }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, configured: true, request: result.request });
+  // Notification is attempted inside createAvailabilityRequest (best-effort).
+  // Always return ok:true when the row was saved.
+  return NextResponse.json({
+    ok: true,
+    configured: true,
+    request: result.request,
+  });
 }

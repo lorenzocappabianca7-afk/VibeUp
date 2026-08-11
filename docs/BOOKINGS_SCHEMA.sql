@@ -234,3 +234,12 @@ create policy "booking_payments_select_own"
         )
     )
   );
+
+-- Table privileges (RLS still applies to anon/authenticated; service_role bypasses RLS)
+grant usage on schema public to anon, authenticated, service_role;
+grant select, insert, update, delete on table public.availability_requests to service_role;
+grant select, insert, update on table public.availability_requests to authenticated;
+grant select, insert, update, delete on table public.bookings to service_role;
+grant select, insert, update on table public.bookings to authenticated;
+grant select, insert, update, delete on table public.booking_payments to service_role;
+grant select, insert, update on table public.booking_payments to authenticated;

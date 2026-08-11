@@ -86,3 +86,14 @@ drop trigger if exists listings_set_updated_at on public.listings;
 create trigger listings_set_updated_at
   before update on public.listings
   for each row execute function public.set_updated_at();
+
+-- Table privileges for API roles (run FIX_TABLE_GRANTS.sql if these were skipped earlier)
+grant usage on schema public to anon, authenticated, service_role;
+grant select, insert, update, delete on table public.profiles to service_role;
+grant select, update on table public.profiles to authenticated;
+grant select, insert, update, delete on table public.listings to service_role;
+grant select on table public.listings to anon, authenticated;
+grant insert, update on table public.listings to authenticated;
+grant select, insert, update, delete on table public.listing_media to service_role;
+grant select on table public.listing_media to anon, authenticated;
+grant insert, update, delete on table public.listing_media to authenticated;

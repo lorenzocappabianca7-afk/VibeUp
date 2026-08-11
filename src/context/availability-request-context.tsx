@@ -7,9 +7,10 @@ import {
   fetchAvailabilityRequests,
   patchAvailabilityRequestRemote,
 } from "@/lib/bookings/client";
-import type {
-  AvailabilityEventPayload,
-  AvailabilityRequest,
+import {
+  normalizeAvailabilityRequest,
+  type AvailabilityEventPayload,
+  type AvailabilityRequest,
 } from "@/types/availability-request";
 import type { UserEvent } from "@/types/event";
 import {
@@ -94,7 +95,9 @@ function readStoredRequests(): AvailabilityRequest[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return pruneAvailabilityRequests(parsed.filter(isAvailabilityRequest));
+    return pruneAvailabilityRequests(
+      parsed.filter(isAvailabilityRequest).map(normalizeAvailabilityRequest),
+    );
   } catch {
     return [];
   }
@@ -324,7 +327,7 @@ export function AvailabilityRequestProvider({
       }
 
       const now = new Date().toISOString();
-      const request: AvailabilityRequest = {
+      const request = normalizeAvailabilityRequest({
         id: `ar-${Date.now()}`,
         status: "pending_manager",
         requesterUserId: currentUser.id,
@@ -335,7 +338,22 @@ export function AvailabilityRequestProvider({
         createdAt: now,
         updatedAt: now,
         eventPayload: input.eventPayload,
-      };
+        managerDecision: null,
+        managerNote: null,
+        managerProposedDates: null,
+        managerProposedPrice: null,
+        managerRespondedAt: null,
+        responseToken: `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
+        responseTokenExpiresAt: new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
+        responseTokenUsedAt: null,
+        adminReviewedBy: null,
+        adminReviewedAt: null,
+        adminNote: null,
+        userSelectedDate: null,
+        userSelectedPrice: null,
+      });
 
       setRequests((prev) => [request, ...prev]);
       return { ok: true as const, requestId: request.id };

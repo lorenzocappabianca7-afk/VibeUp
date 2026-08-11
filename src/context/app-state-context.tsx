@@ -53,6 +53,8 @@ import {
 import { scrubPersistedJson } from "@/lib/security/persist-scrub";
 import { purgeUserSatelliteStorage } from "@/lib/local-user-data-cleanup";
 import type { ManagedListing } from "@/types/admin";
+import type { ManagerNotificationPrefs } from "@/types/manager-notification-prefs";
+import { normalizeManagerNotificationPrefs } from "@/types/manager-notification-prefs";
 import type {
   BookedService,
   EventMenuSelection,
@@ -94,6 +96,11 @@ export interface CurrentUser {
   /** Supabase profiles.role when auth is cloud-backed */
   role?: "guest" | "consumer" | "business" | "admin";
   businessProfile?: BusinessProfile | null;
+  /**
+   * Preferenze canale per nuove richieste di disponibilità (gestori).
+   * Specchio locale di profiles.notification_* su Supabase.
+   */
+  managerNotificationPrefs?: ManagerNotificationPrefs;
   /** Preferenze impostazioni persistite per account */
   settings?: UserSettings;
   /** SHA-256 hash — never store the plain password */
@@ -239,6 +246,9 @@ interface AppStateContextValue {
   isAccountLocked: boolean;
   saveBusinessProfile: (profile: BusinessProfile) => void;
   clearBusinessProfile: () => void;
+  saveManagerNotificationPrefs: (
+    prefs: ManagerNotificationPrefs,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
 }
 
 const AppStateContext = createContext<AppStateContextValue | null>(null);
@@ -419,6 +429,9 @@ function normalizeAccount(account: CurrentUser): CurrentUser {
     accountType,
     businessProfile:
       accountType === "business" ? (account.businessProfile ?? null) : null,
+    managerNotificationPrefs: normalizeManagerNotificationPrefs(
+      account.managerNotificationPrefs,
+    ),
     settings: normalizeUserSettings(account.settings),
     // Legacy accounts without the field stay usable.
     emailVerified: account.emailVerified !== false,
@@ -729,6 +742,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const isGuest = currentUserId === GUEST_USER.id;
   const currentUserIdRef = useRef(currentUserId);
   currentUserIdRef.current = currentUserId;
+  const accountsRef = useRef(accounts);
+  accountsRef.current = accounts;
 
   const currentUser = resolveCurrentUser(accounts, currentUserId);
   const businessProfile =
@@ -2307,6 +2322,49 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const saveManagerNotificationPrefs = useCallback(
+    async (prefs: ManagerNotificationPrefs) => {
+      const userId = currentUserIdRef.current;
+      if (userId === GUEST_USER.id) {
+        return { ok: false as const, error: "Crea un account per salvare." };
+      }
+
+      const { validateManagerNotificationPrefs } = await import(
+        "@/types/manager-notification-prefs"
+      );
+      const validated = validateManagerNotificationPrefs(prefs);
+      if (!validated.ok) {
+        return { ok: false as const, error: validated.error };
+      }
+
+      setAccounts((prev) =>
+        prev.map((account) =>
+          account.id === userId
+            ? normalizeAccount({
+                ...account,
+                managerNotificationPrefs: validated.prefs,
+              })
+            : account,
+        ),
+      );
+
+      const account = accountsRef.current.find((item) => item.id === userId);
+      if (account?.authProvider === "supabase") {
+        const { saveManagerNotificationPrefsRemote } = await import(
+          "@/lib/profile/notification-prefs-client"
+        );
+        const remote = await saveManagerNotificationPrefsRemote(validated.prefs);
+        if (!remote.ok) {
+          // Local copy already saved; surface cloud error so the UI can warn.
+          return { ok: false as const, error: remote.error };
+        }
+      }
+
+      return { ok: true as const };
+    },
+    [],
+  );
+
   const value = useMemo(
     () => {
       return {
@@ -2361,6 +2419,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       isAccountLocked,
       saveBusinessProfile,
       clearBusinessProfile,
+      saveManagerNotificationPrefs,
     };
     },
     [
@@ -2415,6 +2474,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       isAccountLocked,
       saveBusinessProfile,
       clearBusinessProfile,
+      saveManagerNotificationPrefs,
     ],
   );
 
