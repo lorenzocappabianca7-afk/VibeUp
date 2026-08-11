@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Montserrat } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import Script from "next/script";
 import { AppChrome } from "@/components/layout/app-chrome";
 import { AppProviders } from "@/components/providers/app-providers";
@@ -22,10 +23,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const brandDisplay = Montserrat({
+/** Self-hosted: next/font/google Montserrat URLs currently 404 on gstatic during Vercel builds. */
+const brandDisplay = localFont({
+  src: [
+    {
+      path: "../fonts/montserrat-latin-600-normal.woff2",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../fonts/montserrat-latin-700-normal.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
   variable: "--font-brand",
-  subsets: ["latin"],
-  weight: ["600", "700"],
+  display: "swap",
 });
 
 const APPLE_STARTUP_IMAGES = [
