@@ -14,6 +14,7 @@ import {
   calculateHours,
   getExtraServicePrice,
 } from "@/lib/location";
+import { calculateLocationDeposit } from "@/lib/booking-money";
 import {
   calculateDrinksCost,
   clampDrinksPerInvitee,
@@ -308,7 +309,7 @@ export function LocationDetailView({
       drinksCost,
       venueServicesCost,
       total,
-      depositAmount: locationCost * 0.3,
+      depositAmount: calculateLocationDeposit(locationCost),
     } satisfies BookingQuote;
   }, [
     location,

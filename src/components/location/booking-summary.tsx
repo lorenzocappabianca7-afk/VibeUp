@@ -1,10 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { getDepositCheckoutAmounts } from "@/lib/booking-money";
 import { cn, formatCurrency } from "@/lib/utils";
 import type { AvailabilityRequestStatus } from "@/types/availability-request";
 import type { BookingQuote } from "@/types/location";
 import { Check, Clock3, ShieldCheck } from "lucide-react";
+import { useMemo } from "react";
 
 interface BookingSummaryProps {
   quote: BookingQuote;
@@ -40,6 +42,10 @@ export function BookingSummary({
   const locationLine =
     locationPriceLabel ??
     `${quote.hours} ore × ${formatCurrency(hourlyPrice)}`;
+  const depositCheckout = useMemo(
+    () => getDepositCheckoutAmounts(quote.depositAmount),
+    [quote.depositAmount],
+  );
 
   return (
     <section className="space-y-4 rounded-2xl border border-white bg-primary-black/[0.02] p-5">
@@ -72,15 +78,37 @@ export function BookingSummary({
             {quote.total > 0 ? formatCurrency(quote.total) : "—"}
           </dd>
         </div>
-        <div className="flex justify-between gap-3 rounded-xl bg-brand-pink/10 px-3 py-2.5">
-          <dt className="min-w-0 text-sm font-medium text-primary-black">
-            Caparra stimata (30% location)
-          </dt>
-          <dd className="shrink-0 text-sm font-bold text-brand-pink">
-            {quote.depositAmount > 0
-              ? formatCurrency(quote.depositAmount)
-              : "—"}
-          </dd>
+        <div className="space-y-1.5 rounded-xl bg-brand-pink/10 px-3 py-2.5">
+          <div className="flex justify-between gap-3">
+            <dt className="min-w-0 text-sm font-medium text-primary-black">
+              Caparra (30% location)
+            </dt>
+            <dd className="shrink-0 text-sm font-bold text-brand-pink">
+              {depositCheckout.base > 0
+                ? formatCurrency(depositCheckout.base)
+                : "—"}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-3 text-xs">
+            <dt className="min-w-0 text-primary-black/65">
+              + Commissioni VibeUp (5%)
+            </dt>
+            <dd className="shrink-0 font-semibold text-primary-black/80">
+              {depositCheckout.fee > 0
+                ? formatCurrency(depositCheckout.fee)
+                : "—"}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-3 border-t border-brand-pink/20 pt-1.5">
+            <dt className="min-w-0 text-sm font-semibold text-primary-black">
+              Totale caparra (bonifico)
+            </dt>
+            <dd className="shrink-0 text-sm font-bold text-brand-pink">
+              {depositCheckout.total > 0
+                ? formatCurrency(depositCheckout.total)
+                : "—"}
+            </dd>
+          </div>
         </div>
       </dl>
 

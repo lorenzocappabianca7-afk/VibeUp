@@ -6,6 +6,7 @@ import { ServiceStatusList } from "@/components/events/service-status-list";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
 import { useAppState } from "@/context/app-state-context";
+import { calculateLocationDeposit, getDepositCheckoutAmounts } from "@/lib/booking-money";
 import {
   EVENT_STATUS_LABELS,
   type BookedService,
@@ -82,7 +83,9 @@ export function EventDashboardView({
   const locationCost =
     currentEvent.services.find((service) => service.category === "location")
       ?.amountPaid ?? 0;
-  const depositAmount = currentEvent.depositAmount ?? locationCost * 0.3;
+  const depositAmount =
+    currentEvent.depositAmount ?? calculateLocationDeposit(locationCost);
+  const depositCheckout = getDepositCheckoutAmounts(depositAmount);
   const remainingAmount = Math.max(0, totalCost - depositAmount);
 
   function handleRequestRefund(service: BookedService) {
@@ -190,11 +193,15 @@ export function EventDashboardView({
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="rounded-xl bg-brand-pink/10 px-3 py-2.5">
               <dt className="text-xs font-medium text-primary-black/60">
-                Caparra stimata
+                Caparra + fee 5% (bonifico)
               </dt>
               <dd className="text-sm font-bold text-brand-pink">
-                {formatCurrency(depositAmount)}
+                {formatCurrency(depositCheckout.total)}
               </dd>
+              <p className="mt-1 text-[11px] font-semibold text-primary-black/50">
+                Base {formatCurrency(depositCheckout.base)} + commissioni{" "}
+                {formatCurrency(depositCheckout.fee)}
+              </p>
             </div>
             <div className="rounded-xl bg-brand-teal/10 px-3 py-2.5">
               <dt className="text-xs font-medium text-primary-black/60">

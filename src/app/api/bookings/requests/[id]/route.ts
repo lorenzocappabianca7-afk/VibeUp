@@ -92,6 +92,15 @@ export async function PATCH(
     });
   }
 
+  // Service requests attach to an existing event client-side; no booking row.
+  if (updated.request.eventPayload.requestKind === "service") {
+    return NextResponse.json({
+      ok: true,
+      configured: true,
+      request: updated.request,
+    });
+  }
+
   const booking = await createBookingFromRequest({
     request: updated.request,
     organizerId: user.id,

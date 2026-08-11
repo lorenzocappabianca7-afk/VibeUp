@@ -24,6 +24,7 @@ export function ConfirmAvailabilityModal() {
   if (!request) return null;
 
   const payload = request.eventPayload;
+  const isServiceRequest = payload.requestKind === "service";
 
   function handleConfirm() {
     if (submittingId) return;
@@ -33,12 +34,14 @@ export function ConfirmAvailabilityModal() {
         setSubmittingId(null);
         return;
       }
-      addDepositReminder({
-        eventId: result.eventId,
-        eventTitle: payload.title,
-        locationName: payload.locationName,
-        date: formatDate(payload.date),
-      });
+      if (!isServiceRequest) {
+        addDepositReminder({
+          eventId: result.eventId,
+          eventTitle: payload.title,
+          locationName: payload.locationName,
+          date: formatDate(payload.date),
+        });
+      }
       setTab("events");
     });
   }
@@ -62,15 +65,28 @@ export function ConfirmAvailabilityModal() {
           id="confirm-availability-title"
           className="text-center text-lg font-bold text-primary-black"
         >
-          Conferma creazione evento
+          {isServiceRequest
+            ? "Conferma servizio"
+            : "Conferma creazione evento"}
         </h2>
         <p className="mt-2 text-center text-sm text-primary-black/60">
-          Il gestore di{" "}
-          <span className="font-semibold text-primary-black">
-            {request.locationName}
-          </span>{" "}
-          ha accettato la tua richiesta. Confermi di voler creare l&apos;evento
-          nei tuoi eventi?
+          {isServiceRequest ? (
+            <>
+              <span className="font-semibold text-primary-black">
+                {request.locationName}
+              </span>{" "}
+              ha accettato. Confermi di aggiungere il servizio all&apos;evento?
+            </>
+          ) : (
+            <>
+              Il gestore di{" "}
+              <span className="font-semibold text-primary-black">
+                {request.locationName}
+              </span>{" "}
+              ha accettato la tua richiesta. Confermi di voler creare
+              l&apos;evento nei tuoi eventi?
+            </>
+          )}
         </p>
 
         <div className="mt-4 space-y-2 rounded-2xl border border-primary-black/8 bg-primary-black/[0.02] p-3 text-sm">
@@ -101,7 +117,9 @@ export function ConfirmAvailabilityModal() {
             onClick={handleConfirm}
             className="flex-1 rounded-2xl bg-brand-teal px-4 py-3 text-sm font-bold text-primary-black disabled:opacity-60"
           >
-            Conferma e crea evento
+            {isServiceRequest
+              ? "Conferma servizio"
+              : "Conferma e crea evento"}
           </button>
         </div>
       </div>

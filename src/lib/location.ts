@@ -1,5 +1,6 @@
 import { EXTRA_SERVICES } from "@/lib/mock/extra-services";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
+import { calculateLocationDeposit } from "@/lib/booking-money";
 import { getLocationListBaseCost } from "@/lib/location-publish-form";
 import type {
   BookingQuote,
@@ -127,7 +128,7 @@ export function calculateBookingQuote(params: {
   }, 0);
 
   const total = locationCost + extrasCost;
-  const depositAmount = locationCost * 0.3;
+  const depositAmount = calculateLocationDeposit(locationCost);
 
   return {
     hours,

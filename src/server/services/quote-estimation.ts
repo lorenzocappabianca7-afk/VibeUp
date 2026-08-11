@@ -1,8 +1,10 @@
 import { EXTRA_SERVICES } from "@/lib/mock/extra-services";
+import { calculateLocationDeposit, roundCurrency } from "@/lib/booking-money";
 import {
   calculateHours,
   getExtraServicePrice,
 } from "@/lib/location";
+import { getLocationListBaseCost } from "@/lib/location-publish-form";
 import { getSmartLocationById } from "@/server/repositories/locations";
 import type {
   BookingQuote,
@@ -26,10 +28,6 @@ const SERVICE_TYPE_TO_EXTRA_ID: Partial<Record<ExtractedServiceType, ExtraServic
   catering: "catering",
   audio_lights: "audio_lights",
 };
-
-function roundCurrency(value: number): number {
-  return Math.round(value * 100) / 100;
-}
 
 function calculateExtractedServicePrice(
   service: ExtractedLocationService,
@@ -113,7 +111,9 @@ export async function generateInstantQuote(
   const cakeKg = preferences.cakeKg ?? Math.max(2, Math.ceil(guestCount / 12));
   const rawHours = calculateHours(preferences.startTime, preferences.endTime);
   const hours = Math.max(rawHours, location.technicalDetails.minHours);
-  const baseLocationCost = roundCurrency(hours * location.hourlyPrice);
+  const baseLocationCost = roundCurrency(
+    getLocationListBaseCost(location, { hours, guestCount }),
+  );
   const selectedInternalServices = priceList.filter((service) =>
     preferences.selectedServiceIds?.includes(service.id),
   );
@@ -175,7 +175,7 @@ export async function generateInstantQuote(
     drinksCost: 0,
     venueServicesCost,
     total,
-    depositAmount: roundCurrency(locationCost * 0.3),
+    depositAmount: calculateLocationDeposit(locationCost),
   };
   const confidence = scoreConfidence({
     hasStoredExtraction: Boolean(storedRecord),
@@ -191,7 +191,7 @@ export async function generateInstantQuote(
       ? `Applicata durata minima del locale: ${location.technicalDetails.minHours} ore.`
       : null,
     "I prezzi estratti da foto/listini hanno priorita' sui fallback dei servizi esterni.",
-    "Il deposito e' stimato al 30% del costo della location.",
+    "Il deposito e' stimato al 30% del costo della location (esclusa fee VibeUp 5% alla caparra).",
   ].filter((assumption): assumption is string => Boolean(assumption));
   const riskFactors = [
     guestCount > location.capacity

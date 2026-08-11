@@ -5,6 +5,7 @@ import { EventCountdown } from "@/components/events/event-countdown";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { useAppState } from "@/context/app-state-context";
 import { getCountdown, isEventPast } from "@/lib/event";
+import { calculateLocationDeposit } from "@/lib/booking-money";
 import {
   EVENT_STATUS_LABELS,
   type BookedService,
@@ -36,19 +37,9 @@ import {
 } from "lucide-react";
 import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
+import { getDepositCheckoutAmounts } from "@/lib/booking-money";
 
-/** Platform fee applied on top of the location deposit. */
-const DEPOSIT_APP_FEE_RATE = 0.05;
-
-function getDepositCheckoutAmounts(depositAmount: number) {
-  const base = Number.isFinite(depositAmount) ? Math.max(0, depositAmount) : 0;
-  const fee = Math.round(base * DEPOSIT_APP_FEE_RATE);
-  return {
-    base,
-    fee,
-    total: base + fee,
-  };
-}
+/** Platform fee applied on top of the location deposit — bank transfer configured later. */
 
 interface MyEventsScreenProps {
   onCreateEvent?: () => void;
@@ -56,7 +47,7 @@ interface MyEventsScreenProps {
   isActive?: boolean;
 }
 
-type PaymentMethod = "card" | "apple_pay" | "paypal" | "bank_transfer" | "cash";
+type PaymentMethod = "bank_transfer" | "card" | "apple_pay" | "paypal" | "cash";
 
 interface ServicePaymentState {
   paid: boolean;
@@ -71,10 +62,10 @@ const statusColors: Record<UserEvent["status"], string> = {
 };
 
 const paymentMethodLabels: Record<PaymentMethod, string> = {
+  bank_transfer: "Bonifico",
   card: "Carta",
   apple_pay: "Apple Pay",
   paypal: "PayPal",
-  bank_transfer: "Bonifico",
   cash: "Contanti",
 };
 
@@ -295,7 +286,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
       selectedEvent.services.find((service) => service.category === "location")
         ?.amountPaid ?? 0;
     const depositBase =
-      selectedEvent.depositAmount ?? locationAmount * 0.3;
+      selectedEvent.depositAmount ?? calculateLocationDeposit(locationAmount);
     const { total } = getDepositCheckoutAmounts(depositBase);
 
     setPaymentModal({
@@ -431,7 +422,8 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   const locationCost =
     event.services.find((service) => service.category === "location")
       ?.amountPaid ?? 0;
-  const depositAmount = event.depositAmount ?? locationCost * 0.3;
+  const depositAmount =
+    event.depositAmount ?? calculateLocationDeposit(locationCost);
   const depositPayment = paymentStates[`${event.id}:${event.id}-deposit`] ?? {
     paid: false,
   };
@@ -496,9 +488,12 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                   aria-label="Titolo evento"
                 />
               ) : (
-                <h3 className="min-w-0 flex-1 truncate text-lg font-bold leading-snug text-[color:var(--postit-ink)] sm:text-xl">
+                <HardNavLink
+                  href={`/event/${event.id}`}
+                  className="min-w-0 flex-1 truncate text-lg font-bold leading-snug text-[color:var(--postit-ink)] underline-offset-2 hover:underline sm:text-xl"
+                >
                   {event.title}
-                </h3>
+                </HardNavLink>
               )}
               <button
                 type="button"

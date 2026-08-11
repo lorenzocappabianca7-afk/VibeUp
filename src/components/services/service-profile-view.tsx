@@ -2,6 +2,8 @@
 
 import { useAccountGate } from "@/context/account-gate-context";
 import { useAppState } from "@/context/app-state-context";
+import { useAvailabilityRequests } from "@/context/availability-request-context";
+import type { AvailabilityEventPayload } from "@/types/availability-request";
 import {
   getServiceProviderById,
   type ServiceProvider,
@@ -10,7 +12,7 @@ import { APP_SHELL_WIDTH_CLASS, cn, formatCurrency } from "@/lib/utils";
 import { isEventPast } from "@/lib/event";
 import type { ManagedListing, ManagedServiceListing } from "@/types/admin";
 import { isManagedListingLive } from "@/types/admin";
-import type { BookedServiceCategory } from "@/types/event";
+import type { BookedService, BookedServiceCategory } from "@/types/event";
 import type { MusicType, PartyType } from "@/types/location";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
 import {
@@ -150,9 +152,10 @@ export function ServiceProfileView({
   serviceId,
   initialContext,
 }: ServiceProfileViewProps) {
-  const { addServiceToEvent, events, getEvent, isStorageHydrated, managedListings } =
-    useAppState();
+  const { events, getEvent, isStorageHydrated, managedListings } = useAppState();
+  const { sendAvailabilityRequest } = useAvailabilityRequests();
   const { requireAccount } = useAccountGate();
+  const [requestError, setRequestError] = useState<string | null>(null);
   const service = useMemo(() => {
     const staticService = getServiceProviderById(serviceId);
     if (staticService) return staticService;
@@ -256,10 +259,54 @@ export function ServiceProfileView({
     ...(service?.galleryImageUrls ?? []),
   ]);
 
+  function buildServiceRequestPayload(
+    pendingService: BookedService,
+  ): AvailabilityEventPayload | null {
+    if (!service || !selectedEvent) return null;
+    return {
+      title: selectedEvent.title,
+      description: `Richiesta servizio: ${pendingService.name}`,
+      date: selectedEvent.date,
+      time: selectedEvent.time,
+      endTime: selectedEvent.endTime ?? selectedEvent.time,
+      locationId: service.id,
+      locationName: service.name,
+      city: selectedEvent.city,
+      guestCount: selectedEvent.guestCount,
+      services: [pendingService],
+      totalCost: pendingService.amountPaid,
+      depositAmount: 0,
+      requestKind: "service",
+      targetEventId: selectedEvent.id,
+      pendingService,
+    };
+  }
+
+  function requestServiceForEvent(pendingService: BookedService) {
+    requireAccount(() => {
+      const eventPayload = buildServiceRequestPayload(pendingService);
+      if (!eventPayload || !service) return;
+
+      void sendAvailabilityRequest({
+        locationId: service.id,
+        locationName: service.name,
+        eventPayload,
+      }).then((result) => {
+        if (!result.ok) {
+          setRequestError(result.error);
+          setServiceAdded(false);
+          return;
+        }
+        setRequestError(null);
+        setServiceAdded(true);
+      });
+    }, "Per richiedere un servizio crea un account.");
+  }
+
   function addGeneratedServiceToEvent() {
     if (!service || !generatedQuote || !selectedEventId) return;
 
-    addServiceToEvent(selectedEventId, {
+    requestServiceForEvent({
       id: `${selectedEventId}-${service.id}-${Date.now()}`,
       category: getBookedCategoryForService(service),
       name: serviceRoleName,
@@ -267,13 +314,12 @@ export function ServiceProfileView({
       status: "pending",
       amountPaid: generatedQuote,
     });
-    setServiceAdded(true);
   }
 
   function addDecorationShopToEvent() {
     if (!service || !selectedEventId) return;
 
-    addServiceToEvent(selectedEventId, {
+    requestServiceForEvent({
       id: `${selectedEventId}-${service.id}-${Date.now()}`,
       category: "decorations",
       name: "Decorazioni",
@@ -281,7 +327,6 @@ export function ServiceProfileView({
       status: "pending",
       amountPaid: 0,
     });
-    setServiceAdded(true);
   }
 
   if (!service) {
@@ -484,11 +529,16 @@ export function ServiceProfileView({
               >
                 <Check className="h-4 w-4" aria-hidden />
                 {serviceAdded ? (
-                  <>Negozio aggiunto all&apos;evento</>
+                  <>Richiesta inviata al negozio</>
                 ) : (
-                  <>Seleziona per questo evento</>
+                  <>Richiedi per questo evento</>
                 )}
               </button>
+              {requestError && (
+                <p className="mt-2 text-xs font-semibold text-brand-pink">
+                  {requestError}
+                </p>
+              )}
               {serviceAdded && (
                 <HomeTabLink
                   tab="events"
@@ -662,11 +712,16 @@ export function ServiceProfileView({
                 >
                   <Check className="h-4 w-4" aria-hidden />
                   {serviceAdded ? (
-                    <>{serviceRoleName} aggiunto all&apos;evento</>
+                    <>Richiesta inviata al fornitore</>
                   ) : (
-                    <>Aggiungi {serviceRoleName} all&apos;evento</>
+                    <>Richiedi {serviceRoleName} per l&apos;evento</>
                   )}
                 </button>
+                {requestError && (
+                  <p className="mt-2 text-xs font-semibold text-brand-pink">
+                    {requestError}
+                  </p>
+                )}
                 {serviceAdded && (
                   <HomeTabLink
                     tab="events"
@@ -679,8 +734,8 @@ export function ServiceProfileView({
             )}
 
             <p className="mt-3 rounded-2xl bg-surface px-3 py-2 text-xs font-bold text-primary-black/70">
-              Il costo tiene conto dell&apos;evento selezionato, delle ore
-              richieste e della distanza dal luogo della festa.
+              Prima la disponibilità: il fornitore deve accettare. Poi confermi e
+              il servizio entra nell&apos;evento (pagamento via bonifico in seguito).
             </p>
           </aside>
           )}

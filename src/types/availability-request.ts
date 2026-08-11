@@ -21,6 +21,11 @@ export interface AvailabilityEventPayload {
   services: BookedService[];
   totalCost: number;
   depositAmount: number;
+  /** location = new event; service = add provider to an existing event. */
+  requestKind?: "location" | "service";
+  /** When requestKind is service, confirm adds this service to the target event. */
+  targetEventId?: string;
+  pendingService?: BookedService;
 }
 
 export interface AvailabilityRequest {

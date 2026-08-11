@@ -177,7 +177,7 @@ function countActiveFilters(filters: ExploreFilters): number {
     count++;
   }
   if (filters.guestCount > EXPLORE_GUEST_MIN) count++;
-  if (filters.dateFrom !== null) count++;
+  // dateFrom/dateTo are booking context for detail/quote, not list filters.
   // "Tipo di festa" non deve contribuire al badge dei filtri attivi.
   if (filters.nearMe) {
     count++;

@@ -145,6 +145,7 @@ export function AvailabilityRequestProvider({
 }) {
   const {
     addEvent,
+    addServiceToEvent,
     businessProfile,
     currentUser,
     isBusinessUser,
@@ -217,6 +218,14 @@ export function AvailabilityRequestProvider({
     );
   }, [managedListings]);
 
+  const managedServiceIds = useMemo(() => {
+    return new Set(
+      managedListings
+        .filter((listing) => listing.category !== "locali")
+        .map((listing) => listing.id),
+    );
+  }, [managedListings]);
+
   const pendingManagerRequests = useMemo(() => {
     const pending = requests.filter(
       (item) => item.status === "pending_manager",
@@ -230,8 +239,12 @@ export function AvailabilityRequestProvider({
       );
     }
 
-    if (managedLocationIds.size > 0) {
-      return pending.filter((item) => managedLocationIds.has(item.locationId));
+    if (managedLocationIds.size > 0 || managedServiceIds.size > 0) {
+      return pending.filter(
+        (item) =>
+          managedLocationIds.has(item.locationId) ||
+          managedServiceIds.has(item.locationId),
+      );
     }
     const businessName = businessProfile?.businessName?.trim().toLowerCase();
     if (businessName) {
@@ -249,6 +262,7 @@ export function AvailabilityRequestProvider({
     currentUser.role,
     isBusinessUser,
     managedLocationIds,
+    managedServiceIds,
     requests,
   ]);
 
@@ -422,6 +436,21 @@ export function AvailabilityRequestProvider({
           return { ok: false as const, error: remote.error };
         }
         setRequests((prev) => upsertRequest(prev, remote.request));
+
+        const payload = remote.request.eventPayload;
+        if (
+          payload.requestKind === "service" &&
+          payload.targetEventId &&
+          payload.pendingService
+        ) {
+          addServiceToEvent(payload.targetEventId, {
+            ...payload.pendingService,
+            status: "confirmed",
+          });
+          setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+          return { ok: true as const, eventId: payload.targetEventId };
+        }
+
         const event = remote.event;
         if (!event) {
           return {
@@ -461,8 +490,22 @@ export function AvailabilityRequestProvider({
         };
       }
 
-      const eventId = `evt-${Date.now()}`;
       const payload = existing.eventPayload;
+      if (
+        payload.requestKind === "service" &&
+        payload.targetEventId &&
+        payload.pendingService
+      ) {
+        addServiceToEvent(payload.targetEventId, {
+          ...payload.pendingService,
+          status: "confirmed",
+        });
+        setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
+        confirmLockRef.current.delete(requestId);
+        return { ok: true as const, eventId: payload.targetEventId };
+      }
+
+      const eventId = `evt-${Date.now()}`;
       const event: UserEvent = {
         id: eventId,
         title: payload.title,
@@ -491,7 +534,7 @@ export function AvailabilityRequestProvider({
       confirmLockRef.current.delete(requestId);
       return { ok: true as const, eventId };
     },
-    [addEvent, cloudSyncEnabled],
+    [addEvent, addServiceToEvent, cloudSyncEnabled],
   );
 
   const cancelAvailabilityRequest = useCallback(

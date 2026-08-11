@@ -1,5 +1,9 @@
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import {
+  DEPOSIT_APP_FEE_RATE,
+  roundCurrency,
+} from "@/lib/booking-money";
 import type {
   AvailabilityEventPayload,
   AvailabilityRequest,
@@ -87,6 +91,16 @@ function asPayload(value: unknown): AvailabilityEventPayload {
       typeof raw.depositAmount === "number" && Number.isFinite(raw.depositAmount)
         ? raw.depositAmount
         : 0,
+    requestKind:
+      raw.requestKind === "service" || raw.requestKind === "location"
+        ? raw.requestKind
+        : undefined,
+    targetEventId:
+      typeof raw.targetEventId === "string" ? raw.targetEventId : undefined,
+    pendingService:
+      raw.pendingService && typeof raw.pendingService === "object"
+        ? (raw.pendingService as BookedService)
+        : undefined,
   };
 }
 
@@ -424,7 +438,9 @@ export async function createBookingFromRequest(params: {
   }
 
   const booking = data as BookingRow;
-  const feeAmount = Math.round(Number(booking.deposit_amount) * 0.05 * 100) / 100;
+  const feeAmount = roundCurrency(
+    Number(booking.deposit_amount) * DEPOSIT_APP_FEE_RATE,
+  );
 
   await supabase.from("booking_payments").upsert(
     {
@@ -478,7 +494,6 @@ export async function listOwnedLocationIds(userId: string): Promise<string[]> {
   const { data } = await supabase
     .from("listings")
     .select("id")
-    .eq("owner_id", userId)
-    .eq("kind", "location");
+    .eq("owner_id", userId);
   return (data ?? []).map((row) => row.id as string);
 }

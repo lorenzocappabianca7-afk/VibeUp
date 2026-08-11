@@ -33,6 +33,7 @@ import {
   isActivationTokenExpired,
 } from "@/lib/auth/activation";
 import { isEventPast } from "@/lib/event";
+import { calculateLocationDeposit } from "@/lib/booking-money";
 import {
   allergenRestrictionNames,
   normalizeAllergenRestrictions,
@@ -996,6 +997,26 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     }));
   }, [updateCurrentUserState]);
 
+  const mergeCloudEvents = useCallback(
+    (cloudEvents: UserEvent[]) => {
+      if (cloudEvents.length === 0) return;
+      updateCurrentUserState((state) => {
+        const byId = new Map<string, UserEvent>();
+        for (const event of state.events) byId.set(event.id, event);
+        for (const event of cloudEvents) byId.set(event.id, event);
+        return {
+          ...state,
+          events: Array.from(byId.values()).sort((a, b) => {
+            const aStamp = Date.parse(a.createdAt ?? a.date) || 0;
+            const bStamp = Date.parse(b.createdAt ?? b.date) || 0;
+            return bStamp - aStamp;
+          }),
+        };
+      });
+    },
+    [updateCurrentUserState],
+  );
+
   const getEvent = useCallback(
     (id: string) => events.find((event) => event.id === id),
     [events],
@@ -1113,12 +1134,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           const totalCost = services.reduce((sum, item) => sum + item.amountPaid, 0);
           const locationCost =
             services.find((item) => item.category === "location")?.amountPaid ?? 0;
+          const nextDeposit =
+            event.depositAmount && event.depositAmount > 0
+              ? event.depositAmount
+              : calculateLocationDeposit(locationCost);
 
           return {
             ...event,
             services,
             totalCost,
-            depositAmount: locationCost * 0.3,
+            depositAmount: nextDeposit,
           };
         }),
       }));
@@ -1661,6 +1686,34 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
     };
   }, [applySupabaseIdentity, hydratedFromStorage]);
+
+  useEffect(() => {
+    if (!hydratedFromStorage) return;
+    if (currentUser.authProvider !== "supabase" || currentUser.isGuest) return;
+
+    let cancelled = false;
+    void fetch("/api/bookings", { credentials: "same-origin" })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return (await response.json().catch(() => null)) as {
+          events?: UserEvent[];
+        } | null;
+      })
+      .then((payload) => {
+        if (cancelled || !payload?.events) return;
+        mergeCloudEvents(payload.events);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    currentUser.authProvider,
+    currentUser.id,
+    currentUser.isGuest,
+    hydratedFromStorage,
+    mergeCloudEvents,
+  ]);
 
   const createBusinessAccount = useCallback(
     async (
