@@ -79,6 +79,21 @@ export function ImageCarousel({
     scrollToIndex(activeIndex);
   }, [activeIndex, scrollToIndex]);
 
+  // Desktop: overflow-x scroller otherwise eats vertical wheel / trackpad.
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller || images.length < 2) return;
+
+    const onWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+      event.preventDefault();
+      window.scrollBy({ top: event.deltaY, left: 0, behavior: "auto" });
+    };
+
+    scroller.addEventListener("wheel", onWheel, { passive: false });
+    return () => scroller.removeEventListener("wheel", onWheel);
+  }, [images.length]);
+
   function handleScroll() {
     const scroller = scrollerRef.current;
     if (!scroller) return;

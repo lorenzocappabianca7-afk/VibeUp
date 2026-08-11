@@ -362,7 +362,7 @@ export function ExploreFiltersSheet({
           </div>
         </div>
 
-        <div className="smooth-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-5">
+        <div className="smooth-scroll min-h-0 flex-1 overflow-x-clip overflow-y-auto px-5">
           <div className="space-y-6 pb-4">
           {eventContext && activeCategory !== "locali" && (
             <div className="sticky top-0 z-10 rounded-2xl border border-brand-teal/20 bg-background/95 p-3 shadow-sm">

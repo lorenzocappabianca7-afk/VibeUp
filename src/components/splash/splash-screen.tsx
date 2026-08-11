@@ -118,8 +118,8 @@ export function SplashScreen() {
     splashBounceAlreadyPlayed = true;
     removeBootSplash();
 
-    const previousOverflow = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = "hidden";
+    // Do not lock html/body overflow during splash — fixed overlay already
+    // blocks interaction, and orphan overflow:hidden freezes desktop scroll.
 
     const taglineTimer = window.setTimeout(() => {
       setShowTagline(true);
@@ -134,7 +134,6 @@ export function SplashScreen() {
     }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS);
 
     const doneTimer = window.setTimeout(() => {
-      document.documentElement.style.overflow = previousOverflow;
       setPhase("gone");
       revealExplore();
     }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS + SPLASH_EXIT_MS);
@@ -144,7 +143,6 @@ export function SplashScreen() {
       window.clearTimeout(settleTimer);
       window.clearTimeout(exitTimer);
       window.clearTimeout(doneTimer);
-      document.documentElement.style.overflow = previousOverflow;
     };
   }, [skipSplash]);
 

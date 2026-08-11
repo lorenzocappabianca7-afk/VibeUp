@@ -33,14 +33,14 @@ export function AppChrome({ children }: { children: ReactNode }) {
     <>
       <AppWakeRecovery />
       <div
-        className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-hidden"
+        className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-clip"
         style={{
           paddingTop: "env(safe-area-inset-top, 0px)",
         }}
       >
         {!hideNav && <PwaInstallBanner />}
         {!hideNav && <EmailActivationBanner />}
-        <div className="min-w-0 max-w-full flex-1 overflow-x-hidden">
+        <div className="min-w-0 max-w-full flex-1 overflow-x-clip">
           {children}
         </div>
         <Footer withNavOffset={!hideNav} />

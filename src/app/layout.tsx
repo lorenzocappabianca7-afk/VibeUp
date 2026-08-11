@@ -278,7 +278,7 @@ export default function RootLayout({
         <AppProviders>
           <div
             id="vibeup-app-shell"
-            className="flex min-h-dvh min-w-0 max-w-full flex-col overflow-x-hidden bg-background"
+            className="flex min-h-dvh min-w-0 max-w-full flex-col overflow-x-clip bg-background"
             style={{
               backgroundColor: "#000000",
               position: "relative",

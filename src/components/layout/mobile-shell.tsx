@@ -29,7 +29,7 @@ function TabPanel({
   return (
     <div
       className={cn(
-        "min-w-0 w-full max-w-full overflow-x-hidden",
+        "min-w-0 w-full max-w-full overflow-x-clip",
         isActive ? "relative" : "hidden",
       )}
       aria-hidden={!isActive}
@@ -59,19 +59,19 @@ export function MobileShell() {
   return (
     <div
       className={cn(
-        "relative mx-auto box-border min-h-dvh overflow-x-hidden bg-background shadow-none sm:shadow-[0_0_60px_-15px_rgba(0,0,0,0.55)]",
+        "relative mx-auto box-border min-h-dvh overflow-x-clip bg-background shadow-none sm:shadow-[0_0_60px_-15px_rgba(0,0,0,0.55)]",
         APP_SHELL_WIDTH_CLASS,
       )}
       style={{ backgroundColor: "#0F1115" }}
     >
       <main
-        className="box-border min-w-0 w-full max-w-full overflow-x-hidden pt-6 lg:pt-8"
+        className="box-border min-w-0 w-full max-w-full overflow-x-clip pt-6 lg:pt-8"
         style={{
           paddingLeft: "max(1rem, env(safe-area-inset-left, 0px))",
           paddingRight: "max(1rem, env(safe-area-inset-right, 0px))",
         }}
       >
-        <div className="relative min-w-0 w-full max-w-full overflow-x-hidden">
+        <div className="relative min-w-0 w-full max-w-full overflow-x-clip">
           {isBusinessUser ? (
             <>
               <TabPanel

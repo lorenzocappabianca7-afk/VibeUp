@@ -308,7 +308,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
   }, []);
 
   return (
-    <div className="box-border min-w-0 w-full max-w-full space-y-5 overflow-x-hidden sm:space-y-6">
+    <div className="box-border min-w-0 w-full max-w-full space-y-5 overflow-x-clip sm:space-y-6">
       <header className="flex min-w-0 items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <h1 className="text-[1.75rem] font-extrabold tracking-tight text-primary-black">

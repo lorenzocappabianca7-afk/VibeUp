@@ -45,7 +45,8 @@ html {
   scrollbar-width: none;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  /* clip (not hidden): hidden promotes overflow-y to auto and traps desktop wheel scroll */
+  overflow-x: clip;
   /* Black base — prevents white overscroll / cold-start flash; app surfaces use bg-background */
   background: #000000;
 }
@@ -61,7 +62,7 @@ body {
   scrollbar-width: none;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   position: relative;
 }
 
