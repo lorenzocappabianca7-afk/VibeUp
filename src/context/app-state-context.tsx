@@ -1689,7 +1689,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydratedFromStorage) return;
-    if (currentUser.authProvider !== "supabase" || currentUser.isGuest) return;
+    if (currentUser.authProvider !== "supabase" || isGuest) return;
 
     let cancelled = false;
     void fetch("/api/bookings", { credentials: "same-origin" })
@@ -1710,8 +1710,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, [
     currentUser.authProvider,
     currentUser.id,
-    currentUser.isGuest,
     hydratedFromStorage,
+    isGuest,
     mergeCloudEvents,
   ]);
 
