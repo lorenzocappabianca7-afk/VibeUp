@@ -378,6 +378,8 @@ export function AvailabilityRequestProvider({
         adminNote: null,
         userSelectedDate: null,
         userSelectedPrice: null,
+        confirmationDeadline: null,
+        confirmationReminderSentAt: null,
       });
 
       setRequests((prev) => [request, ...prev]);
