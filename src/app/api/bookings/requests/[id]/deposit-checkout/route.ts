@@ -87,6 +87,13 @@ export async function POST(
     });
   }
 
+  if (!("checkoutUrl" in result)) {
+    return NextResponse.json(
+      { error: "Risposta checkout non valida." },
+      { status: 500 },
+    );
+  }
+
   return NextResponse.json({
     ok: true,
     configured: true,
