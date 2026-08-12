@@ -13,6 +13,7 @@ import {
   type AvailabilityRequest,
 } from "@/types/availability-request";
 import type { UserEvent } from "@/types/event";
+import { computeConfirmationDeadline } from "@/lib/availability/confirmation-deadline";
 import {
   createContext,
   useCallback,
@@ -31,6 +32,7 @@ const TERMINAL_STATUSES = new Set([
   "confirmed",
   "declined",
   "cancelled",
+  "expired",
 ]);
 
 interface AvailabilityRequestContextValue {
@@ -288,13 +290,22 @@ export function AvailabilityRequestProvider({
 
   const pendingUserConfirms = useMemo(() => {
     if (isGuest || isBusinessUser) return [];
-    return requests.filter(
-      (item) =>
-        (item.status === "pending_user_confirm" ||
-          item.status === "pending_user_review_proposal") &&
-        item.requesterUserId === currentUser.id &&
-        !snoozedConfirmIds.includes(item.id),
-    );
+    const now = Date.now();
+    return requests.filter((item) => {
+      if (
+        item.status !== "pending_user_confirm" &&
+        item.status !== "pending_user_review_proposal"
+      ) {
+        return false;
+      }
+      if (item.requesterUserId !== currentUser.id) return false;
+      if (snoozedConfirmIds.includes(item.id)) return false;
+      if (item.confirmationDeadline) {
+        const deadline = Date.parse(item.confirmationDeadline);
+        if (Number.isFinite(deadline) && deadline < now) return false;
+      }
+      return true;
+    });
   }, [
     currentUser.id,
     isBusinessUser,
@@ -403,6 +414,8 @@ export function AvailabilityRequestProvider({
             ? {
                 ...item,
                 status: "pending_user_confirm" as const,
+                confirmationDeadline: computeConfirmationDeadline(),
+                confirmationReminderSentAt: null,
                 updatedAt: new Date().toISOString(),
               }
             : item,

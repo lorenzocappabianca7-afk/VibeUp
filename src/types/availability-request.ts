@@ -7,7 +7,8 @@ export type AvailabilityRequestStatus =
   | "pending_admin_review"
   | "pending_user_review_proposal"
   | "confirmed"
-  | "cancelled";
+  | "cancelled"
+  | "expired";
 
 export type ManagerDecision = "accept" | "decline" | "propose";
 
@@ -67,6 +68,13 @@ export interface AvailabilityRequest {
   /** Date the organizer picked among manager proposals (ISO date string). */
   userSelectedDate: string | null;
   userSelectedPrice: number | null;
+  /**
+   * ISO timestamp: organizer must confirm (and pay deposit) before this.
+   * Set when the manager accepts or when a proposal is forwarded to the user.
+   */
+  confirmationDeadline: string | null;
+  /** When the pre-deadline reminder email was sent (ISO). */
+  confirmationReminderSentAt: string | null;
 }
 
 /** Fill V2 fields for localStorage / partial payloads from older clients. */
@@ -104,5 +112,7 @@ export function normalizeAvailabilityRequest(
     userSelectedDate: item.userSelectedDate ?? null,
     userSelectedPrice:
       typeof item.userSelectedPrice === "number" ? item.userSelectedPrice : null,
+    confirmationDeadline: item.confirmationDeadline ?? null,
+    confirmationReminderSentAt: item.confirmationReminderSentAt ?? null,
   };
 }

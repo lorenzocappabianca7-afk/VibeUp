@@ -5,6 +5,10 @@ import {
   DEPOSIT_APP_FEE_RATE,
   roundCurrency,
 } from "@/lib/booking-money";
+import {
+  computeConfirmationDeadline,
+  CONFIRMATION_REMINDER_WINDOW_MS,
+} from "@/lib/availability/confirmation-deadline";
 import { notifyManagerAboutAvailabilityRequest } from "@/server/notifications/availability-request-notify";
 import { randomBytes } from "crypto";
 import type {
@@ -27,6 +31,7 @@ const REQUEST_STATUSES = new Set<AvailabilityRequestStatus>([
   "pending_user_review_proposal",
   "confirmed",
   "cancelled",
+  "expired",
 ]);
 
 const MANAGER_DECISIONS = new Set<ManagerDecision>([
@@ -60,6 +65,8 @@ export interface AvailabilityRequestRow {
   admin_note?: string | null;
   user_selected_date?: string | null;
   user_selected_price?: number | string | null;
+  confirmation_deadline?: string | null;
+  confirmation_reminder_sent_at?: string | null;
 }
 
 export interface BookingRow {
@@ -220,6 +227,10 @@ export function rowToAvailabilityRequest(
     adminNote: asNullableString(row.admin_note),
     userSelectedDate: asNullableString(row.user_selected_date),
     userSelectedPrice: asNullableNumber(row.user_selected_price),
+    confirmationDeadline: asNullableString(row.confirmation_deadline),
+    confirmationReminderSentAt: asNullableString(
+      row.confirmation_reminder_sent_at,
+    ),
   };
 }
 
@@ -548,17 +559,23 @@ export async function respondToAvailabilityRequestByToken(params: {
   }
 
   const supabase = getSupabaseAdmin();
+  const patch: Record<string, unknown> = {
+    status: nextStatus,
+    manager_decision: decision,
+    manager_note: note,
+    manager_proposed_dates: proposedDates,
+    manager_proposed_price: proposedPrice,
+    manager_responded_at: now,
+    response_token_used_at: now,
+  };
+  if (params.action === "accept") {
+    patch.confirmation_deadline = computeConfirmationDeadline(new Date(now));
+    patch.confirmation_reminder_sent_at = null;
+  }
+
   const { data, error } = await supabase
     .from("availability_requests")
-    .update({
-      status: nextStatus,
-      manager_decision: decision,
-      manager_note: note,
-      manager_proposed_dates: proposedDates,
-      manager_proposed_price: proposedPrice,
-      manager_responded_at: now,
-      response_token_used_at: now,
-    })
+    .update(patch)
     .eq("id", access.row.id)
     .eq("response_token", params.token.trim())
     .is("response_token_used_at", null)
@@ -688,11 +705,17 @@ export async function updateAvailabilityRequestStatus(params: {
       "declined",
       "cancelled",
     ],
-    pending_user_review_proposal: ["confirmed", "declined", "cancelled"],
-    pending_user_confirm: ["confirmed", "cancelled"],
+    pending_user_review_proposal: [
+      "confirmed",
+      "declined",
+      "cancelled",
+      "expired",
+    ],
+    pending_user_confirm: ["confirmed", "cancelled", "expired"],
     declined: [],
     confirmed: [],
     cancelled: [],
+    expired: [],
   };
 
   if (!transitions[row.status].includes(params.nextStatus)) {
@@ -727,6 +750,10 @@ export async function updateAvailabilityRequestStatus(params: {
   }
   if (params.userSelectedPrice !== undefined) {
     patch.user_selected_price = params.userSelectedPrice;
+  }
+  if (params.nextStatus === "pending_user_confirm") {
+    patch.confirmation_deadline = computeConfirmationDeadline();
+    patch.confirmation_reminder_sent_at = null;
   }
 
   const supabase = getSupabaseAdmin();
@@ -921,14 +948,20 @@ export async function adminReviewAvailabilityRequest(params: {
     params.action === "forward" ? "pending_user_review_proposal" : "declined";
 
   const supabase = getSupabaseAdmin();
+  const patch: Record<string, unknown> = {
+    status: nextStatus,
+    admin_reviewed_by: params.adminUserId,
+    admin_reviewed_at: now,
+    admin_note: note,
+  };
+  if (params.action === "forward") {
+    patch.confirmation_deadline = computeConfirmationDeadline(new Date(now));
+    patch.confirmation_reminder_sent_at = null;
+  }
+
   const { data, error } = await supabase
     .from("availability_requests")
-    .update({
-      status: nextStatus,
-      admin_reviewed_by: params.adminUserId,
-      admin_reviewed_at: now,
-      admin_note: note,
-    })
+    .update(patch)
     .eq("id", params.requestId)
     .eq("status", "pending_admin_review")
     .select("*")
@@ -1036,4 +1069,130 @@ export async function resendAvailabilityRequestNotification(
     request,
     row.listing_id ?? null,
   );
+}
+
+/**
+ * Cron: expire overdue confirmation holds and send near-deadline reminders.
+ * Marks status → expired (frees the soft-held slot for that request).
+ */
+export async function processConfirmationDeadlines(now = new Date()): Promise<{
+  expired: number;
+  reminded: number;
+  errors: string[];
+}> {
+  if (!isSupabaseConfigured()) {
+    return { expired: 0, reminded: 0, errors: ["Supabase non configurato."] };
+  }
+
+  const supabase = getSupabaseAdmin();
+  const nowIso = now.toISOString();
+  const reminderHorizon = new Date(
+    now.getTime() + CONFIRMATION_REMINDER_WINDOW_MS,
+  ).toISOString();
+  const errors: string[] = [];
+  let expired = 0;
+  let reminded = 0;
+
+  const awaitingStatuses = [
+    "pending_user_confirm",
+    "pending_user_review_proposal",
+  ] as const;
+
+  const { data: overdueRows, error: overdueError } = await supabase
+    .from("availability_requests")
+    .select("*")
+    .in("status", [...awaitingStatuses])
+    .not("confirmation_deadline", "is", null)
+    .lt("confirmation_deadline", nowIso)
+    .limit(80);
+
+  if (overdueError) {
+    errors.push(`expire query: ${overdueError.message}`);
+  } else {
+    for (const row of (overdueRows ?? []) as AvailabilityRequestRow[]) {
+      const { data, error } = await supabase
+        .from("availability_requests")
+        .update({ status: "expired" })
+        .eq("id", row.id)
+        .in("status", [...awaitingStatuses])
+        .select("*")
+        .maybeSingle();
+
+      if (error) {
+        errors.push(`expire ${row.id}: ${error.message}`);
+        continue;
+      }
+      if (!data) continue;
+      expired += 1;
+
+      try {
+        const { notifyOrganizerConfirmationExpired } = await import(
+          "@/server/notifications/organizer-notifier"
+        );
+        const request = rowToAvailabilityRequest(data as AvailabilityRequestRow);
+        const notify = await notifyOrganizerConfirmationExpired(request);
+        if (!notify.ok) {
+          errors.push(`expire notify ${row.id}: ${notify.error ?? "failed"}`);
+        }
+      } catch (err) {
+        errors.push(
+          `expire notify ${row.id}: ${
+            err instanceof Error ? err.message : "exception"
+          }`,
+        );
+      }
+    }
+  }
+
+  const { data: reminderRows, error: reminderError } = await supabase
+    .from("availability_requests")
+    .select("*")
+    .in("status", [...awaitingStatuses])
+    .not("confirmation_deadline", "is", null)
+    .gt("confirmation_deadline", nowIso)
+    .lte("confirmation_deadline", reminderHorizon)
+    .is("confirmation_reminder_sent_at", null)
+    .limit(80);
+
+  if (reminderError) {
+    errors.push(`reminder query: ${reminderError.message}`);
+  } else {
+    for (const row of (reminderRows ?? []) as AvailabilityRequestRow[]) {
+      const request = rowToAvailabilityRequest(row);
+      try {
+        const { notifyOrganizerConfirmationReminder } = await import(
+          "@/server/notifications/organizer-notifier"
+        );
+        const notify = await notifyOrganizerConfirmationReminder(request);
+        if (!notify.ok) {
+          console.warn(
+            "[processConfirmationDeadlines] reminder notify",
+            row.id,
+            notify.error,
+          );
+        }
+      } catch (err) {
+        errors.push(
+          `reminder ${row.id}: ${
+            err instanceof Error ? err.message : "exception"
+          }`,
+        );
+      }
+
+      // Mark sent even if email is still placeholder — avoids hourly spam.
+      const { error: markError } = await supabase
+        .from("availability_requests")
+        .update({ confirmation_reminder_sent_at: nowIso })
+        .eq("id", row.id)
+        .is("confirmation_reminder_sent_at", null);
+
+      if (markError) {
+        errors.push(`reminder mark ${row.id}: ${markError.message}`);
+        continue;
+      }
+      reminded += 1;
+    }
+  }
+
+  return { expired, reminded, errors };
 }

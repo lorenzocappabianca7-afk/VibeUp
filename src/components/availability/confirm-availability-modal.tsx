@@ -1,15 +1,23 @@
 "use client";
 
+import { useAppState } from "@/context/app-state-context";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
 import { useProfileCommunications } from "@/context/profile-communications-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
+import {
+  confirmationDeadlineCountdownLabel,
+  formatConfirmationDeadlineIt,
+} from "@/lib/availability/confirmation-deadline";
+import { notifyAvailabilityUpdate } from "@/lib/browser-notifications";
+import { normalizeUserSettings } from "@/types/user-settings";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { CalendarCheck2, MapPin, Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export function ConfirmAvailabilityModal() {
   const { setTab } = useTabNavigation();
+  const { currentUser } = useAppState();
   const {
     pendingUserConfirms,
     confirmAvailabilityRequest,
@@ -20,6 +28,7 @@ export function ConfirmAvailabilityModal() {
   const { addDepositReminder } = useProfileCommunications();
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const request = pendingUserConfirms[0] ?? null;
+  const notifiedIdsRef = useRef<Set<string>>(new Set());
 
   const isProposal =
     request?.status === "pending_user_review_proposal";
@@ -51,6 +60,28 @@ export function ConfirmAvailabilityModal() {
     setAcceptProposedPrice(hasProposedPrice);
   }, [request?.id, isProposal, proposedSlots, hasProposedPrice, request]);
 
+  useEffect(() => {
+    if (!request) return;
+    if (notifiedIdsRef.current.has(request.id)) return;
+    notifiedIdsRef.current.add(request.id);
+    const pushEnabled = normalizeUserSettings(currentUser.settings)
+      .notifications.pushEnabled;
+    const countdown =
+      confirmationDeadlineCountdownLabel(request.confirmationDeadline) ??
+      "3 giorni";
+    notifyAvailabilityUpdate({
+      pushEnabled,
+      title: isProposal
+        ? "Proposta da confermare"
+        : "Richiesta accettata — conferma ora",
+      body: `Hai tempo fino a ${
+        formatConfirmationDeadlineIt(request.confirmationDeadline) ?? "la scadenza"
+      } (${countdown}) per confermare e pagare la caparra.`,
+      tag: `vibeup-confirm-${request.id}`,
+      onlyWhenHidden: false,
+    });
+  }, [request, isProposal, currentUser.settings]);
+
   useBodyScrollLock(Boolean(request));
 
   if (!request) return null;
@@ -58,6 +89,12 @@ export function ConfirmAvailabilityModal() {
   const payload = request.eventPayload;
   const isServiceRequest = payload.requestKind === "service";
   const busy = submittingId === request.id;
+  const deadlineLabel = formatConfirmationDeadlineIt(
+    request.confirmationDeadline,
+  );
+  const countdownLabel = confirmationDeadlineCountdownLabel(
+    request.confirmationDeadline,
+  );
 
   function handleConfirmDirect() {
     if (busy) return;
@@ -167,6 +204,13 @@ export function ConfirmAvailabilityModal() {
             </span>{" "}
             ha proposto alternative. Scegli un&apos;opzione o rifiuta.
           </p>
+          {deadlineLabel ? (
+            <p className="mt-3 rounded-2xl bg-brand-teal/10 px-3 py-2 text-center text-xs font-semibold text-primary-black">
+              Conferma entro {deadlineLabel}
+              {countdownLabel ? ` · ${countdownLabel}` : ""}. Dopo la scadenza lo
+              slot viene liberato.
+            </p>
+          ) : null}
 
           <div className="mt-4 space-y-2 rounded-2xl border border-primary-black/8 bg-primary-black/[0.02] p-3 text-sm">
             <p className="font-semibold text-primary-black">{payload.title}</p>
@@ -356,6 +400,13 @@ export function ConfirmAvailabilityModal() {
             </>
           )}
         </p>
+        {deadlineLabel ? (
+          <p className="mt-3 rounded-2xl bg-brand-teal/10 px-3 py-2 text-center text-xs font-semibold text-primary-black">
+            Conferma e paga la caparra entro {deadlineLabel}
+            {countdownLabel ? ` · ${countdownLabel}` : ""}. Dopo la scadenza lo
+            slot viene liberato.
+          </p>
+        ) : null}
 
         <div className="mt-4 space-y-2 rounded-2xl border border-primary-black/8 bg-primary-black/[0.02] p-3 text-sm">
           <p className="font-semibold text-primary-black">{payload.title}</p>

@@ -1,4 +1,9 @@
 import type { AvailabilityRequest } from "@/types/availability-request";
+import {
+  CONFIRMATION_DEADLINE_DAYS,
+  formatConfirmationDeadlineIt,
+  confirmationDeadlineCountdownLabel,
+} from "@/lib/availability/confirmation-deadline";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export interface NotifyResult {
@@ -87,6 +92,19 @@ function resolveOrganizerEmail(
   return email || null;
 }
 
+function deadlineLines(request: AvailabilityRequest): {
+  deadlineLabel: string;
+  countdown: string;
+} {
+  const deadlineLabel =
+    formatConfirmationDeadlineIt(request.confirmationDeadline) ??
+    `${CONFIRMATION_DEADLINE_DAYS} giorni`;
+  const countdown =
+    confirmationDeadlineCountdownLabel(request.confirmationDeadline) ??
+    `${CONFIRMATION_DEADLINE_DAYS} giorni`;
+  return { deadlineLabel, countdown };
+}
+
 function buildDecisionBody(request: AvailabilityRequest): {
   subject: string;
   text: string;
@@ -101,16 +119,21 @@ function buildDecisionBody(request: AvailabilityRequest): {
       : "decline";
 
   if (decision === "accept") {
+    const { deadlineLabel, countdown } = deadlineLines(request);
     const text = `Ciao ${request.requesterName}! 👋
 
 Buone notizie da VibeUp: il gestore di ${location} ha accettato la tua richiesta per “${title}”.
 
-Apri l’app e conferma per creare l’evento nei tuoi eventi.
+Hai ${CONFIRMATION_DEADLINE_DAYS} giorni per confermare e pagare la caparra, altrimenti lo slot viene liberato.
+⏰ Scadenza: ${deadlineLabel} (${countdown})
+
+Apri l’app VibeUp e conferma:
+${PUBLIC_SITE}
 
 A presto,
 Il team VibeUp`;
     return {
-      subject: `Richiesta accettata — ${location}`,
+      subject: `Richiesta accettata — conferma entro ${CONFIRMATION_DEADLINE_DAYS} giorni`,
       text,
     };
   }
@@ -156,6 +179,7 @@ function buildProposalBody(request: AvailabilityRequest): {
     typeof request.managerProposedPrice === "number"
       ? `\n💶 Prezzo proposto: ${formatCurrency(request.managerProposedPrice)}`
       : "";
+  const { deadlineLabel, countdown } = deadlineLines(request);
 
   const text = `Ciao ${request.requesterName}! 👋
 
@@ -164,14 +188,17 @@ Il gestore di ${location} ha proposto delle alternative per “${title}”.
 📅 Opzioni:
 ${dateLines}${priceLine}
 
-Apri VibeUp per scegliere un’opzione o rifiutare la proposta:
+Hai ${CONFIRMATION_DEADLINE_DAYS} giorni per scegliere o rifiutare, altrimenti la proposta scade.
+⏰ Scadenza: ${deadlineLabel} (${countdown})
+
+Apri VibeUp:
 ${PUBLIC_SITE}
 
 A presto,
 Il team VibeUp`;
 
   return {
-    subject: `Proposta alternativa — ${location}`,
+    subject: `Proposta alternativa — rispondi entro ${CONFIRMATION_DEADLINE_DAYS} giorni`,
     text,
   };
 }
@@ -217,6 +244,66 @@ export async function notifyOrganizerOfProposal(
   }
 
   const { subject, text } = buildProposalBody(request);
+  return sendViaEmail({
+    to,
+    subject,
+    text,
+    html: buildEmailHtml(subject, text),
+  });
+}
+
+/** Reminder ~24h before confirmation_deadline. */
+export async function notifyOrganizerConfirmationReminder(
+  request: AvailabilityRequest,
+): Promise<NotifyResult> {
+  const to = resolveOrganizerEmail(request);
+  if (!to) {
+    return { ok: false, error: "Email organizzatore mancante." };
+  }
+
+  const { deadlineLabel, countdown } = deadlineLines(request);
+  const subject = `Promemoria: conferma entro ${deadlineLabel}`;
+  const text = `Ciao ${request.requesterName}! 👋
+
+Ti ricordiamo che la disponibilità per “${request.eventPayload.title}” a ${request.locationName} scade presto.
+
+⏰ Scadenza: ${deadlineLabel} (${countdown})
+
+Se non confermi (e non paghi la caparra) entro quella data, lo slot verrà liberato.
+
+Apri VibeUp e completa la conferma:
+${PUBLIC_SITE}
+
+A presto,
+Il team VibeUp`;
+
+  return sendViaEmail({
+    to,
+    subject,
+    text,
+    html: buildEmailHtml(subject, text),
+  });
+}
+
+/** Inform organizer that the hold expired. */
+export async function notifyOrganizerConfirmationExpired(
+  request: AvailabilityRequest,
+): Promise<NotifyResult> {
+  const to = resolveOrganizerEmail(request);
+  if (!to) {
+    return { ok: false, error: "Email organizzatore mancante." };
+  }
+
+  const subject = `Disponibilità scaduta — ${request.locationName}`;
+  const text = `Ciao ${request.requesterName}! 👋
+
+La finestra di conferma per “${request.eventPayload.title}” a ${request.locationName} è scaduta e lo slot è stato liberato.
+
+Puoi inviare una nuova richiesta di disponibilità dall’app VibeUp quando vuoi.
+
+A presto,
+Il team VibeUp`;
+
   return sendViaEmail({
     to,
     subject,
