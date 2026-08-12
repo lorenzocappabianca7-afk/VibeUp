@@ -75,7 +75,7 @@ function PaymentSuccessInner() {
         className="rounded-2xl bg-brand-teal px-5 py-3 text-sm font-bold text-primary-black"
       >
         Vai ai miei eventi
-      SoftNavLink>
+      </SoftNavLink>
     </main>
   );
 }
