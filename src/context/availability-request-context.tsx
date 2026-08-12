@@ -560,6 +560,13 @@ export function AvailabilityRequestProvider({
           };
         }
 
+        if (!("checkoutUrl" in remote) || !remote.checkoutUrl) {
+          return {
+            ok: false as const,
+            error: "URL di pagamento non disponibile.",
+          };
+        }
+
         return { ok: true as const, checkoutUrl: remote.checkoutUrl };
       }
 
@@ -710,6 +717,13 @@ export function AvailabilityRequestProvider({
           return {
             ok: false as const,
             error: "Pagamento registrato ma evento non disponibile.",
+          };
+        }
+
+        if (!("checkoutUrl" in remote) || !remote.checkoutUrl) {
+          return {
+            ok: false as const,
+            error: "URL di pagamento non disponibile.",
           };
         }
 
