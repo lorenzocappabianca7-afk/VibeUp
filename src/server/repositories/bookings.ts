@@ -9,6 +9,9 @@ import {
   computeConfirmationDeadline,
   CONFIRMATION_REMINDER_WINDOW_MS,
 } from "@/lib/availability/confirmation-deadline";
+import {
+  normalizeSlotEventDate,
+} from "@/lib/availability/slot-holds";
 import { notifyManagerAboutAvailabilityRequest } from "@/server/notifications/availability-request-notify";
 import { randomBytes } from "crypto";
 import type {
@@ -283,6 +286,125 @@ function createResponseTokenPair(): {
   };
 }
 
+const ACTIVE_HOLD_REQUEST_STATUSES: AvailabilityRequestStatus[] = [
+  "pending_manager",
+  "pending_admin_review",
+  "pending_user_confirm",
+  "pending_user_review_proposal",
+  "confirmed",
+];
+
+export async function findActiveSlotHold(params: {
+  locationId: string;
+  eventDate: string;
+}): Promise<{ requestId: string; heldUntil: string } | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = getSupabaseAdmin();
+  const nowIso = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("slot_holds")
+    .select("request_id, held_until")
+    .eq("location_id", params.locationId)
+    .eq("event_date", params.eventDate)
+    .gt("held_until", nowIso)
+    .maybeSingle();
+
+  if (error) {
+    // Table missing → treat as no hold (deploy SQL first); log loudly.
+    console.error("[slot_holds] findActiveSlotHold", error.message);
+    return null;
+  }
+  if (!data?.request_id) return null;
+  return {
+    requestId: data.request_id as string,
+    heldUntil: String(data.held_until),
+  };
+}
+
+async function createSlotHold(params: {
+  locationId: string;
+  listingId: string | null;
+  eventDate: string;
+  requestId: string;
+  heldUntil: string;
+}): Promise<{ ok: true } | { ok: false; error: string; conflict?: boolean }> {
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase.from("slot_holds").insert({
+    location_id: params.locationId,
+    listing_id: params.listingId,
+    event_date: params.eventDate,
+    request_id: params.requestId,
+    held_until: params.heldUntil,
+  });
+
+  if (!error) return { ok: true };
+
+  const lower = error.message.toLowerCase();
+  const conflict =
+    lower.includes("duplicate") ||
+    lower.includes("unique") ||
+    error.code === "23505";
+
+  if (conflict) {
+    return {
+      ok: false,
+      conflict: true,
+      error:
+        "Questa data è già bloccata da un’altra richiesta in corso per questa location.",
+    };
+  }
+
+  return { ok: false, error: error.message };
+}
+
+export async function releaseSlotHoldForRequest(
+  requestId: string,
+): Promise<void> {
+  if (!isSupabaseConfigured() || !requestId) return;
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from("slot_holds")
+    .delete()
+    .eq("request_id", requestId);
+  if (error) {
+    console.error("[slot_holds] release", requestId, error.message);
+  }
+}
+
+async function extendSlotHoldForRequest(
+  requestId: string,
+  heldUntil: string,
+  eventDate?: string | null,
+): Promise<void> {
+  if (!isSupabaseConfigured() || !requestId) return;
+  const supabase = getSupabaseAdmin();
+  const patch: Record<string, unknown> = { held_until: heldUntil };
+  if (eventDate) patch.event_date = eventDate;
+  const { error } = await supabase
+    .from("slot_holds")
+    .update(patch)
+    .eq("request_id", requestId);
+  if (error) {
+    console.error("[slot_holds] extend", requestId, error.message);
+  }
+}
+
+async function purgeExpiredSlotHolds(now = new Date()): Promise<number> {
+  if (!isSupabaseConfigured()) return 0;
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("slot_holds")
+    .delete()
+    .lt("held_until", now.toISOString())
+    .select("id");
+  if (error) {
+    console.error("[slot_holds] purgeExpired", error.message);
+    return 0;
+  }
+  return data?.length ?? 0;
+}
+
 export async function createAvailabilityRequest(params: {
   requesterId: string;
   requesterName: string;
@@ -291,14 +413,66 @@ export async function createAvailabilityRequest(params: {
   locationName: string;
   eventPayload: AvailabilityEventPayload;
 }): Promise<
-  { ok: true; request: AvailabilityRequest } | { ok: false; error: string }
+  | { ok: true; request: AvailabilityRequest }
+  | { ok: false; error: string; conflict?: boolean }
 > {
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Supabase non configurato." };
   }
 
+  const eventDate = normalizeSlotEventDate(params.eventPayload.date);
+  if (!eventDate) {
+    return {
+      ok: false,
+      error: "Indica una data valida per la richiesta di disponibilità.",
+    };
+  }
+
+  // Drop stale holds first so expired soft-locks don't block forever.
+  await purgeExpiredSlotHolds();
+
+  const existingHold = await findActiveSlotHold({
+    locationId: params.locationId,
+    eventDate,
+  });
+  if (existingHold && existingHold.requestId) {
+    // Same requester retrying the same slot is still a conflict unless we allow it.
+    return {
+      ok: false,
+      conflict: true,
+      error:
+        "Questa data è già riservata da un’altra richiesta in corso per questa location. Riprova quando viene rifiutata o scade.",
+    };
+  }
+
+  // Defense in depth: also block if an active request exists without a hold row.
+  {
+    const supabase = getSupabaseAdmin();
+    const { data: overlapping } = await supabase
+      .from("availability_requests")
+      .select("id, status, event_payload")
+      .eq("location_id", params.locationId)
+      .in("status", ACTIVE_HOLD_REQUEST_STATUSES)
+      .limit(40);
+
+    const clash = (overlapping ?? []).find((row) => {
+      const payload = row.event_payload as AvailabilityEventPayload | null;
+      const otherDate = normalizeSlotEventDate(payload?.date);
+      return otherDate === eventDate;
+    });
+    if (clash) {
+      return {
+        ok: false,
+        conflict: true,
+        error:
+          "Questa data è già riservata da un’altra richiesta in corso per questa location. Riprova quando viene rifiutata o scade.",
+      };
+    }
+  }
+
   const listingId = await resolveListingId(params.locationId);
   const { responseToken, responseTokenExpiresAt } = createResponseTokenPair();
+  const heldUntil = responseTokenExpiresAt;
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("availability_requests")
@@ -343,6 +517,24 @@ export async function createAvailabilityRequest(params: {
   }
 
   const request = rowToAvailabilityRequest(data as AvailabilityRequestRow);
+
+  const hold = await createSlotHold({
+    locationId: params.locationId,
+    listingId,
+    eventDate,
+    requestId: request.id,
+    heldUntil,
+  });
+
+  if (!hold.ok) {
+    // Race: another request took the slot — roll back this request.
+    await supabase.from("availability_requests").delete().eq("id", request.id);
+    return {
+      ok: false,
+      conflict: hold.conflict,
+      error: hold.error,
+    };
+  }
 
   // Notification is best-effort: request already exists even if notify fails.
   const notify = await notifyManagerAboutAvailabilityRequest(
@@ -595,6 +787,16 @@ export async function respondToAvailabilityRequestByToken(params: {
 
   const request = rowToAvailabilityRequest(data as AvailabilityRequestRow);
 
+  if (params.action === "accept") {
+    const deadline =
+      request.confirmationDeadline ??
+      computeConfirmationDeadline(new Date(now));
+    await extendSlotHoldForRequest(request.id, deadline);
+  } else if (params.action === "decline") {
+    await releaseSlotHoldForRequest(request.id);
+  }
+  // propose → keep hold on original date until admin/user resolves
+
   if (params.action === "accept" || params.action === "decline") {
     try {
       const { notifyOrganizerOfManagerDecision } = await import(
@@ -768,9 +970,31 @@ export async function updateAvailabilityRequestStatus(params: {
     return { ok: false, error: error?.message ?? "Aggiornamento fallito." };
   }
 
+  const request = rowToAvailabilityRequest(data as AvailabilityRequestRow);
+
+  if (
+    params.nextStatus === "declined" ||
+    params.nextStatus === "cancelled" ||
+    params.nextStatus === "expired"
+  ) {
+    await releaseSlotHoldForRequest(params.requestId);
+  } else if (params.nextStatus === "pending_user_confirm") {
+    const deadline =
+      request.confirmationDeadline ?? computeConfirmationDeadline();
+    await extendSlotHoldForRequest(params.requestId, deadline);
+  } else if (params.nextStatus === "confirmed") {
+    const dateKey =
+      normalizeSlotEventDate(request.userSelectedDate) ??
+      normalizeSlotEventDate(request.eventPayload.date);
+    const heldUntil = dateKey
+      ? new Date(`${dateKey}T23:59:59.999Z`).toISOString()
+      : computeConfirmationDeadline();
+    await extendSlotHoldForRequest(params.requestId, heldUntil, dateKey);
+  }
+
   return {
     ok: true,
-    request: rowToAvailabilityRequest(data as AvailabilityRequestRow),
+    request,
   };
 }
 
@@ -979,6 +1203,15 @@ export async function adminReviewAvailabilityRequest(params: {
 
   const request = rowToAvailabilityRequest(data as AvailabilityRequestRow);
 
+  if (params.action === "forward") {
+    const deadline =
+      request.confirmationDeadline ??
+      computeConfirmationDeadline(new Date(now));
+    await extendSlotHoldForRequest(request.id, deadline);
+  } else {
+    await releaseSlotHoldForRequest(request.id);
+  }
+
   try {
     if (params.action === "forward") {
       const { notifyOrganizerOfProposal } = await import(
@@ -1078,10 +1311,16 @@ export async function resendAvailabilityRequestNotification(
 export async function processConfirmationDeadlines(now = new Date()): Promise<{
   expired: number;
   reminded: number;
+  purgedHolds: number;
   errors: string[];
 }> {
   if (!isSupabaseConfigured()) {
-    return { expired: 0, reminded: 0, errors: ["Supabase non configurato."] };
+    return {
+      expired: 0,
+      reminded: 0,
+      purgedHolds: 0,
+      errors: ["Supabase non configurato."],
+    };
   }
 
   const supabase = getSupabaseAdmin();
@@ -1124,6 +1363,7 @@ export async function processConfirmationDeadlines(now = new Date()): Promise<{
       }
       if (!data) continue;
       expired += 1;
+      await releaseSlotHoldForRequest(row.id);
 
       try {
         const { notifyOrganizerConfirmationExpired } = await import(
@@ -1143,6 +1383,8 @@ export async function processConfirmationDeadlines(now = new Date()): Promise<{
       }
     }
   }
+
+  const purged = await purgeExpiredSlotHolds(now);
 
   const { data: reminderRows, error: reminderError } = await supabase
     .from("availability_requests")
@@ -1194,5 +1436,7 @@ export async function processConfirmationDeadlines(now = new Date()): Promise<{
     }
   }
 
-  return { expired, reminded, errors };
+  const purgedHolds = await purgeExpiredSlotHolds(now);
+
+  return { expired, reminded, purgedHolds, errors };
 }

@@ -119,7 +119,11 @@ export async function POST(request: NextRequest) {
   });
 
   if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 500 });
+    const status = result.conflict ? 409 : 500;
+    return NextResponse.json(
+      { error: result.error, conflict: Boolean(result.conflict) },
+      { status },
+    );
   }
 
   // Notification is attempted inside createAvailabilityRequest (best-effort).

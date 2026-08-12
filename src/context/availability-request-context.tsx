@@ -14,6 +14,7 @@ import {
 } from "@/types/availability-request";
 import type { UserEvent } from "@/types/event";
 import { computeConfirmationDeadline } from "@/lib/availability/confirmation-deadline";
+import { normalizeSlotEventDate } from "@/lib/availability/slot-holds";
 import {
   createContext,
   useCallback,
@@ -349,6 +350,32 @@ export function AvailabilityRequestProvider({
         }
         setRequests((prev) => upsertRequest(prev, remote.request));
         return { ok: true as const, requestId: remote.request.id };
+      }
+
+      const eventDate = normalizeSlotEventDate(input.eventPayload.date);
+      if (eventDate) {
+        const blocking = requestsRef.current.find((item) => {
+          if (item.locationId !== input.locationId) return false;
+          if (
+            item.status !== "pending_manager" &&
+            item.status !== "pending_admin_review" &&
+            item.status !== "pending_user_confirm" &&
+            item.status !== "pending_user_review_proposal" &&
+            item.status !== "confirmed"
+          ) {
+            return false;
+          }
+          return (
+            normalizeSlotEventDate(item.eventPayload.date) === eventDate
+          );
+        });
+        if (blocking) {
+          return {
+            ok: false as const,
+            error:
+              "Questa data è già riservata da un’altra richiesta in corso per questa location. Riprova quando viene rifiutata o scade.",
+          };
+        }
       }
 
       const now = new Date().toISOString();
