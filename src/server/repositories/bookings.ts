@@ -35,6 +35,7 @@ const REQUEST_STATUSES = new Set<AvailabilityRequestStatus>([
   "confirmed",
   "cancelled",
   "expired",
+  "pending_deposit_payment",
 ]);
 
 const MANAGER_DECISIONS = new Set<ManagerDecision>([
@@ -70,6 +71,10 @@ export interface AvailabilityRequestRow {
   user_selected_price?: number | string | null;
   confirmation_deadline?: string | null;
   confirmation_reminder_sent_at?: string | null;
+  stripe_checkout_session_id?: string | null;
+  stripe_payment_intent_id?: string | null;
+  deposit_payment_status?: string | null;
+  status_before_payment?: string | null;
 }
 
 export interface BookingRow {
@@ -234,7 +239,34 @@ export function rowToAvailabilityRequest(
     confirmationReminderSentAt: asNullableString(
       row.confirmation_reminder_sent_at,
     ),
+    stripeCheckoutSessionId: asNullableString(row.stripe_checkout_session_id),
+    stripePaymentIntentId: asNullableString(row.stripe_payment_intent_id),
+    depositPaymentStatus: asDepositPaymentStatus(row.deposit_payment_status),
+    statusBeforePayment: asStatusBeforePayment(row.status_before_payment),
   };
+}
+
+function asDepositPaymentStatus(
+  value: unknown,
+): AvailabilityRequest["depositPaymentStatus"] {
+  if (
+    value === "pending" ||
+    value === "paid" ||
+    value === "failed" ||
+    value === "abandoned"
+  ) {
+    return value;
+  }
+  return null;
+}
+
+function asStatusBeforePayment(
+  value: unknown,
+): AvailabilityRequestStatus | null {
+  if (typeof value !== "string") return null;
+  return REQUEST_STATUSES.has(value as AvailabilityRequestStatus)
+    ? (value as AvailabilityRequestStatus)
+    : null;
 }
 
 export function bookingRowToUserEvent(row: BookingRow): UserEvent {
@@ -912,8 +944,21 @@ export async function updateAvailabilityRequestStatus(params: {
       "declined",
       "cancelled",
       "expired",
+      "pending_deposit_payment",
     ],
-    pending_user_confirm: ["confirmed", "cancelled", "expired"],
+    pending_user_confirm: [
+      "confirmed",
+      "cancelled",
+      "expired",
+      "pending_deposit_payment",
+    ],
+    pending_deposit_payment: [
+      "confirmed",
+      "pending_user_confirm",
+      "pending_user_review_proposal",
+      "cancelled",
+      "expired",
+    ],
     declined: [],
     confirmed: [],
     cancelled: [],
@@ -1008,6 +1053,8 @@ export async function createBookingFromRequest(params: {
     endTime?: string;
     totalCost?: number;
   };
+  markDepositPaid?: boolean;
+  stripePaymentIntentId?: string | null;
 }): Promise<{ ok: true; event: UserEvent } | { ok: false; error: string }> {
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Supabase non configurato." };
@@ -1075,12 +1122,119 @@ export async function createBookingFromRequest(params: {
       service_id: "",
       amount: Number(booking.deposit_amount) || 0,
       fee_amount: feeAmount,
-      paid: false,
+      paid: Boolean(params.markDepositPaid),
+      method: params.markDepositPaid ? "stripe" : null,
+      paid_at: params.markDepositPaid ? new Date().toISOString() : null,
     },
     { onConflict: "booking_id,kind,service_id" },
   );
 
   return { ok: true, event: bookingRowToUserEvent(booking) };
+}
+
+/**
+ * Admin/service-role status update used by Stripe webhook and checkout start.
+ * Bypasses actor permission checks (caller must authenticate separately).
+ */
+export async function updateAvailabilityRequestStatusAdmin(params: {
+  requestId: string;
+  nextStatus: AvailabilityRequestStatus;
+  patch?: Record<string, unknown>;
+}): Promise<
+  { ok: true; request: AvailabilityRequest } | { ok: false; error: string }
+> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Supabase non configurato." };
+  }
+
+  const row = await getAvailabilityRequest(params.requestId);
+  if (!row) return { ok: false, error: "Richiesta non trovata." };
+
+  if (row.status !== params.nextStatus) {
+    const transitions: Record<
+      AvailabilityRequestStatus,
+      AvailabilityRequestStatus[]
+    > = {
+      pending_manager: [
+        "pending_user_confirm",
+        "pending_admin_review",
+        "declined",
+        "cancelled",
+      ],
+      pending_admin_review: [
+        "pending_user_review_proposal",
+        "declined",
+        "cancelled",
+      ],
+      pending_user_review_proposal: [
+        "confirmed",
+        "declined",
+        "cancelled",
+        "expired",
+        "pending_deposit_payment",
+      ],
+      pending_user_confirm: [
+        "confirmed",
+        "cancelled",
+        "expired",
+        "pending_deposit_payment",
+      ],
+      pending_deposit_payment: [
+        "confirmed",
+        "pending_user_confirm",
+        "pending_user_review_proposal",
+        "cancelled",
+        "expired",
+      ],
+      declined: [],
+      confirmed: [],
+      cancelled: [],
+      expired: [],
+    };
+
+    if (!transitions[row.status].includes(params.nextStatus)) {
+      return { ok: false, error: "Transizione di stato non valida." };
+    }
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("availability_requests")
+    .update({
+      status: params.nextStatus,
+      ...(params.patch ?? {}),
+    })
+    .eq("id", params.requestId)
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    return { ok: false, error: error?.message ?? "Aggiornamento fallito." };
+  }
+
+  const request = rowToAvailabilityRequest(data as AvailabilityRequestRow);
+
+  if (
+    params.nextStatus === "declined" ||
+    params.nextStatus === "cancelled" ||
+    params.nextStatus === "expired"
+  ) {
+    await releaseSlotHoldForRequest(params.requestId);
+  }
+
+  return { ok: true, request };
+}
+
+export async function extendSlotHoldForConfirmedRequest(
+  request: AvailabilityRequest,
+): Promise<void> {
+  const dateKey =
+    normalizeSlotEventDate(request.userSelectedDate) ??
+    normalizeSlotEventDate(request.eventPayload.date);
+  const heldUntil = dateKey
+    ? new Date(`${dateKey}T23:59:59.999Z`).toISOString()
+    : computeConfirmationDeadline();
+  await extendSlotHoldForRequest(request.id, heldUntil, dateKey);
 }
 
 export async function listBookingsForOrganizer(
@@ -1336,11 +1490,15 @@ export async function processConfirmationDeadlines(now = new Date()): Promise<{
     "pending_user_confirm",
     "pending_user_review_proposal",
   ] as const;
+  const expireStatuses = [
+    ...awaitingStatuses,
+    "pending_deposit_payment",
+  ] as const;
 
   const { data: overdueRows, error: overdueError } = await supabase
     .from("availability_requests")
     .select("*")
-    .in("status", [...awaitingStatuses])
+    .in("status", [...expireStatuses])
     .not("confirmation_deadline", "is", null)
     .lt("confirmation_deadline", nowIso)
     .limit(80);
@@ -1353,7 +1511,7 @@ export async function processConfirmationDeadlines(now = new Date()): Promise<{
         .from("availability_requests")
         .update({ status: "expired" })
         .eq("id", row.id)
-        .in("status", [...awaitingStatuses])
+        .in("status", [...expireStatuses])
         .select("*")
         .maybeSingle();
 

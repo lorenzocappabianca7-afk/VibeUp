@@ -147,6 +147,78 @@ export async function patchAvailabilityRequestRemote(params: {
   }
 }
 
+export async function startDepositCheckoutRemote(params: {
+  requestId: string;
+  selectedDate?: string;
+  selectedPrice?: number | null;
+}): Promise<
+  | {
+      ok: true;
+      checkoutUrl: string;
+      sessionId: string;
+      request: AvailabilityRequest;
+    }
+  | {
+      ok: true;
+      alreadyPaid: true;
+      request: AvailabilityRequest;
+      event?: UserEvent;
+    }
+  | { ok: false; error: string }
+> {
+  try {
+    const response = await fetch(
+      `/api/bookings/requests/${encodeURIComponent(params.requestId)}/deposit-checkout`,
+      {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          selectedDate: params.selectedDate,
+          selectedPrice: params.selectedPrice,
+        }),
+      },
+    );
+    const payload = await parseJson(response);
+    if (!response.ok) {
+      return {
+        ok: false,
+        error:
+          typeof payload?.error === "string"
+            ? payload.error
+            : "Avvio pagamento fallito.",
+      };
+    }
+    if (payload?.alreadyPaid) {
+      return {
+        ok: true,
+        alreadyPaid: true,
+        request: payload.request as AvailabilityRequest,
+        event:
+          payload.event && typeof payload.event === "object"
+            ? (payload.event as UserEvent)
+            : undefined,
+      };
+    }
+    if (
+      typeof payload?.checkoutUrl !== "string" ||
+      !payload.checkoutUrl ||
+      !payload.request ||
+      typeof payload.request !== "object"
+    ) {
+      return { ok: false, error: "Risposta checkout non valida." };
+    }
+    return {
+      ok: true,
+      checkoutUrl: payload.checkoutUrl,
+      sessionId: String(payload.sessionId ?? ""),
+      request: payload.request as AvailabilityRequest,
+    };
+  } catch {
+    return { ok: false, error: "Connessione non disponibile." };
+  }
+}
+
 export async function adminReviewAvailabilityRequestRemote(params: {
   requestId: string;
   action: "forward" | "discard";

@@ -1,4 +1,4 @@
-/** Shared money rules for deposits and platform fee (bank transfer later). */
+/** Shared money rules for deposits and platform fee (Stripe Checkout). */
 
 export const LOCATION_DEPOSIT_RATE = 0.3;
 export const DEPOSIT_APP_FEE_RATE = 0.05;

@@ -8,7 +8,8 @@ export type AvailabilityRequestStatus =
   | "pending_user_review_proposal"
   | "confirmed"
   | "cancelled"
-  | "expired";
+  | "expired"
+  | "pending_deposit_payment";
 
 export type ManagerDecision = "accept" | "decline" | "propose";
 
@@ -75,6 +76,11 @@ export interface AvailabilityRequest {
   confirmationDeadline: string | null;
   /** When the pre-deadline reminder email was sent (ISO). */
   confirmationReminderSentAt: string | null;
+  stripeCheckoutSessionId: string | null;
+  stripePaymentIntentId: string | null;
+  depositPaymentStatus: "pending" | "paid" | "failed" | "abandoned" | null;
+  /** Status to restore if Stripe checkout is abandoned/failed. */
+  statusBeforePayment: AvailabilityRequestStatus | null;
 }
 
 /** Fill V2 fields for localStorage / partial payloads from older clients. */
@@ -114,5 +120,9 @@ export function normalizeAvailabilityRequest(
       typeof item.userSelectedPrice === "number" ? item.userSelectedPrice : null,
     confirmationDeadline: item.confirmationDeadline ?? null,
     confirmationReminderSentAt: item.confirmationReminderSentAt ?? null,
+    stripeCheckoutSessionId: item.stripeCheckoutSessionId ?? null,
+    stripePaymentIntentId: item.stripePaymentIntentId ?? null,
+    depositPaymentStatus: item.depositPaymentStatus ?? null,
+    statusBeforePayment: item.statusBeforePayment ?? null,
   };
 }

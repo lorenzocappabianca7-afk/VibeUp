@@ -735,7 +735,7 @@ export function ServiceProfileView({
 
             <p className="mt-3 rounded-2xl bg-surface px-3 py-2 text-xs font-bold text-primary-black/70">
               Prima la disponibilità: il fornitore deve accettare. Poi confermi e
-              il servizio entra nell&apos;evento (pagamento via bonifico in seguito).
+              il servizio entra nell&apos;evento (caparra online alla conferma).
             </p>
           </aside>
           )}

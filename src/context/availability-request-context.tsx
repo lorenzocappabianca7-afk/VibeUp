@@ -6,6 +6,7 @@ import {
   createAvailabilityRequestRemote,
   fetchAvailabilityRequests,
   patchAvailabilityRequestRemote,
+  startDepositCheckoutRemote,
 } from "@/lib/bookings/client";
 import {
   normalizeAvailabilityRequest,
@@ -55,6 +56,10 @@ interface AvailabilityRequestContextValue {
         ok: true;
         eventId: string;
       }
+    | {
+        ok: true;
+        checkoutUrl: string;
+      }
     | { ok: false; error: string }
   >;
   confirmProposedAvailability: (
@@ -64,6 +69,10 @@ interface AvailabilityRequestContextValue {
     | {
         ok: true;
         eventId: string;
+      }
+    | {
+        ok: true;
+        checkoutUrl: string;
       }
     | { ok: false; error: string }
   >;
@@ -511,40 +520,43 @@ export function AvailabilityRequestProvider({
       confirmLockRef.current.add(requestId);
 
       if (cloudSyncEnabled) {
-        const remote = await patchAvailabilityRequestRemote({
-          requestId,
-          action: "confirm",
-        });
+        const remote = await startDepositCheckoutRemote({ requestId });
         confirmLockRef.current.delete(requestId);
         if (!remote.ok) {
           return { ok: false as const, error: remote.error };
         }
         setRequests((prev) => upsertRequest(prev, remote.request));
 
-        const payload = remote.request.eventPayload;
-        if (
-          payload.requestKind === "service" &&
-          payload.targetEventId &&
-          payload.pendingService
-        ) {
-          addServiceToEvent(payload.targetEventId, {
-            ...payload.pendingService,
-            status: "confirmed",
-          });
-          setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
-          return { ok: true as const, eventId: payload.targetEventId };
-        }
-
-        const event = remote.event;
-        if (!event) {
+        if ("alreadyPaid" in remote && remote.alreadyPaid) {
+          const payload = remote.request.eventPayload;
+          if (
+            payload.requestKind === "service" &&
+            payload.targetEventId &&
+            payload.pendingService
+          ) {
+            addServiceToEvent(payload.targetEventId, {
+              ...payload.pendingService,
+              status: "confirmed",
+            });
+            setSnoozedConfirmIds((prev) =>
+              prev.filter((id) => id !== requestId),
+            );
+            return { ok: true as const, eventId: payload.targetEventId };
+          }
+          if (remote.event) {
+            addEvent(remote.event);
+            setSnoozedConfirmIds((prev) =>
+              prev.filter((id) => id !== requestId),
+            );
+            return { ok: true as const, eventId: remote.event.id };
+          }
           return {
             ok: false as const,
-            error: "Evento non creato sul server.",
+            error: "Pagamento registrato ma evento non disponibile.",
           };
         }
-        addEvent(event);
-        setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
-        return { ok: true as const, eventId: event.id };
+
+        return { ok: true as const, checkoutUrl: remote.checkoutUrl };
       }
 
       let didClaim = false;
@@ -657,9 +669,8 @@ export function AvailabilityRequestProvider({
       confirmLockRef.current.add(requestId);
 
       if (cloudSyncEnabled) {
-        const remote = await patchAvailabilityRequestRemote({
+        const remote = await startDepositCheckoutRemote({
           requestId,
-          action: "confirm_proposal",
           selectedDate,
           selectedPrice: choice.selectedPrice,
         });
@@ -669,30 +680,36 @@ export function AvailabilityRequestProvider({
         }
         setRequests((prev) => upsertRequest(prev, remote.request));
 
-        const payload = remote.request.eventPayload;
-        if (
-          payload.requestKind === "service" &&
-          payload.targetEventId &&
-          payload.pendingService
-        ) {
-          addServiceToEvent(payload.targetEventId, {
-            ...payload.pendingService,
-            status: "confirmed",
-          });
-          setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
-          return { ok: true as const, eventId: payload.targetEventId };
-        }
-
-        const event = remote.event;
-        if (!event) {
+        if ("alreadyPaid" in remote && remote.alreadyPaid) {
+          const payload = remote.request.eventPayload;
+          if (
+            payload.requestKind === "service" &&
+            payload.targetEventId &&
+            payload.pendingService
+          ) {
+            addServiceToEvent(payload.targetEventId, {
+              ...payload.pendingService,
+              status: "confirmed",
+            });
+            setSnoozedConfirmIds((prev) =>
+              prev.filter((id) => id !== requestId),
+            );
+            return { ok: true as const, eventId: payload.targetEventId };
+          }
+          if (remote.event) {
+            addEvent(remote.event);
+            setSnoozedConfirmIds((prev) =>
+              prev.filter((id) => id !== requestId),
+            );
+            return { ok: true as const, eventId: remote.event.id };
+          }
           return {
             ok: false as const,
-            error: "Evento non creato sul server.",
+            error: "Pagamento registrato ma evento non disponibile.",
           };
         }
-        addEvent(event);
-        setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
-        return { ok: true as const, eventId: event.id };
+
+        return { ok: true as const, checkoutUrl: remote.checkoutUrl };
       }
 
       const proposed =

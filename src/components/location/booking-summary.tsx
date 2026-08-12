@@ -101,7 +101,7 @@ export function BookingSummary({
           </div>
           <div className="flex justify-between gap-3 border-t border-brand-pink/20 pt-1.5">
             <dt className="min-w-0 text-sm font-semibold text-primary-black">
-              Totale caparra (bonifico)
+              Totale caparra (pagamento online)
             </dt>
             <dd className="shrink-0 text-sm font-bold text-brand-pink">
               {depositCheckout.total > 0

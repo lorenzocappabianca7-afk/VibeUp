@@ -96,7 +96,7 @@ function buildDepositPolicyNotice(): ProfileCommunication {
     id: "deposit-policy",
     kind: "deposit_policy",
     title: "Caparra entro 36 ore",
-    body: "Quando accetti di creare un evento, hai 36 ore per pagare la caparra. Serve a bloccare la location per quelle date: se non la paghi entro il termine, perdi la priorità su quel locale.",
+    body: "Quando accetti di creare un evento, paghi la caparra online (Stripe). Serve a bloccare la location per quelle date: se non paghi entro il termine, perdi la priorità su quel locale.",
     createdAt: new Date().toISOString(),
     unread: true,
   };

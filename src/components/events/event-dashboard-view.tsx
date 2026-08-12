@@ -193,7 +193,7 @@ export function EventDashboardView({
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="rounded-xl bg-brand-pink/10 px-3 py-2.5">
               <dt className="text-xs font-medium text-primary-black/60">
-                Caparra + fee 5% (bonifico)
+                Caparra + fee 5% (online)
               </dt>
               <dd className="text-sm font-bold text-brand-pink">
                 {formatCurrency(depositCheckout.total)}

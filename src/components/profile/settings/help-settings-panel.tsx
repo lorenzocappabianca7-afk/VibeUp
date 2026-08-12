@@ -28,7 +28,7 @@ const FAQS = [
     id: "faq-1",
     question: "Come funziona la caparra?",
     answer:
-      "Quando prenoti un locale o un servizio paghi solo la caparra. Il saldo resta da saldare secondo le condizioni del fornitore, di solito prima dell'evento.",
+      "Quando confermi la richiesta paghi online la caparra (circa il 30% + fee VibeUp) con Stripe. Il saldo resta da saldare secondo le condizioni del fornitore, di solito prima dell'evento.",
   },
   {
     id: "faq-2",

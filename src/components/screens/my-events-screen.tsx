@@ -39,7 +39,7 @@ import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useStat
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { getDepositCheckoutAmounts } from "@/lib/booking-money";
 
-/** Platform fee applied on top of the location deposit — bank transfer configured later. */
+/** Platform fee applied on top of the location deposit — paid via Stripe Checkout. */
 
 interface MyEventsScreenProps {
   onCreateEvent?: () => void;

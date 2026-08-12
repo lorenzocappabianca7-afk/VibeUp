@@ -2,7 +2,6 @@
 
 import { useAppState } from "@/context/app-state-context";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
-import { useProfileCommunications } from "@/context/profile-communications-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import {
@@ -25,8 +24,8 @@ export function ConfirmAvailabilityModal() {
     rejectProposedAvailability,
     snoozeAvailabilityConfirm,
   } = useAvailabilityRequests();
-  const { addDepositReminder } = useProfileCommunications();
   const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const request = pendingUserConfirms[0] ?? null;
   const notifiedIdsRef = useRef<Set<string>>(new Set());
 
@@ -98,21 +97,20 @@ export function ConfirmAvailabilityModal() {
 
   function handleConfirmDirect() {
     if (busy) return;
+    setError(null);
     setSubmittingId(request.id);
     void confirmAvailabilityRequest(request.id).then((result) => {
       if (!result.ok) {
+        setError(result.error);
         setSubmittingId(null);
         return;
       }
-      if (!isServiceRequest) {
-        addDepositReminder({
-          eventId: result.eventId,
-          eventTitle: payload.title,
-          locationName: payload.locationName,
-          date: formatDate(payload.date),
-        });
+      if ("checkoutUrl" in result && result.checkoutUrl) {
+        window.location.assign(result.checkoutUrl);
+        return;
       }
       setTab("events");
+      setSubmittingId(null);
     });
   }
 
@@ -131,24 +129,23 @@ export function ConfirmAvailabilityModal() {
           ? payload.totalCost
           : null;
 
+    setError(null);
     setSubmittingId(request.id);
     void confirmProposedAvailability(request.id, {
       selectedDate: slot.date,
       selectedPrice,
     }).then((result) => {
       if (!result.ok) {
+        setError(result.error);
         setSubmittingId(null);
         return;
       }
-      if (!isServiceRequest) {
-        addDepositReminder({
-          eventId: result.eventId,
-          eventTitle: payload.title,
-          locationName: payload.locationName,
-          date: formatDate(slot.date),
-        });
+      if ("checkoutUrl" in result && result.checkoutUrl) {
+        window.location.assign(result.checkoutUrl);
+        return;
       }
       setTab("events");
+      setSubmittingId(null);
     });
   }
 
@@ -206,7 +203,7 @@ export function ConfirmAvailabilityModal() {
           </p>
           {deadlineLabel ? (
             <p className="mt-3 rounded-2xl bg-brand-teal/10 px-3 py-2 text-center text-xs font-semibold text-primary-black">
-              Conferma entro {deadlineLabel}
+              Conferma e paga la caparra online entro {deadlineLabel}
               {countdownLabel ? ` · ${countdownLabel}` : ""}. Dopo la scadenza lo
               slot viene liberato.
             </p>
@@ -343,9 +340,14 @@ export function ConfirmAvailabilityModal() {
               onClick={handleConfirmProposal}
               className="flex-1 rounded-2xl bg-brand-teal px-4 py-3 text-sm font-bold text-primary-black disabled:opacity-60"
             >
-              Conferma questa opzione
+              {busy ? "Reindirizzo al pagamento…" : "Paga caparra e conferma"}
             </button>
           </div>
+          {error ? (
+            <p className="mt-2 text-center text-xs font-medium text-red-600">
+              {error}
+            </p>
+          ) : null}
           <button
             type="button"
             onClick={() => snoozeAvailabilityConfirm(request.id)}
@@ -402,7 +404,7 @@ export function ConfirmAvailabilityModal() {
         </p>
         {deadlineLabel ? (
           <p className="mt-3 rounded-2xl bg-brand-teal/10 px-3 py-2 text-center text-xs font-semibold text-primary-black">
-            Conferma e paga la caparra entro {deadlineLabel}
+            Conferma e paga la caparra online entro {deadlineLabel}
             {countdownLabel ? ` · ${countdownLabel}` : ""}. Dopo la scadenza lo
             slot viene liberato.
           </p>
@@ -422,6 +424,13 @@ export function ConfirmAvailabilityModal() {
           </p>
         </div>
 
+        {!isServiceRequest ? (
+          <p className="mt-3 text-center text-xs text-primary-black/55">
+            Verrai reindirizzato a Stripe per pagare la caparra (30% + fee). Alla
+            conferma del pagamento l&apos;evento viene creato automaticamente.
+          </p>
+        ) : null}
+
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
@@ -436,11 +445,18 @@ export function ConfirmAvailabilityModal() {
             onClick={handleConfirmDirect}
             className="flex-1 rounded-2xl bg-brand-teal px-4 py-3 text-sm font-bold text-primary-black disabled:opacity-60"
           >
-            {isServiceRequest
-              ? "Conferma servizio"
-              : "Conferma e crea evento"}
+            {busy
+              ? "Reindirizzo al pagamento…"
+              : isServiceRequest
+                ? "Conferma servizio"
+                : "Paga caparra e crea evento"}
           </button>
         </div>
+        {error ? (
+          <p className="mt-2 text-center text-xs font-medium text-red-600">
+            {error}
+          </p>
+        ) : null}
       </div>
     </div>
   );
