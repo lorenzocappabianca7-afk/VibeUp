@@ -85,7 +85,22 @@ export interface AvailabilityRequest {
 
 /** Fill V2 fields for localStorage / partial payloads from older clients. */
 export function normalizeAvailabilityRequest(
-  item: AvailabilityRequest,
+  item: Omit<
+    AvailabilityRequest,
+    | "stripeCheckoutSessionId"
+    | "stripePaymentIntentId"
+    | "depositPaymentStatus"
+    | "statusBeforePayment"
+  > &
+    Partial<
+      Pick<
+        AvailabilityRequest,
+        | "stripeCheckoutSessionId"
+        | "stripePaymentIntentId"
+        | "depositPaymentStatus"
+        | "statusBeforePayment"
+      >
+    >,
 ): AvailabilityRequest {
   const createdMs = Date.parse(item.createdAt);
   const expiresFallback = Number.isFinite(createdMs)

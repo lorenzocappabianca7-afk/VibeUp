@@ -416,6 +416,10 @@ export function AvailabilityRequestProvider({
         userSelectedPrice: null,
         confirmationDeadline: null,
         confirmationReminderSentAt: null,
+        stripeCheckoutSessionId: null,
+        stripePaymentIntentId: null,
+        depositPaymentStatus: null,
+        statusBeforePayment: null,
       });
 
       setRequests((prev) => [request, ...prev]);
