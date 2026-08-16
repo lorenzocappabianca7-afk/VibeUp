@@ -13,6 +13,7 @@ import {
   normalizeSlotEventDate,
 } from "@/lib/availability/slot-holds";
 import { notifyManagerAboutAvailabilityRequest } from "@/server/notifications/availability-request-notify";
+import { notifyAvailabilityStatusChange } from "@/server/notifications/status-change-notifier";
 import { randomBytes } from "crypto";
 import type {
   AvailabilityEventPayload,
@@ -581,10 +582,46 @@ export async function createAvailabilityRequest(params: {
     );
   }
 
+  // Organizer gets the shared status-change email; manager already got the actionable notify.
+  void notifyAvailabilityStatusChange({
+    request,
+    previousStatus: null,
+    nextStatus: "pending_manager",
+    listingId,
+    skipManager: true,
+  }).catch((err) => {
+    console.error("[bookings] status-change notify on create", request.id, err);
+  });
+
   return {
     ok: true,
     request,
   };
+}
+
+async function fireStatusChangeNotify(params: {
+  previousStatus: AvailabilityRequestStatus;
+  request: AvailabilityRequest;
+  listingId?: string | null;
+  skipOrganizer?: boolean;
+  skipManager?: boolean;
+}) {
+  try {
+    await notifyAvailabilityStatusChange({
+      request: params.request,
+      previousStatus: params.previousStatus,
+      nextStatus: params.request.status,
+      listingId: params.listingId,
+      skipOrganizer: params.skipOrganizer,
+      skipManager: params.skipManager,
+    });
+  } catch (err) {
+    console.error(
+      "[bookings] status-change notify",
+      params.request.id,
+      err,
+    );
+  }
 }
 
 export async function listAvailabilityRequestsForUser(params: {
@@ -851,6 +888,15 @@ export async function respondToAvailabilityRequestByToken(params: {
     }
   }
 
+  await fireStatusChangeNotify({
+    previousStatus: "pending_manager",
+    request,
+    listingId: access.row.listing_id,
+    // Organizer already received the detailed accept/decline email when applicable.
+    skipOrganizer:
+      params.action === "accept" || params.action === "decline",
+  });
+
   return { ok: true, request };
 }
 
@@ -1037,6 +1083,12 @@ export async function updateAvailabilityRequestStatus(params: {
     await extendSlotHoldForRequest(params.requestId, heldUntil, dateKey);
   }
 
+  await fireStatusChangeNotify({
+    previousStatus: row.status,
+    request,
+    listingId: row.listing_id,
+  });
+
   return {
     ok: true,
     request,
@@ -1222,6 +1274,12 @@ export async function updateAvailabilityRequestStatusAdmin(params: {
     await releaseSlotHoldForRequest(params.requestId);
   }
 
+  await fireStatusChangeNotify({
+    previousStatus: row.status,
+    request,
+    listingId: row.listing_id,
+  });
+
   return { ok: true, request };
 }
 
@@ -1396,6 +1454,13 @@ export async function adminReviewAvailabilityRequest(params: {
     console.error("[bookings] admin review notify exception", request.id, err);
   }
 
+  await fireStatusChangeNotify({
+    previousStatus: "pending_admin_review",
+    request,
+    listingId: row.listing_id,
+    skipOrganizer: true,
+  });
+
   return { ok: true, request };
 }
 
@@ -1532,6 +1597,12 @@ export async function processConfirmationDeadlines(now = new Date()): Promise<{
         if (!notify.ok) {
           errors.push(`expire notify ${row.id}: ${notify.error ?? "failed"}`);
         }
+        await fireStatusChangeNotify({
+          previousStatus: row.status,
+          request,
+          listingId: row.listing_id,
+          skipOrganizer: true,
+        });
       } catch (err) {
         errors.push(
           `expire notify ${row.id}: ${

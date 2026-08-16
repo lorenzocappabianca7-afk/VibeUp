@@ -1,5 +1,6 @@
 "use client";
 
+import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type {
   AvailabilityRequest,
@@ -100,9 +101,15 @@ export function ManagerResponseForm({
   return (
     <div className="space-y-5">
       <section className="space-y-3 rounded-2xl border border-white bg-primary-black/[0.02] p-5">
-        <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary-black/45">
-          Richiesta disponibilità
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary-black/45">
+            Richiesta disponibilità
+          </p>
+          <RequestStatusBadge
+            status={request.status}
+            confirmationDeadline={request.confirmationDeadline}
+          />
+        </div>
         <h1 className="text-xl font-bold text-primary-black">{payload.title}</h1>
         {payload.description ? (
           <p className="text-sm leading-relaxed text-primary-black/65">

@@ -764,6 +764,7 @@ export function LocationDetailView({
             }
             isReady={isReady}
             requestStatus={activeRequest?.status ?? null}
+            confirmationDeadline={activeRequest?.confirmationDeadline ?? null}
             requestError={requestError}
             eventTitle={eventTitle}
             eventTitlePlaceholder={defaultEventTitle}

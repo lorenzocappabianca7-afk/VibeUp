@@ -1,17 +1,15 @@
 "use client";
 
+import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import { EventCountdown } from "@/components/events/event-countdown";
+import { EventManagerContactSection } from "@/components/events/event-manager-contact-section";
 import { RefundReportModal } from "@/components/events/refund-report-modal";
 import { ServiceStatusList } from "@/components/events/service-status-list";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
 import { useAppState } from "@/context/app-state-context";
 import { calculateLocationDeposit, getDepositCheckoutAmounts } from "@/lib/booking-money";
-import {
-  EVENT_STATUS_LABELS,
-  type BookedService,
-  type UserEvent,
-} from "@/types/event";
+import type { BookedService, UserEvent } from "@/types/event";
 import { formatCurrency, formatDate, MODAL_SAFE_BOTTOM_STYLE } from "@/lib/utils";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import {
@@ -109,9 +107,11 @@ export function EventDashboardView({
       </HomeTabLink>
 
       <header>
-        <span className="rounded-full bg-brand-teal/15 px-3 py-1 text-xs font-medium text-brand-teal">
-          {EVENT_STATUS_LABELS[currentEvent.status]}
-        </span>
+        <RequestStatusBadge
+          kind="event"
+          status={currentEvent.status}
+          size="md"
+        />
         <h1 className="mt-3 text-2xl font-bold text-primary-black">
           {currentEvent.title}
         </h1>
@@ -134,6 +134,8 @@ export function EventDashboardView({
       </header>
 
       <EventCountdown event={currentEvent} />
+
+      <EventManagerContactSection event={currentEvent} />
 
       <section className="rounded-2xl border border-brand-pink/20 bg-brand-pink/12 p-4">
         <div className="flex items-start gap-3">

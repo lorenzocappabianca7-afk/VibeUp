@@ -1,5 +1,6 @@
 "use client";
 
+import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import { Button } from "@/components/ui/button";
 import { getDepositCheckoutAmounts } from "@/lib/booking-money";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -15,6 +16,7 @@ interface BookingSummaryProps {
   locationPriceLabel?: string;
   isReady: boolean;
   requestStatus?: AvailabilityRequestStatus | null;
+  confirmationDeadline?: string | null;
   requestError?: string | null;
   eventTitle: string;
   eventTitlePlaceholder: string;
@@ -28,6 +30,7 @@ export function BookingSummary({
   locationPriceLabel,
   isReady,
   requestStatus = null,
+  confirmationDeadline = null,
   requestError = null,
   eventTitle,
   eventTitlePlaceholder,
@@ -144,6 +147,16 @@ export function BookingSummary({
         <p className="text-center text-xs text-primary-black/45">
           Sei interessato?
         </p>
+
+        {requestStatus ? (
+          <div className="flex justify-center">
+            <RequestStatusBadge
+              status={requestStatus}
+              confirmationDeadline={confirmationDeadline}
+              size="md"
+            />
+          </div>
+        ) : null}
 
         <Button
           className={cn(

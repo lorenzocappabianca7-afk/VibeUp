@@ -1,5 +1,6 @@
 "use client";
 
+import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import {
   formatAvailabilityRequestTime,
   useAvailabilityRequests,
@@ -98,9 +99,9 @@ function AvailabilityRequestCard({
                 ? "Richiesta servizio"
                 : "Richiesta di disponibilità"}
             </p>
-            <span
-              className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-pink"
-              aria-label="Da gestire"
+            <RequestStatusBadge
+              status={request.status}
+              confirmationDeadline={request.confirmationDeadline}
             />
           </div>
           <p className="mt-0.5 text-sm text-primary-black/70">
@@ -171,9 +172,13 @@ export const BusinessNotificationsScreen = memo(
     const { businessProfile, currentUser } = useAppState();
     const {
       pendingManagerRequests,
+      managedRequests,
       acceptAvailabilityRequest,
       declineAvailabilityRequest,
     } = useAvailabilityRequests();
+    const otherManagedRequests = managedRequests.filter(
+      (item) => item.status !== "pending_manager",
+    );
     const [actionErrorById, setActionErrorById] = useState<
       Record<string, string>
     >({});
@@ -234,7 +239,7 @@ export const BusinessNotificationsScreen = memo(
         {pendingManagerRequests.length > 0 && (
           <section className="space-y-2">
             <h2 className="text-sm font-bold text-primary-black">
-              Richieste di disponibilità
+              Richieste da gestire
             </h2>
             <ul className="space-y-2">
               {pendingManagerRequests.map((request) => (
@@ -251,12 +256,42 @@ export const BusinessNotificationsScreen = memo(
           </section>
         )}
 
-        <section className="space-y-2">
-          {pendingManagerRequests.length > 0 && (
+        {otherManagedRequests.length > 0 && (
+          <section className="space-y-2">
             <h2 className="text-sm font-bold text-primary-black">
-              Altre notifiche
+              Storico richieste
             </h2>
-          )}
+            <ul className="space-y-2">
+              {otherManagedRequests.map((request) => (
+                <li
+                  key={request.id}
+                  className="rounded-2xl border border-primary-black/8 bg-background p-4"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-primary-black">
+                        {request.eventPayload.title}
+                      </p>
+                      <p className="mt-0.5 text-xs text-primary-black/55">
+                        {request.requesterName} · {request.locationName} ·{" "}
+                        {formatDate(request.eventPayload.date)}
+                      </p>
+                    </div>
+                    <RequestStatusBadge
+                      status={request.status}
+                      confirmationDeadline={request.confirmationDeadline}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <section className="space-y-2">
+          <h2 className="text-sm font-bold text-primary-black">
+            Altre notifiche
+          </h2>
           <ul className="space-y-2">
             {MOCK_BUSINESS_NOTIFICATIONS.map((item) => (
               <NotificationRow key={item.id} item={item} />

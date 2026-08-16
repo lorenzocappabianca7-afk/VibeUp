@@ -1,5 +1,6 @@
 "use client";
 
+import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
 import { adminReviewAvailabilityRequestRemote } from "@/lib/bookings/client";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -42,11 +43,17 @@ function ProposalCard({
 
   return (
     <li className="overflow-hidden rounded-2xl border border-primary-black/10 bg-background">
-      <div className="border-b border-primary-black/8 px-4 py-3">
-        <p className="text-sm font-bold text-primary-black">{payload.title}</p>
-        <p className="mt-0.5 text-xs text-primary-black/55">
-          {request.locationName} · {request.requesterName}
-        </p>
+      <div className="flex items-start justify-between gap-2 border-b border-primary-black/8 px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-primary-black">{payload.title}</p>
+          <p className="mt-0.5 text-xs text-primary-black/55">
+            {request.locationName} · {request.requesterName}
+          </p>
+        </div>
+        <RequestStatusBadge
+          status={request.status}
+          confirmationDeadline={request.confirmationDeadline}
+        />
       </div>
 
       <div className="grid gap-0 md:grid-cols-2">

@@ -1,7 +1,8 @@
 "use client";
 
+import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
-import { EVENT_STATUS_LABELS, type UserEvent } from "@/types/event";
+import type { UserEvent } from "@/types/event";
 import { formatDate } from "@/lib/utils";
 import { Calendar, ChevronRight, MapPin, Users } from "lucide-react";
 import { memo, useMemo } from "react";
@@ -9,13 +10,6 @@ import { memo, useMemo } from "react";
 interface EventCardProps {
   event: UserEvent;
 }
-
-const statusColors: Record<UserEvent["status"], string> = {
-  draft: "bg-primary-black/10 text-primary-black/60",
-  organizing: "bg-brand-teal/15 text-brand-teal",
-  confirmed: "bg-brand-pink/15 text-primary-black",
-  completed: "bg-primary-black/10 text-primary-black/60",
-};
 
 export const EventCard = memo(function EventCard({ event }: EventCardProps) {
   const confirmedServices = useMemo(
@@ -52,11 +46,7 @@ export const EventCard = memo(function EventCard({ event }: EventCardProps) {
       </div>
 
       <div className="flex shrink-0 flex-col items-end gap-1.5">
-        <span
-          className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusColors[event.status]}`}
-        >
-          {EVENT_STATUS_LABELS[event.status]}
-        </span>
+        <RequestStatusBadge kind="event" status={event.status} />
         <span className="text-[10px] text-primary-black/40">
           {confirmedServices}/{event.services.length} servizi ok
         </span>

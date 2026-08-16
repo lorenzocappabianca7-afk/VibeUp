@@ -15,7 +15,10 @@ import {
 } from "@/types/availability-request";
 import type { UserEvent } from "@/types/event";
 import { computeConfirmationDeadline } from "@/lib/availability/confirmation-deadline";
+import { getRequestStatusShortLabel } from "@/lib/availability/request-status-display";
 import { normalizeSlotEventDate } from "@/lib/availability/slot-holds";
+import { notifyAvailabilityUpdate } from "@/lib/browser-notifications";
+import { normalizeUserSettings } from "@/types/user-settings";
 import {
   createContext,
   useCallback,
@@ -86,6 +89,10 @@ interface AvailabilityRequestContextValue {
   resumeAvailabilityConfirm: (requestId: string) => void;
   pendingManagerRequests: AvailabilityRequest[];
   pendingUserConfirms: AvailabilityRequest[];
+  /** All requests for locations/services managed by the current business user. */
+  managedRequests: AvailabilityRequest[];
+  /** Open (non-terminal) requests created by the current organizer. */
+  organizerOpenRequests: AvailabilityRequest[];
 }
 
 const AvailabilityRequestContext =
@@ -323,6 +330,49 @@ export function AvailabilityRequestProvider({
     requests,
     snoozedConfirmIds,
   ]);
+
+  const managedRequests = useMemo(() => {
+    if (!isBusinessUser) return [];
+    const sorted = [...requests].sort(
+      (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
+    );
+    if (managedLocationIds.size > 0 || managedServiceIds.size > 0) {
+      return sorted.filter(
+        (item) =>
+          managedLocationIds.has(item.locationId) ||
+          managedServiceIds.has(item.locationId),
+      );
+    }
+    const businessName = businessProfile?.businessName?.trim().toLowerCase();
+    if (businessName) {
+      const matched = sorted.filter((item) =>
+        item.locationName.toLowerCase().includes(businessName),
+      );
+      if (matched.length > 0) return matched;
+    }
+    return sorted.filter((item) => item.requesterUserId !== currentUser.id);
+  }, [
+    businessProfile?.businessName,
+    currentUser.id,
+    isBusinessUser,
+    managedLocationIds,
+    managedServiceIds,
+    requests,
+  ]);
+
+  const organizerOpenRequests = useMemo(() => {
+    if (isGuest || isBusinessUser) return [];
+    return requests
+      .filter(
+        (item) =>
+          item.requesterUserId === currentUser.id &&
+          item.status !== "confirmed" &&
+          item.status !== "declined" &&
+          item.status !== "cancelled" &&
+          item.status !== "expired",
+      )
+      .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+  }, [currentUser.id, isBusinessUser, isGuest, requests]);
 
   useEffect(() => {
     if (!isBusinessUser) {
@@ -907,6 +957,50 @@ export function AvailabilityRequestProvider({
     setSnoozedConfirmIds((prev) => prev.filter((id) => id !== requestId));
   }, []);
 
+  const knownStatusesRef = useRef<Map<string, string>>(new Map());
+  const statusNotifyReadyRef = useRef(false);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const pushEnabled = normalizeUserSettings(currentUser.settings)
+      .notifications.pushEnabled;
+    const relevant = isBusinessUser
+      ? managedRequests
+      : requests.filter((item) => item.requesterUserId === currentUser.id);
+
+    if (!statusNotifyReadyRef.current) {
+      for (const item of relevant) {
+        knownStatusesRef.current.set(item.id, item.status);
+      }
+      statusNotifyReadyRef.current = true;
+      return;
+    }
+
+    for (const item of relevant) {
+      const previous = knownStatusesRef.current.get(item.id);
+      knownStatusesRef.current.set(item.id, item.status);
+      if (!previous || previous === item.status) continue;
+      const label = getRequestStatusShortLabel(
+        item.status,
+        item.confirmationDeadline,
+      );
+      notifyAvailabilityUpdate({
+        pushEnabled,
+        title: `Stato: ${label}`,
+        body: `“${item.eventPayload.title}” · ${item.locationName}`,
+        tag: `vibeup-status-${item.id}-${item.status}`,
+        onlyWhenHidden: false,
+      });
+    }
+  }, [
+    currentUser.id,
+    currentUser.settings,
+    hydrated,
+    isBusinessUser,
+    managedRequests,
+    requests,
+  ]);
+
   const value = useMemo(
     () => ({
       requests,
@@ -922,6 +1016,8 @@ export function AvailabilityRequestProvider({
       resumeAvailabilityConfirm,
       pendingManagerRequests,
       pendingUserConfirms,
+      managedRequests,
+      organizerOpenRequests,
     }),
     [
       requests,
@@ -937,6 +1033,8 @@ export function AvailabilityRequestProvider({
       resumeAvailabilityConfirm,
       pendingManagerRequests,
       pendingUserConfirms,
+      managedRequests,
+      organizerOpenRequests,
     ],
   );
 

@@ -1,13 +1,14 @@
 "use client";
 
+import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import { DiscountInviteBanner } from "@/components/discount-invite-banner";
 import { EventCountdown } from "@/components/events/event-countdown";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { useAppState } from "@/context/app-state-context";
+import { useAvailabilityRequests } from "@/context/availability-request-context";
 import { getCountdown, isEventPast } from "@/lib/event";
 import { calculateLocationDeposit } from "@/lib/booking-money";
 import {
-  EVENT_STATUS_LABELS,
   type BookedService,
   type UserEvent,
 } from "@/types/event";
@@ -53,13 +54,6 @@ interface ServicePaymentState {
   paid: boolean;
   method?: string;
 }
-
-const statusColors: Record<UserEvent["status"], string> = {
-  draft: "text-[color:var(--postit-ink-muted)]",
-  organizing: "text-[color:var(--postit-ink-muted)]",
-  confirmed: "text-[color:var(--postit-ink-muted)]",
-  completed: "text-[color:var(--postit-ink-muted)]",
-};
 
 const paymentMethodLabels: Record<PaymentMethod, string> = {
   bank_transfer: "Bonifico",
@@ -224,6 +218,8 @@ export const MyEventsScreen = memo(function MyEventsScreen({
     prunePastEvents,
     updateEventTitle,
   } = useAppState();
+  const { organizerOpenRequests, resumeAvailabilityConfirm } =
+    useAvailabilityRequests();
   const [paymentModal, setPaymentModal] = useState<{
     event: UserEvent;
     service: BookedService;
@@ -351,7 +347,50 @@ export const MyEventsScreen = memo(function MyEventsScreen({
         </div>
       </header>
 
-      {activeEvents.length === 0 && (
+      {organizerOpenRequests.length > 0 && (
+        <section className="min-w-0 space-y-3">
+          <h2 className="text-base font-semibold text-primary-black">
+            Richieste in corso
+          </h2>
+          <ul className="space-y-2">
+            {organizerOpenRequests.map((request) => (
+              <li
+                key={request.id}
+                className="rounded-2xl border border-primary-black/10 bg-surface p-4"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-primary-black">
+                      {request.eventPayload.title}
+                    </p>
+                    <p className="mt-0.5 text-xs text-primary-black/55">
+                      {request.locationName} ·{" "}
+                      {formatDate(request.eventPayload.date)}
+                    </p>
+                  </div>
+                  <RequestStatusBadge
+                    status={request.status}
+                    confirmationDeadline={request.confirmationDeadline}
+                  />
+                </div>
+                {(request.status === "pending_user_confirm" ||
+                  request.status === "pending_user_review_proposal" ||
+                  request.status === "pending_deposit_payment") && (
+                  <button
+                    type="button"
+                    onClick={() => resumeAvailabilityConfirm(request.id)}
+                    className="mt-3 w-full rounded-2xl bg-brand-teal px-3 py-2 text-xs font-bold text-primary-black"
+                  >
+                    Continua conferma
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {activeEvents.length === 0 && organizerOpenRequests.length === 0 && (
         <section className="min-w-0 rounded-2xl border border-dashed border-primary-black/15 bg-primary-black/[0.02] px-4 py-8 text-center">
           <p className="text-base font-semibold text-primary-black">
             Nessun evento ancora
@@ -465,11 +504,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       <article className="event-postit box-border mx-auto w-full min-w-0 max-w-full">
         <div className="event-postit-section min-w-0 border-b px-3 sm:px-4">
           <div className="min-w-0 overflow-hidden">
-            <p
-              className={`text-[11px] font-bold uppercase tracking-[0.14em] ${statusColors[event.status]}`}
-            >
-              {EVENT_STATUS_LABELS[event.status]}
-            </p>
+            <RequestStatusBadge kind="event" status={event.status} />
             <div className="mt-1 flex min-w-0 items-center gap-2 leading-none">
               {isEditingTitle ? (
                 <input
