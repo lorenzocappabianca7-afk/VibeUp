@@ -2,35 +2,29 @@
 
 import { CompareFavorites } from "@/components/explore/compare-favorites";
 import { DiscountInviteBanner } from "@/components/discount-invite-banner";
-import { ExploreFiltersSheet } from "@/components/explore/explore-filters-sheet";
 import { ExploreSearchBar } from "@/components/explore/explore-search-bar";
 import { LocationCard } from "@/components/explore/location-card";
 import { useAccountGate } from "@/context/account-gate-context";
 import { useAppState } from "@/context/app-state-context";
+import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
+import {
+  estimateLocationTotalCost,
+  rankLocationsByKeywords,
+} from "@/lib/rank-locations-by-keywords";
 import {
   SERVICE_PROVIDERS,
   type ServiceCategory,
   type ServiceProvider,
 } from "@/lib/mock/service-providers";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import {
-  distanceToLocation,
-  matchesGeoFilter,
-  matchesNearMeFilter,
-} from "@/lib/geo";
-import { cn, formatCurrency } from "@/lib/utils";
-import {
-  DEFAULT_EXPLORE_FILTERS,
-  DEFAULT_SERVICE_EXPLORE_FILTERS,
   EXPLORE_GUEST_MIN,
-  DEFAULT_EXPLORE_MAX_PRICE,
-  EXPLORE_PRICE_MIN,
   type ExploreCategory,
-  type ExploreFilters,
   type Location,
-  type ServiceExploreFilters,
 } from "@/types/location";
+import type { PartyCriteria } from "@/types/party-criteria";
 import {
   Building2,
   Camera,
@@ -168,54 +162,20 @@ interface ExploreScreenProps {
   initialCategory?: ExploreCategory;
 }
 
-function countActiveFilters(filters: ExploreFilters): number {
-  let count = 0;
-  if (
-    filters.minHourlyPrice > EXPLORE_PRICE_MIN ||
-    filters.maxHourlyPrice !== DEFAULT_EXPLORE_MAX_PRICE
-  ) {
-    count++;
-  }
-  if (filters.guestCount > EXPLORE_GUEST_MIN) count++;
-  // dateFrom/dateTo are booking context for detail/quote, not list filters.
-  // "Tipo di festa" non deve contribuire al badge dei filtri attivi.
-  if (filters.nearMe) {
-    count++;
-  } else {
-    const hasGeoFilter =
-      !filters.allPiemonte ||
-      filters.selectedComune !== null ||
-      filters.geoArea !== null ||
-      filters.district !== null ||
-      filters.zone !== null;
-    if (hasGeoFilter) count++;
-  }
-  return count;
-}
-
-function countServiceFilters(
-  category: ExploreCategory,
-  filters: ServiceExploreFilters,
-): number {
-  if (category === "locali" || category === "altri") return 0;
-
-  let count = 0;
-  if (category === "dj" && filters.musicType !== null) count++;
-  // activityHours / eventAddress are quote context only — not list filters.
-  if (category === "decorazioni") {
-    if (filters.partyType !== null) count++;
-    if (filters.viewDecorationsInPerson) count++;
-    if (filters.decorationFulfillment !== null) count++;
-  }
-  return count;
-}
-
-function filterLocations(
+/**
+ * Hard filters from Home wizard (guests + budget). Search query is name/city only.
+ * Free-text description is applied later as ranking, never as an excluding filter.
+ * Date is booking context for detail links — catalog has no per-location availability.
+ */
+function filterLocationsByPartyCriteria(
   locations: Location[],
   query: string,
-  filters: ExploreFilters,
+  criteria: PartyCriteria,
+  hasAppliedCriteria: boolean,
 ) {
   const normalizedQuery = query.trim().toLowerCase();
+  const guestCount = hasAppliedCriteria ? criteria.guestCount : null;
+  const budgetMax = hasAppliedCriteria ? criteria.budgetMax : null;
 
   return locations.filter((location) => {
     const matchesQuery =
@@ -223,33 +183,20 @@ function filterLocations(
       location.name.toLowerCase().includes(normalizedQuery) ||
       location.city.toLowerCase().includes(normalizedQuery) ||
       location.comune.toLowerCase().includes(normalizedQuery) ||
-      location.address.toLowerCase().includes(normalizedQuery);
+      location.address.toLowerCase().includes(normalizedQuery) ||
+      location.zoneLabel.toLowerCase().includes(normalizedQuery);
 
-    const matchesPrice =
-      location.hourlyPrice >= filters.minHourlyPrice &&
-      location.hourlyPrice <= filters.maxHourlyPrice;
+    const matchesCapacity =
+      guestCount == null || location.capacity >= guestCount;
 
-    const matchesCapacity = location.capacity >= filters.guestCount;
+    const matchesBudget =
+      budgetMax == null ||
+      estimateLocationTotalCost(
+        location,
+        guestCount ?? EXPLORE_GUEST_MIN,
+      ) <= budgetMax;
 
-    const matchesPartyType =
-      filters.partyType === null ||
-      location.partyTypes.includes(filters.partyType);
-
-    const matchesGeo = matchesGeoFilter(location, filters);
-    const matchesNearMe = matchesNearMeFilter(
-      location,
-      filters.nearMe,
-      filters.userPosition,
-    );
-
-    return (
-      matchesQuery &&
-      matchesPrice &&
-      matchesCapacity &&
-      matchesPartyType &&
-      matchesGeo &&
-      matchesNearMe
-    );
+    return matchesQuery && matchesCapacity && matchesBudget;
   });
 }
 
@@ -260,7 +207,6 @@ function getServicePriceLabel(service: ServiceProvider): string {
 function filterServices(
   category: ServiceCategory,
   query: string,
-  filters: ServiceExploreFilters,
   services: ServiceProvider[] = SERVICE_PROVIDERS,
 ) {
   const normalizedQuery = query.trim().toLowerCase();
@@ -273,34 +219,7 @@ function filterServices(
       service.description.toLowerCase().includes(normalizedQuery) ||
       service.providerZone.toLowerCase().includes(normalizedQuery);
 
-    const matchesMusic =
-      category !== "dj" ||
-      filters.musicType === null ||
-      service.musicTypes?.includes(filters.musicType);
-
-    const matchesPartyType =
-      category !== "decorazioni" ||
-      filters.partyType === null ||
-      service.partyTypes?.includes(filters.partyType);
-
-    const matchesInPerson =
-      category !== "decorazioni" ||
-      !filters.viewDecorationsInPerson ||
-      service.supportsInPerson === true;
-
-    const matchesFulfillment =
-      category !== "decorazioni" ||
-      filters.decorationFulfillment === null ||
-      service.fulfillments?.includes(filters.decorationFulfillment);
-
-    return (
-      matchesCategory &&
-      matchesQuery &&
-      matchesMusic &&
-      matchesPartyType &&
-      matchesInPerson &&
-      matchesFulfillment
-    );
+    return matchesCategory && matchesQuery;
   });
 }
 
@@ -334,12 +253,20 @@ function getPublishedManagedServices(listings: ManagedListing[]): ServiceProvide
   });
 }
 
-function buildLocationHref(locationId: string, filters: ExploreFilters): string {
+function buildLocationHref(
+  locationId: string,
+  criteria: PartyCriteria,
+  eventGuestCount?: number,
+  eventDate?: string,
+): string {
   const params = new URLSearchParams();
-  params.set("guestCount", String(filters.guestCount));
-  if (filters.partyType) params.set("partyType", filters.partyType);
-  if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
-  if (filters.dateTo) params.set("dateTo", filters.dateTo);
+  const guestCount =
+    criteria.guestCount ?? eventGuestCount ?? EXPLORE_GUEST_MIN;
+  params.set("guestCount", String(guestCount));
+  const dateFrom = criteria.dateFrom ?? eventDate ?? null;
+  const dateTo = criteria.dateTo ?? criteria.dateFrom ?? eventDate ?? null;
+  if (dateFrom) params.set("dateFrom", dateFrom);
+  if (dateTo) params.set("dateTo", dateTo);
 
   const query = params.toString();
   return query ? `/location/${locationId}?${query}` : `/location/${locationId}`;
@@ -371,6 +298,7 @@ export function ExploreScreen({
   } = useAppState();
   const { requireAccount } = useAccountGate();
   const { activeTab } = useTabNavigation();
+  const { criteria, hasAppliedCriteria, clearCriteria } = usePartyCriteria();
 
   function handleToggleFavoriteLocation(id: string) {
     if (favoriteLocationIds.includes(id)) {
@@ -418,19 +346,6 @@ export function ExploreScreen({
   const [discountBannerOpen, setDiscountBannerOpen] = useState(false);
   const deferredQuery = useDeferredValue(query);
   const [isCategoryPending, startCategoryTransition] = useTransition();
-  const [filters, setFilters] = useState<ExploreFilters>(() => ({
-    ...DEFAULT_EXPLORE_FILTERS,
-    dateFrom: eventContext?.date ?? DEFAULT_EXPLORE_FILTERS.dateFrom,
-    dateTo: eventContext?.date ?? DEFAULT_EXPLORE_FILTERS.dateTo,
-    guestCount: eventContext?.guestCount ?? DEFAULT_EXPLORE_FILTERS.guestCount,
-  }));
-  const [serviceFilters, setServiceFilters] =
-    useState<ServiceExploreFilters>(DEFAULT_SERVICE_EXPLORE_FILTERS);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-
-  if (activeTab !== "explore" && filtersOpen) {
-    setFiltersOpen(false);
-  }
 
   useEffect(() => {
     let cancelled = false;
@@ -448,26 +363,6 @@ export function ExploreScreen({
       cancelled = true;
     };
   }, [categoryParam, initialCategory]);
-
-  useEffect(() => {
-    if (!eventContext) return;
-
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (cancelled) return;
-
-      setFilters((current) => ({
-        ...current,
-        dateFrom: eventContext.date,
-        dateTo: eventContext.date,
-        guestCount: eventContext.guestCount,
-      }));
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [eventContext]);
 
   const [catalogLocations, setCatalogLocations] = useState<Location[]>([]);
 
@@ -520,28 +415,21 @@ export function ExploreScreen({
   );
 
   const filteredLocations = useMemo(() => {
-    const results = filterLocations(allLocations, deferredQuery, filters);
+    const hardFiltered = filterLocationsByPartyCriteria(
+      allLocations,
+      deferredQuery,
+      criteria,
+      hasAppliedCriteria,
+    );
 
-    if (filters.nearMe && filters.userPosition) {
-      return [...results].sort(
-        (a, b) =>
-          distanceToLocation(filters.userPosition!, a) -
-          distanceToLocation(filters.userPosition!, b),
-      );
-    }
-
-    return results;
-  }, [allLocations, deferredQuery, filters]);
+    const freeText = hasAppliedCriteria ? criteria.freeText : "";
+    return rankLocationsByKeywords(hardFiltered, freeText);
+  }, [allLocations, criteria, deferredQuery, hasAppliedCriteria]);
 
   const filteredServices = useMemo(() => {
     if (activeCategory === "locali") return [];
-    return filterServices(
-      activeCategory,
-      deferredQuery,
-      serviceFilters,
-      allServices,
-    );
-  }, [activeCategory, allServices, deferredQuery, serviceFilters]);
+    return filterServices(activeCategory, deferredQuery, allServices);
+  }, [activeCategory, allServices, deferredQuery]);
 
   const compareLocations = useMemo(
     () =>
@@ -590,10 +478,30 @@ export function ExploreScreen({
       }));
   }, [activeCategory, allLocations, allServices]);
 
-  const activeFilterCount =
-    activeCategory === "locali"
-      ? countActiveFilters(filters)
-      : countServiceFilters(activeCategory, serviceFilters);
+  const effectiveGuestCount =
+    criteria.guestCount ?? eventContext?.guestCount ?? EXPLORE_GUEST_MIN;
+  const effectiveDateFrom = criteria.dateFrom ?? eventContext?.date ?? null;
+  const effectiveDateTo =
+    criteria.dateTo ?? criteria.dateFrom ?? eventContext?.date ?? null;
+
+  const criteriaSummary = useMemo(() => {
+    if (!hasAppliedCriteria) return null;
+    const parts: string[] = [];
+    if (criteria.dateFrom) {
+      const fromLabel = formatDate(criteria.dateFrom);
+      const toLabel =
+        criteria.dateTo && criteria.dateTo !== criteria.dateFrom
+          ? formatDate(criteria.dateTo)
+          : null;
+      parts.push(toLabel ? `${fromLabel} – ${toLabel}` : fromLabel);
+    }
+    if (criteria.guestCount) parts.push(`${criteria.guestCount} invitati`);
+    if (criteria.budgetMax) {
+      parts.push(`fino a ${formatCurrency(criteria.budgetMax)}`);
+    }
+    if (criteria.freeText.trim()) parts.push("ordinato per descrizione");
+    return parts.length > 0 ? parts.join(" · ") : "Criteri dalla Home";
+  }, [criteria, hasAppliedCriteria]);
 
   const selectCategory = useCallback((category: ExploreCategory) => {
     if (category === activeCategory) return;
@@ -626,49 +534,45 @@ export function ExploreScreen({
     });
   }, []);
 
-  const openFilters = useCallback(() => {
-    setFiltersOpen(true);
-  }, []);
-
-  const closeFilters = useCallback(() => {
-    setFiltersOpen(false);
-  }, []);
-
   const buildServiceHref = useCallback((service: ServiceProvider): string => {
     const params = new URLSearchParams();
     params.set("category", service.category);
-    params.set("hours", String(serviceFilters.activityHours));
-    params.set("guestCount", String(eventContext?.guestCount ?? filters.guestCount));
+    params.set("hours", "4");
+    params.set("guestCount", String(effectiveGuestCount));
 
     if (eventContext) {
       params.set("eventId", eventContext.id);
       params.set("dateFrom", eventContext.date);
-      params.set("eventAddress", `${eventContext.locationName}, ${eventContext.city}`);
+      params.set(
+        "eventAddress",
+        `${eventContext.locationName}, ${eventContext.city}`,
+      );
     } else {
-      if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
-      if (filters.dateTo) params.set("dateTo", filters.dateTo);
-      if (serviceFilters.eventAddress.trim()) {
-        params.set("eventAddress", serviceFilters.eventAddress.trim());
-      }
+      if (effectiveDateFrom) params.set("dateFrom", effectiveDateFrom);
+      if (effectiveDateTo) params.set("dateTo", effectiveDateTo);
     }
 
     return `/service/${service.id}?${params.toString()}`;
   }, [
+    effectiveDateFrom,
+    effectiveDateTo,
+    effectiveGuestCount,
     eventContext,
-    filters.dateFrom,
-    filters.dateTo,
-    filters.guestCount,
-    serviceFilters,
   ]);
   const locationHrefById = useMemo(
     () =>
       new Map(
         filteredLocations.map((location) => [
           location.id,
-          buildLocationHref(location.id, filters),
+          buildLocationHref(
+            location.id,
+            criteria,
+            eventContext?.guestCount,
+            eventContext?.date,
+          ),
         ]),
       ),
-    [filteredLocations, filters],
+    [criteria, eventContext?.date, eventContext?.guestCount, filteredLocations],
   );
 
   return (
@@ -722,13 +626,29 @@ export function ExploreScreen({
         key={activeCategory}
         query={query}
         onQueryChange={setQuery}
-        activeFilterCount={activeFilterCount}
-        onOpenFilters={openFilters}
         placeholder={SEARCH_PLACEHOLDERS[activeCategory]}
         suggestions={searchSuggestions}
         storageKey={`vibeup-explore-recent-${activeCategory}`}
         forceClosed={activeTab !== "explore"}
       />
+
+      {activeCategory === "locali" && criteriaSummary ? (
+        <div className="flex items-start justify-between gap-3 rounded-2xl border border-brand-teal/25 bg-brand-teal/10 px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-teal">
+              Criteri dalla Home
+            </p>
+            <p className="mt-0.5 text-sm text-primary-black/75">{criteriaSummary}</p>
+          </div>
+          <button
+            type="button"
+            onClick={clearCriteria}
+            className="shrink-0 text-sm font-semibold text-brand-teal"
+          >
+            Rimuovi
+          </button>
+        </div>
+      ) : null}
 
       {(activeCategory === "dj" || activeCategory === "fotografo") && (
         <div className="relative min-w-0">
@@ -888,9 +808,12 @@ export function ExploreScreen({
               {filteredLocations.length === 1
                 ? "location trovata"
                 : "location trovate"}
-              {filters.nearMe && filters.userPosition && (
-                <span className="text-brand-teal"> · ordinate per distanza</span>
-              )}
+              {hasAppliedCriteria && criteria.freeText.trim() ? (
+                <span className="text-brand-teal">
+                  {" "}
+                  · ordinate per affinità
+                </span>
+              ) : null}
             </p>
             {compareLocationIds.length > 0 && (
               <p className="text-xs text-brand-teal">
@@ -923,11 +846,11 @@ export function ExploreScreen({
                 type="button"
                 onClick={() => {
                   setQuery("");
-                  setFilters(DEFAULT_EXPLORE_FILTERS);
+                  clearCriteria();
                 }}
                 className="mt-3 text-sm font-medium text-brand-teal"
               >
-                Resetta ricerca e filtri
+                Mostra tutto il catalogo
               </button>
             </div>
           )}
@@ -950,17 +873,6 @@ export function ExploreScreen({
           />
         </section>
       )}
-
-      <ExploreFiltersSheet
-        open={filtersOpen}
-        activeCategory={activeCategory}
-        filters={filters}
-        serviceFilters={serviceFilters}
-        eventContext={eventContext}
-        onClose={closeFilters}
-        onApply={setFilters}
-        onApplyServiceFilters={setServiceFilters}
-      />
     </div>
   );
 }

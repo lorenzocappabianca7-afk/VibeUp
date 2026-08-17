@@ -1,4 +1,4 @@
-export type ConsumerTabId = "explore" | "events" | "messages" | "profile";
+export type ConsumerTabId = "explore" | "home" | "events" | "messages" | "profile";
 export type BusinessTabId = "notifications" | "calendar" | "profile";
 export type TabId = ConsumerTabId | BusinessTabId;
 
@@ -9,8 +9,8 @@ export interface TabItem {
 
 export const CONSUMER_TABS: TabItem[] = [
   { id: "explore", label: "Esplora" },
+  { id: "home", label: "Home" },
   { id: "events", label: "Eventi" },
-  { id: "messages", label: "Chat" },
   { id: "profile", label: "Profilo" },
 ];
 
@@ -26,6 +26,8 @@ export const TABS = CONSUMER_TABS;
 export const ALL_TAB_IDS = new Set<TabId>([
   ...CONSUMER_TABS.map((tab) => tab.id),
   ...BUSINESS_TABS.map((tab) => tab.id),
+  // Chat remains reachable from event detail, not from the main tab bar.
+  "messages",
 ]);
 
 export function isBusinessTabId(tab: string): tab is BusinessTabId {
@@ -35,6 +37,7 @@ export function isBusinessTabId(tab: string): tab is BusinessTabId {
 export function isConsumerTabId(tab: string): tab is ConsumerTabId {
   return (
     tab === "explore" ||
+    tab === "home" ||
     tab === "events" ||
     tab === "messages" ||
     tab === "profile"

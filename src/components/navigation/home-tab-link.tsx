@@ -14,7 +14,7 @@ type HomeTabLinkProps = Omit<
   AnchorHTMLAttributes<HTMLAnchorElement>,
   "href" | "onClick"
 > & {
-  /** Target home tab. Omit for the mode default (explore / notifications). */
+  /** Target home tab. Omit for the mode default (home / notifications). */
   tab?: TabId;
   /** Extra query (e.g. `category=dj`) — forces a full home load when set. */
   search?: string;
@@ -26,7 +26,7 @@ function buildHref(tab: TabId | undefined, isBusinessUser: boolean, search?: str
   if (tab) {
     const isDefault =
       (isBusinessUser && tab === "notifications") ||
-      (!isBusinessUser && tab === "explore");
+      (!isBusinessUser && tab === "home");
     if (!isDefault) params.set("tab", tab);
     else params.delete("tab");
   }
@@ -65,7 +65,7 @@ export function HomeTabLink({
 
     const hasExtraQuery = Boolean(search && search.replace(/^\?/, "").length);
     if (isHomePath(pathname) && !hasExtraQuery) {
-      setTab(tab ?? (isBusinessUser ? "notifications" : "explore"));
+      setTab(tab ?? (isBusinessUser ? "notifications" : "home"));
       return;
     }
 

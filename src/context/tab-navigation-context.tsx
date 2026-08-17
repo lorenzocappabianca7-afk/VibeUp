@@ -35,7 +35,7 @@ const TabNavigationContext = createContext<TabNavigationContextValue | null>(
 );
 
 const TAB_NAVIGATION_FALLBACK: TabNavigationContextValue = {
-  activeTab: "explore",
+  activeTab: "home",
   setTab: () => undefined,
   isBusinessUser: false,
 };
@@ -80,24 +80,25 @@ function resolveTabFromLocation(
       }
       if (
         tab === "explore" ||
+        tab === "home" ||
         tab === "events" ||
         tab === "messages" ||
         tab === "profile"
       ) {
         return tab;
       }
-      return "explore";
+      return "home";
     }
-    return isBusinessUser ? "notifications" : "explore";
+    return isBusinessUser ? "notifications" : "home";
   }
 
-  return isBusinessUser ? "notifications" : "explore";
+  return isBusinessUser ? "notifications" : "home";
 }
 
 function buildTabHref(tab: TabId, isBusinessUser: boolean) {
   const isDefault =
     (isBusinessUser && tab === "notifications") ||
-    (!isBusinessUser && tab === "explore");
+    (!isBusinessUser && tab === "home");
   return isDefault ? "/" : `/?tab=${tab}`;
 }
 
@@ -175,7 +176,11 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
   }
 
   const allowed = getAllowedTabs(isBusinessUser);
-  const fallback: TabId = isBusinessUser ? "notifications" : "explore";
+  // Chat is allowed for consumer deep-links even if not in the bottom bar.
+  if (!isBusinessUser) {
+    allowed.add("messages");
+  }
+  const fallback: TabId = isBusinessUser ? "notifications" : "home";
   const candidate = optimisticTab ?? urlTab;
   const activeTab = allowed.has(candidate) ? candidate : fallback;
   const onHome = pathname === "/" || pathname === "";

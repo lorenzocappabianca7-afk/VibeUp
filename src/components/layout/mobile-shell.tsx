@@ -3,6 +3,7 @@
 import { BusinessCalendarScreen } from "@/components/screens/business-calendar-screen";
 import { BusinessNotificationsScreen } from "@/components/screens/business-notifications-screen";
 import { ExploreScreen } from "@/components/screens/explore-screen";
+import { HomeScreen } from "@/components/screens/home-screen";
 import { MessagesScreen } from "@/components/screens/messages-screen";
 import { MyEventsScreen } from "@/components/screens/my-events-screen";
 import { ProfileScreen } from "@/components/screens/profile-screen";
@@ -106,13 +107,20 @@ export function MobileShell() {
                 <ExploreScreen />
               </TabPanel>
               <TabPanel
+                tab="home"
+                activeTab={activeTab}
+                visited={visitedTabs.has("home")}
+              >
+                <HomeScreen />
+              </TabPanel>
+              <TabPanel
                 tab="events"
                 activeTab={activeTab}
                 visited={visitedTabs.has("events")}
               >
                 <MyEventsScreen
                   isActive={activeTab === "events"}
-                  onCreateEvent={() => setTab("explore")}
+                  onCreateEvent={() => setTab("home")}
                 />
               </TabPanel>
               <TabPanel

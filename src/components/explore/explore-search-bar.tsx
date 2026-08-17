@@ -30,8 +30,9 @@ export interface ExploreSearchSuggestion {
 interface ExploreSearchBarProps {
   query: string;
   onQueryChange: (query: string) => void;
-  activeFilterCount: number;
-  onOpenFilters: () => void;
+  /** Optional — omit to hide the filters button (criteria come from Home). */
+  activeFilterCount?: number;
+  onOpenFilters?: () => void;
   placeholder?: string;
   suggestions?: ExploreSearchSuggestion[];
   storageKey?: string;
@@ -91,13 +92,14 @@ function writeRecent(storageKey: string, values: string[]) {
 export function ExploreSearchBar({
   query,
   onQueryChange,
-  activeFilterCount,
+  activeFilterCount = 0,
   onOpenFilters,
   placeholder = "Cerca location...",
   suggestions = [],
   storageKey = "vibeup-explore-recent-searches-v1",
   forceClosed = false,
 }: ExploreSearchBarProps) {
+  const showFilters = typeof onOpenFilters === "function";
   const [open, setOpen] = useState(false);
   const [scrollLocked, setScrollLocked] = useState(false);
   const [draft, setDraft] = useState(query);
@@ -444,11 +446,12 @@ export function ExploreSearchBar({
   }
 
   const hasQuery = query.trim().length > 0;
+  const filterReserve = showFilters ? FILTER_PX : 0;
   const closedBannerPadRight = open
     ? 16
     : hasQuery
-      ? FILTER_PX + CLEAR_PX + 8
-      : FILTER_PX + 16;
+      ? filterReserve + CLEAR_PX + 8
+      : filterReserve + 16;
 
   return (
     <>
@@ -548,7 +551,7 @@ export function ExploreSearchBar({
                   clearCurrentSearch();
                 }}
                 className="absolute top-1/2 z-[2] flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-primary-black/10 text-primary-black/55"
-                style={{ right: FILTER_PX + 2 }}
+                style={{ right: filterReserve + 2 }}
                 aria-label="Cancella ricerca"
               >
                 <X className="h-3.5 w-3.5" aria-hidden />
@@ -718,17 +721,16 @@ export function ExploreSearchBar({
           </div>
       </div>
 
-      <button
-        type="button"
-        onClick={onOpenFilters}
+      {showFilters ? (
+        <button
+          type="button"
+          onClick={onOpenFilters}
           aria-label={`Filtri${activeFilterCount > 0 ? `, ${activeFilterCount} attivi` : ""}`}
           tabIndex={open ? -1 : 0}
           aria-hidden={open}
-        className={cn(
+          className={cn(
             "absolute top-0 flex items-center justify-center rounded-full border border-brand-teal bg-brand-teal text-ink-inverse",
-            open
-              ? "pointer-events-none opacity-0"
-              : "opacity-100",
+            open ? "pointer-events-none opacity-0" : "opacity-100",
           )}
           style={{
             right: 0,
@@ -739,10 +741,11 @@ export function ExploreSearchBar({
           <SlidersHorizontal className="h-5 w-5 shrink-0" aria-hidden />
           {activeFilterCount > 0 && !open && (
             <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-pink px-1 text-[10px] font-bold text-ink-inverse">
-            {activeFilterCount}
-          </span>
-        )}
-      </button>
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+      ) : null}
     </div>
     </>
   );

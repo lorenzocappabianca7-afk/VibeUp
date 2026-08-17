@@ -12,6 +12,7 @@ import {
   Bell,
   Calendar,
   CalendarDays,
+  Home,
   MessageCircle,
   Search,
   User,
@@ -20,6 +21,7 @@ import type { LucideIcon } from "lucide-react";
 
 const TAB_ICONS: Record<TabId, LucideIcon> = {
   explore: Search,
+  home: Home,
   events: Calendar,
   messages: MessageCircle,
   notifications: Bell,
