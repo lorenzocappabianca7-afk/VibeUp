@@ -132,13 +132,18 @@ export function HomeScreen() {
 
   return (
     <div className="min-w-0 space-y-5 lg:space-y-6">
+      <h1 className="text-center font-[family-name:var(--font-brand)] text-[1.75rem] font-bold tracking-tight text-white">
+        <span className="text-brand-teal">V</span>ibe
+        <span className="text-brand-pink">U</span>p
+      </h1>
+
       <section className="overflow-hidden rounded-2xl border border-brand-teal/25 bg-brand-teal/10 p-5">
         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-teal">
-          VibeUp Home
+          Home
         </p>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight text-primary-black sm:text-[1.75rem]">
+        <h2 className="mt-2 text-2xl font-bold tracking-tight text-primary-black sm:text-[1.75rem]">
           {homeBannerText}
-        </h1>
+        </h2>
         <p className="mt-2 max-w-sm text-sm text-primary-black/60">
           Dimmi data, invitati e stile: ti mostriamo le location più affini.
         </p>

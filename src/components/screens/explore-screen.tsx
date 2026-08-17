@@ -584,10 +584,14 @@ export function ExploreScreen({
         />
       </Suspense>
       <header className="relative min-w-0 space-y-4">
-        <h1 className="text-center font-[family-name:var(--font-brand)] text-[1.75rem] font-bold tracking-tight text-white">
-          <span className="text-brand-teal">V</span>ibe
-          <span className="text-brand-pink">U</span>p
-        </h1>
+        <div className="min-w-0">
+          <h1 className="text-[1.75rem] font-extrabold tracking-tight text-primary-black">
+            Esplora
+          </h1>
+          <p className="mt-1 text-sm text-primary-black/60">
+            Location e servizi per la tua festa
+          </p>
+        </div>
         <div className="rounded-3xl border border-primary-black/10 bg-primary-black/[0.03] p-1.5">
           <div className="-mx-0.5 flex min-w-0 flex-nowrap items-stretch gap-1.5 overflow-x-auto px-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {EXPLORE_CATEGORIES.map((category) => {
