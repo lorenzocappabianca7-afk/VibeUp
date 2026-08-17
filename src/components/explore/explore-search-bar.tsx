@@ -447,11 +447,12 @@ export function ExploreSearchBar({
 
   const hasQuery = query.trim().length > 0;
   const filterReserve = showFilters ? FILTER_PX : 0;
+  const clearInset = showFilters ? filterReserve + 2 : 10;
   const closedBannerPadRight = open
     ? 16
     : hasQuery
-      ? filterReserve + CLEAR_PX + 8
-      : filterReserve + 16;
+      ? clearInset + CLEAR_PX + 6
+      : Math.max(filterReserve, 16);
 
   return (
     <>
@@ -551,7 +552,7 @@ export function ExploreSearchBar({
                   clearCurrentSearch();
                 }}
                 className="absolute top-1/2 z-[2] flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-primary-black/10 text-primary-black/55"
-                style={{ right: filterReserve + 2 }}
+                style={{ right: clearInset }}
                 aria-label="Cancella ricerca"
               >
                 <X className="h-3.5 w-3.5" aria-hidden />

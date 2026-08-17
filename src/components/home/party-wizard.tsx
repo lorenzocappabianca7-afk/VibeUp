@@ -1,23 +1,40 @@
 "use client";
 
 import { GuestCountStepper } from "@/components/explore/guest-count-stepper";
+import { PriceRangeInputs } from "@/components/explore/price-range-inputs";
 import { Button } from "@/components/ui/button";
+import { VibeUpCalendar } from "@/components/ui/vibeup-calendar";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import {
   emptyPartyCriteria,
   type PartyCriteria,
 } from "@/types/party-criteria";
 import {
   DEFAULT_EXPLORE_MAX_PRICE,
+  EXPLORE_GUEST_MAX,
   EXPLORE_GUEST_MIN,
   EXPLORE_PRICE_MIN,
 } from "@/types/location";
-import { useMemo, useState } from "react";
+import { Calendar, ChevronDown, X } from "lucide-react";
+import { useState } from "react";
+import { createPortal } from "react-dom";
 
 const STEPS = ["date", "guests", "budget", "description"] as const;
+
+const dateLabelFormatter = new Intl.DateTimeFormat("it-IT", {
+  day: "numeric",
+  month: "short",
+});
+
+function formatWizardDateLabel(dateFrom: string | null, dateTo?: string | null) {
+  if (!dateFrom) return "Scegli data o fascia";
+  const startLabel = dateLabelFormatter.format(new Date(dateFrom));
+  if (!dateTo || dateTo === dateFrom) return startLabel;
+  return `${startLabel} - ${dateLabelFormatter.format(new Date(dateTo))}`;
+}
 
 interface PartyWizardProps {
   open: boolean;
@@ -36,7 +53,7 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
   const isLast = stepIndex === STEPS.length - 1;
   const progressLabel = `${stepIndex + 1}/${STEPS.length}`;
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
   function patch(partial: Partial<PartyCriteria>) {
     setCriteria((prev) => ({ ...prev, ...partial }));
@@ -76,36 +93,48 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
     setStepIndex(0);
   }
 
-  return (
+  return createPortal(
     <div
-      className="vibe-overlay-enter fixed inset-0 z-[85] flex items-end justify-center sm:items-center sm:p-4"
+      className="vibe-overlay-enter fixed inset-0 z-[85] flex items-end justify-center lg:items-center"
       data-overlay-open="true"
     >
       <button
         type="button"
-        className="absolute inset-0 bg-black/60"
+        className="absolute inset-0 bg-black/50"
         aria-label="Chiudi"
         onClick={handleClose}
       />
       <div
-        className="vibe-sheet-enter relative flex max-h-[min(92dvh,calc(100dvh-0.5rem))] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-surface shadow-xl sm:rounded-3xl"
+        className="vibe-sheet-enter relative flex max-h-[min(92dvh,calc(100dvh-0.5rem))] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-background shadow-xl lg:max-w-lg lg:rounded-3xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="party-wizard-title"
+        onClick={(event) => event.stopPropagation()}
       >
-        <div className="shrink-0 border-b border-primary-black/8 px-5 pb-3 pt-4">
+        <div className="shrink-0 px-5 pt-4">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-primary-black/15" />
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h2
-              id="party-wizard-title"
-              className="text-lg font-bold text-primary-black"
+            <div className="min-w-0">
+              <h2
+                id="party-wizard-title"
+                className="text-lg font-bold text-primary-black"
+              >
+                Crea la tua festa
+              </h2>
+              <p className="mt-0.5 text-xs font-semibold text-primary-black/45">
+                Step {progressLabel}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-paper text-ink-inverse/70"
+              aria-label="Chiudi"
             >
-              Crea la tua festa
-            </h2>
-            <span className="text-xs font-semibold text-primary-black/45">
-              Step {progressLabel}
-            </span>
+              <X className="h-4 w-4" aria-hidden />
+            </button>
           </div>
-          <div className="flex gap-1.5" aria-hidden>
+          <div className="mb-4 flex gap-1.5" aria-hidden>
             {STEPS.map((id, i) => (
               <div
                 key={id}
@@ -118,35 +147,45 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
-          {step === "date" ? (
-            <DateStep criteria={criteria} onChange={patch} />
-          ) : null}
-          {step === "guests" ? (
-            <GuestsStep criteria={criteria} onChange={patch} />
-          ) : null}
-          {step === "budget" ? (
-            <BudgetStep criteria={criteria} onChange={patch} />
-          ) : null}
-          {step === "description" ? (
-            <DescriptionStep criteria={criteria} onChange={patch} />
-          ) : null}
+        <div className="smooth-scroll min-h-0 flex-1 overflow-x-clip overflow-y-auto px-5">
+          <div className="space-y-6 pb-4">
+            {step === "date" ? (
+              <DateStep criteria={criteria} onChange={patch} />
+            ) : null}
+            {step === "guests" ? (
+              <GuestsStep criteria={criteria} onChange={patch} />
+            ) : null}
+            {step === "budget" ? (
+              <BudgetStep criteria={criteria} onChange={patch} />
+            ) : null}
+            {step === "description" ? (
+              <DescriptionStep criteria={criteria} onChange={patch} />
+            ) : null}
+          </div>
         </div>
 
-        <div className="flex shrink-0 gap-2 border-t border-primary-black/8 px-5 py-4">
-          <Button
-            variant="outline"
-            className="flex-1 rounded-2xl"
-            onClick={back}
-          >
-            Indietro
-          </Button>
-          <Button className="flex-1 rounded-2xl" onClick={next}>
-            {isLast ? "Cerca location" : "Avanti"}
-          </Button>
+        <div
+          className="shrink-0 border-t border-primary-black/8 bg-background px-5 pt-3"
+          style={{
+            paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
+          }}
+        >
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1 rounded-2xl"
+              onClick={back}
+            >
+              Indietro
+            </Button>
+            <Button className="flex-1 rounded-2xl" onClick={next}>
+              {isLast ? "Cerca location" : "Avanti"}
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -157,66 +196,89 @@ function DateStep({
   criteria: PartyCriteria;
   onChange: (partial: Partial<PartyCriteria>) => void;
 }) {
-  const singleMode = !criteria.dateTo || criteria.dateTo === criteria.dateFrom;
+  const [datePickerOpen, setDatePickerOpen] = useState(true);
+
+  function selectEventDate(value: string) {
+    if (!criteria.dateFrom || (criteria.dateFrom && criteria.dateTo)) {
+      onChange({ dateFrom: value, dateTo: null });
+      return;
+    }
+
+    if (criteria.dateFrom === value) {
+      onChange({ dateFrom: value, dateTo: value });
+      return;
+    }
+
+    const [start, end] = [criteria.dateFrom, value].sort();
+    onChange({ dateFrom: start, dateTo: end });
+  }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-base font-bold text-primary-black">Quando?</h3>
-        <p className="mt-1 text-sm text-primary-black/55">
-          Scegli una data o una fascia di date.
-        </p>
-      </div>
-      <label className="block space-y-1.5">
-        <span className="text-xs font-semibold uppercase tracking-wide text-primary-black/45">
-          Data inizio
-        </span>
-        <input
-          type="date"
-          value={criteria.dateFrom ?? ""}
-          onChange={(e) => {
-            const value = e.target.value || null;
-            onChange({
-              dateFrom: value,
-              dateTo: singleMode ? value : criteria.dateTo,
-            });
-          }}
-          className="w-full rounded-2xl border border-primary-black/10 bg-paper px-3.5 py-3 text-base text-ink-inverse"
-        />
-      </label>
-      <label className="flex items-center gap-2 text-sm text-primary-black/70">
-        <input
-          type="checkbox"
-          checked={!singleMode}
-          onChange={(e) => {
-            if (e.target.checked) {
-              onChange({
-                dateTo: criteria.dateTo ?? criteria.dateFrom,
-              });
-            } else {
-              onChange({ dateTo: criteria.dateFrom });
-            }
-          }}
-        />
-        Fascia di date
-      </label>
-      {!singleMode ? (
-        <label className="block space-y-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-primary-black/45">
-            Data fine
+    <fieldset>
+      <legend className="mb-3 text-sm font-semibold text-primary-black">
+        Quando vuoi festeggiare?
+      </legend>
+      <button
+        type="button"
+        onClick={() => setDatePickerOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-primary-black/10 bg-paper px-4 py-3 text-left transition-colors duration-150 hover:bg-brand-teal/8"
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-teal/10 text-brand-teal">
+            <Calendar className="h-4 w-4" aria-hidden />
           </span>
-          <input
-            type="date"
-            value={criteria.dateTo ?? ""}
-            min={criteria.dateFrom ?? undefined}
-            onChange={(e) =>
-              onChange({ dateTo: e.target.value || criteria.dateFrom })
-            }
-            className="w-full rounded-2xl border border-primary-black/10 bg-paper px-3.5 py-3 text-base text-ink-inverse"
-          />
-        </label>
+          <span className="min-w-0">
+            <span className="block text-xs font-semibold text-ink-inverse/50">
+              Quando
+            </span>
+            <span className="block truncate text-sm font-black text-ink-inverse">
+              {formatWizardDateLabel(criteria.dateFrom, criteria.dateTo)}
+            </span>
+          </span>
+        </span>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-brand-teal transition-transform duration-150",
+            datePickerOpen && "rotate-180",
+          )}
+          aria-hidden
+        />
+      </button>
+      {datePickerOpen ? (
+        <VibeUpCalendar
+          selectedStart={criteria.dateFrom}
+          selectedEnd={criteria.dateTo}
+          onSelectDate={selectEventDate}
+          className="mx-auto mt-3"
+        />
       ) : null}
-    </div>
+      {(criteria.dateFrom || criteria.dateTo) && (
+        <button
+          type="button"
+          onClick={() => {
+            onChange({ dateFrom: null, dateTo: null });
+            setDatePickerOpen(false);
+          }}
+          className="mt-3 text-xs font-bold text-brand-pink"
+        >
+          Cancella date
+        </button>
+      )}
+      <p className="mt-2 text-xs leading-relaxed text-primary-black/50">
+        Clicca un giorno e poi un altro per selezionare una fascia. Clicca due
+        volte lo stesso giorno per scegliere solo quella data.
+        {criteria.dateFrom ? (
+          <>
+            {" "}
+            Selezionato: {formatDate(criteria.dateFrom)}
+            {criteria.dateTo && criteria.dateTo !== criteria.dateFrom
+              ? ` – ${formatDate(criteria.dateTo)}`
+              : null}
+            .
+          </>
+        ) : null}
+      </p>
+    </fieldset>
   );
 }
 
@@ -227,21 +289,25 @@ function GuestsStep({
   criteria: PartyCriteria;
   onChange: (partial: Partial<PartyCriteria>) => void;
 }) {
+  const guestCount = criteria.guestCount ?? EXPLORE_GUEST_MIN;
+
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-base font-bold text-primary-black">
-          Quanti invitati?
-        </h3>
-        <p className="mt-1 text-sm text-primary-black/55">
-          Serve a mostrare location con capacità adeguata.
-        </p>
-      </div>
+    <fieldset>
+      <legend className="mb-3 text-sm font-semibold text-primary-black">
+        Numero persone
+      </legend>
       <GuestCountStepper
-        value={criteria.guestCount ?? EXPLORE_GUEST_MIN}
-        onChange={(guestCount) => onChange({ guestCount })}
+        value={guestCount}
+        onChange={(next) => onChange({ guestCount: next })}
       />
-    </div>
+      <p className="mt-2 text-xs text-primary-black/50">
+        Mostra location con capienza da{" "}
+        {guestCount >= EXPLORE_GUEST_MAX
+          ? `${EXPLORE_GUEST_MAX}+`
+          : guestCount}{" "}
+        ospiti
+      </p>
+    </fieldset>
   );
 }
 
@@ -252,61 +318,18 @@ function BudgetStep({
   criteria: PartyCriteria;
   onChange: (partial: Partial<PartyCriteria>) => void;
 }) {
-  const max = Math.max(
-    EXPLORE_PRICE_MIN + 100,
-    criteria.budgetMax ?? DEFAULT_EXPLORE_MAX_PRICE,
-  );
-  const value = criteria.budgetMax ?? DEFAULT_EXPLORE_MAX_PRICE;
-
-  const ticks = useMemo(
-    () => [500, 1000, 1500, 2000, 3000].filter((n) => n <= DEFAULT_EXPLORE_MAX_PRICE),
-    [],
-  );
+  const maxValue = criteria.budgetMax ?? DEFAULT_EXPLORE_MAX_PRICE;
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-base font-bold text-primary-black">
-          Budget location
-        </h3>
-        <p className="mt-1 text-sm text-primary-black/55">
-          Imposta il prezzo totale massimo che vuoi spendere per il locale.
-        </p>
-      </div>
-      <p className="text-center text-2xl font-bold text-primary-black">
-        fino a {formatCurrency(value)}
-      </p>
-      <input
-        type="range"
-        min={EXPLORE_PRICE_MIN}
-        max={DEFAULT_EXPLORE_MAX_PRICE}
-        step={50}
-        value={value}
-        onChange={(e) => onChange({ budgetMax: Number(e.target.value) })}
-        className="w-full accent-brand-teal"
-        aria-label="Budget massimo"
+    <fieldset>
+      <legend className="mb-3 text-sm font-semibold text-primary-black">
+        Budget location
+      </legend>
+      <PriceRangeInputs
+        value={[EXPLORE_PRICE_MIN, maxValue]}
+        onChange={([, budgetMax]) => onChange({ budgetMax })}
       />
-      <div className="flex flex-wrap justify-center gap-2">
-        {ticks.map((tick) => (
-          <button
-            key={tick}
-            type="button"
-            onClick={() => onChange({ budgetMax: tick })}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-semibold",
-              value === tick
-                ? "bg-brand-teal text-ink-inverse"
-                : "bg-primary-black/6 text-primary-black/65",
-            )}
-          >
-            {formatCurrency(tick)}
-          </button>
-        ))}
-      </div>
-      <p className="text-center text-xs text-primary-black/40">
-        Max selezionabile: {formatCurrency(max > value ? DEFAULT_EXPLORE_MAX_PRICE : max)}
-      </p>
-    </div>
+    </fieldset>
   );
 }
 
@@ -318,23 +341,21 @@ function DescriptionStep({
   onChange: (partial: Partial<PartyCriteria>) => void;
 }) {
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-base font-bold text-primary-black">
-          Descrivi la festa
-        </h3>
-        <p className="mt-1 text-sm text-primary-black/55">
-          Usiamo queste parole per ordinare le location più affini in cima —
-          nessuna viene nascosta.
-        </p>
-      </div>
+    <fieldset>
+      <legend className="mb-3 text-sm font-semibold text-primary-black">
+        Dettagli e preferenze
+      </legend>
       <textarea
         value={criteria.freeText}
         onChange={(e) => onChange({ freeText: e.target.value })}
-        rows={5}
+        rows={4}
         placeholder="Descrivi che tipo di festa hai in mente: musica, stile, atmosfera..."
-        className="w-full resize-none rounded-2xl border border-primary-black/10 bg-paper px-3.5 py-3 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
+        className="w-full resize-none rounded-2xl border border-primary-black/10 bg-paper px-4 py-3 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
       />
-    </div>
+      <p className="mt-2 text-xs text-primary-black/50">
+        Usiamo queste parole per ordinare le location più affini in cima —
+        nessuna viene nascosta.
+      </p>
+    </fieldset>
   );
 }

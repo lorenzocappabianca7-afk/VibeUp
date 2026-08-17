@@ -633,17 +633,19 @@ export function ExploreScreen({
       />
 
       {activeCategory === "locali" && criteriaSummary ? (
-        <div className="flex items-start justify-between gap-3 rounded-2xl border border-brand-teal/25 bg-brand-teal/10 px-4 py-3">
+        <div className="flex min-w-0 items-start justify-between gap-3 rounded-2xl border border-brand-teal/20 bg-brand-teal/10 p-3">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-teal">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-teal">
               Criteri dalla Home
             </p>
-            <p className="mt-0.5 text-sm text-primary-black/75">{criteriaSummary}</p>
+            <p className="mt-1 text-sm font-bold leading-snug text-primary-black">
+              {criteriaSummary}
+            </p>
           </div>
           <button
             type="button"
             onClick={clearCriteria}
-            className="shrink-0 text-sm font-semibold text-brand-teal"
+            className="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold text-brand-pink"
           >
             Rimuovi
           </button>

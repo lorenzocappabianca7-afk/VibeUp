@@ -18,6 +18,8 @@ interface LocationCardProps {
   onToggleFavorite: (id: string) => void;
   onToggleCompare: (id: string) => void;
   href?: string;
+  /** Hide compare control (e.g. Home suggestions carousel). */
+  showCompare?: boolean;
 }
 
 export const LocationCard = memo(function LocationCard({
@@ -27,6 +29,7 @@ export const LocationCard = memo(function LocationCard({
   onToggleFavorite,
   onToggleCompare,
   href = `/location/${location.id}`,
+  showCompare = true,
 }: LocationCardProps) {
   const { contactsBeenHere } = location;
   const hasContacts = contactsBeenHere.count > 0;
@@ -60,31 +63,33 @@ export const LocationCard = memo(function LocationCard({
         )}
 
         <div className="absolute right-3 top-3 z-10 flex gap-2">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onToggleCompare(location.id);
-            }}
-            aria-label={
-              isCompareSelected
-                ? `Rimuovi ${location.name} dal confronto`
-                : `Aggiungi ${location.name} al confronto`
-            }
-            className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-full shadow-md backdrop-blur-md transition-colors duration-150",
-              isCompareSelected
-                ? "bg-brand-teal-strong text-ink-inverse"
-                : "bg-surface text-brand-teal-strong hover:bg-brand-teal/10",
-            )}
-          >
-            <GitCompareArrows
-              className="h-4 w-4"
-              strokeWidth={2.75}
-              aria-hidden
-            />
-          </button>
+          {showCompare ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleCompare(location.id);
+              }}
+              aria-label={
+                isCompareSelected
+                  ? `Rimuovi ${location.name} dal confronto`
+                  : `Aggiungi ${location.name} al confronto`
+              }
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-full shadow-md backdrop-blur-md transition-colors duration-150",
+                isCompareSelected
+                  ? "bg-brand-teal-strong text-ink-inverse"
+                  : "bg-surface text-brand-teal-strong hover:bg-brand-teal/10",
+              )}
+            >
+              <GitCompareArrows
+                className="h-4 w-4"
+                strokeWidth={2.75}
+                aria-hidden
+              />
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={(e) => {
