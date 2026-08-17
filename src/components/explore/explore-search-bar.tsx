@@ -102,6 +102,8 @@ export function ExploreSearchBar({
   const showFilters = typeof onOpenFilters === "function";
   const [open, setOpen] = useState(false);
   const [scrollLocked, setScrollLocked] = useState(false);
+  /** Scrim must drop on close *start* — waiting for the clip animation left a full-screen interceptor for ~280ms. */
+  const [scrimActive, setScrimActive] = useState(false);
   const [draft, setDraft] = useState(query);
   const [recent, setRecent] = useState(() => readRecent(storageKey));
   const inputId = useId();
@@ -122,13 +124,14 @@ export function ExploreSearchBar({
 
   // Render-phase close when leaving Explore — unlock scroll in the same commit
   // (useEffect alone left a freeze window after long background / tab switch).
-  if (forceClosed && (open || scrollLocked)) {
+  if (forceClosed && (open || scrollLocked || scrimActive)) {
     openRef.current = false;
-    animatingRef.current = false;
     pendingOpenAnimRef.current = false;
+    animatingRef.current = false;
     clipRef.current = 0;
     if (open) setOpen(false);
     if (scrollLocked) setScrollLocked(false);
+    if (scrimActive) setScrimActive(false);
   }
 
   function resetPanelChrome() {
@@ -160,7 +163,7 @@ export function ExploreSearchBar({
   // Leaving Explore (or waking from a frozen spring) must never leave scroll locked.
   useEffect(() => {
     if (!forceClosed) return;
-    if (!openRef.current && !open && !scrollLocked && !animatingRef.current) {
+    if (!openRef.current && !open && !scrollLocked && !scrimActive && !animatingRef.current) {
       return;
     }
 
@@ -176,6 +179,7 @@ export function ExploreSearchBar({
     resetPanelChrome();
     setScrollLocked(false);
     setOpen(false);
+    setScrimActive(false);
     setDraft(query);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync close when tab hides
   }, [forceClosed]);
@@ -328,9 +332,12 @@ export function ExploreSearchBar({
   }
 
   function closeSearch(options?: { keepDraft?: boolean }) {
-    if (!openRef.current && !open) return;
+    if (!openRef.current && !open && !scrimActive) return;
     openRef.current = false;
     pendingOpenAnimRef.current = false;
+    // Drop interaction blockers immediately — do not wait for clip animation.
+    setScrimActive(false);
+    setScrollLocked(false);
     // Blur first so the keyboard dismisses before we measure/animate.
     inputRef.current?.blur();
 
@@ -363,7 +370,6 @@ export function ExploreSearchBar({
         panel.style.overflow = "";
       }
       clipRef.current = 0;
-      setScrollLocked(false);
       setOpen(false);
       if (!options?.keepDraft) setDraft(query);
     });
@@ -392,6 +398,7 @@ export function ExploreSearchBar({
     // Flush + focus in the same tap so mobile keyboards open immediately.
     flushSync(() => {
       setOpen(true);
+      setScrimActive(true);
     });
     const input = inputRef.current;
     if (input && document.activeElement !== input) {
@@ -409,7 +416,7 @@ export function ExploreSearchBar({
     suppressTimerRef.current = window.setTimeout(() => {
       suppressOpenRef.current = false;
       suppressTimerRef.current = null;
-    }, 400);
+    }, 120);
   }
 
   // Run the spring after React commits open chrome + measurable body.
@@ -456,27 +463,17 @@ export function ExploreSearchBar({
 
   return (
     <>
-      <button
-        type="button"
-        aria-label="Chiudi ricerca"
-        tabIndex={open ? 0 : -1}
-        aria-hidden={!open}
-        className={cn(
-          "fixed inset-0 z-[40] bg-transparent",
-          open
-            ? "pointer-events-auto opacity-100"
-            : "pointer-events-none opacity-0",
-        )}
-        style={{
-          transition: "opacity 280ms cubic-bezier(0.22, 1, 0.36, 1)",
-        }}
-        data-overlay-open={open ? "true" : undefined}
-        onClick={(event) => {
-          const { clientX, clientY } = event;
-          // Same tap should open the card under the search scrim.
-          event.currentTarget.style.pointerEvents = "none";
-          closeSearch();
-          requestAnimationFrame(() => {
+      {scrimActive ? (
+        <button
+          type="button"
+          aria-label="Chiudi ricerca"
+          className="fixed inset-0 z-[40] bg-transparent"
+          data-overlay-open="true"
+          onPointerUp={(event) => {
+            const { clientX, clientY } = event;
+            // Drop scrim first so the same tap can reach the card underneath.
+            setScrimActive(false);
+            closeSearch();
             requestAnimationFrame(() => {
               const under = document.elementFromPoint(clientX, clientY);
               const link = under?.closest("a");
@@ -484,12 +481,12 @@ export function ExploreSearchBar({
                 link.click();
               }
             });
-          });
-        }}
-      />
+          }}
+        />
+      ) : null}
 
       <div
-        className={cn("relative", open ? "z-[50]" : "z-[45]")}
+        className={cn("relative", open ? "z-[50]" : "z-[1]")}
         style={{ height: HEADER_PX }}
       >
         <div
@@ -503,11 +500,6 @@ export function ExploreSearchBar({
           <div className="relative" style={{ height: HEADER_PX }}>
             <button
               type="button"
-              onPointerDown={(event) => {
-                if (event.button !== 0) return;
-                if (suppressOpenRef.current) return;
-                openSearch();
-              }}
               onClick={() => {
                 if (suppressOpenRef.current) return;
                 openSearch();
@@ -541,17 +533,12 @@ export function ExploreSearchBar({
             {hasQuery && !open && (
               <button
                 type="button"
-                onPointerDown={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  suppressOpenRef.current = true;
-                }}
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
                   clearCurrentSearch();
                 }}
-                className="absolute top-1/2 z-[2] flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-primary-black/10 text-primary-black/55"
+                className="touch-target absolute top-1/2 z-[2] flex -translate-y-1/2 items-center justify-center rounded-full bg-primary-black/10 text-primary-black/55"
                 style={{ right: clearInset }}
                 aria-label="Cancella ricerca"
               >

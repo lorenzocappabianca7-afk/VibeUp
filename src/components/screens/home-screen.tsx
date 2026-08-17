@@ -161,7 +161,7 @@ export function HomeScreen() {
           <button
             type="button"
             onClick={() => setTab("profile")}
-            className="inline-flex shrink-0 items-center gap-0.5 text-xs font-semibold text-brand-teal"
+            className="touch-target inline-flex shrink-0 items-center justify-center gap-0.5 px-1 text-xs font-semibold text-brand-teal"
           >
             Vedi tutte
             <ChevronRight className="h-3.5 w-3.5" aria-hidden />

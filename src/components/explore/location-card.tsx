@@ -41,7 +41,7 @@ export const LocationCard = memo(function LocationCard({
   );
 
   return (
-    <article className="render-contained h-full overflow-hidden rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-[border-color,transform,box-shadow] duration-150 hover:border-primary-black active:scale-[0.995]">
+    <article className="render-contained h-full overflow-hidden rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-[border-color,box-shadow] duration-150 hover:border-primary-black">
       <div className="relative">
         <ImageCarousel
           images={photos}
@@ -77,7 +77,7 @@ export const LocationCard = memo(function LocationCard({
                   : `Aggiungi ${location.name} al confronto`
               }
               className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-full shadow-md backdrop-blur-md transition-colors duration-150",
+                "touch-target touch-feedback flex items-center justify-center rounded-full shadow-md backdrop-blur-md transition-colors duration-150",
                 isCompareSelected
                   ? "bg-brand-teal-strong text-ink-inverse"
                   : "bg-surface text-brand-teal-strong hover:bg-brand-teal/10",
@@ -103,7 +103,7 @@ export const LocationCard = memo(function LocationCard({
                 : `Aggiungi ${location.name} ai preferiti`
             }
             className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-full shadow-md backdrop-blur-md transition-colors duration-150",
+              "touch-target touch-feedback flex items-center justify-center rounded-full shadow-md backdrop-blur-md transition-colors duration-150",
               isFavorite
                 ? "bg-brand-pink text-white"
                 : "bg-surface text-primary-black hover:bg-surface/90",

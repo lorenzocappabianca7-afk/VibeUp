@@ -67,7 +67,7 @@ export function ImageCarousel({
     const scroller = scrollerRef.current;
     if (!scroller) return;
     const width = scroller.clientWidth;
-    scroller.scrollTo({ left: next * width, behavior: "smooth" });
+    scroller.scrollTo({ left: next * width, behavior: "auto" });
   }, []);
 
   useEffect(() => {

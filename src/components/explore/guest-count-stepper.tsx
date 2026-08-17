@@ -81,7 +81,7 @@ export function GuestCountStepper({
           disabled={atMin}
           aria-label="Riduci numero invitati"
           className={cn(
-            "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+            "touch-target touch-feedback flex items-center justify-center rounded-full transition-colors",
             atMin
               ? "cursor-not-allowed bg-ink-inverse/10 text-ink-inverse/25"
               : "bg-brand-pink text-ink-inverse hover:bg-brand-pink/90",
@@ -122,7 +122,7 @@ export function GuestCountStepper({
           disabled={atMax}
           aria-label="Aumenta numero invitati"
           className={cn(
-            "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+            "touch-target touch-feedback flex items-center justify-center rounded-full transition-colors",
             atMax
               ? "cursor-not-allowed bg-ink-inverse/10 text-ink-inverse/25"
               : "bg-brand-teal text-ink-inverse hover:bg-brand-teal-strong",

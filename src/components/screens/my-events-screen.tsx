@@ -318,7 +318,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
           {discountBannerOpen && (
             <button
               type="button"
-              className="fixed inset-0 z-40 cursor-default bg-black"
+              className="fixed inset-0 z-40 cursor-default bg-black/45"
               onClick={closeDiscountBanner}
               aria-label="Chiudi banner sconti"
             />

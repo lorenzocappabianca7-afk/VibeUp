@@ -84,7 +84,7 @@ export function BottomNav({
                     : tab.label
                 }
                 className={cn(
-                  "flex w-full min-w-0 flex-col items-center gap-0.5 rounded-2xl px-0.5 py-1.5 text-white transition-colors duration-150 sm:gap-1 sm:px-1 sm:py-2",
+                  "touch-feedback flex w-full min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 py-1.5 text-white transition-colors duration-100 sm:gap-1 sm:px-1 sm:py-2",
                   isActive ? "bg-white/12" : "hover:bg-white/[0.04]",
                 )}
               >
