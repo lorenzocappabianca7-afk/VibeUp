@@ -157,6 +157,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  alternates: {
+    canonical: "/",
+  },
   icons: {
     icon: [
       { url: "/favicon-48.png", sizes: "48x48", type: "image/png" },
@@ -165,8 +168,11 @@ export const metadata: Metadata = {
       { url: "/vibeup-mark-512.png", sizes: "512x512", type: "image/png" },
       { url: "/favicon.ico", sizes: "any" },
     ],
-    shortcut: "/favicon-48.png",
-    apple: [{ url: "/vibeup-apple.png", sizes: "180x180", type: "image/png" }],
+    shortcut: ["/favicon-48.png"],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      { url: "/vibeup-apple.png", sizes: "180x180", type: "image/png" },
+    ],
   },
 };
 
