@@ -22,7 +22,14 @@ interface CreateAccountModalProps {
   initialMode?: AuthModalMode;
   initialEmail?: string;
   onClose: () => void;
-  onSubmit: (account: CreateAccountFormValues) => void | Promise<void>;
+  onSubmit: (
+    account: CreateAccountFormValues,
+  ) =>
+    | void
+    | Promise<
+        | void
+        | { needsEmailActivation?: boolean; email?: string }
+      >;
 }
 
 export function CreateAccountModal({
@@ -122,13 +129,19 @@ export function CreateAccountModal({
     setError("");
     setInfo("");
     try {
-      await onSubmit({
+      const result = await onSubmit({
         name: trimmedName || trimmedEmail.split("@")[0] || "Utente VibeUp",
         email: trimmedEmail,
         phoneNumber: trimmedPhone,
         password,
         mode,
       });
+      if (result?.needsEmailActivation) {
+        setInfo(
+          `Ti abbiamo inviato un’email da info@vibeupevents.com a ${result.email ?? trimmedEmail}. Apri il link per confermare l’account, poi accedi.`,
+        );
+        setSubmitting(false);
+      }
     } catch (err) {
       setError(
         err instanceof Error

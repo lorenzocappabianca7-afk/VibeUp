@@ -3,7 +3,7 @@
 export async function requestActivationEmail(input: {
   email: string;
   name: string;
-  token: string;
+  token?: string;
 }) {
   const response = await fetch("/api/auth/send-activation", {
     method: "POST",

@@ -20,7 +20,9 @@ import {
   supabaseSignIn,
   supabaseSignOut,
   supabaseSignUp,
+  supabaseUpdateEmail,
   supabaseUpdatePassword,
+  supabaseDeleteCurrentAccount,
   type AppRole,
 } from "@/lib/auth/supabase-auth";
 import {
@@ -39,7 +41,6 @@ import {
   normalizeAllergenRestrictions,
   pruneMenuSelectionsForAllergens,
 } from "@/lib/menu-allergens";
-import { MOCK_EVENTS } from "@/lib/mock/events";
 import {
   sanitizeAccountPaymentCards,
   sanitizeSavedPaymentCard,
@@ -231,9 +232,10 @@ interface AppStateContextValue {
     email?: string;
     name?: string;
   };
-  deleteAccount: (id: string) => void;
+  deleteAccount: (id: string) => Promise<CreateAccountResult>;
   switchAccount: (id: string) => void;
   updateCurrentUser: (updates: Partial<Omit<CurrentUser, "id">>) => void;
+  changeAccountEmail: (nextEmail: string) => Promise<CreateAccountResult>;
   updateUserSettings: (patch: DeepPartialUserSettings) => void;
   changePassword: (
     currentPassword: string,
@@ -260,22 +262,15 @@ export const GUEST_USER: CurrentUser = {
   emailVerified: true,
 };
 
-const MOCK_CURRENT_USER: CurrentUser = {
-  id: "account-vibeup-planner",
-  name: "VibeUp Planner",
-  email: "vibeup.planner@gmail.com",
-  emailVerified: true,
-};
-
-const MOCK_ACCOUNTS: CurrentUser[] = [
-  MOCK_CURRENT_USER,
-  {
-    id: "account-demo-user",
-    name: "Lorenzo C.",
-    email: "lorenzo@email.com",
-    emailVerified: true,
-  },
-];
+function isRetiredDemoAccount(account: CurrentUser) {
+  const email = account.email.trim().toLowerCase();
+  return (
+    account.id === "account-vibeup-planner" ||
+    account.id === "account-demo-user" ||
+    email === "vibeup.planner@gmail.com" ||
+    email === "lorenzo@email.com"
+  );
+}
 
 const MAX_COMPARE_LOCATIONS = 3;
 const STORAGE_KEY = "vibeup-app-state-v2";
@@ -390,12 +385,9 @@ interface StoredAppState {
   compareLocationIds?: string[];
 }
 
-function createDefaultUserState(userId: string): UserScopedState {
-  const hasDemoEvents =
-    userId === MOCK_CURRENT_USER.id || userId === "account-demo-user";
-
+function createDefaultUserState(_userId: string): UserScopedState {
   return {
-    events: hasDemoEvents ? MOCK_EVENTS : [],
+    events: [],
     paymentStates: {},
     favoriteLocationIds: [],
     favoriteServiceIds: [],
@@ -574,7 +566,9 @@ function ensureAccountStateSlots(
 }
 
 function hydrateUserStates(stored: StoredAppState): Record<string, UserScopedState> {
-  const accounts = stored.accounts ?? MOCK_ACCOUNTS;
+  const accounts = (stored.accounts ?? []).filter(
+    (account) => !isRetiredDemoAccount(account),
+  );
 
   if (stored.userStates && Object.keys(stored.userStates).length > 0) {
     const map = Object.fromEntries(
@@ -591,7 +585,7 @@ function hydrateUserStates(stored: StoredAppState): Record<string, UserScopedSta
   );
   map[GUEST_USER.id] = createDefaultUserState(GUEST_USER.id);
 
-  const ownerId = stored.currentUserId ?? MOCK_CURRENT_USER.id;
+  const ownerId = stored.currentUserId ?? GUEST_USER.id;
   const hasLegacyData =
     stored.events ||
     stored.paymentStates ||
@@ -602,7 +596,7 @@ function hydrateUserStates(stored: StoredAppState): Record<string, UserScopedSta
   if (hasLegacyData) {
     map[ownerId] = normalizeUserScopedState(
       {
-        events: stored.events ?? map[ownerId]?.events ?? MOCK_EVENTS,
+        events: stored.events ?? map[ownerId]?.events ?? [],
         paymentStates: stored.paymentStates ?? {},
         favoriteLocationIds: stored.favoriteLocationIds ?? [],
         favoriteServiceIds: stored.favoriteServiceIds ?? [],
@@ -721,17 +715,13 @@ function writeStoredAppState(state: StoredAppState) {
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [hydratedFromStorage, setHydratedFromStorage] = useState(false);
-  const [accounts, setAccounts] = useState<CurrentUser[]>(MOCK_ACCOUNTS);
+  const [accounts, setAccounts] = useState<CurrentUser[]>([]);
   const [currentUserId, setCurrentUserId] = useState(GUEST_USER.id);
   const [userStatesMap, setUserStatesMap] = useState<
     Record<string, UserScopedState>
   >(() =>
     Object.fromEntries([
       [GUEST_USER.id, createDefaultUserState(GUEST_USER.id)],
-      ...MOCK_ACCOUNTS.map((account) => [
-        account.id,
-        createDefaultUserState(account.id),
-      ] as const),
     ]),
   );
   const [managedListings, setManagedListings] = useState<ManagedListing[]>([]);
@@ -786,7 +776,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
       const storedState = readStoredAppState();
       const migratedAccounts = migrateAccountsWithLegacyBusiness(
-        storedState.accounts ?? MOCK_ACCOUNTS,
+        (storedState.accounts ?? []).filter(
+          (account) => !isRetiredDemoAccount(account),
+        ),
         storedState.businessProfile,
         storedState.currentUserId,
       );
@@ -1484,20 +1476,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           return { ok: false, error: signUp.error };
         }
 
-        if (signUp.user && signUp.session) {
-          await applySupabaseIdentity({
-            userId: signUp.user.id,
-            email: signUp.user.email ?? normalizedEmail,
-            displayName: nextName,
-            phone: safePhone,
-            emailVerified: Boolean(signUp.user.email_confirmed_at),
-            preferredRole:
-              nextAccountType === "business" ? "business" : "consumer",
-          });
-          void promptBiometricSetupIfAvailable();
-          return { ok: true };
-        }
-
         return {
           ok: true,
           needsEmailActivation: true,
@@ -1770,6 +1748,23 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         };
       }
 
+      if (isSupabaseBrowserConfigured()) {
+        const signUp = await supabaseSignUp({
+          email: normalizedEmail,
+          password,
+          displayName: nextName,
+          phone: phoneNumber,
+          role: "business",
+        });
+        if (!signUp.ok) return signUp;
+        return {
+          ok: true,
+          needsEmailActivation: true,
+          email: normalizedEmail,
+          name: nextName,
+        };
+      }
+
       const passwordHash = await hashPassword(password);
       const id = `account-pro-${Date.now()}`;
       const activationToken = createActivationToken();
@@ -1890,8 +1885,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [accounts, currentUserId],
   );
 
-  const deleteAccount = useCallback((id: string) => {
-    if (id === GUEST_USER.id) return;
+  const deleteAccount = useCallback(async (id: string): Promise<CreateAccountResult> => {
+    if (id === GUEST_USER.id) {
+      return { ok: false, error: "Nessun account da eliminare." };
+    }
+
+    const target = accountsRef.current.find((account) => account.id === id);
+    const isCurrent = currentUserIdRef.current === id;
+
+    if (
+      isCurrent &&
+      (target?.authProvider === "supabase" || isSupabaseBrowserConfigured())
+    ) {
+      const remote = await supabaseDeleteCurrentAccount();
+      if (!remote.ok) return remote;
+      await supabaseSignOut();
+    }
 
     setPendingBiometricSetup(false);
     setAccounts((prev) => {
@@ -1914,8 +1923,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       return rest;
     });
 
-    // Drop chat / profile comms / availability rows that live outside app-state.
     purgeUserSatelliteStorage(id);
+    return { ok: true };
   }, []);
 
   const switchAccount = useCallback(
@@ -2261,6 +2270,44 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const changeAccountEmail = useCallback(
+    async (nextEmail: string): Promise<CreateAccountResult> => {
+      const userId = currentUserIdRef.current;
+      if (userId === GUEST_USER.id) {
+        return { ok: false, error: "Crea un account per modificare l’email." };
+      }
+
+      const email = sanitizeEmail(nextEmail);
+      if (!email || !email.includes("@")) {
+        return { ok: false, error: "Inserisci un’email valida." };
+      }
+
+      const account = accountsRef.current.find((item) => item.id === userId);
+      if (
+        account?.authProvider === "supabase" ||
+        isSupabaseBrowserConfigured()
+      ) {
+        const result = await supabaseUpdateEmail(email);
+        if (!result.ok) return result;
+        return {
+          ok: true,
+          needsEmailActivation: true,
+          email,
+        };
+      }
+
+      setAccounts((prev) =>
+        prev.map((item) =>
+          item.id === userId
+            ? normalizeAccount({ ...item, email })
+            : item,
+        ),
+      );
+      return { ok: true };
+    },
+    [],
+  );
+
   const updateUserSettings = useCallback(
     (patch: DeepPartialUserSettings) => {
       const userId = currentUserIdRef.current;
@@ -2410,6 +2457,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       deleteAccount,
       switchAccount,
       updateCurrentUser,
+      changeAccountEmail,
       updateUserSettings,
       changePassword,
       unlockAccount,
@@ -2465,6 +2513,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       deleteAccount,
       switchAccount,
       updateCurrentUser,
+      changeAccountEmail,
       updateUserSettings,
       changePassword,
       unlockAccount,

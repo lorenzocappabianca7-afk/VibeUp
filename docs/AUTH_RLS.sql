@@ -16,7 +16,7 @@ create policy "profiles_update_own"
   using (auth.uid() = id)
   with check (auth.uid() = id);
 
--- Promote your admin account (run once after that user has signed up):
+-- Promote the official admin mailbox (run once after that user has signed up):
 -- update public.profiles
 -- set role = 'admin'
--- where email = 'vibeup.planner@gmail.com';
+-- where lower(email) = 'info@vibeupevents.com';

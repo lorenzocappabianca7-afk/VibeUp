@@ -17,6 +17,21 @@ export function EmailActivationBanner() {
   async function handleResend() {
     setStatus("sending");
     setError("");
+
+    if (currentUser.authProvider === "supabase") {
+      const result = await requestActivationEmail({
+        email: currentUser.email,
+        name: currentUser.name,
+      });
+      if (!result.ok) {
+        setStatus("error");
+        setError(result.error);
+        return;
+      }
+      setStatus("sent");
+      return;
+    }
+
     const issued = issueActivationToken(currentUser.id);
     if (!issued.ok || !issued.activationToken || !issued.email) {
       setStatus("error");
@@ -54,7 +69,7 @@ export function EmailActivationBanner() {
             <span className="font-semibold text-primary-black">
               {currentUser.email}
             </span>{" "}
-            da vibeup.planner@gmail.com. Apri il link per completare
+            da info@vibeupevents.com. Apri il link per completare
             l&apos;attivazione.
           </p>
           {status === "sent" && (

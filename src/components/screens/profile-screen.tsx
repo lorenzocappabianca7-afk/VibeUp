@@ -357,8 +357,17 @@ export function ProfileScreen({
 
   function confirmDeleteAccount() {
     if (!accountPendingDelete) return;
-    deleteAccount(accountPendingDelete.id);
-    setAccountPendingDelete(null);
+    deleteAccount(accountPendingDelete.id)
+      .then((result) => {
+        if (!result.ok) {
+          window.alert(result.error);
+          return;
+        }
+        setAccountPendingDelete(null);
+      })
+      .catch(() => {
+        window.alert("Eliminazione non riuscita.");
+      });
   }
 
   if (settingsPanel) {

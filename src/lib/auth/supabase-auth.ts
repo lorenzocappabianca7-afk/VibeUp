@@ -27,43 +27,37 @@ export async function supabaseSignUp(params: {
   phone?: string;
   role?: Exclude<AppRole, "guest" | "admin">;
 }) {
-  const supabase = getSupabaseBrowser();
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : undefined;
-
-  const { data, error } = await supabase.auth.signUp({
-    email: params.email,
-    password: params.password,
-    options: {
-      emailRedirectTo: origin ? `${origin}/auth/callback` : undefined,
-      data: {
-        display_name: params.displayName,
-        role: params.role ?? "consumer",
+  try {
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: params.email,
+        password: params.password,
+        displayName: params.displayName,
         phone: params.phone ?? "",
-      },
-    },
-  });
-
-  if (error) {
-    return { ok: false as const, error: error.message };
+        role: params.role ?? "consumer",
+      }),
+    });
+    const payload = (await response.json().catch(() => ({}))) as {
+      error?: string;
+    };
+    if (!response.ok) {
+      return {
+        ok: false as const,
+        error: payload.error || "Registrazione non riuscita.",
+      };
+    }
+    return {
+      ok: true as const,
+      needsEmailConfirmation: true as const,
+    };
+  } catch {
+    return {
+      ok: false as const,
+      error: "Non riesco a creare l’account. Controlla la connessione.",
+    };
   }
-
-  if (data.user && params.phone) {
-    await supabase
-      .from("profiles")
-      .update({
-        phone: params.phone,
-        display_name: params.displayName,
-      })
-      .eq("id", data.user.id);
-  }
-
-  return {
-    ok: true as const,
-    user: data.user,
-    session: data.session,
-    needsEmailConfirmation: !data.session,
-  };
 }
 
 export async function supabaseSignIn(params: {
@@ -87,20 +81,39 @@ export async function supabaseSignIn(params: {
   };
 }
 
+/**
+ * Requests a password-reset email via Resend (From: info@vibeupevents.com),
+ * not Supabase's default mailer. Unknown emails still return ok (no account leak).
+ */
 export async function supabaseResetPassword(email: string) {
-  const supabase = getSupabaseBrowser();
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : undefined;
+  try {
+    const response = await fetch("/api/auth/send-password-reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
 
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: origin ? `${origin}/auth/callback?next=/` : undefined,
-  });
+    const payload = (await response.json().catch(() => ({}))) as {
+      ok?: boolean;
+      error?: string;
+    };
 
-  if (error) {
-    return { ok: false as const, error: error.message };
+    if (!response.ok) {
+      return {
+        ok: false as const,
+        error:
+          payload.error ||
+          "Non riesco a inviare il link di recupero. Riprova tra poco.",
+      };
+    }
+
+    return { ok: true as const };
+  } catch {
+    return {
+      ok: false as const,
+      error: "Non riesco a inviare il link di recupero. Controlla la connessione.",
+    };
   }
-
-  return { ok: true as const };
 }
 
 export async function supabaseUpdatePassword(nextPassword: string) {
@@ -110,6 +123,38 @@ export async function supabaseUpdatePassword(nextPassword: string) {
     return { ok: false as const, error: error.message };
   }
   return { ok: true as const };
+}
+
+export async function supabaseUpdateEmail(nextEmail: string) {
+  const supabase = getSupabaseBrowser();
+  const { error } = await supabase.auth.updateUser({ email: nextEmail });
+  if (error) {
+    return { ok: false as const, error: error.message };
+  }
+  return { ok: true as const };
+}
+
+export async function supabaseDeleteCurrentAccount() {
+  try {
+    const response = await fetch("/api/auth/delete-account", {
+      method: "POST",
+    });
+    const payload = (await response.json().catch(() => ({}))) as {
+      error?: string;
+    };
+    if (!response.ok) {
+      return {
+        ok: false as const,
+        error: payload.error || "Eliminazione non riuscita.",
+      };
+    }
+    return { ok: true as const };
+  } catch {
+    return {
+      ok: false as const,
+      error: "Non riesco a eliminare l’account. Controlla la connessione.",
+    };
+  }
 }
 
 export async function supabaseSignOut() {

@@ -9,6 +9,7 @@ import { SettingsShell } from "@/components/profile/settings/settings-shell";
 import { SettingsToggle } from "@/components/profile/settings/settings-toggle";
 import { useAppState } from "@/context/app-state-context";
 import { getBiometricLabel } from "@/lib/auth/biometric";
+import { validateNewPassword } from "@/lib/auth/password";
 import { normalizeUserSettings } from "@/types/user-settings";
 import { Fingerprint, KeyRound, ScanFace, ShieldCheck, Star } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -81,21 +82,18 @@ export function SecuritySettingsPanel({ onBack }: SecuritySettingsPanelProps) {
       setPasswordError("Crea un account per gestire la password.");
       return;
     }
-    if (passwordDraft.next.length < 8) {
-      setPasswordError("La nuova password deve avere almeno 8 caratteri.");
+
+    const validation = validateNewPassword(
+      passwordDraft.next,
+      passwordDraft.confirm,
+    );
+    if (validation) {
+      setPasswordError(validation);
       return;
     }
-    if (
-      !/[A-Za-z]/.test(passwordDraft.next) ||
-      !/[0-9]/.test(passwordDraft.next)
-    ) {
-      setPasswordError(
-        "La nuova password deve contenere almeno una lettera e un numero.",
-      );
-      return;
-    }
-    if (passwordDraft.next !== passwordDraft.confirm) {
-      setPasswordError("Le password non coincidono.");
+
+    if (!passwordDraft.current) {
+      setPasswordError("Inserisci la password attuale.");
       return;
     }
 

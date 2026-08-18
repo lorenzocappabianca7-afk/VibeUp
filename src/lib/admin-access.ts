@@ -1,12 +1,14 @@
 import type { AppRole } from "@/lib/auth/supabase-auth";
 
-export const ADMIN_CATALOG_EMAIL = "vibeup.planner@gmail.com";
+export const ADMIN_CATALOG_EMAIL = "info@vibeupevents.com";
 
-/** Email allowlist (bootstrap) + Supabase profiles.role === admin. */
+/** Admin catalog: role admin on profiles AND the official info@ mailbox. */
 export function canAccessAdminCatalog(
   email: string,
   role?: AppRole | null,
 ): boolean {
-  if (role === "admin") return true;
-  return email.trim().toLowerCase() === ADMIN_CATALOG_EMAIL;
+  return (
+    role === "admin" &&
+    email.trim().toLowerCase() === ADMIN_CATALOG_EMAIL
+  );
 }

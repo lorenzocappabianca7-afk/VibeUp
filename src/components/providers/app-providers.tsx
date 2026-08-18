@@ -9,6 +9,7 @@ import { PartyCriteriaProvider } from "@/context/party-criteria-context";
 import { ProfileCommunicationsProvider } from "@/context/profile-communications-context";
 import { TabNavigationProvider } from "@/context/tab-navigation-context";
 import { ConfirmAvailabilityModal } from "@/components/availability/confirm-availability-modal";
+import { RecoveryRedirect } from "@/components/auth/recovery-redirect";
 import { SecurityRuntimeGuard } from "@/components/security/security-runtime-guard";
 import type { ReactNode } from "react";
 
@@ -22,6 +23,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
               <ChatProvider>
                 <PartyCriteriaProvider>
                   <SecurityRuntimeGuard />
+                  <RecoveryRedirect />
                   <TabNavigationProvider>
                     <ConfirmAvailabilityModal />
                     {children}

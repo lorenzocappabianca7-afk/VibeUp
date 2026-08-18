@@ -1,4 +1,6 @@
 import type { AvailabilityRequest } from "@/types/availability-request";
+import { sendTransactionalEmail } from "@/lib/email/mailer";
+import { getSiteUrl } from "@/lib/site";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export type ManagerNotifyChannel = "whatsapp" | "email";
@@ -16,7 +18,7 @@ export interface NotifyResult {
   channel?: ManagerNotifyChannel;
 }
 
-const PUBLIC_SITE = "https://vibeupevents.com";
+const PUBLIC_SITE = getSiteUrl();
 
 /**
  * Template testuale IT (plain). Placeholder:
@@ -170,50 +172,18 @@ async function sendViaWhatsapp(input: {
   };
 }
 
-/**
- * Placeholder transactional email send.
- * Wire a provider later (Resend / SendGrid).
- * Env: EMAIL_API_KEY, EMAIL_SENDER_ADDRESS
- */
 async function sendViaEmail(input: {
   to: string;
   subject: string;
   text: string;
   html: string;
 }): Promise<NotifyResult> {
-  const apiKey = process.env.EMAIL_API_KEY?.trim() || "";
-  const from = process.env.EMAIL_SENDER_ADDRESS?.trim() || "";
-
-  if (!apiKey || !from) {
-    console.info(
-      "[manager-availability-notifier] Email placeholder — missing EMAIL_API_KEY / EMAIL_SENDER_ADDRESS. Would send to",
-      input.to,
-      "subject:",
-      input.subject,
-    );
-    return {
-      ok: false,
-      error:
-        "Email non configurata (EMAIL_API_KEY / EMAIL_SENDER_ADDRESS).",
-      channel: "email",
-    };
+  const result = await sendTransactionalEmail(input);
+  if (!result.ok) {
+    console.error("[manager-availability-notifier]", result.error);
+    return { ok: false, error: result.error, channel: "email" };
   }
-
-  // TODO: replace with real provider call (Resend / SendGrid).
-  console.info("[manager-availability-notifier] Email placeholder ready", {
-    from,
-    to: input.to,
-    subject: input.subject,
-    bodyLength: input.text.length,
-    hasApiKey: true,
-  });
-
-  return {
-    ok: false,
-    error:
-      "Invio email ancora in modalità placeholder: collega il provider reale.",
-    channel: "email",
-  };
+  return { ok: true, channel: "email" };
 }
 
 /**

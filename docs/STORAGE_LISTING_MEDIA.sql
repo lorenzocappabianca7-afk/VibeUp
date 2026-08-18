@@ -21,7 +21,7 @@ create policy "listing_media_public_read"
   for select
   using (bucket_id = 'listing-media');
 
--- Authenticated users can upload (admin API also uses service role, which bypasses RLS)
+-- Authenticated users can upload (admin API also uses service role,/ which bypasses RLS)
 drop policy if exists "listing_media_auth_insert" on storage.objects;
 create policy "listing_media_auth_insert"
   on storage.objects

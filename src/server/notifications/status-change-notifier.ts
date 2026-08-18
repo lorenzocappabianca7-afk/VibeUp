@@ -1,4 +1,6 @@
 import { getRequestStatusShortLabel } from "@/lib/availability/request-status-display";
+import { sendTransactionalEmail } from "@/lib/email/mailer";
+import { getSiteUrl } from "@/lib/site";
 import { resolveManagerNotifyTarget } from "@/server/notifications/availability-request-notify";
 import type {
   AvailabilityRequest,
@@ -11,7 +13,7 @@ export interface StatusNotifyResult {
   manager?: { ok: boolean; error?: string };
 }
 
-const PUBLIC_SITE = "https://vibeupevents.com";
+const PUBLIC_SITE = getSiteUrl();
 
 function escapeHtml(value: string) {
   return value
@@ -45,35 +47,12 @@ async function sendViaEmail(input: {
   text: string;
   html: string;
 }): Promise<{ ok: boolean; error?: string }> {
-  const apiKey = process.env.EMAIL_API_KEY?.trim() || "";
-  const from = process.env.EMAIL_SENDER_ADDRESS?.trim() || "";
-
-  if (!apiKey || !from) {
-    console.info(
-      "[status-change-notifier] Email placeholder — missing EMAIL_API_KEY / EMAIL_SENDER_ADDRESS. Would send to",
-      input.to,
-      "subject:",
-      input.subject,
-    );
-    return {
-      ok: false,
-      error: "Email non configurata (EMAIL_API_KEY / EMAIL_SENDER_ADDRESS).",
-    };
+  const result = await sendTransactionalEmail(input);
+  if (!result.ok) {
+    console.error("[status-change-notifier]", result.error);
+    return { ok: false, error: result.error };
   }
-
-  console.info("[status-change-notifier] Email placeholder ready", {
-    from,
-    to: input.to,
-    subject: input.subject,
-    bodyLength: input.text.length,
-    htmlLength: input.html.length,
-  });
-
-  return {
-    ok: false,
-    error:
-      "Invio email ancora in modalità placeholder: collega il provider reale.",
-  };
+  return { ok: true };
 }
 
 function audienceCopy(audience: "organizer" | "manager"): string {
@@ -117,7 +96,7 @@ Il team VibeUp`;
 
 /**
  * Email both organizer and manager whenever an availability request status changes.
- * Never throws. Uses the same email placeholder pattern as other notifiers.
+ * Never throws.
  */
 export async function notifyAvailabilityStatusChange(params: {
   request: AvailabilityRequest;

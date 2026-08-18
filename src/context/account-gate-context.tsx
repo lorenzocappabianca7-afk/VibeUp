@@ -181,8 +181,12 @@ export function AccountGateProvider({ children }: { children: ReactNode }) {
           console.warn("[activation-email]", emailResult.error);
         }
       }
-      if (result.needsEmailActivation && !result.activationToken) {
+      if (result.needsEmailActivation) {
         runAfterAccountRef.current = false;
+        return {
+          needsEmailActivation: true,
+          email: result.email ?? account.email,
+        };
       }
       setModalReason(null);
       setModalEmail("");

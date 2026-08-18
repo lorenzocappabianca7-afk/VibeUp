@@ -4,6 +4,8 @@ import {
   formatConfirmationDeadlineIt,
   confirmationDeadlineCountdownLabel,
 } from "@/lib/availability/confirmation-deadline";
+import { sendTransactionalEmail } from "@/lib/email/mailer";
+import { getSiteUrl } from "@/lib/site";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export interface NotifyResult {
@@ -12,7 +14,7 @@ export interface NotifyResult {
   channel?: "email" | "whatsapp";
 }
 
-const PUBLIC_SITE = "https://vibeupevents.com";
+const PUBLIC_SITE = getSiteUrl();
 
 function escapeHtml(value: string) {
   return value
@@ -40,49 +42,18 @@ function buildEmailHtml(title: string, bodyText: string): string {
 </html>`;
 }
 
-/**
- * Placeholder transactional email (same env pattern as manager notifier).
- * Env: EMAIL_API_KEY, EMAIL_SENDER_ADDRESS
- */
 async function sendViaEmail(input: {
   to: string;
   subject: string;
   text: string;
   html: string;
 }): Promise<NotifyResult> {
-  const apiKey = process.env.EMAIL_API_KEY?.trim() || "";
-  const from = process.env.EMAIL_SENDER_ADDRESS?.trim() || "";
-
-  if (!apiKey || !from) {
-    console.info(
-      "[organizer-notifier] Email placeholder — missing EMAIL_API_KEY / EMAIL_SENDER_ADDRESS. Would send to",
-      input.to,
-      "subject:",
-      input.subject,
-    );
-    return {
-      ok: false,
-      error:
-        "Email non configurata (EMAIL_API_KEY / EMAIL_SENDER_ADDRESS).",
-      channel: "email",
-    };
+  const result = await sendTransactionalEmail(input);
+  if (!result.ok) {
+    console.error("[organizer-notifier]", result.error);
+    return { ok: false, error: result.error, channel: "email" };
   }
-
-  // TODO: replace with real provider call (Resend / SendGrid).
-  console.info("[organizer-notifier] Email placeholder ready", {
-    from,
-    to: input.to,
-    subject: input.subject,
-    bodyLength: input.text.length,
-    hasApiKey: true,
-  });
-
-  return {
-    ok: false,
-    error:
-      "Invio email ancora in modalità placeholder: collega il provider reale.",
-    channel: "email",
-  };
+  return { ok: true, channel: "email" };
 }
 
 function resolveOrganizerEmail(

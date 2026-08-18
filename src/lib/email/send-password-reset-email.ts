@@ -4,14 +4,9 @@ import {
   sendTransactionalEmail,
 } from "@/lib/email/mailer";
 
-export interface ActivationEmailInput {
+export interface PasswordResetEmailInput {
   to: string;
-  name: string;
-  activateUrl: string;
-}
-
-export function isActivationEmailConfigured() {
-  return isTransactionalEmailConfigured();
+  resetUrl: string;
 }
 
 function escapeHtml(value: string) {
@@ -23,15 +18,14 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#39;");
 }
 
-function buildActivationEmailHtml(input: ActivationEmailInput) {
-  const displayName = input.name.trim() || "ciao";
-  const fromEmail = getVibeUpFromEmail();
+function buildHtml(input: PasswordResetEmailInput) {
+  const from = getVibeUpFromEmail();
   return `<!DOCTYPE html>
 <html lang="it">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Conferma il tuo account VibeUp</title>
+    <title>Reimposta la password VibeUp</title>
   </head>
   <body style="margin:0;padding:0;background:#f6f6f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0F0F11;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f6f6f7;padding:32px 16px;">
@@ -41,24 +35,21 @@ function buildActivationEmailHtml(input: ActivationEmailInput) {
             <tr>
               <td style="padding:28px 28px 12px;background:#0F0F11;color:#ffffff;">
                 <p style="margin:0;font-size:13px;letter-spacing:0.16em;text-transform:uppercase;opacity:0.7;">VibeUp</p>
-                <h1 style="margin:10px 0 0;font-size:24px;line-height:1.25;">Grazie per esserti unito a noi</h1>
+                <h1 style="margin:10px 0 0;font-size:24px;line-height:1.25;">Reimposta la password</h1>
               </td>
             </tr>
             <tr>
               <td style="padding:28px;">
-                <p style="margin:0 0 14px;font-size:16px;line-height:1.5;">Ciao ${escapeHtml(displayName)},</p>
+                <p style="margin:0 0 14px;font-size:16px;line-height:1.5;">Ciao,</p>
                 <p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:rgba(15,15,17,0.72);">
-                  Grazie per aver creato il tuo account VibeUp. Prima di iniziare a salvare preferiti,
-                  confrontare locali e generare preventivi, conferma il tuo indirizzo email.
-                </p>
-                <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:rgba(15,15,17,0.72);">
-                  È un passaggio rapido: basta un tap sul pulsante qui sotto.
+                  Abbiamo ricevuto una richiesta per reimpostare la password del tuo account VibeUp.
+                  Tocca il pulsante qui sotto per scegliere una nuova password.
                 </p>
                 <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 24px;">
                   <tr>
                     <td style="border-radius:999px;background:#32B4B4;">
-                      <a href="${escapeHtml(input.activateUrl)}" style="display:inline-block;padding:14px 22px;font-size:15px;font-weight:700;color:#0F0F11;text-decoration:none;">
-                        Conferma la tua email
+                      <a href="${escapeHtml(input.resetUrl)}" style="display:inline-block;padding:14px 22px;font-size:15px;font-weight:700;color:#0F0F11;text-decoration:none;">
+                        Scegli una nuova password
                       </a>
                     </td>
                   </tr>
@@ -67,10 +58,11 @@ function buildActivationEmailHtml(input: ActivationEmailInput) {
                   Se il pulsante non funziona, copia e incolla questo link nel browser:
                 </p>
                 <p style="margin:0 0 20px;font-size:12px;line-height:1.5;word-break:break-all;color:#1F8F8F;">
-                  ${escapeHtml(input.activateUrl)}
+                  ${escapeHtml(input.resetUrl)}
                 </p>
                 <p style="margin:0;font-size:12px;line-height:1.5;color:rgba(15,15,17,0.45);">
-                  Il link scade tra circa un’ora. Se non hai creato tu questo account, puoi ignorare questa email.
+                  Il link scade tra circa un’ora. Se non hai richiesto tu il reset, ignora questa email:
+                  la password resta invariata.
                 </p>
               </td>
             </tr>
@@ -79,7 +71,7 @@ function buildActivationEmailHtml(input: ActivationEmailInput) {
                 <p style="margin:0;font-size:12px;line-height:1.5;color:rgba(15,15,17,0.45);">
                   A presto,<br />
                   Il team VibeUp<br />
-                  <a href="mailto:${fromEmail}" style="color:#1F8F8F;text-decoration:none;">${fromEmail}</a>
+                  <a href="mailto:${escapeHtml(from)}" style="color:#1F8F8F;text-decoration:none;">${escapeHtml(from)}</a>
                 </p>
               </td>
             </tr>
@@ -91,28 +83,29 @@ function buildActivationEmailHtml(input: ActivationEmailInput) {
 </html>`;
 }
 
-function buildActivationEmailText(input: ActivationEmailInput) {
-  const displayName = input.name.trim() || "ciao";
-  const fromEmail = getVibeUpFromEmail();
-  return `Ciao ${displayName},
+function buildText(input: PasswordResetEmailInput) {
+  const from = getVibeUpFromEmail();
+  return `Ciao,
 
-Grazie per aver creato il tuo account VibeUp.
+Abbiamo ricevuto una richiesta per reimpostare la password del tuo account VibeUp.
 
-Conferma il tuo indirizzo email per attivare l'account:
-${input.activateUrl}
+Apri questo link per scegliere una nuova password:
+${input.resetUrl}
 
-Il link scade tra circa un’ora. Se non hai creato tu questo account, ignora questa email.
+Il link scade tra circa un’ora. Se non hai richiesto tu il reset, ignora questa email.
 
 A presto,
 Il team VibeUp
-${fromEmail}`;
+${from}`;
 }
 
-export async function sendAccountActivationEmail(input: ActivationEmailInput) {
+export { isTransactionalEmailConfigured as isPasswordResetEmailConfigured };
+
+export async function sendPasswordResetEmail(input: PasswordResetEmailInput) {
   return sendTransactionalEmail({
     to: input.to,
-    subject: "Conferma il tuo account VibeUp",
-    text: buildActivationEmailText(input),
-    html: buildActivationEmailHtml(input),
+    subject: "Reimposta la password del tuo account VibeUp",
+    text: buildText(input),
+    html: buildHtml(input),
   });
 }

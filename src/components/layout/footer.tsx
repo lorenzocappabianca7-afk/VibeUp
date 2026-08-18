@@ -42,10 +42,10 @@ export function Footer({ withNavOffset = false }: FooterProps) {
             <p className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
             <span className="font-bold text-white">e-mail</span>
             <a
-              href="mailto:vibeup.planner@gmail.com"
+              href="mailto:info@vibeupevents.com"
                 className="break-all font-medium text-white/72 transition-colors hover:text-white"
             >
-              vibeup.planner@gmail.com
+              info@vibeupevents.com
             </a>
           </p>
         </div>

@@ -4,10 +4,23 @@ import {
   isActivationEmailConfigured,
   sendAccountActivationEmail,
 } from "@/lib/email/send-activation-email";
+import { getSiteUrl } from "@/lib/site";
 import { sanitizeEmail, sanitizePlainText } from "@/lib/security/sanitize";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { rejectLargeRequest, REQUEST_LIMITS } from "@/server/http/request-limits";
 
 export const runtime = "nodejs";
+
+function rewriteRedirect(actionLink: string, redirectTo: string) {
+  try {
+    const link = new URL(actionLink);
+    link.searchParams.set("redirect_to", redirectTo);
+    return link.toString();
+  } catch {
+    return actionLink;
+  }
+}
 
 export async function POST(request: NextRequest) {
   const tooLarge = rejectLargeRequest(request, REQUEST_LIMITS.quoteBodyBytes);
@@ -30,32 +43,50 @@ export async function POST(request: NextRequest) {
   );
 
   if (!email || !email.includes("@")) {
-    return NextResponse.json(
-      { error: "Email non valida." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Email non valida." }, { status: 400 });
   }
-  if (token.length < 32) {
-    return NextResponse.json(
-      { error: "Token di attivazione non valido." },
-      { status: 400 },
-    );
-  }
+
   if (!isActivationEmailConfigured()) {
     return NextResponse.json(
       {
-        error:
-          "Invio email non configurato. Aggiungi GMAIL_APP_PASSWORD nelle variabili d’ambiente.",
+        error: "Invio email non configurato. Imposta RESEND_API_KEY su Vercel.",
       },
       { status: 503 },
     );
   }
 
   try {
+    let activateUrl: string | null = null;
+
+    if (token.length >= 32) {
+      activateUrl = buildActivationUrl(token);
+    } else if (isSupabaseConfigured()) {
+      const admin = getSupabaseAdmin();
+      const redirectTo = `${getSiteUrl()}/auth/callback`;
+      const { data, error } = await admin.auth.admin.generateLink({
+        type: "magiclink",
+        email,
+        options: { redirectTo },
+      });
+      if (error || !data?.properties?.action_link) {
+        console.warn(
+          "[send-activation] generateLink:",
+          error?.message ?? "missing action_link",
+        );
+        return NextResponse.json({ ok: true });
+      }
+      activateUrl = rewriteRedirect(data.properties.action_link, redirectTo);
+    } else {
+      return NextResponse.json(
+        { error: "Token di attivazione non valido." },
+        { status: 400 },
+      );
+    }
+
     const result = await sendAccountActivationEmail({
       to: email,
       name: name || email.split("@")[0] || "ciao",
-      activateUrl: buildActivationUrl(token),
+      activateUrl,
     });
 
     if (!result.ok) {

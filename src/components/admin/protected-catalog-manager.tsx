@@ -193,9 +193,9 @@ export function ProtectedCatalogManager() {
             Accesso non autorizzato
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-primary-black/60">
-            Accedi con l&apos;account admin (
-            vibeup.planner@gmail.com oppure un profilo con ruolo{" "}
-            <span className="font-semibold">admin</span> su Supabase).
+            Accedi con l&apos;account admin ufficiale{" "}
+            <span className="font-semibold">info@vibeupevents.com</span>{" "}
+            (ruolo admin su Supabase).
           </p>
         </div>
       </div>

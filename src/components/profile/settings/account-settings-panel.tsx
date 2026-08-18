@@ -30,12 +30,19 @@ function profileDraftFromUser(user: {
 }
 
 export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
-  const { currentUser, isGuest, updateCurrentUser, updateUserSettings } =
-    useAppState();
+  const {
+    currentUser,
+    isGuest,
+    updateCurrentUser,
+    updateUserSettings,
+    changeAccountEmail,
+  } = useAppState();
   const settings = normalizeUserSettings(currentUser.settings);
   const [draft, setDraft] = useState(() => profileDraftFromUser(currentUser));
   const [draftUserId, setDraftUserId] = useState(currentUser.id);
-  const [savedFlash, setSavedFlash] = useState(false);
+  const [emailMessage, setEmailMessage] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const flashTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -51,20 +58,44 @@ export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
     setDraft(profileDraftFromUser(currentUser));
   }
 
-  function saveProfile() {
-    if (isGuest) return;
+  async function saveProfile() {
+    if (isGuest || saving) return;
+    setEmailError(null);
+    setEmailMessage(null);
+
+    const nextEmail = draft.email.trim().toLowerCase();
+    const emailChanged = nextEmail !== currentUser.email.trim().toLowerCase();
+
     updateCurrentUser({
       name: draft.name.trim() || currentUser.name,
-      email: draft.email.trim() || currentUser.email,
       phoneNumber: draft.phoneNumber.trim(),
       instagramHandle: draft.instagramHandle.replace(/^@+/, "").trim(),
     });
-    setSavedFlash(true);
+
+    if (emailChanged) {
+      setSaving(true);
+      const result = await changeAccountEmail(nextEmail);
+      setSaving(false);
+      if (!result.ok) {
+        setEmailError(result.error);
+        return;
+      }
+      if (result.needsEmailActivation) {
+        setEmailMessage(
+          `Ti abbiamo inviato una conferma a ${result.email}. L’indirizzo in account cambia dopo che apri il link (mittente info@vibeupevents.com).`,
+        );
+      } else {
+        setEmailMessage("Profilo aggiornato correttamente.");
+      }
+      return;
+    }
+
+    setEmailMessage("Profilo aggiornato correttamente.");
     if (flashTimerRef.current != null) {
       window.clearTimeout(flashTimerRef.current);
     }
     flashTimerRef.current = window.setTimeout(() => {
-      setSavedFlash(false);
+      setEmailMessage(null);
       flashTimerRef.current = null;
     }, 2000);
   }
@@ -153,18 +184,20 @@ export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
       {!isGuest && (
         <button
           type="button"
-          onClick={saveProfile}
-          className="w-full rounded-2xl bg-paper px-4 py-3 text-sm font-black text-ink-inverse transition-colors hover:bg-surface/90"
+          onClick={() => void saveProfile()}
+          disabled={saving}
+          className="w-full rounded-2xl bg-paper px-4 py-3 text-sm font-black text-ink-inverse transition-colors hover:bg-surface/90 disabled:opacity-60"
         >
-          Salva modifiche
+          {saving ? "Salvataggio…" : "Salva modifiche"}
         </button>
       )}
 
-      {savedFlash && (
-        <SettingsInfoCard tone="teal">
-          Profilo aggiornato correttamente.
-        </SettingsInfoCard>
-      )}
+      {emailError ? (
+        <SettingsInfoCard tone="pink">{emailError}</SettingsInfoCard>
+      ) : null}
+      {emailMessage ? (
+        <SettingsInfoCard tone="teal">{emailMessage}</SettingsInfoCard>
+      ) : null}
 
       <SettingsSection
         title="Preferenze"
