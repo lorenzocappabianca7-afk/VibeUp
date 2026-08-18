@@ -11,6 +11,7 @@ import {
   hashPassword,
   isAccountIdle,
   needsPasswordRehash,
+  shouldIdleLockAccount,
   verifyPassword,
 } from "@/lib/auth/password";
 import {
@@ -235,7 +236,10 @@ interface AppStateContextValue {
   deleteAccount: (id: string) => Promise<CreateAccountResult>;
   switchAccount: (id: string) => void;
   updateCurrentUser: (updates: Partial<Omit<CurrentUser, "id">>) => void;
-  changeAccountEmail: (nextEmail: string) => Promise<CreateAccountResult>;
+  changeAccountEmail: (
+    nextEmail: string,
+    currentPassword: string,
+  ) => Promise<CreateAccountResult>;
   updateUserSettings: (patch: DeepPartialUserSettings) => void;
   changePassword: (
     currentPassword: string,
@@ -800,7 +804,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         (account) => account.id === resolvedUserId,
       );
       if (
-        activeAccount?.passwordHash &&
+        activeAccount &&
+        shouldIdleLockAccount(activeAccount) &&
         isAccountIdle(activeAccount.lastActiveAt)
       ) {
         setIsAccountLocked(true);
@@ -836,6 +841,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   );
 
   const promptBiometricSetupIfAvailable = useCallback(async () => {
+    const userId = currentUserIdRef.current;
+    const account = accountsRef.current.find((item) => item.id === userId);
+    if (account?.biometricCredentialId) return;
     const available = await isBiometricAvailable();
     if (available) {
       setPendingBiometricSetup(true);
@@ -883,7 +891,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (userId === GUEST_USER.id) return;
 
       const account = accounts.find((item) => item.id === userId);
-      if (!account?.passwordHash) return;
+      if (!account || !shouldIdleLockAccount(account)) return;
 
       if (isAccountIdle(account.lastActiveAt)) {
         setIsAccountLocked(true);
@@ -1339,26 +1347,47 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       phone?: string;
       emailVerified?: boolean;
       preferredRole?: AppRole;
+      source: "login" | "restore";
     }) => {
       const profile = await fetchSupabaseProfile(params.userId);
       const role: AppRole =
         profile?.role ?? params.preferredRole ?? "consumer";
       const accountType = mapProfileRoleToAccountType(role);
       const now = new Date().toISOString();
+      const existing = accountsRef.current.find(
+        (item) =>
+          item.id === params.userId ||
+          (params.email &&
+            item.email.toLowerCase() === params.email.toLowerCase()),
+      );
       const nextAccount = normalizeAccount({
+        ...existing,
         id: params.userId,
         name:
           profile?.display_name ||
           sanitizePlainText(params.displayName, 80) ||
           params.email,
         email: profile?.email || params.email,
-        phoneNumber: profile?.phone || params.phone,
-        avatarUrl: profile?.avatar_url ?? undefined,
+        phoneNumber: profile?.phone || params.phone || existing?.phoneNumber,
+        avatarUrl: profile?.avatar_url ?? existing?.avatarUrl,
         accountType,
         role,
         authProvider: "supabase",
         emailVerified: params.emailVerified ?? true,
-        lastActiveAt: now,
+        passwordHash: existing?.passwordHash,
+        biometricCredentialId: existing?.biometricCredentialId,
+        settings: existing?.settings,
+        paymentCard: existing?.paymentCard,
+        instagramHandle: existing?.instagramHandle,
+        businessProfile:
+          accountType === "business"
+            ? (existing?.businessProfile ?? null)
+            : null,
+        managerNotificationPrefs: existing?.managerNotificationPrefs,
+        lastActiveAt:
+          params.source === "login"
+            ? now
+            : existing?.lastActiveAt ?? now,
       });
 
       setAccounts((prev) => {
@@ -1371,8 +1400,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       });
       setUserStatesMap((map) => claimGuestStateInto(map, nextAccount.id));
       setCurrentUserId(nextAccount.id);
-      setIsAccountLocked(false);
-      setUnlockError(null);
+
+      if (params.source === "login") {
+        setIsAccountLocked(false);
+        setUnlockError(null);
+      } else if (
+        shouldIdleLockAccount(nextAccount) &&
+        isAccountIdle(nextAccount.lastActiveAt)
+      ) {
+        setIsAccountLocked(true);
+        setUnlockError(null);
+      }
+
       return nextAccount;
     },
     [],
@@ -1435,7 +1474,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
               nextName,
             phone: safePhone,
             emailVerified: Boolean(result.user.email_confirmed_at),
+            source: "login",
           });
+          void promptBiometricSetupIfAvailable();
           return { ok: true };
         }
 
@@ -1645,6 +1686,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             ? session.user.user_metadata.phone
             : undefined,
         emailVerified: Boolean(session.user.email_confirmed_at),
+        source: "restore",
       });
     };
 
@@ -1654,11 +1696,24 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
-      if (event === "SIGNED_OUT" || !session?.user) {
-        setCurrentUserId(GUEST_USER.id);
-        setIsAccountLocked(false);
+      if (event === "SIGNED_OUT") {
+        const activeId = currentUserIdRef.current;
+        const active = accountsRef.current.find((item) => item.id === activeId);
+        if (active?.authProvider === "supabase") {
+          setCurrentUserId(GUEST_USER.id);
+          setIsAccountLocked(false);
+          setUnlockError(null);
+          setPendingBiometricSetup(false);
+        }
         return;
       }
+      if (!session?.user) return;
+
+      const source =
+        event === "SIGNED_IN" &&
+        currentUserIdRef.current !== session.user.id
+          ? "login"
+          : "restore";
       void applySupabaseIdentity({
         userId: session.user.id,
         email: session.user.email ?? "",
@@ -1671,6 +1726,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             ? session.user.user_metadata.phone
             : undefined,
         emailVerified: Boolean(session.user.email_confirmed_at),
+        source,
       });
     });
 
@@ -1780,6 +1836,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         emailVerified: false,
         activationToken,
         activationTokenExpiresAt: getActivationExpiryIso(),
+        authProvider: "local",
       });
 
       setAccounts((prev) => [nextAccount, ...prev]);
@@ -1942,8 +1999,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (!target) return;
       setCurrentUserId((current) => (current === id ? current : id));
       if (
-        target.authProvider !== "supabase" &&
-        target.passwordHash &&
+        shouldIdleLockAccount(target) &&
         isAccountIdle(target.lastActiveAt)
       ) {
         setIsAccountLocked(true);
@@ -1951,7 +2007,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       } else {
         setIsAccountLocked(false);
         setUnlockError(null);
-        if (target.passwordHash) {
+        if (shouldIdleLockAccount(target)) {
           touchAccountActivity(id);
         }
       }
@@ -1967,7 +2023,24 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       }
 
       const account = accounts.find((item) => item.id === userId);
-      if (!account?.passwordHash) {
+      if (!account) {
+        return { ok: false, error: "Account non trovato." };
+      }
+
+      if (account.authProvider === "supabase") {
+        const result = await supabaseSignIn({
+          email: account.email,
+          password,
+        });
+        if (!result.ok) {
+          setUnlockError("Password non corretta.");
+          return { ok: false, error: "Password non corretta." };
+        }
+        markUnlocked(userId);
+        return { ok: true };
+      }
+
+      if (!account.passwordHash) {
         markUnlocked(userId);
         return { ok: true };
       }
@@ -2271,7 +2344,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   );
 
   const changeAccountEmail = useCallback(
-    async (nextEmail: string): Promise<CreateAccountResult> => {
+    async (
+      nextEmail: string,
+      currentPassword: string,
+    ): Promise<CreateAccountResult> => {
       const userId = currentUserIdRef.current;
       if (userId === GUEST_USER.id) {
         return { ok: false, error: "Crea un account per modificare l’email." };
@@ -2282,11 +2358,29 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         return { ok: false, error: "Inserisci un’email valida." };
       }
 
+      if (!currentPassword) {
+        return {
+          ok: false,
+          error: "Inserisci la password attuale per cambiare email.",
+        };
+      }
+
       const account = accountsRef.current.find((item) => item.id === userId);
+      if (!account) {
+        return { ok: false, error: "Account non trovato." };
+      }
+
       if (
-        account?.authProvider === "supabase" ||
+        account.authProvider === "supabase" ||
         isSupabaseBrowserConfigured()
       ) {
+        const verify = await supabaseSignIn({
+          email: account.email,
+          password: currentPassword,
+        });
+        if (!verify.ok) {
+          return { ok: false, error: "Password attuale non corretta." };
+        }
         const result = await supabaseUpdateEmail(email);
         if (!result.ok) return result;
         return {
@@ -2294,6 +2388,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           needsEmailActivation: true,
           email,
         };
+      }
+
+      if (account.passwordHash) {
+        const matches = await verifyPassword(
+          currentPassword,
+          account.passwordHash,
+        );
+        if (!matches) {
+          return { ok: false, error: "Password attuale non corretta." };
+        }
       }
 
       setAccounts((prev) =>

@@ -9,6 +9,8 @@
 - **Cambio email da loggato**: Profilo → Impostazioni account → `supabase.auth.updateUser({ email })` (serve conferma sul nuovo indirizzo).
 - **Notifiche prenotazioni**: organizer / manager / status-change usano lo stesso mailer Resend.
 
+Sessioni persistenti (resta loggato sul dispositivo, logout solo da Esci): vedi `docs/AUTH_SESSIONS.md`.
+
 ## Variabili ambiente (Vercel)
 
 | Variabile | Uso |

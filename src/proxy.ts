@@ -1,5 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  getAuthCookieOptions,
+  withAuthCookieOptions,
+} from "@/lib/supabase/auth-session";
 
 const BLOCKED_PATH_PATTERNS = [
   /^\/\.env(?:$|\/)/i,
@@ -110,6 +114,7 @@ export async function proxy(request: NextRequest) {
   const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
   if (supabaseUrl && supabaseAnon) {
     const supabase = createServerClient(supabaseUrl, supabaseAnon, {
+      cookieOptions: getAuthCookieOptions(),
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -124,7 +129,7 @@ export async function proxy(request: NextRequest) {
             },
           });
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
+            response.cookies.set(name, value, withAuthCookieOptions(options));
           });
         },
       },

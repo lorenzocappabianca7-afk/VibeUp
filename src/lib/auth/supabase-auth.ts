@@ -160,9 +160,12 @@ export async function supabaseDeleteCurrentAccount() {
 export async function supabaseSignOut() {
   if (!isSupabaseBrowserConfigured()) return { ok: true as const };
   const supabase = getSupabaseBrowser();
-  const { error } = await supabase.auth.signOut();
-  if (error) {
-    return { ok: false as const, error: error.message };
+  const global = await supabase.auth.signOut({ scope: "global" });
+  if (!global.error) return { ok: true as const };
+
+  const local = await supabase.auth.signOut({ scope: "local" });
+  if (local.error) {
+    return { ok: false as const, error: local.error.message };
   }
   return { ok: true as const };
 }

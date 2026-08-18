@@ -114,10 +114,11 @@ export function UnlockAccountModal({
           Sblocca account
         </h2>
         <p className="mt-2 text-center text-sm text-primary-black/60">
-          È passato un po&apos; dall&apos;ultimo accesso a{" "}
+          È passato un po&apos; dall&apos;ultimo utilizzo di{" "}
           <span className="font-semibold text-primary-black">{accountName}</span>
-          . Usa {biometricEnabled ? `${label} o la password` : "la password"} per
-          continuare.
+          . Resta connesso su questo dispositivo: sblocca con{" "}
+          {biometricEnabled ? `${label} o la password` : "la password"}, senza
+          rifare l&apos;accesso.
         </p>
         <p className="mt-1 text-center text-xs text-primary-black/45">
           {accountEmail}

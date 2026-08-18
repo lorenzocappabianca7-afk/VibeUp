@@ -9,6 +9,14 @@ const PBKDF2_PREFIX = "pbkdf2";
 /** Idle period after which a password-protected account must be unlocked again. */
 export const ACCOUNT_IDLE_LOCK_MS = 7 * 24 * 60 * 60 * 1000;
 
+/** Device lock (Face ID / password) — not a full email+password login. */
+export function shouldIdleLockAccount(account: {
+  passwordHash?: string;
+  authProvider?: "local" | "supabase";
+}): boolean {
+  return Boolean(account.passwordHash) || account.authProvider === "supabase";
+}
+
 function bufferToHex(buffer: ArrayBuffer | Uint8Array): string {
   const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");

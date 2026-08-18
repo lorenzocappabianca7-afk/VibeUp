@@ -1,5 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import {
+  getAuthCookieOptions,
+  withAuthCookieOptions,
+} from "@/lib/supabase/auth-session";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 /** Server Components / Route Handlers client with cookie session. */
@@ -15,6 +19,7 @@ export async function getSupabaseServer() {
   const cookieStore = await cookies();
 
   return createServerClient(url, key, {
+    cookieOptions: getAuthCookieOptions(),
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -22,7 +27,7 @@ export async function getSupabaseServer() {
       setAll(cookiesToSet) {
         try {
           cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
+            cookieStore.set(name, value, withAuthCookieOptions(options));
           });
         } catch {
           /* Called from a Server Component — proxy refreshes the session. */

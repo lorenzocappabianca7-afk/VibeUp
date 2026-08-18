@@ -42,6 +42,7 @@ export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
   const [draftUserId, setDraftUserId] = useState(currentUser.id);
   const [emailMessage, setEmailMessage] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailPassword, setEmailPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const flashTimerRef = useRef<number | null>(null);
 
@@ -56,6 +57,9 @@ export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
   if (draftUserId !== currentUser.id) {
     setDraftUserId(currentUser.id);
     setDraft(profileDraftFromUser(currentUser));
+    setEmailPassword("");
+    setEmailError(null);
+    setEmailMessage(null);
   }
 
   async function saveProfile() {
@@ -73,13 +77,18 @@ export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
     });
 
     if (emailChanged) {
+      if (!emailPassword) {
+        setEmailError("Inserisci la password attuale per cambiare email.");
+        return;
+      }
       setSaving(true);
-      const result = await changeAccountEmail(nextEmail);
+      const result = await changeAccountEmail(nextEmail, emailPassword);
       setSaving(false);
       if (!result.ok) {
         setEmailError(result.error);
         return;
       }
+      setEmailPassword("");
       if (result.needsEmailActivation) {
         setEmailMessage(
           `Ti abbiamo inviato una conferma a ${result.email}. L’indirizzo in account cambia dopo che apri il link (mittente info@vibeupevents.com).`,
@@ -180,6 +189,26 @@ export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
           />
         </label>
       </SettingsSection>
+
+      {draft.email.trim().toLowerCase() !==
+        currentUser.email.trim().toLowerCase() &&
+        !isGuest && (
+          <SettingsSection title="Conferma identità">
+            <label className="block px-4 py-3">
+              <span className="text-xs font-bold text-primary-black/55">
+                Password attuale
+              </span>
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={emailPassword}
+                onChange={(event) => setEmailPassword(event.target.value)}
+                placeholder="Necessaria per cambiare email"
+                className="mt-1.5 w-full bg-transparent text-sm font-semibold text-primary-black outline-none placeholder:text-primary-black/35"
+              />
+            </label>
+          </SettingsSection>
+        )}
 
       {!isGuest && (
         <button
