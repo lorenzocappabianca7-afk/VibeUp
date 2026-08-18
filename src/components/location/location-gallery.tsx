@@ -4,6 +4,7 @@ import {
   ImageCarousel,
   uniqueImages,
 } from "@/components/ui/image-carousel";
+import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
 import { cn } from "@/lib/utils";
 import { SafeImage } from "@/components/ui/safe-image";
 import { useState } from "react";
@@ -35,14 +36,14 @@ export function LocationGallery({ images, name }: LocationGalleryProps) {
       />
 
       {photos.length > 1 && (
-        <div className="flex max-w-full gap-2 overflow-x-auto pb-1">
+        <HorizontalTouchScroll className="flex max-w-full gap-2 pb-1">
           {photos.map((image, index) => (
             <button
               key={`${image}-${index}`}
               type="button"
               onClick={() => setActiveIndex(index)}
               className={cn(
-                "relative h-16 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-colors duration-150",
+                "relative h-16 w-20 shrink-0 overflow-clip rounded-xl border-2 transition-colors duration-150 touch-pan-y",
                 activeIndex === index
                   ? "border-brand-teal"
                   : "border-transparent opacity-70",
@@ -53,12 +54,13 @@ export function LocationGallery({ images, name }: LocationGalleryProps) {
                 src={image}
                 alt=""
                 fill
-                className="object-cover"
+                draggable={false}
+                className="pointer-events-none select-none object-cover"
                 sizes="80px"
               />
             </button>
           ))}
-        </div>
+        </HorizontalTouchScroll>
       )}
     </div>
   );

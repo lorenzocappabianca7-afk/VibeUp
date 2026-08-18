@@ -55,6 +55,8 @@ import {
 } from "lucide-react";
 import { SoftNavLink } from "@/components/navigation/soft-nav-link";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
+import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
+import { SafeImage } from "@/components/ui/safe-image";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
@@ -818,7 +820,7 @@ function SimilarLocationsCarousel({ locations }: { locations: Location[] }) {
         </p>
       </div>
 
-      <div className="scrollbar-hidden smooth-scroll max-w-full overflow-x-auto pb-2">
+      <HorizontalTouchScroll className="scrollbar-hidden max-w-full pb-2">
         <ul className="flex w-max gap-3">
           {locations.map((similarLocation) => {
             const price = getLocationPricePresentation(similarLocation);
@@ -830,14 +832,16 @@ function SimilarLocationsCarousel({ locations }: { locations: Location[] }) {
             >
               <SoftNavLink
                 href={`/location/${similarLocation.id}`}
-                className="block h-full overflow-hidden rounded-3xl border border-primary-black/10 bg-background shadow-sm transition-colors duration-150 hover:border-primary-black"
+                className="block h-full overflow-clip rounded-3xl border border-primary-black/10 bg-background shadow-sm transition-colors duration-150 hover:border-primary-black touch-pan-y"
+                draggable={false}
               >
-                <div className="relative aspect-[16/10]">
-                  <Image
+                <div className="relative aspect-[16/10] overflow-clip">
+                  <SafeImage
                     src={similarLocation.imageUrl}
                     alt={similarLocation.name}
                     fill
-                    className="object-cover"
+                    draggable={false}
+                    className="pointer-events-none select-none object-cover"
                     sizes="272px"
                   />
                 </div>
@@ -864,7 +868,7 @@ function SimilarLocationsCarousel({ locations }: { locations: Location[] }) {
             );
           })}
         </ul>
-      </div>
+      </HorizontalTouchScroll>
     </section>
   );
 }

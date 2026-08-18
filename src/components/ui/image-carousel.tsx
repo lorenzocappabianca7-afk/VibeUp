@@ -1,6 +1,7 @@
 "use client";
 
 import { SafeImage } from "@/components/ui/safe-image";
+import { attachAxisLockedHorizontalScroll } from "@/lib/axis-locked-horizontal-scroll";
 import { cn } from "@/lib/utils";
 import {
   useCallback,
@@ -79,7 +80,9 @@ export function ImageCarousel({
     scrollToIndex(activeIndex);
   }, [activeIndex, scrollToIndex]);
 
-  // Desktop: overflow-x scroller otherwise eats vertical wheel / trackpad.
+  // Vertical page scroll stays native (touch-action:pan-y). Horizontal photo
+  // swipe is applied in JS only after the gesture locks to X — native
+  // overflow-x + pan-x/pan-y was trapping iOS when the finger started on the image.
   useEffect(() => {
     const scroller = scrollerRef.current;
     if (!scroller || images.length < 2) return;
@@ -91,13 +94,19 @@ export function ImageCarousel({
     };
 
     scroller.addEventListener("wheel", onWheel, { passive: false });
-    return () => scroller.removeEventListener("wheel", onWheel);
+    const detachTouch = attachAxisLockedHorizontalScroll(scroller, {
+      snapToPage: true,
+    });
+    return () => {
+      scroller.removeEventListener("wheel", onWheel);
+      detachTouch();
+    };
   }, [images.length]);
 
   function handleScroll() {
     const scroller = scrollerRef.current;
     if (!scroller) return;
-    // Kill any vertical drift from touch rubber-banding.
+    // Kill any vertical drift from touch rubber-banding inside the frame.
     if (scroller.scrollTop !== 0) {
       scroller.scrollTop = 0;
     }
@@ -118,7 +127,8 @@ export function ImageCarousel({
         src={images[0]}
         alt={alt}
         fill
-        className="object-cover"
+        draggable={false}
+        className="pointer-events-none select-none object-cover"
         sizes={sizes}
         priority={priority}
       />
@@ -127,7 +137,7 @@ export function ImageCarousel({
     return (
       <div
         className={cn(
-          "relative overflow-hidden",
+          "relative overflow-clip touch-pan-y",
           frameClassName,
           className,
         )}
@@ -144,17 +154,12 @@ export function ImageCarousel({
 
   return (
     <div
-      className={cn(
-        "relative overflow-hidden",
-        frameClassName,
-        className,
-      )}
+      className={cn("relative overflow-clip", frameClassName, className)}
     >
-      {/* Absolute scroller locks height to the aspect frame — only pan-x. */}
       <div
         ref={scrollerRef}
         onScroll={handleScroll}
-        className="scrollbar-hidden absolute inset-0 flex touch-pan-x snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain overscroll-y-none scroll-smooth [-webkit-overflow-scrolling:touch]"
+        className="scrollbar-hidden absolute inset-0 flex snap-x snap-mandatory overflow-x-auto overflow-y-clip overscroll-x-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
       >
         {images.map((image, imageIndex) => {
           const imageNode = (

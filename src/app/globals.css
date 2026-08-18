@@ -74,6 +74,10 @@ svg {
   height: auto;
 }
 
+img {
+  -webkit-user-drag: none;
+}
+
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
   display: none;

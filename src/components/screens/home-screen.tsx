@@ -2,6 +2,7 @@
 
 import { LocationCard } from "@/components/explore/location-card";
 import { PartyWizard } from "@/components/home/party-wizard";
+import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
 import { Button } from "@/components/ui/button";
 import { useAppState } from "@/context/app-state-context";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
@@ -200,7 +201,7 @@ export function HomeScreen() {
         <h2 className="text-lg font-bold text-primary-black">
           Location suggerite per te
         </h2>
-        <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <HorizontalTouchScroll className="flex gap-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {suggestedLocations.map((location) => (
             <div
               key={location.id}
@@ -217,7 +218,7 @@ export function HomeScreen() {
               />
             </div>
           ))}
-        </div>
+        </HorizontalTouchScroll>
       </section>
 
       <PartyWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />

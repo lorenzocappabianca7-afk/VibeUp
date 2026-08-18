@@ -120,14 +120,16 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
                 >
                   <SoftNavLink
                     href={`/location/${location.id}`}
-                    className="flex gap-3 p-2 pr-11"
+                    className="flex gap-3 p-2 pr-11 touch-pan-y"
+                    draggable={false}
                   >
-                    <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl">
+                    <div className="relative h-20 w-24 shrink-0 overflow-clip rounded-xl">
                       <SafeImage
                         src={location.imageUrl}
                         alt={location.name}
                         fill
-                        className="object-cover"
+                        draggable={false}
+                        className="pointer-events-none select-none object-cover"
                         sizes="96px"
                       />
                     </div>

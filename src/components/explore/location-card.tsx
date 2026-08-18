@@ -41,7 +41,7 @@ export const LocationCard = memo(function LocationCard({
   );
 
   return (
-    <article className="render-contained h-full overflow-hidden rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-[border-color,box-shadow] duration-150 hover:border-primary-black">
+    <article className="render-contained h-full overflow-clip rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-[border-color,box-shadow] duration-150 hover:border-primary-black">
       <div className="relative">
         <ImageCarousel
           images={photos}
@@ -50,7 +50,11 @@ export const LocationCard = memo(function LocationCard({
           sizes="(max-width: 448px) 100vw, 448px"
           showDots={photos.length > 1}
           renderSlide={(_image, _index, imageNode) => (
-            <SoftNavLink href={href} className="absolute inset-0 block">
+            <SoftNavLink
+              href={href}
+              className="absolute inset-0 block touch-pan-y"
+              draggable={false}
+            >
               {imageNode}
             </SoftNavLink>
           )}
@@ -222,6 +226,7 @@ function ContactAvatar({
         src={contact.avatarUrl}
         alt=""
         title={contact.name}
+        draggable={false}
         className={cn(
           "shrink-0 rounded-full object-cover",
           sizeClass,

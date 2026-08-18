@@ -3,6 +3,7 @@
 import type { Location } from "@/types/location";
 import { Check, X } from "lucide-react";
 import { memo, useMemo } from "react";
+import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
 import { SafeImage } from "@/components/ui/safe-image";
 
 interface CompareFavoritesProps {
@@ -62,7 +63,7 @@ export const CompareFavorites = memo(function CompareFavorites({
         )}
       </div>
 
-      <div className="max-w-full overflow-x-auto overscroll-x-contain">
+      <HorizontalTouchScroll className="max-w-full">
         <table
           className="w-full border-separate border-spacing-0 text-sm"
           style={{ minWidth: `${tableMinWidth}px` }}
@@ -78,13 +79,14 @@ export const CompareFavorites = memo(function CompareFavorites({
                   key={location.id}
                   className="w-[11.5rem] border-b border-r border-primary-black/10 bg-primary-black/[0.03] p-3 align-top last:border-r-0"
                 >
-                  <div className="relative overflow-hidden rounded-2xl border border-primary-black/10 bg-background text-left">
-                    <div className="relative aspect-[16/10]">
+                  <div className="relative overflow-clip rounded-2xl border border-primary-black/10 bg-background text-left">
+                    <div className="relative aspect-[16/10] overflow-clip">
                       <SafeImage
                         src={location.imageUrl}
                         alt={location.name}
                         fill
-                        className="object-cover"
+                        draggable={false}
+                        className="pointer-events-none select-none object-cover"
                         sizes="184px"
                       />
                       <button
@@ -183,7 +185,7 @@ export const CompareFavorites = memo(function CompareFavorites({
             ))}
           </tbody>
         </table>
-      </div>
+      </HorizontalTouchScroll>
     </div>
   );
 });
