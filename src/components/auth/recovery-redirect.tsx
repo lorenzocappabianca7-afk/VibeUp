@@ -41,9 +41,14 @@ export function RecoveryRedirect() {
       }
 
       const { data } = await supabase.auth.getSession();
-      const amr = data.session?.user?.amr;
+      if (!data.session) return;
+
+      const { data: claimsData } = await supabase.auth.getClaims();
+      const amr = claimsData?.claims?.amr;
       const isRecoverySession = Array.isArray(amr)
-        ? amr.some((entry) => entry.method === "recovery")
+        ? amr.some((entry) =>
+            typeof entry === "string" ? entry === "recovery" : entry.method === "recovery",
+          )
         : false;
 
       if (isRecoverySession && (pathname === "/" || pathname === "")) {

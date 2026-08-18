@@ -1,10 +1,13 @@
 "use client";
 
 import Image, { type ImageProps } from "next/image";
+import type { CSSProperties } from "react";
 
 interface SafeImageProps extends Omit<ImageProps, "src"> {
   src: string;
 }
+
+const noUserDragStyle = { WebkitUserDrag: "none" } as CSSProperties;
 
 export function isDataImageUrl(src: string) {
   return src.startsWith("data:");
@@ -34,7 +37,7 @@ export function SafeImage({
             objectFit: "cover",
             width: "100%",
             height: "100%",
-            WebkitUserDrag: "none",
+            ...noUserDragStyle,
             ...style,
           }}
         />
@@ -48,7 +51,7 @@ export function SafeImage({
         alt={alt}
         className={className}
         draggable={draggable}
-        style={{ WebkitUserDrag: "none", ...style }}
+        style={{ ...noUserDragStyle, ...style }}
         {...imgProps}
       />
     );
@@ -61,7 +64,7 @@ export function SafeImage({
       className={className}
       draggable={draggable}
       {...props}
-      style={{ WebkitUserDrag: "none", ...(props.style ?? {}) }}
+      style={{ ...noUserDragStyle, ...(props.style ?? {}) }}
     />
   );
 }
