@@ -44,9 +44,11 @@ export function NotificationsSettingsPanel({
   const [managerSaving, setManagerSaving] = useState(false);
 
   useEffect(() => {
-    setManagerPrefs(
-      normalizeManagerNotificationPrefs(currentUser.managerNotificationPrefs),
-    );
+    queueMicrotask(() => {
+      setManagerPrefs(
+        normalizeManagerNotificationPrefs(currentUser.managerNotificationPrefs),
+      );
+    });
   }, [currentUser.managerNotificationPrefs]);
 
   useEffect(() => {

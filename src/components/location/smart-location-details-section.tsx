@@ -98,6 +98,7 @@ interface SmartLocationDetailsSectionProps {
   estimatedHours: number;
   minHours: number;
   date: string;
+  preferredDates?: string[];
   startTime: string;
   endTime: string;
   internalServices: InternalLocationService[];
@@ -120,6 +121,9 @@ interface SmartLocationDetailsSectionProps {
   quoteNeedsRefresh: boolean;
   quoteSaved?: boolean;
   onSaveQuote?: () => void;
+  showAllergenPicker?: boolean;
+  allergenCount?: number;
+  onOpenAllergenPicker?: () => void;
 }
 
 function formatInternalServicePrice(
@@ -225,6 +229,7 @@ export function SmartLocationDetailsSection({
   estimatedHours,
   minHours,
   date,
+  preferredDates = [],
   startTime,
   endTime,
   internalServices,
@@ -247,9 +252,16 @@ export function SmartLocationDetailsSection({
   quoteNeedsRefresh,
   quoteSaved = false,
   onSaveQuote,
+  showAllergenPicker = false,
+  allergenCount = 0,
+  onOpenAllergenPicker,
 }: SmartLocationDetailsSectionProps) {
   const [openPicker, setOpenPicker] = useState<PickerPanel>(null);
   const [guestCountInput, setGuestCountInput] = useState(String(guestCount));
+  const [guestCountFocused, setGuestCountFocused] = useState(false);
+  const guestCountVisible = guestCountFocused
+    ? guestCountInput
+    : String(guestCount);
   const hasTimeIssue = estimatedHours > 0 && estimatedHours < minHours;
   const hasInvalidTimeOrder =
     Boolean(startTime && endTime) && !isEndTimeAfterStart(startTime, endTime);
@@ -271,7 +283,9 @@ export function SmartLocationDetailsSection({
               Organizza con dati, servizi e IA
             </h2>
             <p className="mt-1 text-sm leading-relaxed text-ink-inverse/75">
-              Seleziona giorno, orario, invitati e servizi: poi genera il preventivo.
+              Seleziona giorno, orario, invitati e servizi: poi genera il
+              preventivo. Gli allergeni restano opzionali e servono solo se
+              scegli menu o catering.
             </p>
           </div>
           <span className="rounded-full bg-paper px-3 py-1.5 text-xs font-bold text-ink-inverse">
@@ -353,6 +367,20 @@ export function SmartLocationDetailsSection({
               );
             })}
           </ul>
+          {showAllergenPicker && onOpenAllergenPicker ? (
+            <button
+              type="button"
+              onClick={onOpenAllergenPicker}
+              className="mt-3 w-full rounded-2xl border border-white/20 bg-background/40 px-3 py-2.5 text-left text-xs font-semibold text-white/85"
+            >
+              Allergeni da evitare
+              <span className="mt-0.5 block font-medium text-white/55">
+                {allergenCount > 0
+                  ? `${allergenCount} selezionati — solo per menu/catering`
+                  : "Opzionale, solo se hai scelto menu o catering"}
+              </span>
+            </button>
+          ) : null}
         </div>
 
         <div className="rounded-3xl border border-white/20 bg-brand-teal p-4">
@@ -575,6 +603,26 @@ export function SmartLocationDetailsSection({
           </div>
 
           <div className="mt-2.5 space-y-2">
+            {preferredDates.length > 1 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {preferredDates.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => onDateChange(value)}
+                    className={cn(
+                      "rounded-full px-2.5 py-1 text-[11px] font-bold",
+                      date === value
+                        ? "bg-paper text-ink-inverse"
+                        : "bg-white/15 text-ink-inverse/80",
+                    )}
+                  >
+                    {formatDateLabel(value)}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
             <button
               type="button"
               onClick={() => togglePicker("date")}
@@ -661,7 +709,11 @@ export function SmartLocationDetailsSection({
                   min={1}
                   max={maxGuests}
                   inputMode="numeric"
-                  value={guestCountInput}
+                  value={guestCountVisible}
+                  onFocus={() => {
+                    setGuestCountFocused(true);
+                    setGuestCountInput(String(guestCount));
+                  }}
                   onChange={(event) => {
                     const nextValue = event.target.value;
                     if (nextValue === "") {
@@ -680,6 +732,7 @@ export function SmartLocationDetailsSection({
                     if (guestCountInput === "") {
                       setGuestCountInput(String(guestCount));
                     }
+                    setGuestCountFocused(false);
                   }}
                   className="min-w-[3rem] flex-1 bg-transparent text-center text-sm font-black tabular-nums text-ink-inverse outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   aria-label="Numero invitati"

@@ -151,6 +151,29 @@ export const LocationCard = memo(function LocationCard({
         </div>
       </SoftNavLink>
 
+      {showCompare ? (
+        <div className="px-4 pb-3">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleCompare(location.id);
+            }}
+            className={cn(
+              "flex w-full items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-black transition-colors",
+              isCompareSelected
+                ? "border-brand-teal bg-brand-teal text-ink-inverse"
+                : "border-brand-teal/35 bg-brand-teal/10 text-brand-teal hover:bg-brand-teal/20",
+            )}
+            aria-pressed={isCompareSelected}
+          >
+            <GitCompareArrows className="h-3.5 w-3.5" strokeWidth={2.75} aria-hidden />
+            {isCompareSelected ? "Nel confronto" : "Confronta location"}
+          </button>
+        </div>
+      ) : null}
+
       {hasContacts && (
         <div className="px-4 pb-4">
           <button

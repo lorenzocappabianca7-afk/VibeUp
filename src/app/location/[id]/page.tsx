@@ -7,6 +7,7 @@ interface LocationPageProps {
     partyType?: string;
     dateFrom?: string;
     dateTo?: string;
+    dates?: string;
   }>;
 }
 

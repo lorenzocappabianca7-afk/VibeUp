@@ -10,6 +10,9 @@ import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { cn, formatDate } from "@/lib/utils";
 import {
   emptyPartyCriteria,
+  MAX_PARTY_DATES,
+  normalizePartyCriteria,
+  syncPartyDateRange,
   type PartyCriteria,
 } from "@/types/party-criteria";
 import {
@@ -29,11 +32,12 @@ const dateLabelFormatter = new Intl.DateTimeFormat("it-IT", {
   month: "short",
 });
 
-function formatWizardDateLabel(dateFrom: string | null, dateTo?: string | null) {
-  if (!dateFrom) return "Scegli data o fascia";
-  const startLabel = dateLabelFormatter.format(new Date(dateFrom));
-  if (!dateTo || dateTo === dateFrom) return startLabel;
-  return `${startLabel} - ${dateLabelFormatter.format(new Date(dateTo))}`;
+function formatWizardDateLabel(dates: string[]) {
+  if (dates.length === 0) return "Scegli fino a 5 date";
+  if (dates.length === 1) return dateLabelFormatter.format(new Date(dates[0]));
+  return `${dates.length} date: ${dates
+    .map((value) => dateLabelFormatter.format(new Date(value)))
+    .join(", ")}`;
 }
 
 interface PartyWizardProps {
@@ -42,12 +46,21 @@ interface PartyWizardProps {
 }
 
 export function PartyWizard({ open, onClose }: PartyWizardProps) {
-  const { applyCriteria } = usePartyCriteria();
+  const { applyCriteria, criteria: savedCriteria } = usePartyCriteria();
   const { setTab } = useTabNavigation();
   const [stepIndex, setStepIndex] = useState(0);
   const [criteria, setCriteria] = useState<PartyCriteria>(emptyPartyCriteria);
+  const [wasOpen, setWasOpen] = useState(false);
 
   useBodyScrollLock(open);
+
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setStepIndex(0);
+      setCriteria(normalizePartyCriteria(savedCriteria));
+    }
+  }
 
   const step = STEPS[stepIndex];
   const isLast = stepIndex === STEPS.length - 1;
@@ -56,16 +69,15 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
   if (!open || typeof document === "undefined") return null;
 
   function patch(partial: Partial<PartyCriteria>) {
-    setCriteria((prev) => ({ ...prev, ...partial }));
+    setCriteria((prev) => normalizePartyCriteria({ ...prev, ...partial }));
   }
 
   function next() {
     if (isLast) {
-      const finalized: PartyCriteria = {
+      const finalized = normalizePartyCriteria({
         ...criteria,
         guestCount: criteria.guestCount ?? EXPLORE_GUEST_MIN,
-        dateTo: criteria.dateTo ?? criteria.dateFrom,
-      };
+      });
       applyCriteria(finalized);
       onClose();
       setTab("explore");
@@ -197,20 +209,16 @@ function DateStep({
   onChange: (partial: Partial<PartyCriteria>) => void;
 }) {
   const [datePickerOpen, setDatePickerOpen] = useState(true);
+  const dates = criteria.dates;
+  const atMax = dates.length >= MAX_PARTY_DATES;
 
   function selectEventDate(value: string) {
-    if (!criteria.dateFrom || (criteria.dateFrom && criteria.dateTo)) {
-      onChange({ dateFrom: value, dateTo: null });
+    if (dates.includes(value)) {
+      onChange(syncPartyDateRange(dates.filter((item) => item !== value)));
       return;
     }
-
-    if (criteria.dateFrom === value) {
-      onChange({ dateFrom: value, dateTo: value });
-      return;
-    }
-
-    const [start, end] = [criteria.dateFrom, value].sort();
-    onChange({ dateFrom: start, dateTo: end });
+    if (atMax) return;
+    onChange(syncPartyDateRange([...dates, value]));
   }
 
   return (
@@ -229,10 +237,10 @@ function DateStep({
           </span>
           <span className="min-w-0">
             <span className="block text-xs font-semibold text-ink-inverse/50">
-              Quando
+              Date preferite
             </span>
             <span className="block truncate text-sm font-black text-ink-inverse">
-              {formatWizardDateLabel(criteria.dateFrom, criteria.dateTo)}
+              {formatWizardDateLabel(dates)}
             </span>
           </span>
         </span>
@@ -246,17 +254,17 @@ function DateStep({
       </button>
       {datePickerOpen ? (
         <VibeUpCalendar
-          selectedStart={criteria.dateFrom}
-          selectedEnd={criteria.dateTo}
+          selectedDates={dates}
+          maxSelected={MAX_PARTY_DATES}
           onSelectDate={selectEventDate}
           className="mx-auto mt-3"
         />
       ) : null}
-      {(criteria.dateFrom || criteria.dateTo) && (
+      {dates.length > 0 && (
         <button
           type="button"
           onClick={() => {
-            onChange({ dateFrom: null, dateTo: null });
+            onChange(syncPartyDateRange([]));
             setDatePickerOpen(false);
           }}
           className="mt-3 text-xs font-bold text-brand-pink"
@@ -265,18 +273,17 @@ function DateStep({
         </button>
       )}
       <p className="mt-2 text-xs leading-relaxed text-primary-black/50">
-        Clicca un giorno e poi un altro per selezionare una fascia. Clicca due
-        volte lo stesso giorno per scegliere solo quella data.
-        {criteria.dateFrom ? (
+        Tocca i giorni che ti vanno bene, fino a {MAX_PARTY_DATES}. Il
+        preventivo resta legato a una sola data: se weekend e feriali hanno
+        prezzi diversi, li vedi prima di inviare la richiesta.
+        {dates.length > 0 ? (
           <>
             {" "}
-            Selezionato: {formatDate(criteria.dateFrom)}
-            {criteria.dateTo && criteria.dateTo !== criteria.dateFrom
-              ? ` – ${formatDate(criteria.dateTo)}`
-              : null}
-            .
+            Selezionate:{" "}
+            {dates.map((value) => formatDate(value)).join(" · ")}.
           </>
         ) : null}
+        {atMax ? ` Hai raggiunto il massimo di ${MAX_PARTY_DATES} date.` : null}
       </p>
     </fieldset>
   );
@@ -299,13 +306,15 @@ function GuestsStep({
       <GuestCountStepper
         value={guestCount}
         onChange={(next) => onChange({ guestCount: next })}
+        autoFocus
       />
       <p className="mt-2 text-xs text-primary-black/50">
-        Mostra location con capienza da{" "}
+        Tocca il numero e digita gli invitati (es. 45). Mostra location con
+        capienza da{" "}
         {guestCount >= EXPLORE_GUEST_MAX
           ? `${EXPLORE_GUEST_MAX}+`
           : guestCount}{" "}
-        ospiti
+        ospiti.
       </p>
     </fieldset>
   );
@@ -349,7 +358,7 @@ function DescriptionStep({
         value={criteria.freeText}
         onChange={(e) => onChange({ freeText: e.target.value })}
         rows={4}
-        placeholder="Descrivi che tipo di festa hai in mente: musica, stile, atmosfera..."
+        placeholder="Scrivi qui se cerchi servizi particolari (es. area esterna, cena, DJ)"
         className="w-full resize-none rounded-2xl border border-primary-black/10 bg-paper px-4 py-3 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
       />
       <p className="mt-2 text-xs text-primary-black/50">

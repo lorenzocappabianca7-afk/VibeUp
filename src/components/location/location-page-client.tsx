@@ -15,6 +15,7 @@ interface LocationPageClientProps {
     partyType?: string;
     dateFrom?: string;
     dateTo?: string;
+    dates?: string;
   };
 }
 

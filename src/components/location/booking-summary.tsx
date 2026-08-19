@@ -3,11 +3,18 @@
 import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import { Button } from "@/components/ui/button";
 import { getDepositCheckoutAmounts } from "@/lib/booking-money";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import type { AvailabilityRequestStatus } from "@/types/availability-request";
 import type { BookingQuote } from "@/types/location";
-import { Check, Clock3, ShieldCheck } from "lucide-react";
-import { useMemo } from "react";
+import { Check, Clock3, GitCompareArrows, ShieldCheck } from "lucide-react";
+import { useMemo, useState } from "react";
+
+export interface CandidateDatePrice {
+  date: string;
+  total: number;
+  locationCost: number;
+  band: "Weekend" | "Feriale";
+}
 
 interface BookingSummaryProps {
   quote: BookingQuote;
@@ -15,6 +22,13 @@ interface BookingSummaryProps {
   /** Override the location line label (e.g. serata / a persona). */
   locationPriceLabel?: string;
   isReady: boolean;
+  canGenerateQuote: boolean;
+  quoteGenerated: boolean;
+  quoteNeedsRefresh: boolean;
+  onGenerateQuote: () => void;
+  candidateDatePrices?: CandidateDatePrice[];
+  selectedDate?: string;
+  onSelectDate?: (date: string) => void;
   requestStatus?: AvailabilityRequestStatus | null;
   confirmationDeadline?: string | null;
   requestError?: string | null;
@@ -22,6 +36,8 @@ interface BookingSummaryProps {
   eventTitlePlaceholder: string;
   onEventTitleChange: (title: string) => void;
   onSendRequest: () => void;
+  onAddToCompare?: () => void;
+  isCompareSelected?: boolean;
 }
 
 export function BookingSummary({
@@ -29,6 +45,13 @@ export function BookingSummary({
   hourlyPrice,
   locationPriceLabel,
   isReady,
+  canGenerateQuote,
+  quoteGenerated,
+  quoteNeedsRefresh,
+  onGenerateQuote,
+  candidateDatePrices = [],
+  selectedDate,
+  onSelectDate,
   requestStatus = null,
   confirmationDeadline = null,
   requestError = null,
@@ -36,7 +59,10 @@ export function BookingSummary({
   eventTitlePlaceholder,
   onEventTitleChange,
   onSendRequest,
+  onAddToCompare,
+  isCompareSelected = false,
 }: BookingSummaryProps) {
+  const [sendHint, setSendHint] = useState<string | null>(null);
   const isPendingManager = requestStatus === "pending_manager";
   const isPendingUserConfirm = requestStatus === "pending_user_confirm";
   const isLocked = isPendingManager || isPendingUserConfirm;
@@ -49,10 +75,116 @@ export function BookingSummary({
     () => getDepositCheckoutAmounts(quote.depositAmount),
     [quote.depositAmount],
   );
+  const pricesDiffer =
+    candidateDatePrices.length > 1 &&
+    candidateDatePrices.some(
+      (item) => item.total !== candidateDatePrices[0].total,
+    );
+
+  function handleSend() {
+    if (isPendingUserConfirm) {
+      setSendHint(null);
+      onSendRequest();
+      return;
+    }
+    if (!quoteGenerated || !isReady || quote.total <= 0) {
+      setSendHint(
+        "Prima completa il passo 1: genera il preventivo. Poi puoi inviare la richiesta di disponibilità al gestore.",
+      );
+      return;
+    }
+    setSendHint(null);
+    onSendRequest();
+  }
 
   return (
     <section className="space-y-4 rounded-2xl border border-white bg-primary-black/[0.02] p-5">
       <h2 className="text-base font-bold text-primary-black">Riepilogo</h2>
+
+      <ol className="grid gap-2">
+        <li
+          className={cn(
+            "rounded-2xl border px-3 py-2.5",
+            quoteGenerated && !quoteNeedsRefresh
+              ? "border-brand-teal/35 bg-brand-teal/10"
+              : "border-primary-black/10 bg-background",
+          )}
+        >
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-teal">
+            Passo 1
+          </p>
+          <p className="mt-0.5 text-sm font-bold text-primary-black">
+            Genera preventivo
+          </p>
+          <p className="mt-0.5 text-xs text-primary-black/55">
+            Calcola il prezzo della combinazione data/orario scelta.
+          </p>
+        </li>
+        <li
+          className={cn(
+            "rounded-2xl border px-3 py-2.5",
+            isPendingManager || isPendingUserConfirm
+              ? "border-brand-teal/35 bg-brand-teal/10"
+              : "border-primary-black/10 bg-background",
+          )}
+        >
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-pink">
+            Passo 2
+          </p>
+          <p className="mt-0.5 text-sm font-bold text-primary-black">
+            Invia richiesta di disponibilità al gestore
+          </p>
+          <p className="mt-0.5 text-xs text-primary-black/55">
+            Niente prenotazione istantanea: il gestore risponde, poi confermi e
+            paghi la caparra.
+          </p>
+        </li>
+      </ol>
+
+      {candidateDatePrices.length > 1 ? (
+        <div className="space-y-2 rounded-2xl border border-primary-black/10 bg-background p-3">
+          <p className="text-xs font-bold text-primary-black">
+            Prezzo per data selezionata
+          </p>
+          <p className="text-[11px] leading-relaxed text-primary-black/55">
+            Il preventivo e la richiesta restano legati a una sola data.
+            {pricesDiffer
+              ? " Weekend e feriali hanno tariffe diverse: scegli quella da inviare."
+              : " Le date hanno lo stesso prezzo: scegli comunque il giorno da richiedere."}
+          </p>
+          <ul className="space-y-1.5">
+            {candidateDatePrices.map((item) => {
+              const selected = selectedDate === item.date;
+              return (
+                <li key={item.date}>
+                  <button
+                    type="button"
+                    onClick={() => onSelectDate?.(item.date)}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left transition-colors",
+                      selected
+                        ? "border-brand-teal bg-brand-teal/15"
+                        : "border-primary-black/8 bg-primary-black/[0.02]",
+                    )}
+                  >
+                    <span>
+                      <span className="block text-xs font-bold text-primary-black">
+                        {formatDate(item.date)}
+                      </span>
+                      <span className="text-[11px] font-semibold text-primary-black/50">
+                        {item.band}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-sm font-black text-primary-black">
+                      {formatCurrency(item.total)}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
 
       <dl className="space-y-2 text-sm">
         {(quote.hours > 0 || locationPriceLabel) && (
@@ -78,7 +210,7 @@ export function BookingSummary({
         <div className="flex justify-between border-t border-primary-black/10 pt-2">
           <dt className="font-semibold text-primary-black">Totale</dt>
           <dd className="text-lg font-bold text-primary-black">
-            {quote.total > 0 ? formatCurrency(quote.total) : "—"}
+            {quote.total > 0 && quoteGenerated ? formatCurrency(quote.total) : "—"}
           </dd>
         </div>
         <div className="space-y-1.5 rounded-xl bg-brand-pink/10 px-3 py-2.5">
@@ -87,7 +219,7 @@ export function BookingSummary({
               Caparra (30% location)
             </dt>
             <dd className="shrink-0 text-sm font-bold text-brand-pink">
-              {depositCheckout.base > 0
+              {depositCheckout.base > 0 && quoteGenerated
                 ? formatCurrency(depositCheckout.base)
                 : "—"}
             </dd>
@@ -97,7 +229,7 @@ export function BookingSummary({
               + Commissioni VibeUp (5%)
             </dt>
             <dd className="shrink-0 font-semibold text-primary-black/80">
-              {depositCheckout.fee > 0
+              {depositCheckout.fee > 0 && quoteGenerated
                 ? formatCurrency(depositCheckout.fee)
                 : "—"}
             </dd>
@@ -107,7 +239,7 @@ export function BookingSummary({
               Totale caparra (pagamento online)
             </dt>
             <dd className="shrink-0 text-sm font-bold text-brand-pink">
-              {depositCheckout.total > 0
+              {depositCheckout.total > 0 && quoteGenerated
                 ? formatCurrency(depositCheckout.total)
                 : "—"}
             </dd>
@@ -144,9 +276,24 @@ export function BookingSummary({
       </label>
 
       <div className="space-y-2">
-        <p className="text-center text-xs text-primary-black/45">
-          Sei interessato?
-        </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full rounded-2xl py-4 text-base font-semibold"
+          disabled={!canGenerateQuote && !quoteGenerated}
+          onClick={() => {
+            setSendHint(null);
+            onGenerateQuote();
+          }}
+        >
+          1. Genera preventivo
+        </Button>
+
+        {quoteNeedsRefresh && quoteGenerated ? (
+          <p className="text-center text-xs text-primary-black/55">
+            Hai cambiato i dettagli: rigenera il preventivo prima di inviare.
+          </p>
+        ) : null}
 
         {requestStatus ? (
           <div className="flex justify-center">
@@ -166,11 +313,8 @@ export function BookingSummary({
             isPendingUserConfirm &&
               "bg-brand-teal hover:bg-brand-teal disabled:opacity-100",
           )}
-          disabled={
-            (!isReady || quote.total <= 0 || isPendingManager) &&
-            !isPendingUserConfirm
-          }
-          onClick={onSendRequest}
+          disabled={isPendingManager}
+          onClick={handleSend}
         >
           {isPendingUserConfirm ? (
             <span className="inline-flex items-center gap-2">
@@ -183,11 +327,17 @@ export function BookingSummary({
               Richiesta inviata al gestore
             </span>
           ) : canRetry ? (
-            "Invia di nuovo la richiesta"
+            "2. Invia di nuovo la richiesta"
           ) : (
-            "Invia richiesta di disponibilità a gestore"
+            "2. Invia richiesta di disponibilità al gestore"
           )}
         </Button>
+
+        {sendHint ? (
+          <p className="text-center text-xs font-semibold text-brand-pink">
+            {sendHint}
+          </p>
+        ) : null}
 
         {isPendingManager && (
           <p className="text-center text-xs text-primary-black/50">
@@ -210,6 +360,18 @@ export function BookingSummary({
         )}
       </div>
 
+      {onAddToCompare ? (
+        <button
+          type="button"
+          onClick={onAddToCompare}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-brand-teal/35 bg-brand-teal/10 px-4 py-3 text-sm font-black text-brand-teal"
+        >
+          <GitCompareArrows className="h-4 w-4" strokeWidth={2.75} aria-hidden />
+          {isCompareSelected
+            ? "Vedi confronto location"
+            : "Confronta questa location"}
+        </button>
+      ) : null}
     </section>
   );
 }

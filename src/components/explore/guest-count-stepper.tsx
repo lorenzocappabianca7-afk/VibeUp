@@ -7,12 +7,13 @@ import {
 } from "@/types/location";
 import { cn } from "@/lib/utils";
 import { Minus, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface GuestCountStepperProps {
   value: number;
   onChange: (value: number) => void;
   className?: string;
+  autoFocus?: boolean;
 }
 
 function clampGuestCount(value: number) {
@@ -23,12 +24,22 @@ export function GuestCountStepper({
   value,
   onChange,
   className,
+  autoFocus = false,
 }: GuestCountStepperProps) {
   const [draft, setDraft] = useState(String(value));
   const [focused, setFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const atMin = value <= EXPLORE_GUEST_MIN;
   const atMax = value >= EXPLORE_GUEST_MAX;
   const visible = focused ? draft : String(value);
+
+  useEffect(() => {
+    if (!autoFocus) return;
+    const node = inputRef.current;
+    if (!node) return;
+    node.focus();
+    node.select();
+  }, [autoFocus]);
 
   function commitDraft(raw: string) {
     const digits = raw.replace(/\D/g, "");
@@ -68,13 +79,18 @@ export function GuestCountStepper({
   return (
     <div
       className={cn(
-        "flex items-center justify-between rounded-2xl border border-primary-black/10 bg-paper px-4 py-3",
+        "rounded-2xl border border-primary-black/10 bg-paper px-4 py-3",
         className,
       )}
     >
-      <span className="text-sm font-semibold text-ink-inverse">Invitati</span>
+      <label className="block text-sm font-semibold text-ink-inverse">
+        Invitati
+      </label>
+      <p className="mt-0.5 text-[11px] font-medium text-ink-inverse/50">
+        Tocca il campo e digita il numero esatto
+      </p>
 
-      <div className="flex items-center gap-4">
+      <div className="mt-3 flex items-center gap-3">
         <button
           type="button"
           onClick={decrement}
@@ -91,14 +107,20 @@ export function GuestCountStepper({
         </button>
 
         <input
-          type="text"
+          ref={inputRef}
+          type="number"
           inputMode="numeric"
           pattern="[0-9]*"
+          min={EXPLORE_GUEST_MIN}
+          max={EXPLORE_GUEST_MAX}
+          step={1}
+          enterKeyHint="done"
           autoComplete="off"
           value={visible}
-          onFocus={() => {
+          onFocus={(event) => {
             setFocused(true);
             setDraft(String(value));
+            event.currentTarget.select();
           }}
           onChange={(event) => {
             setDraft(event.target.value.replace(/\D/g, ""));
@@ -113,7 +135,7 @@ export function GuestCountStepper({
             }
           }}
           aria-label="Numero invitati"
-          className="min-w-[3.5rem] max-w-[4.5rem] rounded-lg bg-transparent text-center text-base font-bold tabular-nums text-ink-inverse focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
+          className="h-12 min-w-0 flex-1 rounded-xl bg-background text-center text-2xl font-black tabular-nums text-ink-inverse outline-none ring-1 ring-primary-black/10 focus:ring-2 focus:ring-brand-teal/40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
 
         <button

@@ -5,8 +5,11 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
 interface VibeUpCalendarProps {
-  selectedStart: string | null;
+  selectedStart?: string | null;
   selectedEnd?: string | null;
+  /** Discrete selected dates (multi-select). When set, range highlighting is skipped. */
+  selectedDates?: string[];
+  maxSelected?: number;
   onSelectDate: (value: string) => void;
   className?: string;
 }
@@ -52,15 +55,23 @@ function buildCalendarDays(month: Date) {
 export function VibeUpCalendar({
   selectedStart,
   selectedEnd,
+  selectedDates,
+  maxSelected,
   onSelectDate,
   className,
 }: VibeUpCalendarProps) {
+  const isMulti = selectedDates !== undefined;
   const [visibleMonth, setVisibleMonth] = useState(() => {
-    if (selectedStart) return startOfMonth(new Date(selectedStart));
+    const seed = isMulti ? selectedDates?.[0] : selectedStart;
+    if (seed) return startOfMonth(new Date(seed));
     return startOfMonth(new Date());
   });
   const todayIso = toIsoDate(new Date());
   const days = useMemo(() => buildCalendarDays(visibleMonth), [visibleMonth]);
+  const selectedSet = useMemo(
+    () => new Set(selectedDates ?? []),
+    [selectedDates],
+  );
 
   function moveMonth(delta: number) {
     setVisibleMonth(
@@ -113,24 +124,34 @@ export function VibeUpCalendar({
 
           const value = toIsoDate(day);
           const isPast = value < todayIso;
-          const isSelected =
-            selectedStart === value || selectedEnd === value;
+          const isSelected = isMulti
+            ? selectedSet.has(value)
+            : selectedStart === value || selectedEnd === value;
           const isInRange =
-            selectedStart &&
-            selectedEnd &&
-            value > selectedStart &&
-            value < selectedEnd;
+            !isMulti &&
+            Boolean(
+              selectedStart &&
+                selectedEnd &&
+                value > selectedStart &&
+                value < selectedEnd,
+            );
+            const atMax =
+            isMulti &&
+            maxSelected != null &&
+            (selectedDates?.length ?? 0) >= maxSelected &&
+            !isSelected;
 
           return (
             <button
               key={value}
               type="button"
-              disabled={isPast}
+              disabled={isPast || atMax}
               onClick={() => onSelectDate(value)}
               className={cn(
                 "flex aspect-square items-center justify-center rounded-xl text-xs font-black transition-colors duration-150",
                 !isPast && "text-ink-inverse",
                 isPast && "cursor-not-allowed text-ink-inverse/25",
+                atMax && "cursor-not-allowed opacity-40",
                 isInRange && "bg-brand-teal/15 text-brand-teal-strong",
                 isSelected && "bg-brand-teal text-ink-inverse",
               )}

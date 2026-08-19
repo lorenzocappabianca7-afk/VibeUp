@@ -6,6 +6,7 @@ import { EventCountdown } from "@/components/events/event-countdown";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { useAppState } from "@/context/app-state-context";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
+import { useProfileCommunications } from "@/context/profile-communications-context";
 import { getCountdown, isEventPast } from "@/lib/event";
 import { calculateLocationDeposit } from "@/lib/booking-money";
 import {
@@ -34,6 +35,7 @@ import {
   UtensilsCrossed,
   Users,
   WalletCards,
+  Bell,
   X,
 } from "lucide-react";
 import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -220,6 +222,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
   } = useAppState();
   const { organizerOpenRequests, resumeAvailabilityConfirm } =
     useAvailabilityRequests();
+  const { communications, markRequestStatusSeen } = useProfileCommunications();
   const [paymentModal, setPaymentModal] = useState<{
     event: UserEvent;
     service: BookedService;
@@ -235,6 +238,19 @@ export const MyEventsScreen = memo(function MyEventsScreen({
   useEffect(() => {
     prunePastEvents();
   }, [prunePastEvents]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    markRequestStatusSeen();
+  }, [isActive, markRequestStatusSeen, communications]);
+
+  const statusNotices = useMemo(
+    () =>
+      communications
+        .filter((item) => item.kind === "request_status")
+        .slice(0, 4),
+    [communications],
+  );
 
   const activeEvents = useMemo(
     () => events.filter((event) => !isEventPast(event)),
@@ -346,6 +362,30 @@ export const MyEventsScreen = memo(function MyEventsScreen({
           )}
         </div>
       </header>
+
+      {statusNotices.length > 0 && (
+        <section className="min-w-0 space-y-3">
+          <h2 className="flex items-center gap-2 text-base font-semibold text-primary-black">
+            <Bell className="h-4 w-4 text-brand-teal" aria-hidden />
+            Aggiornamenti richieste
+          </h2>
+          <ul className="space-y-2">
+            {statusNotices.map((item) => (
+              <li
+                key={item.id}
+                className="rounded-2xl border border-brand-teal/25 bg-brand-teal/10 p-4"
+              >
+                <p className="text-sm font-semibold text-primary-black">
+                  {item.title}
+                </p>
+                <p className="mt-0.5 text-sm text-primary-black/60">
+                  {item.body}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {organizerOpenRequests.length > 0 && (
         <section className="min-w-0 space-y-3">

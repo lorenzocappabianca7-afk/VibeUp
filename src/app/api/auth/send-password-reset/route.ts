@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!sent.ok) {
-      console.error("[send-password-reset] smtp:", sent.error);
+      console.error("[send-password-reset] resend:", sent.error);
       return NextResponse.json({ error: sent.error }, { status: 503 });
     }
 

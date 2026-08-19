@@ -1,6 +1,7 @@
 "use client";
 
 import { useInboxBadge } from "@/context/inbox-badge-context";
+import { useProfileCommunications } from "@/context/profile-communications-context";
 import { cn, APP_SHELL_WIDTH_CLASS } from "@/lib/utils";
 import {
   BUSINESS_TABS,
@@ -45,6 +46,10 @@ export function BottomNav({
     hasUnreadNotifications,
     hasUnreadProfileComms,
   } = useInboxBadge();
+  const { communications } = useProfileCommunications();
+  const hasUnreadEventUpdates = communications.some(
+    (item) => item.kind === "request_status" && item.unread,
+  );
   const tabs: TabItem[] =
     variant === "business" ? BUSINESS_TABS : CONSUMER_TABS;
 
@@ -68,6 +73,7 @@ export function BottomNav({
           const showBadge =
             (tab.id === "messages" && hasUnreadMessages) ||
             (tab.id === "notifications" && hasUnreadNotifications) ||
+            (tab.id === "events" && hasUnreadEventUpdates) ||
             (tab.id === "profile" &&
               variant === "consumer" &&
               hasUnreadProfileComms);

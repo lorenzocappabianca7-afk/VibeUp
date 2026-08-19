@@ -4,5 +4,5 @@ export interface ProfileCommunication {
   body: string;
   createdAt: string;
   unread: boolean;
-  kind: "deposit_policy" | "deposit_reminder" | "system";
+  kind: "deposit_policy" | "deposit_reminder" | "system" | "request_status";
 }

@@ -22,11 +22,19 @@ interface ProfileCommunicationsContextValue {
   communications: ProfileCommunication[];
   hasUnread: boolean;
   markAllSeen: () => void;
+  markRequestStatusSeen: () => void;
   addDepositReminder: (input: {
     eventId: string;
     eventTitle: string;
     locationName: string;
     date: string;
+  }) => void;
+  addRequestStatusNotice: (input: {
+    requestId: string;
+    statusLabel: string;
+    eventTitle: string;
+    locationName: string;
+    status: string;
   }) => void;
 }
 
@@ -118,29 +126,29 @@ export function ProfileCommunicationsProvider({
 
   useEffect(() => {
     skipFirstPersist.current = true;
-    setHydrated(false);
+    queueMicrotask(() => {
+      if (isBusinessUser) {
+        setCommunications([]);
+        setHydrated(true);
+        return;
+      }
 
-    if (isBusinessUser) {
-      setCommunications([]);
+      if (isGuest) {
+        setCommunications([buildDepositPolicyNotice()]);
+        setHydrated(true);
+        return;
+      }
+
+      const stored = readStored(userId);
+      if (stored.length === 0) {
+        setCommunications([buildDepositPolicyNotice()]);
+      } else if (!stored.some((item) => item.kind === "deposit_policy")) {
+        setCommunications([buildDepositPolicyNotice(), ...stored]);
+      } else {
+        setCommunications(stored);
+      }
       setHydrated(true);
-      return;
-    }
-
-    if (isGuest) {
-      setCommunications([buildDepositPolicyNotice()]);
-      setHydrated(true);
-      return;
-    }
-
-    const stored = readStored(userId);
-    if (stored.length === 0) {
-      setCommunications([buildDepositPolicyNotice()]);
-    } else if (!stored.some((item) => item.kind === "deposit_policy")) {
-      setCommunications([buildDepositPolicyNotice(), ...stored]);
-    } else {
-      setCommunications(stored);
-    }
-    setHydrated(true);
+    });
   }, [isBusinessUser, isGuest, userId]);
 
   useEffect(() => {
@@ -151,7 +159,7 @@ export function ProfileCommunicationsProvider({
     }
     const pruned = pruneCommunications(communications);
     if (pruned.length !== communications.length) {
-      setCommunications(pruned);
+      queueMicrotask(() => setCommunications(pruned));
       return;
     }
     writeStored(userId, pruned);
@@ -175,6 +183,19 @@ export function ProfileCommunicationsProvider({
       if (!prev.some((item) => item.unread)) return prev;
       return prev.map((item) =>
         item.unread ? { ...item, unread: false } : item,
+      );
+    });
+  }, []);
+
+  const markRequestStatusSeen = useCallback(() => {
+    setCommunications((prev) => {
+      if (!prev.some((item) => item.kind === "request_status" && item.unread)) {
+        return prev;
+      }
+      return prev.map((item) =>
+        item.kind === "request_status" && item.unread
+          ? { ...item, unread: false }
+          : item,
       );
     });
   }, []);
@@ -205,14 +226,50 @@ export function ProfileCommunicationsProvider({
     [isBusinessUser],
   );
 
+  const addRequestStatusNotice = useCallback(
+    (input: {
+      requestId: string;
+      statusLabel: string;
+      eventTitle: string;
+      locationName: string;
+      status: string;
+    }) => {
+      if (isBusinessUser) return;
+
+      const notice: ProfileCommunication = {
+        id: `request-status-${input.requestId}-${input.status}`,
+        kind: "request_status",
+        title: input.statusLabel,
+        body: `“${input.eventTitle}” · ${input.locationName}`,
+        createdAt: new Date().toISOString(),
+        unread: true,
+      };
+
+      setCommunications((prev) => {
+        const withoutDup = prev.filter((item) => item.id !== notice.id);
+        return pruneCommunications([notice, ...withoutDup]);
+      });
+    },
+    [isBusinessUser],
+  );
+
   const value = useMemo(
     () => ({
       communications,
       hasUnread: unreadCount > 0,
       markAllSeen,
+      markRequestStatusSeen,
       addDepositReminder,
+      addRequestStatusNotice,
     }),
-    [addDepositReminder, communications, markAllSeen, unreadCount],
+    [
+      addDepositReminder,
+      addRequestStatusNotice,
+      communications,
+      markAllSeen,
+      markRequestStatusSeen,
+      unreadCount,
+    ],
   );
 
   return (

@@ -51,13 +51,15 @@ export function EventManagerContactSection({ event }: { event: UserEvent }) {
 
   useEffect(() => {
     if (!event.locationId) {
-      setWaMeUrl(null);
-      setApiConfirmed(false);
+      queueMicrotask(() => {
+        setWaMeUrl(null);
+        setApiConfirmed(false);
+      });
       return;
     }
 
     let cancelled = false;
-    setLoadingContact(true);
+    queueMicrotask(() => setLoadingContact(true));
 
     const params = new URLSearchParams({
       locationId: event.locationId,

@@ -17,26 +17,28 @@ function ActivateAccountContent() {
   useEffect(() => {
     if (!isStorageHydrated) return;
 
-    if (!token) {
-      setStatus("error");
-      setMessage("Link di attivazione mancante o incompleto.");
-      return;
-    }
+    queueMicrotask(() => {
+      if (!token) {
+        setStatus("error");
+        setMessage("Link di attivazione mancante o incompleto.");
+        return;
+      }
 
-    // activateAccountWithToken clears the token and recreates the callback —
-    // without this guard the effect re-runs and flips success → “già usato”.
-    if (attemptedTokenRef.current === token) return;
-    attemptedTokenRef.current = token;
+      // activateAccountWithToken clears the token and recreates the callback —
+      // without this guard the effect re-runs and flips success → “già usato”.
+      if (attemptedTokenRef.current === token) return;
+      attemptedTokenRef.current = token;
 
-    const result = activateAccountWithToken(token);
-    if (!result.ok) {
-      setStatus("error");
-      setMessage(result.error);
-      return;
-    }
+      const result = activateAccountWithToken(token);
+      if (!result.ok) {
+        setStatus("error");
+        setMessage(result.error);
+        return;
+      }
 
-    setStatus("ok");
-    setMessage("Account attivato. Grazie per aver confermato la tua email.");
+      setStatus("ok");
+      setMessage("Account attivato. Grazie per aver confermato la tua email.");
+    });
   }, [activateAccountWithToken, isStorageHydrated, token]);
 
   return (

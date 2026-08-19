@@ -1613,7 +1613,7 @@ export async function processConfirmationDeadlines(now = new Date()): Promise<{
     }
   }
 
-  const purged = await purgeExpiredSlotHolds(now);
+  await purgeExpiredSlotHolds(now);
 
   const { data: reminderRows, error: reminderError } = await supabase
     .from("availability_requests")

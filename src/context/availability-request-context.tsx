@@ -19,6 +19,7 @@ import { getRequestStatusShortLabel } from "@/lib/availability/request-status-di
 import { normalizeSlotEventDate } from "@/lib/availability/slot-holds";
 import { notifyAvailabilityUpdate } from "@/lib/browser-notifications";
 import { normalizeUserSettings } from "@/types/user-settings";
+import { useProfileCommunications } from "@/context/profile-communications-context";
 import {
   createContext,
   useCallback,
@@ -192,6 +193,7 @@ export function AvailabilityRequestProvider({
     managedListings,
   } = useAppState();
   const { syncUnreadNotifications } = useInboxBadge();
+  const { addRequestStatusNotice } = useProfileCommunications();
 
   const [requests, setRequests] = useState<AvailabilityRequest[]>([]);
   const [snoozedConfirmIds, setSnoozedConfirmIds] = useState<string[]>([]);
@@ -212,8 +214,11 @@ export function AvailabilityRequestProvider({
   }, [requests]);
 
   useEffect(() => {
-    setRequests(readStoredRequests());
-    setHydrated(true);
+    const stored = readStoredRequests();
+    queueMicrotask(() => {
+      setRequests(stored);
+      setHydrated(true);
+    });
   }, []);
 
   useEffect(() => {
@@ -243,7 +248,7 @@ export function AvailabilityRequestProvider({
     }
     const pruned = pruneAvailabilityRequests(requests);
     if (pruned.length !== requests.length) {
-      setRequests(pruned);
+      queueMicrotask(() => setRequests(pruned));
       return;
     }
     writeStoredRequests(pruned);
@@ -307,6 +312,8 @@ export function AvailabilityRequestProvider({
 
   const pendingUserConfirms = useMemo(() => {
     if (isGuest || isBusinessUser) return [];
+    // Deadline comparison needs wall-clock time; not a render-stable value.
+    // eslint-disable-next-line react-hooks/purity -- confirmation window
     const now = Date.now();
     return requests.filter((item) => {
       if (
@@ -991,6 +998,13 @@ export function AvailabilityRequestProvider({
         tag: `vibeup-status-${item.id}-${item.status}`,
         onlyWhenHidden: false,
       });
+      addRequestStatusNotice({
+        requestId: item.id,
+        statusLabel: label,
+        eventTitle: item.eventPayload.title,
+        locationName: item.locationName,
+        status: item.status,
+      });
     }
   }, [
     currentUser.id,
@@ -999,6 +1013,7 @@ export function AvailabilityRequestProvider({
     isBusinessUser,
     managedRequests,
     requests,
+    addRequestStatusNotice,
   ]);
 
   const value = useMemo(

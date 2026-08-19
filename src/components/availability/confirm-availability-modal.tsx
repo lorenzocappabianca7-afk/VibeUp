@@ -55,8 +55,10 @@ export function ConfirmAvailabilityModal() {
     if (!request || !isProposal) return;
     const first = proposedSlots[0];
     if (!first) return;
-    setSelectedSlotKey(slotKey(first.date, first.time, first.endTime, 0));
-    setAcceptProposedPrice(hasProposedPrice);
+    queueMicrotask(() => {
+      setSelectedSlotKey(slotKey(first.date, first.time, first.endTime, 0));
+      setAcceptProposedPrice(hasProposedPrice);
+    });
   }, [request?.id, isProposal, proposedSlots, hasProposedPrice, request]);
 
   useEffect(() => {

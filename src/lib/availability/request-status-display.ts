@@ -19,15 +19,15 @@ export interface RequestStatusPresentation {
 
 const BADGE_STYLES: Record<RequestDisplayStatus, string> = {
   awaiting_response:
-    "bg-amber-400/20 text-amber-800 ring-1 ring-inset ring-amber-500/25",
+    "bg-paper text-ink-inverse ring-1 ring-inset ring-brand-teal/45",
   accepted_confirm_by:
-    "bg-brand-teal/15 text-teal-900 ring-1 ring-inset ring-brand-teal/30",
+    "bg-brand-teal/20 text-brand-teal ring-1 ring-inset ring-brand-teal/40",
   confirmed:
-    "bg-emerald-500/15 text-emerald-800 ring-1 ring-inset ring-emerald-600/25",
+    "bg-brand-teal text-ink-inverse",
   rejected:
-    "bg-brand-pink/15 text-rose-800 ring-1 ring-inset ring-brand-pink/30",
+    "bg-brand-pink text-white",
   expired:
-    "bg-primary-black/8 text-primary-black/55 ring-1 ring-inset ring-primary-black/10",
+    "bg-paper-deep text-ink-inverse/55 ring-1 ring-inset ring-primary-black/10",
 };
 
 export function mapAvailabilityStatusToDisplay(

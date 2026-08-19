@@ -1,6 +1,7 @@
 import { EXTRA_SERVICES } from "@/lib/mock/extra-services";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
 import { calculateLocationDeposit } from "@/lib/booking-money";
+import { applyDatePriceMultiplier } from "@/lib/location-date-price";
 import { getLocationListBaseCost } from "@/lib/location-publish-form";
 import type {
   BookingQuote,
@@ -103,6 +104,8 @@ export function calculateBookingQuote(params: {
     Location,
     "priceModel" | "eventPrice" | "personPrice" | "hourlyPrice" | "capacity"
   >;
+  /** ISO date — weekend nights use a higher venue rate than weekdays. */
+  date?: string;
 }): BookingQuote {
   const {
     hourlyPrice,
@@ -112,12 +115,14 @@ export function calculateBookingQuote(params: {
     cakeKg = 3,
     guestCount = 20,
     location,
+    date,
   } = params;
 
   const hours = calculateHours(startTime, endTime);
-  const locationCost = location
+  const baseLocationCost = location
     ? getLocationListBaseCost(location, { hours, guestCount })
     : hours * hourlyPrice;
+  const locationCost = applyDatePriceMultiplier(baseLocationCost, date);
 
   const extrasCost = selectedExtras.reduce((sum, id) => {
     const service = EXTRA_SERVICES.find((s) => s.id === id);

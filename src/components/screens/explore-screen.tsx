@@ -66,18 +66,22 @@ type ExploreView = "list" | "compare";
 function ExploreUrlParamsSync({
   onCategory,
   onEventId,
+  onView,
 }: {
   onCategory: (value: string | null) => void;
   onEventId: (value: string | null) => void;
+  onView: (value: string | null) => void;
 }) {
   const searchParams = useSearchParams();
   const category = searchParams.get("category");
   const eventId = searchParams.get("eventId");
+  const view = searchParams.get("view");
 
   useEffect(() => {
     onCategory(category);
     onEventId(eventId);
-  }, [category, eventId, onCategory, onEventId]);
+    onView(view);
+  }, [category, eventId, onCategory, onEventId, onView, view]);
 
   return null;
 }
@@ -263,8 +267,20 @@ function buildLocationHref(
   const guestCount =
     criteria.guestCount ?? eventGuestCount ?? EXPLORE_GUEST_MIN;
   params.set("guestCount", String(guestCount));
-  const dateFrom = criteria.dateFrom ?? eventDate ?? null;
-  const dateTo = criteria.dateTo ?? criteria.dateFrom ?? eventDate ?? null;
+  const dates =
+    criteria.dates.length > 0
+      ? criteria.dates
+      : eventDate
+        ? [eventDate]
+        : [];
+  if (dates.length > 0) params.set("dates", dates.join(","));
+  const dateFrom = dates[0] ?? criteria.dateFrom ?? eventDate ?? null;
+  const dateTo =
+    dates[dates.length - 1] ??
+    criteria.dateTo ??
+    criteria.dateFrom ??
+    eventDate ??
+    null;
   if (dateFrom) params.set("dateFrom", dateFrom);
   if (dateTo) params.set("dateTo", dateTo);
 
@@ -278,11 +294,15 @@ export function ExploreScreen({
 }: ExploreScreenProps = {}) {
   const [categoryParam, setCategoryParam] = useState<string | null>(null);
   const [urlEventId, setUrlEventId] = useState<string | null>(null);
+  const [viewParam, setViewParam] = useState<string | null>(null);
   const onCategoryParam = useCallback((value: string | null) => {
     setCategoryParam(value);
   }, []);
   const onEventIdParam = useCallback((value: string | null) => {
     setUrlEventId(value);
+  }, []);
+  const onViewParam = useCallback((value: string | null) => {
+    setViewParam(value);
   }, []);
   const eventId = eventIdProp ?? urlEventId;
   const {
@@ -355,14 +375,14 @@ export function ExploreScreen({
       const nextCategory =
         initialCategory ?? parseExploreCategory(categoryParam);
       setActiveCategory(nextCategory);
-      setView("list");
+      setView(viewParam === "compare" ? "compare" : "list");
       setDiscountBannerOpen(false);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [categoryParam, initialCategory]);
+  }, [categoryParam, initialCategory, viewParam]);
 
   const [catalogLocations, setCatalogLocations] = useState<Location[]>([]);
 
@@ -487,7 +507,11 @@ export function ExploreScreen({
   const criteriaSummary = useMemo(() => {
     if (!hasAppliedCriteria) return null;
     const parts: string[] = [];
-    if (criteria.dateFrom) {
+    if (criteria.dates.length > 0) {
+      parts.push(
+        criteria.dates.map((value) => formatDate(value)).join(" · "),
+      );
+    } else if (criteria.dateFrom) {
       const fromLabel = formatDate(criteria.dateFrom);
       const toLabel =
         criteria.dateTo && criteria.dateTo !== criteria.dateFrom
@@ -581,6 +605,7 @@ export function ExploreScreen({
         <ExploreUrlParamsSync
           onCategory={onCategoryParam}
           onEventId={onEventIdParam}
+          onView={onViewParam}
         />
       </Suspense>
       <header className="relative min-w-0 space-y-4">
@@ -719,13 +744,11 @@ export function ExploreScreen({
           <button
             type="button"
             onClick={() => setView("compare")}
-            disabled={compareLocationIds.length === 0}
             className={cn(
               "flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-semibold transition-colors duration-150",
               view === "compare"
                 ? "bg-brand-teal text-ink-inverse shadow-sm"
                 : "bg-surface text-primary-black/70 hover:bg-surface-2",
-              compareLocationIds.length === 0 && "opacity-50",
             )}
           >
             <GitCompareArrows
@@ -736,7 +759,7 @@ export function ExploreScreen({
               strokeWidth={2.75}
               aria-hidden
             />
-            Compara
+            Confronta
             {compareLocationIds.length > 0 && (
               <span
                 className={cn(
@@ -829,7 +852,8 @@ export function ExploreScreen({
           </div>
 
           {filteredLocations.length > 0 ? (
-            <ul className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <>
+              <ul className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredLocations.map((location) => (
                 <li key={location.id} className="min-w-0 h-full">
                   <LocationCard
@@ -843,6 +867,19 @@ export function ExploreScreen({
                 </li>
               ))}
             </ul>
+            {compareLocationIds.length > 0 ? (
+              <div className="sticky bottom-24 z-20 sm:bottom-28">
+                <button
+                  type="button"
+                  onClick={() => setView("compare")}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-teal px-4 py-3 text-sm font-black text-ink-inverse shadow-[0_10px_30px_-12px_rgba(62,207,207,0.9)]"
+                >
+                  <GitCompareArrows className="h-4 w-4" strokeWidth={2.75} aria-hidden />
+                  Confronta {compareLocationIds.length} location
+                </button>
+              </div>
+            ) : null}
+            </>
           ) : (
             <div className="rounded-2xl border border-dashed border-primary-black/15 bg-primary-black/[0.02] p-8 text-center">
               <p className="text-sm text-primary-black/60">
@@ -865,11 +902,11 @@ export function ExploreScreen({
         <section className="space-y-4">
           <div>
             <h2 className="text-lg font-bold text-primary-black">
-              Compara location
+              Confronta location
             </h2>
             <p className="mt-1 text-sm text-primary-black/60">
-              Gestisci fino a {MAX_COMPARE_LOCATIONS} location e confronta prezzo,
-              servizi e caparra quando ne selezioni almeno 2.
+              Aggiungi fino a {MAX_COMPARE_LOCATIONS} locali dai risultati,
+              poi confronta prezzo, servizi e caparra quando ne selezioni almeno 2.
             </p>
           </div>
 

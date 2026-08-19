@@ -9,7 +9,10 @@ import { useAccountGate } from "@/context/account-gate-context";
 import { useAppState } from "@/context/app-state-context";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
 import { useChat } from "@/context/chat-context";
+import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
+import { assignHomeHref, isHomePath } from "@/lib/home-navigation";
+import { datePriceBandLabel } from "@/lib/location-date-price";
 import type { AvailabilityEventPayload } from "@/types/availability-request";
 import {
   calculateBookingQuote,
@@ -58,7 +61,9 @@ import { HomeTabLink } from "@/components/navigation/home-tab-link";
 import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
 import { SafeImage } from "@/components/ui/safe-image";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { normalizePartyDates } from "@/types/party-criteria";
 
 interface LocationDetailViewProps {
   location: Location;
@@ -67,6 +72,7 @@ interface LocationDetailViewProps {
     partyType?: string;
     dateFrom?: string;
     dateTo?: string;
+    dates?: string;
   };
 }
 
@@ -121,6 +127,8 @@ export function LocationDetailView({
   const { requireAccount } = useAccountGate();
   const { startVendorConversation } = useChat();
   const { setTab } = useTabNavigation();
+  const { criteria } = usePartyCriteria();
+  const pathname = usePathname() || "/";
   const [chatError, setChatError] = useState<string | null>(null);
   const {
     requests,
@@ -132,12 +140,34 @@ export function LocationDetailView({
   const isCompareSelected = compareLocationIds.includes(location.id);
   const [eventTitle, setEventTitle] = useState(defaultEventTitle);
   const [requestError, setRequestError] = useState<string | null>(null);
-  const [date, setDate] = useState(initialQuoteContext?.dateFrom ?? "");
+  const preferredDates = useMemo(() => {
+    const fromQuery = normalizePartyDates(
+      (initialQuoteContext?.dates ?? "")
+        .split(",")
+        .concat(initialQuoteContext?.dateFrom ?? [])
+        .concat(initialQuoteContext?.dateTo ?? []),
+    );
+    if (fromQuery.length > 0) return fromQuery;
+    return criteria.dates;
+  }, [
+    criteria.dates,
+    initialQuoteContext?.dateFrom,
+    initialQuoteContext?.dateTo,
+    initialQuoteContext?.dates,
+  ]);
+  const [date, setDate] = useState(
+    initialQuoteContext?.dateFrom ?? preferredDates[0] ?? "",
+  );
   const [startTime, setStartTime] = useState("18:00");
   const [endTime, setEndTime] = useState("23:00");
   const [guestCount, setGuestCount] = useState(
     Math.min(
-      Math.max(Number(initialQuoteContext?.guestCount) || 60, 1),
+      Math.max(
+        Number(initialQuoteContext?.guestCount) ||
+          criteria.guestCount ||
+          60,
+        1,
+      ),
       MAX_QUOTE_GUESTS,
     ),
   );
@@ -171,26 +201,32 @@ export function LocationDetailView({
   // Restore shared quote inputs for this browser tab only (sessionStorage).
   useEffect(() => {
     const draft = readQuoteSessionDraft();
-    if (draft) {
-      if (!initialQuoteContext?.dateFrom && draft.date) {
-        setDate(draft.date);
+    queueMicrotask(() => {
+      if (draft) {
+        if (!initialQuoteContext?.dateFrom && draft.date) {
+          setDate(draft.date);
+        }
+        if (!initialQuoteContext?.guestCount) {
+          setGuestCount(
+            Math.min(Math.max(draft.guestCount, 1), MAX_QUOTE_GUESTS),
+          );
+        }
+        setStartTime(draft.startTime);
+        setEndTime(draft.endTime);
+        setDrinkMode(draft.drinkMode);
+        setDrinksPerInvitee(clampDrinksPerInvitee(draft.drinksPerInvitee));
+        setCakeKg(Math.max(1, draft.cakeKg));
+        setPersistQuoteSession(true);
       }
-      if (!initialQuoteContext?.guestCount) {
-        setGuestCount(
-          Math.min(Math.max(draft.guestCount, 1), MAX_QUOTE_GUESTS),
-        );
-      }
-      setStartTime(draft.startTime);
-      setEndTime(draft.endTime);
-      setDrinkMode(draft.drinkMode);
-      setDrinksPerInvitee(clampDrinksPerInvitee(draft.drinksPerInvitee));
-      setCakeKg(Math.max(1, draft.cakeKg));
-      setPersistQuoteSession(true);
-    }
-    setQuoteSessionReady(true);
+      setQuoteSessionReady(true);
+    });
     // Only hydrate once per location mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount hydrate
   }, []);
+
+  if (!date && preferredDates[0]) {
+    setDate(preferredDates[0]);
+  }
 
   useEffect(() => {
     if (!quoteSessionReady || !persistQuoteSession) return;
@@ -283,6 +319,7 @@ export function LocationDetailView({
       cakeKg,
       guestCount,
       location,
+      date,
     });
     const drinksCost = calculateDrinksCost({
       mode: drinkMode,
@@ -321,6 +358,7 @@ export function LocationDetailView({
     } satisfies BookingQuote;
   }, [
     location,
+    date,
     startTime,
     endTime,
     selectedExtras,
@@ -332,6 +370,45 @@ export function LocationDetailView({
     internalServices,
   ]);
 
+  const candidateDatePrices = useMemo(() => {
+    const dates =
+      preferredDates.length > 0 ? preferredDates : date ? [date] : [];
+    const unique = [...new Set(dates.filter(Boolean))];
+    const drinksCost = draftQuote.drinksCost ?? 0;
+    const venueServicesCost = draftQuote.venueServicesCost ?? 0;
+
+    return unique.map((isoDate) => {
+      const base = calculateBookingQuote({
+        hourlyPrice: location.hourlyPrice,
+        startTime,
+        endTime,
+        selectedExtras,
+        cakeKg,
+        guestCount,
+        location,
+        date: isoDate,
+      });
+      const locationCost =
+        base.locationCost + drinksCost + venueServicesCost;
+      return {
+        date: isoDate,
+        locationCost,
+        total: locationCost + base.extrasCost,
+        band: datePriceBandLabel(isoDate),
+      };
+    });
+  }, [
+    cakeKg,
+    date,
+    draftQuote.drinksCost,
+    draftQuote.venueServicesCost,
+    endTime,
+    guestCount,
+    location,
+    preferredDates,
+    selectedExtras,
+    startTime,
+  ]);
   const hours = calculateHours(startTime, endTime);
   const quoteKey = useMemo(
     () =>
@@ -456,20 +533,10 @@ export function LocationDetailView({
     const service = internalServices.find((item) => item.id === id);
     const isSelected = selectedInternalServices.includes(id);
 
-    if (service?.type === "menu") {
-      if (isSelected) {
-        setSelectedInternalServices((prev) =>
-          prev.filter((serviceId) => serviceId !== id),
-        );
-        setMenuAllergens([]);
-        setPendingMenuServiceId(null);
-        setAllergenSheetOpen(false);
-        return;
-      }
-
-      setPendingMenuServiceId(id);
-      setAllergenSheetOpen(true);
-      return;
+    if (isSelected && service?.type === "menu") {
+      setMenuAllergens([]);
+      setPendingMenuServiceId(null);
+      setAllergenSheetOpen(false);
     }
 
     setSelectedInternalServices((prev) =>
@@ -507,6 +574,36 @@ export function LocationDetailView({
         }
         toggleCompareLocation(location.id);
       },
+      "Per aggiungere un locale al confronto crea un account.",
+    );
+  }
+
+  function goToCompareLocations() {
+    const openCompare = () => {
+      if (
+        !compareLocationIds.includes(location.id) &&
+        compareLocationIds.length >= MAX_COMPARE_LOCATIONS
+      ) {
+        removeCompareLocation(compareLocationIds[0]);
+      }
+      if (!compareLocationIds.includes(location.id)) {
+        toggleCompareLocation(location.id);
+      }
+      const href = "/?tab=explore&view=compare";
+      if (isHomePath(pathname)) {
+        assignHomeHref(href);
+        return;
+      }
+      assignHomeHref(href);
+    };
+
+    if (isCompareSelected) {
+      openCompare();
+      return;
+    }
+
+    requireAccount(
+      openCompare,
       "Per aggiungere un locale al confronto crea un account.",
     );
   }
@@ -601,7 +698,10 @@ export function LocationDetailView({
 
         const eventPayload: AvailabilityEventPayload = {
           title: eventTitle.trim() || defaultEventTitle,
-          description: "Preventivo richiesto dalla scheda location.",
+          description:
+            preferredDates.length > 1
+              ? `Preventivo richiesto dalla scheda location. Date preferite: ${preferredDates.join(", ")}. Richiesta per il ${date}.`
+              : "Preventivo richiesto dalla scheda location.",
           date,
           time: startTime,
           endTime,
@@ -728,6 +828,7 @@ export function LocationDetailView({
             estimatedHours={hours}
             minHours={location.technicalDetails.minHours}
             date={date}
+            preferredDates={preferredDates}
             startTime={startTime}
             endTime={endTime}
             internalServices={internalServices}
@@ -752,6 +853,15 @@ export function LocationDetailView({
             quoteNeedsRefresh={generatedQuote !== null && !quoteIsCurrent}
             quoteSaved={quoteSaved}
             onSaveQuote={handleSaveQuote}
+            showAllergenPicker={
+              selectedInternalServices.some((serviceId) =>
+                isVenueMenuServiceId(serviceId, internalServices),
+              ) ||
+              selectedExtras.includes("menu") ||
+              selectedExtras.includes("catering")
+            }
+            allergenCount={menuAllergens.length}
+            onOpenAllergenPicker={() => setAllergenSheetOpen(true)}
           />
 
           <BookingSummary
@@ -765,6 +875,13 @@ export function LocationDetailView({
                   : undefined
             }
             isReady={isReady}
+            canGenerateQuote={canGenerateQuote}
+            quoteGenerated={quote !== null}
+            quoteNeedsRefresh={generatedQuote !== null && !quoteIsCurrent}
+            onGenerateQuote={generateQuote}
+            candidateDatePrices={candidateDatePrices}
+            selectedDate={date}
+            onSelectDate={setDate}
             requestStatus={activeRequest?.status ?? null}
             confirmationDeadline={activeRequest?.confirmationDeadline ?? null}
             requestError={requestError}
@@ -775,6 +892,8 @@ export function LocationDetailView({
               setRequestError(null);
             }}
             onSendRequest={sendRequestFromBooking}
+            onAddToCompare={goToCompareLocations}
+            isCompareSelected={isCompareSelected}
           />
         </aside>
       </div>
