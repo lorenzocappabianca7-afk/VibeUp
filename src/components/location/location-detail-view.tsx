@@ -182,9 +182,6 @@ export function LocationDetailView({
     [],
   );
   const [allergenSheetOpen, setAllergenSheetOpen] = useState(false);
-  const [pendingMenuServiceId, setPendingMenuServiceId] = useState<
-    string | null
-  >(null);
   const [selectedExtras, setSelectedExtras] = useState<ExtraServiceId[]>([]);
   const [cakeKg, setCakeKg] = useState(3);
   const [drinkMode, setDrinkMode] = useState<DrinkPackageMode>("none");
@@ -523,41 +520,51 @@ export function LocationDetailView({
     );
   }
 
-  function toggleExtra(id: ExtraServiceId) {
-    setSelectedExtras((prev) =>
-      prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id],
+  function hasMenuOrCatering(
+    internalIds: string[],
+    extras: ExtraServiceId[],
+  ) {
+    return (
+      internalIds.some((serviceId) =>
+        isVenueMenuServiceId(serviceId, internalServices),
+      ) ||
+      extras.includes("menu") ||
+      extras.includes("catering")
     );
+  }
+
+  function toggleExtra(id: ExtraServiceId) {
+    setSelectedExtras((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((e) => e !== id)
+        : [...prev, id];
+      if (!hasMenuOrCatering(selectedInternalServices, next)) {
+        setMenuAllergens([]);
+        setAllergenSheetOpen(false);
+      }
+      return next;
+    });
   }
 
   function toggleInternalService(id: string) {
-    const service = internalServices.find((item) => item.id === id);
-    const isSelected = selectedInternalServices.includes(id);
-
-    if (isSelected && service?.type === "menu") {
-      setMenuAllergens([]);
-      setPendingMenuServiceId(null);
-      setAllergenSheetOpen(false);
-    }
-
-    setSelectedInternalServices((prev) =>
-      prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id],
-    );
+    setSelectedInternalServices((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((e) => e !== id)
+        : [...prev, id];
+      if (!hasMenuOrCatering(next, selectedExtras)) {
+        setMenuAllergens([]);
+        setAllergenSheetOpen(false);
+      }
+      return next;
+    });
   }
 
   function confirmMenuAllergens(allergens: MenuAllergenRestriction[]) {
-    const serviceId = pendingMenuServiceId;
     setMenuAllergens(allergens);
-    if (serviceId) {
-      setSelectedInternalServices((prev) =>
-        prev.includes(serviceId) ? prev : [...prev, serviceId],
-      );
-    }
-    setPendingMenuServiceId(null);
     setAllergenSheetOpen(false);
   }
 
   function closeAllergenSheet() {
-    setPendingMenuServiceId(null);
     setAllergenSheetOpen(false);
   }
 
@@ -853,15 +860,6 @@ export function LocationDetailView({
             quoteNeedsRefresh={generatedQuote !== null && !quoteIsCurrent}
             quoteSaved={quoteSaved}
             onSaveQuote={handleSaveQuote}
-            showAllergenPicker={
-              selectedInternalServices.some((serviceId) =>
-                isVenueMenuServiceId(serviceId, internalServices),
-              ) ||
-              selectedExtras.includes("menu") ||
-              selectedExtras.includes("catering")
-            }
-            allergenCount={menuAllergens.length}
-            onOpenAllergenPicker={() => setAllergenSheetOpen(true)}
           />
 
           <BookingSummary
@@ -869,7 +867,7 @@ export function LocationDetailView({
             hourlyPrice={location.hourlyPrice}
             locationPriceLabel={
               location.priceModel === "person"
-                ? `a persona × ${guestCount} invitati`
+                ? `prezzo a partecipante × ${guestCount} invitati`
                 : location.priceModel === "event" || location.eventPrice != null
                   ? "tariffa a serata"
                   : undefined
@@ -894,6 +892,12 @@ export function LocationDetailView({
             onSendRequest={sendRequestFromBooking}
             onAddToCompare={goToCompareLocations}
             isCompareSelected={isCompareSelected}
+            showAllergenPicker={hasMenuOrCatering(
+              selectedInternalServices,
+              selectedExtras,
+            )}
+            allergenCount={menuAllergens.length}
+            onOpenAllergenPicker={() => setAllergenSheetOpen(true)}
           />
         </aside>
       </div>

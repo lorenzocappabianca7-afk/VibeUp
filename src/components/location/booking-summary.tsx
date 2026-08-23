@@ -6,7 +6,7 @@ import { getDepositCheckoutAmounts } from "@/lib/booking-money";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import type { AvailabilityRequestStatus } from "@/types/availability-request";
 import type { BookingQuote } from "@/types/location";
-import { Check, Clock3, GitCompareArrows, ShieldCheck } from "lucide-react";
+import { Check, Clock3, GitCompareArrows, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export interface CandidateDatePrice {
@@ -19,7 +19,7 @@ export interface CandidateDatePrice {
 interface BookingSummaryProps {
   quote: BookingQuote;
   hourlyPrice: number;
-  /** Override the location line label (e.g. serata / a persona). */
+  /** Override the location line label (e.g. serata / a partecipante). */
   locationPriceLabel?: string;
   isReady: boolean;
   canGenerateQuote: boolean;
@@ -38,6 +38,9 @@ interface BookingSummaryProps {
   onSendRequest: () => void;
   onAddToCompare?: () => void;
   isCompareSelected?: boolean;
+  showAllergenPicker?: boolean;
+  allergenCount?: number;
+  onOpenAllergenPicker?: () => void;
 }
 
 export function BookingSummary({
@@ -61,6 +64,9 @@ export function BookingSummary({
   onSendRequest,
   onAddToCompare,
   isCompareSelected = false,
+  showAllergenPicker = false,
+  allergenCount = 0,
+  onOpenAllergenPicker,
 }: BookingSummaryProps) {
   const [sendHint, setSendHint] = useState<string | null>(null);
   const isPendingManager = requestStatus === "pending_manager";
@@ -274,6 +280,29 @@ export function BookingSummary({
           aria-label="Nome evento"
         />
       </label>
+
+      {showAllergenPicker && onOpenAllergenPicker ? (
+        <button
+          type="button"
+          onClick={onOpenAllergenPicker}
+          disabled={isLocked}
+          className="flex w-full items-start gap-3 rounded-2xl border border-brand-pink/25 bg-brand-pink/8 px-4 py-3 text-left transition-colors hover:bg-brand-pink/12 disabled:opacity-60"
+        >
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-pink/20 text-brand-pink">
+            <ShieldAlert className="h-4 w-4" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-black text-primary-black">
+              Allergie e allergeni
+            </span>
+            <span className="mt-0.5 block text-xs leading-relaxed text-primary-black/55">
+              {allergenCount > 0
+                ? `${allergenCount} segnalati — il gestore li vedrà nella richiesta`
+                : "Da indicare in prenotazione, solo se hai scelto menu o catering"}
+            </span>
+          </span>
+        </button>
+      ) : null}
 
       <div className="space-y-2">
         <Button

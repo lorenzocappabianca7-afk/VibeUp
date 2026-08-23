@@ -37,7 +37,7 @@ export function AllergenPickerSheet({
   initialSelected = [],
   maxGuests = 300,
   title = "Allergeni da evitare",
-  description = "Solo per menu o catering: indica gli allergeni da evitare. Non è necessario per calcolare il prezzo della location.",
+  description = "In fase di prenotazione: indica gli allergeni da evitare se hai scelto menu o catering. Non serve per calcolare il preventivo.",
   confirmLabel = "Salva allergeni (opzionale)",
   onClose,
   onConfirm,
