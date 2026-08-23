@@ -146,6 +146,7 @@ export interface ExploreFilters {
   maxHourlyPrice: number;
   guestCount: number;
   partyType: PartyType | null;
+  dates: string[];
   dateFrom: string | null;
   dateTo: string | null;
   allPiemonte: boolean;
@@ -225,6 +226,7 @@ export const DEFAULT_EXPLORE_FILTERS: ExploreFilters = {
   maxHourlyPrice: DEFAULT_EXPLORE_MAX_PRICE,
   guestCount: EXPLORE_GUEST_MIN,
   partyType: null,
+  dates: [],
   dateFrom: null,
   dateTo: null,
   allPiemonte: true,

@@ -22,6 +22,11 @@ import {
   type PartyType,
   type ServiceExploreFilters,
 } from "@/types/location";
+import {
+  MAX_PARTY_DATES,
+  normalizePartyDates,
+  syncPartyDateRange,
+} from "@/types/party-criteria";
 import { Calendar, ChevronDown, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -37,13 +42,23 @@ const filterDateFormatter = new Intl.DateTimeFormat("it-IT", {
   month: "short",
 });
 
-function formatFilterDateLabel(dateFrom: string | null, dateTo?: string | null) {
-  if (!dateFrom) return "Scegli data o fascia";
+function resolveFilterDates(filters: Pick<ExploreFilters, "dates" | "dateFrom" | "dateTo">) {
+  if (filters.dates.length > 0) return normalizePartyDates(filters.dates);
+  return normalizePartyDates(
+    [filters.dateFrom, filters.dateTo].filter(
+      (item): item is string => typeof item === "string" && item.length > 0,
+    ),
+  );
+}
 
-  const startLabel = filterDateFormatter.format(new Date(dateFrom));
-
-  if (!dateTo || dateTo === dateFrom) return startLabel;
-  return `${startLabel} - ${filterDateFormatter.format(new Date(dateTo))}`;
+function formatFilterDateLabel(dates: string[]) {
+  if (dates.length === 0) return "Scegli fino a 5 date";
+  if (dates.length === 1) {
+    return filterDateFormatter.format(new Date(dates[0]));
+  }
+  return `${dates.length} date: ${dates
+    .map((value) => filterDateFormatter.format(new Date(value)))
+    .join(", ")}`;
 }
 
 interface ExploreFiltersSheetProps {
@@ -134,6 +149,8 @@ export function ExploreFiltersSheet({
 
   if (!open || typeof document === "undefined") return null;
 
+  const draftDates = resolveFilterDates(draftFilters);
+
   function updateFilter<K extends keyof ExploreFilters>(
     key: K,
     value: ExploreFilters[K],
@@ -142,18 +159,15 @@ export function ExploreFiltersSheet({
   }
 
   function selectEventDate(value: string) {
-    if (!draftFilters.dateFrom || (draftFilters.dateFrom && draftFilters.dateTo)) {
-      setDraftFilters((current) => ({ ...current, dateFrom: value, dateTo: null }));
-      return;
-    }
-
-    if (draftFilters.dateFrom === value) {
-      setDraftFilters((current) => ({ ...current, dateFrom: value, dateTo: value }));
-      return;
-    }
-
-    const [start, end] = [draftFilters.dateFrom, value].sort();
-    setDraftFilters((current) => ({ ...current, dateFrom: start, dateTo: end }));
+    setDraftFilters((current) => {
+      const dates = resolveFilterDates(current);
+      const nextDates = dates.includes(value)
+        ? dates.filter((item) => item !== value)
+        : dates.length >= MAX_PARTY_DATES
+          ? dates
+          : [...dates, value];
+      return { ...current, ...syncPartyDateRange(nextDates) };
+    });
   }
 
   function updateServiceFilter<K extends keyof ServiceExploreFilters>(
@@ -585,10 +599,7 @@ export function ExploreFiltersSheet({
                           Data
                         </span>
                         <span className="block text-sm font-black text-ink-inverse">
-                          {formatFilterDateLabel(
-                            draftFilters.dateFrom,
-                            draftFilters.dateTo,
-                          )}
+                          {formatFilterDateLabel(draftDates)}
                         </span>
                       </span>
                     </span>
@@ -602,8 +613,8 @@ export function ExploreFiltersSheet({
                   </button>
                   {datePickerOpen && (
                     <VibeUpCalendar
-                      selectedStart={draftFilters.dateFrom}
-                      selectedEnd={draftFilters.dateTo}
+                      selectedDates={draftDates}
+                      maxSelected={MAX_PARTY_DATES}
                       onSelectDate={selectEventDate}
                       className="mx-auto mt-3"
                     />
@@ -646,10 +657,7 @@ export function ExploreFiltersSheet({
                     Quando
                   </span>
                   <span className="block text-sm font-black text-ink-inverse">
-                    {formatFilterDateLabel(
-                      draftFilters.dateFrom,
-                      draftFilters.dateTo,
-                    )}
+                    {formatFilterDateLabel(draftDates)}
                   </span>
                 </span>
               </span>
@@ -663,20 +671,19 @@ export function ExploreFiltersSheet({
             </button>
             {datePickerOpen && (
               <VibeUpCalendar
-                selectedStart={draftFilters.dateFrom}
-                selectedEnd={draftFilters.dateTo}
+                selectedDates={draftDates}
+                maxSelected={MAX_PARTY_DATES}
                 onSelectDate={selectEventDate}
                 className="mx-auto mt-3"
               />
             )}
-            {(draftFilters.dateFrom || draftFilters.dateTo) && (
+            {draftDates.length > 0 && (
               <button
                 type="button"
                 onClick={() => {
                   setDraftFilters((current) => ({
                     ...current,
-                    dateFrom: null,
-                    dateTo: null,
+                    ...syncPartyDateRange([]),
                   }));
                   setDatePickerOpen(false);
                 }}
@@ -686,8 +693,7 @@ export function ExploreFiltersSheet({
               </button>
             )}
             <p className="mt-2 text-xs leading-relaxed text-primary-black/50">
-              Clicca un giorno e poi un altro per selezionare una fascia. Clicca
-              due volte lo stesso giorno per scegliere solo quella data.
+              Tocca i giorni che ti vanno bene, fino a {MAX_PARTY_DATES}.
             </p>
           </fieldset>
 
@@ -956,8 +962,7 @@ export function ExploreFiltersSheet({
                   setDraftServiceFilters(DEFAULT_SERVICE_EXPLORE_FILTERS);
                   setDraftFilters((current) => ({
                     ...current,
-                    dateFrom: null,
-                    dateTo: null,
+                    ...syncPartyDateRange([]),
                   }));
                 }
                 setDatePickerOpen(false);

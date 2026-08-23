@@ -145,9 +145,6 @@ export function HomeScreen() {
         <h2 className="mt-2 text-2xl font-bold tracking-tight text-primary-black sm:text-[1.75rem]">
           {homeBannerText}
         </h2>
-        <p className="mt-2 max-w-sm text-sm text-primary-black/60">
-          Dimmi data, invitati e stile: ti mostriamo le location più affini.
-        </p>
         <Button className="mt-4 w-full sm:w-auto" onClick={() => setWizardOpen(true)}>
           Crea la tua festa
         </Button>

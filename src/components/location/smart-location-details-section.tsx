@@ -21,6 +21,7 @@ import {
 import { EXTRA_SERVICES } from "@/lib/mock/extra-services";
 import { cn, formatCurrency } from "@/lib/utils";
 import { VibeUpCalendar } from "@/components/ui/vibeup-calendar";
+import { MAX_PARTY_DATES } from "@/types/party-criteria";
 import type {
   BookingQuote,
   ExtraService,
@@ -109,6 +110,7 @@ interface SmartLocationDetailsSectionProps {
   drinkMode: DrinkPackageMode;
   drinksPerInvitee: number;
   onDateChange: (date: string) => void;
+  onPreferredDatesChange?: (dates: string[]) => void;
   onStartTimeChange: (time: string) => void;
   onEndTimeChange: (time: string) => void;
   onGuestCountChange: (guestCount: number) => void;
@@ -316,6 +318,7 @@ export function SmartLocationDetailsSection({
   drinkMode,
   drinksPerInvitee,
   onDateChange,
+  onPreferredDatesChange,
   onStartTimeChange,
   onEndTimeChange,
   onGuestCountChange,
@@ -347,6 +350,28 @@ export function SmartLocationDetailsSection({
     setOpenPicker((current) => (current === panel ? null : panel));
   }
 
+  const calendarDates =
+    preferredDates.length > 0 ? preferredDates : date ? [date] : [];
+
+  function selectPreferredDate(value: string) {
+    if (!onPreferredDatesChange) {
+      onDateChange(value);
+      setOpenPicker(null);
+      return;
+    }
+
+    if (calendarDates.includes(value)) {
+      const next = calendarDates.filter((item) => item !== value);
+      onPreferredDatesChange(next);
+      if (date === value) onDateChange(next[0] ?? "");
+      return;
+    }
+
+    if (calendarDates.length >= MAX_PARTY_DATES) return;
+    onPreferredDatesChange([...calendarDates, value].sort());
+    onDateChange(value);
+  }
+
   function stepGuests(delta: number) {
     const nextValue = clampGuestCount(guestCountRef.current + delta, maxGuests);
     if (nextValue === guestCountRef.current) return;
@@ -369,10 +394,6 @@ export function SmartLocationDetailsSection({
           <h2 className="mt-1.5 text-xl font-black tracking-tight text-foreground">
             Configura la tua serata
           </h2>
-          <p className="mt-1.5 max-w-md text-sm leading-relaxed text-foreground/62">
-            Scegli servizi, bevande, data e numero di partecipanti: poi genera
-            il preventivo in un tap.
-          </p>
         </div>
       </div>
 
@@ -726,12 +747,10 @@ export function SmartLocationDetailsSection({
 
             {openPicker === "date" && (
               <VibeUpCalendar
-                selectedStart={date || null}
+                selectedDates={calendarDates}
+                maxSelected={MAX_PARTY_DATES}
                 className="mx-auto max-w-[18.5rem]"
-                onSelectDate={(value) => {
-                  onDateChange(value);
-                  setOpenPicker(null);
-                }}
+                onSelectDate={selectPreferredDate}
               />
             )}
 

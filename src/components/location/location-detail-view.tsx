@@ -140,7 +140,7 @@ export function LocationDetailView({
   const isCompareSelected = compareLocationIds.includes(location.id);
   const [eventTitle, setEventTitle] = useState(defaultEventTitle);
   const [requestError, setRequestError] = useState<string | null>(null);
-  const preferredDates = useMemo(() => {
+  const incomingPreferredDates = useMemo(() => {
     const fromQuery = normalizePartyDates(
       (initialQuoteContext?.dates ?? "")
         .split(",")
@@ -155,6 +155,13 @@ export function LocationDetailView({
     initialQuoteContext?.dateTo,
     initialQuoteContext?.dates,
   ]);
+  const [preferredDates, setPreferredDates] = useState(incomingPreferredDates);
+  useEffect(() => {
+    if (incomingPreferredDates.length === 0) return;
+    setPreferredDates((current) =>
+      current.length === 0 ? incomingPreferredDates : current,
+    );
+  }, [incomingPreferredDates]);
   const [date, setDate] = useState(
     initialQuoteContext?.dateFrom ?? preferredDates[0] ?? "",
   );
@@ -845,6 +852,7 @@ export function LocationDetailView({
             drinkMode={drinkMode}
             drinksPerInvitee={drinksPerInvitee}
             onDateChange={setDate}
+            onPreferredDatesChange={setPreferredDates}
             onStartTimeChange={setStartTime}
             onEndTimeChange={setEndTime}
             onGuestCountChange={updateGuestCount}
