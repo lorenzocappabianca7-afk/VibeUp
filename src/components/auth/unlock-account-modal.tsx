@@ -159,7 +159,7 @@ export function UnlockAccountModal({
             placeholder="Password"
             autoComplete="current-password"
             autoFocus={!biometricEnabled}
-            className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+            className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base text-primary-black outline-none placeholder:text-primary-black/40 focus:border-brand-teal"
           />
           {(localError || error) && (
             <p className="text-xs font-medium text-brand-pink">

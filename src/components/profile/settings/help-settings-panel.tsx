@@ -128,7 +128,7 @@ export function HelpSettingsPanel({ onBack }: HelpSettingsPanelProps) {
                   topic: event.target.value,
                 }))
               }
-              className="mt-1.5 w-full bg-transparent text-sm font-semibold outline-none"
+              className="mt-1.5 w-full bg-transparent text-sm font-semibold text-primary-black outline-none"
             >
               <option>Problema tecnico</option>
               <option>Pagamento</option>
@@ -151,7 +151,7 @@ export function HelpSettingsPanel({ onBack }: HelpSettingsPanelProps) {
                 }))
               }
               placeholder="Raccontaci cosa non ha funzionato..."
-              className="mt-1.5 w-full resize-none bg-transparent text-sm font-medium leading-relaxed outline-none placeholder:text-primary-black/35"
+              className="mt-1.5 w-full resize-none bg-transparent text-sm font-medium leading-relaxed text-primary-black outline-none placeholder:text-primary-black/35"
             />
           </label>
         </SettingsSection>
@@ -166,7 +166,7 @@ export function HelpSettingsPanel({ onBack }: HelpSettingsPanelProps) {
           type="button"
           onClick={sendReport}
           disabled={!reportDraft.message.trim()}
-          className="w-full rounded-2xl bg-paper px-4 py-3 text-sm font-black text-ink-inverse transition-colors hover:bg-surface/90 disabled:opacity-50"
+          className="w-full rounded-2xl bg-paper px-4 py-3 text-sm font-black text-ink-inverse transition-colors hover:bg-paper-deep disabled:opacity-50"
         >
           Invia segnalazione
         </button>

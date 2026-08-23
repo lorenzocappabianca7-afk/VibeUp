@@ -215,7 +215,7 @@ export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
           type="button"
           onClick={() => void saveProfile()}
           disabled={saving}
-          className="w-full rounded-2xl bg-paper px-4 py-3 text-sm font-black text-ink-inverse transition-colors hover:bg-surface/90 disabled:opacity-60"
+          className="w-full rounded-2xl bg-paper px-4 py-3 text-sm font-black text-ink-inverse transition-colors hover:bg-paper-deep disabled:opacity-60"
         >
           {saving ? "Salvataggio…" : "Salva modifiche"}
         </button>

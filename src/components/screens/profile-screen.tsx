@@ -903,7 +903,7 @@ export function ProfileScreen({
                 value={newAccountName}
                 onChange={(event) => setNewAccountName(event.target.value)}
                 placeholder="Nome account"
-                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base text-primary-black outline-none placeholder:text-primary-black/40 focus:border-brand-teal"
               />
               <input
                 type="email"
@@ -913,7 +913,7 @@ export function ProfileScreen({
                   setNewAccountError(null);
                 }}
                 placeholder="Email"
-                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base text-primary-black outline-none placeholder:text-primary-black/40 focus:border-brand-teal"
               />
               <input
                 type="tel"
@@ -925,7 +925,7 @@ export function ProfileScreen({
                 placeholder="Numero di telefono"
                 autoComplete="tel"
                 inputMode="tel"
-                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base text-primary-black outline-none placeholder:text-primary-black/40 focus:border-brand-teal"
               />
               <input
                 type="password"
@@ -936,7 +936,7 @@ export function ProfileScreen({
                 }}
                 placeholder="Password"
                 autoComplete="new-password"
-                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base text-primary-black outline-none placeholder:text-primary-black/40 focus:border-brand-teal"
               />
               <input
                 type="password"
@@ -947,7 +947,7 @@ export function ProfileScreen({
                 }}
                 placeholder="Conferma password"
                 autoComplete="new-password"
-                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal sm:col-span-2"
+                className="rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base text-primary-black outline-none placeholder:text-primary-black/40 focus:border-brand-teal sm:col-span-2"
               />
             </div>
             {newAccountError && (

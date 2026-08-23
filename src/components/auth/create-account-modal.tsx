@@ -252,7 +252,7 @@ export function CreateAccountModal({
               onChange={(event) => setName(event.target.value)}
               placeholder="Nome"
               autoComplete="name"
-              className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+              className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base text-primary-black outline-none placeholder:text-primary-black/40 focus:border-brand-teal"
             />
           )}
           <input
@@ -265,7 +265,7 @@ export function CreateAccountModal({
             placeholder="Email"
             autoComplete="email"
             required
-            className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+            className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base text-primary-black outline-none placeholder:text-primary-black/40 focus:border-brand-teal"
           />
           {mode === "register" && (
             <input
@@ -279,7 +279,7 @@ export function CreateAccountModal({
               autoComplete="tel"
               inputMode="tel"
               required
-              className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+              className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base text-primary-black outline-none placeholder:text-primary-black/40 focus:border-brand-teal"
             />
           )}
           {mode !== "reset" && (
@@ -296,7 +296,7 @@ export function CreateAccountModal({
               }
               required
               minLength={mode === "register" ? 8 : 1}
-              className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+              className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base text-primary-black outline-none placeholder:text-primary-black/40 focus:border-brand-teal"
             />
           )}
           {mode === "register" && (
@@ -311,7 +311,7 @@ export function CreateAccountModal({
               autoComplete="new-password"
               required
               minLength={8}
-              className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base outline-none focus:border-brand-teal"
+              className="w-full rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-base text-primary-black outline-none placeholder:text-primary-black/40 focus:border-brand-teal"
             />
           )}
           {mode === "register" && (

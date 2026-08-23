@@ -27,7 +27,7 @@ function normalizeRange(min: number, max: number): [number, number] {
 }
 
 const inputClassName =
-  "w-full rounded-2xl border border-primary-black/10 bg-paper px-3.5 py-3 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+  "w-full min-w-0 rounded-2xl border border-primary-black/10 bg-paper px-3.5 py-3 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
 export function PriceRangeInputs({
   value,
@@ -99,7 +99,7 @@ export function PriceRangeInputs({
   return (
     <div className={cn("space-y-3", className)}>
       <div className="grid grid-cols-2 gap-3">
-        <label className="block">
+        <label className="block min-w-0">
           <span className="mb-1.5 block text-xs font-medium text-primary-black/70">
             Minimo budget (€)
           </span>
@@ -136,7 +136,7 @@ export function PriceRangeInputs({
             className={inputClassName}
           />
         </label>
-        <label className="block">
+        <label className="block min-w-0">
           <span className="mb-1.5 block text-xs font-medium text-primary-black/70">
             Massimo budget (€)
           </span>

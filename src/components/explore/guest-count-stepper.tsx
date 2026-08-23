@@ -79,7 +79,7 @@ export function GuestCountStepper({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-primary-black/10 bg-paper px-4 py-3",
+        "min-w-0 w-full rounded-2xl border border-primary-black/10 bg-paper px-4 py-3",
         className,
       )}
     >
@@ -97,7 +97,7 @@ export function GuestCountStepper({
           disabled={atMin}
           aria-label="Riduci numero invitati"
           className={cn(
-            "touch-target touch-feedback flex items-center justify-center rounded-full transition-colors",
+            "touch-target touch-feedback flex shrink-0 items-center justify-center rounded-full transition-colors",
             atMin
               ? "cursor-not-allowed bg-ink-inverse/10 text-ink-inverse/25"
               : "bg-brand-pink text-ink-inverse hover:bg-brand-pink/90",
@@ -132,7 +132,8 @@ export function GuestCountStepper({
             }
           }}
           aria-label="Numero invitati"
-          className="vibeup-light-field h-12 min-w-0 flex-1 rounded-xl bg-paper-deep text-center text-2xl font-black tabular-nums text-ink-inverse outline-none ring-1 ring-primary-black/10 focus:ring-2 focus:ring-brand-teal/40"
+          size={1}
+          className="vibeup-light-field h-12 w-0 min-w-0 flex-1 rounded-xl bg-paper-deep text-center text-2xl font-black tabular-nums text-ink-inverse outline-none ring-1 ring-primary-black/10 focus:ring-2 focus:ring-brand-teal/40"
           style={{ colorScheme: "light" }}
         />
 
@@ -142,7 +143,7 @@ export function GuestCountStepper({
           disabled={atMax}
           aria-label="Aumenta numero invitati"
           className={cn(
-            "touch-target touch-feedback flex items-center justify-center rounded-full transition-colors",
+            "touch-target touch-feedback flex shrink-0 items-center justify-center rounded-full transition-colors",
             atMax
               ? "cursor-not-allowed bg-ink-inverse/10 text-ink-inverse/25"
               : "bg-brand-teal text-ink-inverse hover:bg-brand-teal-strong",

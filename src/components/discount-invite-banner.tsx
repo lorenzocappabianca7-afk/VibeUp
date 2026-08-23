@@ -86,7 +86,7 @@ export const DiscountInviteBanner = memo(function DiscountInviteBanner({
           type="button"
           onClick={onSubmit}
           disabled={!contact.trim()}
-          className="rounded-2xl bg-paper px-5 py-2.5 text-sm font-black text-ink-inverse shadow-sm transition-opacity hover:bg-surface/90 disabled:opacity-45"
+          className="rounded-2xl bg-paper px-5 py-2.5 text-sm font-black text-ink-inverse shadow-sm transition-opacity hover:bg-paper-deep disabled:opacity-45"
         >
           Invita e sblocca sconto
         </button>

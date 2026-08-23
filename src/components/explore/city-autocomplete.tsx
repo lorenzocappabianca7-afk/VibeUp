@@ -58,7 +58,7 @@ export function CityAutocomplete({
   }
 
   return (
-    <div ref={containerRef} className={cn("relative", className)}>
+    <div ref={containerRef} className={cn("relative min-w-0", className)}>
       <div className="relative">
         <Search
           className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-inverse/40"
@@ -79,7 +79,7 @@ export function CityAutocomplete({
           }}
           placeholder="Cerca un comune del Piemonte..."
           className={cn(
-            "w-full rounded-2xl border border-primary-black/10 bg-paper py-3 pl-10 pr-10 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20",
+            "w-full min-w-0 rounded-2xl border border-primary-black/10 bg-paper py-3 pl-10 pr-10 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20",
             disabled && "cursor-not-allowed opacity-50",
           )}
         />

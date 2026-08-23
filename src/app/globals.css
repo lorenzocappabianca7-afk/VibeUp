@@ -87,6 +87,12 @@ body::-webkit-scrollbar {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* UA fieldset min-content width overflows sheets and clips flex controls. */
+fieldset {
+  min-width: 0;
+  min-inline-size: 0;
+}
+
 button,
 a,
 [role="button"],
@@ -103,9 +109,49 @@ select {
   color-scheme: dark;
 }
 
-/* Light paper controls (guest stepper, etc.) — unlayered so it beats the rule above. */
-input.vibeup-light-field {
+/* Paper chips/cards sit on the dark canvas — body text is light, so ink must flip. */
+.bg-paper,
+.bg-paper-deep {
+  color: var(--ink-inverse);
+}
+
+/* Dark native chrome makes paper fields a black hole (Safari). */
+input.bg-paper,
+textarea.bg-paper,
+select.bg-paper,
+input.bg-paper-deep,
+textarea.bg-paper-deep,
+select.bg-paper-deep,
+input.vibeup-light-field,
+textarea.vibeup-light-field,
+select.vibeup-light-field,
+.bg-paper input:not(.bg-background):not(.bg-surface),
+.bg-paper textarea:not(.bg-background):not(.bg-surface),
+.bg-paper select:not(.bg-background):not(.bg-surface),
+.bg-paper-deep input:not(.bg-background):not(.bg-surface),
+.bg-paper-deep textarea:not(.bg-background):not(.bg-surface),
+.bg-paper-deep select:not(.bg-background):not(.bg-surface),
+.event-postit input:not(.bg-background):not(.bg-surface),
+.event-postit textarea:not(.bg-background):not(.bg-surface),
+.event-postit select:not(.bg-background):not(.bg-surface) {
   color-scheme: light;
+}
+
+.event-postit-dark input,
+.event-postit-dark textarea,
+.event-postit-dark select {
+  color-scheme: dark;
+  color: var(--foreground);
+}
+
+/* Dark fields must keep light type even if nested in a paper card. */
+input.bg-background,
+textarea.bg-background,
+select.bg-background,
+input.bg-surface,
+textarea.bg-surface,
+select.bg-surface {
+  color: var(--foreground);
 }
 
 input[type="number"] {

@@ -581,7 +581,8 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                     }
                   }}
                   placeholder="Nome evento"
-                  className="box-border min-w-0 flex-1 bg-transparent text-lg font-bold leading-snug text-[color:var(--postit-ink)] outline-none placeholder:text-[color:var(--postit-ink-muted)] sm:text-xl"
+                  className="vibeup-light-field box-border min-w-0 flex-1 bg-transparent text-lg font-bold leading-snug text-[color:var(--postit-ink)] outline-none placeholder:text-[color:var(--postit-ink-muted)] sm:text-xl"
+                  style={{ colorScheme: "light" }}
                   aria-label="Titolo evento"
                 />
               ) : (

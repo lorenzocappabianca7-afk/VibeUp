@@ -161,7 +161,7 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
         </div>
 
         <div className="smooth-scroll min-h-0 flex-1 overflow-x-clip overflow-y-auto px-5">
-          <div className="space-y-6 pb-4">
+          <div className="space-y-6 pb-8">
             {step === "date" ? (
               <DateStep criteria={criteria} onChange={patch} />
             ) : null}

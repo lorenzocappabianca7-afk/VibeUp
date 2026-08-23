@@ -337,7 +337,7 @@ export function ManagerResponseForm({
               value={proposedPrice}
               onChange={(event) => setProposedPrice(event.target.value)}
               placeholder={String(payload.totalCost || "")}
-              className="w-full rounded-xl border border-primary-black/12 bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
+              className="w-full rounded-xl border border-primary-black/12 bg-surface px-3 py-2.5 text-sm text-primary-black outline-none focus:border-brand-teal"
             />
           </label>
 
