@@ -275,7 +275,10 @@ export function PwaInstallBanner() {
               </GuideStep>
               <GuideStep index={3}>
                 Premi{" "}
-                <span className="font-semibold text-primary-black">Aggiungi a Home</span>
+                <span className="font-semibold text-primary-black">
+                  Aggiungi a Home
+                </span>
+                , non Aggiungi segnalibro
               </GuideStep>
             </InstallMethodCard>
 
@@ -295,7 +298,10 @@ export function PwaInstallBanner() {
               </GuideStep>
               <GuideStep index={3}>
                 Scorri verso il basso fino a trovare e selezionare{" "}
-                <span className="font-semibold text-primary-black">Aggiungi a Home</span>
+                <span className="font-semibold text-primary-black">
+                  Aggiungi a Home
+                </span>
+                , non Aggiungi segnalibro
               </GuideStep>
             </InstallMethodCard>
           </div>

@@ -10,6 +10,7 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     scope: "/",
     display: "standalone",
+    display_override: ["standalone"],
     orientation: "portrait-primary",
     /* Pure black so OS launch splash matches icon → fullscreen handoff */
     background_color: "#000000",

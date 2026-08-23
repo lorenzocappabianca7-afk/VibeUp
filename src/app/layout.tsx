@@ -134,6 +134,10 @@ export const metadata: Metadata = {
     /* Black + logo launch images — continuous icon→splash handoff on Home Screen */
     startupImage: [...APPLE_STARTUP_IMAGES],
   },
+  /* Next emits only mobile-web-app-capable; Safari still keys standalone off the apple-prefixed tag. */
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+  },
   formatDetection: {
     telephone: false,
   },
@@ -214,6 +218,8 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_SCRIPT }}
         />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <link
           rel="preload"
           href="/vibeup-splash-logo-boot.png"
