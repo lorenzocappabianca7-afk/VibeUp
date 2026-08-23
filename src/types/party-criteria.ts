@@ -1,5 +1,9 @@
 export const MAX_PARTY_DATES = 5;
 
+/** Shown under venue date filters: more options help the manager approve one. */
+export const PARTY_DATES_MANAGER_HINT =
+  "Più date scegli, più è probabile che il gestore ne approvi una.";
+
 export interface PartyCriteria {
   /** Discrete preferred dates (ISO `YYYY-MM-DD`), max `MAX_PARTY_DATES`. */
   dates: string[];

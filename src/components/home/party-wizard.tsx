@@ -11,6 +11,7 @@ import { cn, formatDate } from "@/lib/utils";
 import {
   emptyPartyCriteria,
   MAX_PARTY_DATES,
+  PARTY_DATES_MANAGER_HINT,
   normalizePartyCriteria,
   syncPartyDateRange,
   type PartyCriteria,
@@ -284,6 +285,9 @@ function DateStep({
           </>
         ) : null}
         {atMax ? ` Hai raggiunto il massimo di ${MAX_PARTY_DATES} date.` : null}
+      </p>
+      <p className="mt-1 text-xs leading-relaxed text-primary-black/50">
+        {PARTY_DATES_MANAGER_HINT}
       </p>
     </fieldset>
   );

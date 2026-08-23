@@ -24,6 +24,7 @@ import {
 } from "@/types/location";
 import {
   MAX_PARTY_DATES,
+  PARTY_DATES_MANAGER_HINT,
   normalizePartyDates,
   syncPartyDateRange,
 } from "@/types/party-criteria";
@@ -694,6 +695,9 @@ export function ExploreFiltersSheet({
             )}
             <p className="mt-2 text-xs leading-relaxed text-primary-black/50">
               Tocca i giorni che ti vanno bene, fino a {MAX_PARTY_DATES}.
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-primary-black/50">
+              {PARTY_DATES_MANAGER_HINT}
             </p>
           </fieldset>
 
