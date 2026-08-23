@@ -10,7 +10,11 @@ import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
 
 function shouldHideBottomNav(pathname: string) {
-  return pathname.startsWith("/business") || pathname.startsWith("/admin");
+  return (
+    pathname.startsWith("/business") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/r/")
+  );
 }
 
 function AppChromeNav() {

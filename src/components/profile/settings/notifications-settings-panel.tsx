@@ -134,7 +134,7 @@ export function NotificationsSettingsPanel({
       {isBusinessUser && !isGuest && (
         <SettingsSection
           title="Richieste di disponibilità"
-          description="Come vuoi ricevere le nuove richieste dai clienti per la tua location o i tuoi servizi. L’invio automatico arriverà in un secondo step."
+          description="Le nuove richieste arrivano via email, con i dettagli dell’evento e i pulsanti Accetta, Rifiuta e Proponi alternativa. WhatsApp Business è in valutazione per più avanti."
         >
           <div className="space-y-4 p-4">
             <fieldset className="space-y-2">
@@ -161,6 +161,10 @@ export function NotificationsSettingsPanel({
                 />
                 WhatsApp
               </label>
+              <p className="text-xs text-primary-black/45">
+                WhatsApp Business arriverà più avanti. Anche se lo selezioni, le
+                richieste partono via email.
+              </p>
             </fieldset>
 
             {managerPrefs.channel === "whatsapp" ? (

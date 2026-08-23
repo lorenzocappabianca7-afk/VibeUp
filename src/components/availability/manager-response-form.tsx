@@ -15,14 +15,16 @@ type Mode = "choose" | "decline" | "propose" | "done" | "error";
 interface ManagerResponseFormProps {
   token: string;
   request: AvailabilityRequest;
+  initialMode?: Extract<Mode, "choose" | "propose">;
 }
 
 export function ManagerResponseForm({
   token,
   request,
+  initialMode = "choose",
 }: ManagerResponseFormProps) {
   const payload = request.eventPayload;
-  const [mode, setMode] = useState<Mode>("choose");
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [note, setNote] = useState("");
   const [proposedPrice, setProposedPrice] = useState(
     payload.totalCost > 0 ? String(payload.totalCost) : "",
@@ -182,7 +184,7 @@ export function ManagerResponseForm({
             onClick={() => setMode("propose")}
             className="w-full rounded-2xl border border-brand-teal/40 bg-brand-teal/10 px-4 py-3.5 text-sm font-semibold text-primary-black disabled:opacity-60"
           >
-            Proponi modifica
+            Proponi alternativa
           </button>
         </section>
       )}
@@ -225,10 +227,13 @@ export function ManagerResponseForm({
 
       {mode === "propose" && (
         <section className="space-y-4 rounded-2xl border border-primary-black/10 bg-background p-4">
-          <h2 className="text-sm font-bold text-primary-black">Proponi modifica</h2>
+          <h2 className="text-sm font-bold text-primary-black">
+            Proponi alternativa
+          </h2>
           <p className="text-xs text-primary-black/55">
-            Puoi proporre una o più date/orari e, se vuoi, un prezzo diverso. La
-            proposta passerà da una valida VibeUp prima del cliente.
+            Puoi proporre una o più date/orari e, se vuoi, un prezzo o una
+            fascia diversa. La proposta passerà da una valida VibeUp prima del
+            cliente.
           </p>
 
           <div className="space-y-3">
@@ -323,7 +328,7 @@ export function ManagerResponseForm({
 
           <label className="block space-y-1.5">
             <span className="text-xs font-bold uppercase tracking-wide text-primary-black/45">
-              Prezzo alternativo (€, opzionale)
+              Prezzo o fascia diversa (€, opzionale)
             </span>
             <input
               type="number"
@@ -350,14 +355,16 @@ export function ManagerResponseForm({
           </label>
 
           <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={() => setMode("choose")}
-              className="flex-1 rounded-2xl border border-primary-black/12 px-4 py-3 text-sm font-semibold text-primary-black/70"
-            >
-              Indietro
-            </button>
+            {initialMode !== "propose" ? (
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => setMode("choose")}
+                className="flex-1 rounded-2xl border border-primary-black/12 px-4 py-3 text-sm font-semibold text-primary-black/70"
+              >
+                Indietro
+              </button>
+            ) : null}
             <button
               type="button"
               disabled={submitting}

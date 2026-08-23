@@ -96,6 +96,7 @@ export async function POST(
     const status =
       result.error.includes("scaduto") ||
       result.error.includes("utilizzato") ||
+      result.error.includes("già ricevuto") ||
       result.error.includes("non valido")
         ? 410
         : 400;

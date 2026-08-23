@@ -8,9 +8,11 @@ import {
 } from "@/context/availability-request-context";
 import { useAppState } from "@/context/app-state-context";
 import { useInboxBadge } from "@/context/inbox-badge-context";
+import { buildManagerResponsePath } from "@/lib/availability/manager-response-links";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { AvailabilityRequest } from "@/types/availability-request";
 import { Bell, CalendarCheck2, Users } from "lucide-react";
+import Link from "next/link";
 import { memo, useEffect, useState } from "react";
 
 function AvailabilityRequestCard({
@@ -87,23 +89,31 @@ function AvailabilityRequestCard({
           {error ? (
             <p className="mt-2 text-xs font-semibold text-brand-pink">{error}</p>
           ) : null}
-          <div className="mt-3 flex gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={onDecline}
-              className="flex-1 rounded-xl border border-primary-black/12 px-3 py-2.5 text-sm font-semibold text-primary-black/70 disabled:opacity-60"
+          <div className="mt-3 flex flex-col gap-2">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onDecline}
+                className="flex-1 rounded-xl border border-primary-black/12 px-3 py-2.5 text-sm font-semibold text-primary-black/70 disabled:opacity-60"
+              >
+                Rifiuta
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onAccept}
+                className="flex-1 rounded-xl bg-brand-teal px-3 py-2.5 text-sm font-bold text-ink-inverse disabled:opacity-60"
+              >
+                Accetta
+              </button>
+            </div>
+            <Link
+              href={buildManagerResponsePath(request.responseToken, "propose")}
+              className="rounded-xl border border-brand-teal/35 bg-brand-teal/10 px-3 py-2.5 text-center text-sm font-semibold text-primary-black"
             >
-              Rifiuta
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={onAccept}
-              className="flex-1 rounded-xl bg-brand-teal px-3 py-2.5 text-sm font-bold text-ink-inverse disabled:opacity-60"
-            >
-              Accetta
-            </button>
+              Proponi alternativa
+            </Link>
           </div>
         </div>
       </div>
@@ -211,7 +221,7 @@ export const BusinessNotificationsScreen = memo(
             </p>
             <p className="mt-1 text-xs text-primary-black/55">
               Quando un organizzatore chiede disponibilità, la noti qui e puoi
-              accettare o rifiutare.
+              accettare, rifiutare o proporre un’alternativa.
             </p>
           </section>
         )}

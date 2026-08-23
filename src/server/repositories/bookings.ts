@@ -708,7 +708,9 @@ export async function getAvailabilityRequest(
 
 export type AvailabilityTokenAccess =
   | { status: "ok"; request: AvailabilityRequest; row: AvailabilityRequestRow }
-  | { status: "missing" | "expired" | "used" };
+  | { status: "used"; request: AvailabilityRequest }
+  | { status: "expired"; request: AvailabilityRequest }
+  | { status: "missing" };
 
 /**
  * Public token lookup for /r/[token] (service-role). Does not consume the token.
@@ -729,7 +731,11 @@ export async function getAvailabilityRequestByToken(
   if (error || !data) return { status: "missing" };
 
   const row = data as AvailabilityRequestRow;
-  if (row.response_token_used_at) return { status: "used" };
+  const request = rowToAvailabilityRequest(row);
+
+  if (row.response_token_used_at || row.status !== "pending_manager") {
+    return { status: "used", request };
+  }
 
   const expiresAt = Date.parse(
     typeof row.response_token_expires_at === "string"
@@ -737,17 +743,12 @@ export async function getAvailabilityRequestByToken(
       : "",
   );
   if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) {
-    return { status: "expired" };
-  }
-
-  if (row.status !== "pending_manager") {
-    // Already answered through another path.
-    return { status: "used" };
+    return { status: "expired", request };
   }
 
   return {
     status: "ok",
-    request: rowToAvailabilityRequest(row),
+    request,
     row,
   };
 }
@@ -773,7 +774,10 @@ export async function respondToAvailabilityRequestByToken(params: {
       return { ok: false, error: "Link scaduto." };
     }
     if (access.status === "used") {
-      return { ok: false, error: "Link già utilizzato." };
+      return {
+        ok: false,
+        error: "Questa richiesta ha già ricevuto una risposta.",
+      };
     }
     return { ok: false, error: "Link non valido." };
   }
@@ -850,7 +854,7 @@ export async function respondToAvailabilityRequestByToken(params: {
   if (!data) {
     return {
       ok: false,
-      error: "La richiesta è già stata gestita o il link non è più valido.",
+      error: "Questa richiesta ha già ricevuto una risposta.",
     };
   }
 
@@ -1047,6 +1051,24 @@ export async function updateAvailabilityRequestStatus(params: {
   if (params.nextStatus === "pending_user_confirm") {
     patch.confirmation_deadline = computeConfirmationDeadline();
     patch.confirmation_reminder_sent_at = null;
+  }
+  if (
+    row.status === "pending_manager" &&
+    (params.nextStatus === "pending_user_confirm" ||
+      params.nextStatus === "declined" ||
+      params.nextStatus === "pending_admin_review" ||
+      params.nextStatus === "cancelled")
+  ) {
+    const now = new Date().toISOString();
+    patch.response_token_used_at = now;
+    patch.manager_responded_at = now;
+    if (params.nextStatus === "pending_user_confirm") {
+      patch.manager_decision = "accept";
+    } else if (params.nextStatus === "pending_admin_review") {
+      patch.manager_decision = "propose";
+    } else if (params.nextStatus === "declined") {
+      patch.manager_decision = "decline";
+    }
   }
 
   const supabase = getSupabaseAdmin();
