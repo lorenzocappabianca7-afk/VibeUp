@@ -10,6 +10,7 @@ import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useProfileCommunications } from "@/context/profile-communications-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { getRequestStatusShortLabel } from "@/lib/availability/request-status-display";
+import { buildLocationHrefFromCriteria } from "@/lib/location-href";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
 import { formatDate } from "@/lib/utils";
 import { isManagedListingLive } from "@/types/admin";
@@ -35,7 +36,7 @@ function formatRelative(iso: string) {
 }
 
 export function HomeScreen() {
-  const { homeBannerText } = usePartyCriteria();
+  const { criteria, homeBannerText } = usePartyCriteria();
   const { setTab } = useTabNavigation();
   const {
     currentUser,
@@ -206,7 +207,7 @@ export function HomeScreen() {
             >
               <LocationCard
                 location={location}
-                href={`/location/${location.id}`}
+                href={buildLocationHrefFromCriteria(location.id, criteria)}
                 isFavorite={favoriteLocationIds.includes(location.id)}
                 isCompareSelected={false}
                 showCompare={false}

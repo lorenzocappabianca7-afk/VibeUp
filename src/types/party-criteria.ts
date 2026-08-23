@@ -12,6 +12,7 @@ export interface PartyCriteria {
   /** Last selected date — kept for location query fallbacks. */
   dateTo: string | null;
   guestCount: number | null;
+  budgetMin: number | null;
   budgetMax: number | null;
   freeText: string;
 }
@@ -21,6 +22,7 @@ export const emptyPartyCriteria: PartyCriteria = {
   dateFrom: null,
   dateTo: null,
   guestCount: null,
+  budgetMin: null,
   budgetMax: null,
   freeText: "",
 };
@@ -65,6 +67,10 @@ export function normalizePartyCriteria(
     typeof value?.guestCount === "number" && Number.isFinite(value.guestCount)
       ? value.guestCount
       : null;
+  const budgetMin =
+    typeof value?.budgetMin === "number" && Number.isFinite(value.budgetMin)
+      ? value.budgetMin
+      : null;
   const budgetMax =
     typeof value?.budgetMax === "number" && Number.isFinite(value.budgetMax)
       ? value.budgetMax
@@ -73,6 +79,7 @@ export function normalizePartyCriteria(
   return {
     ...range,
     guestCount,
+    budgetMin,
     budgetMax,
     freeText: typeof value?.freeText === "string" ? value.freeText : "",
   };
@@ -81,6 +88,7 @@ export function normalizePartyCriteria(
 export function partyCriteriaHasHardFilters(criteria: PartyCriteria): boolean {
   return Boolean(
     criteria.guestCount ||
+      criteria.budgetMin ||
       criteria.budgetMax ||
       criteria.dates.length > 0 ||
       criteria.dateFrom ||

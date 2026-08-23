@@ -1,7 +1,13 @@
 "use client";
 
-import { GuestCountStepper } from "@/components/explore/guest-count-stepper";
-import { PriceRangeInputs } from "@/components/explore/price-range-inputs";
+import {
+  GuestCountStepper,
+  type GuestCountStepperHandle,
+} from "@/components/explore/guest-count-stepper";
+import {
+  PriceRangeInputs,
+  type PriceRangeInputsHandle,
+} from "@/components/explore/price-range-inputs";
 import { Button } from "@/components/ui/button";
 import { VibeUpCalendar } from "@/components/ui/vibeup-calendar";
 import { usePartyCriteria } from "@/context/party-criteria-context";
@@ -23,7 +29,7 @@ import {
   EXPLORE_PRICE_MIN,
 } from "@/types/location";
 import { Calendar, ChevronDown, X } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState, type Ref } from "react";
 import { createPortal } from "react-dom";
 
 const STEPS = ["date", "guests", "budget", "description"] as const;
@@ -52,6 +58,9 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [criteria, setCriteria] = useState<PartyCriteria>(emptyPartyCriteria);
   const [wasOpen, setWasOpen] = useState(false);
+  const [stepError, setStepError] = useState<string | null>(null);
+  const guestsRef = useRef<GuestCountStepperHandle>(null);
+  const budgetRef = useRef<PriceRangeInputsHandle>(null);
 
   useBodyScrollLock(open);
 
@@ -59,6 +68,7 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
     setWasOpen(open);
     if (open) {
       setStepIndex(0);
+      setStepError(null);
       setCriteria(normalizePartyCriteria(savedCriteria));
     }
   }
@@ -70,26 +80,48 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
   if (!open || typeof document === "undefined") return null;
 
   function patch(partial: Partial<PartyCriteria>) {
+    setStepError(null);
     setCriteria((prev) => normalizePartyCriteria({ ...prev, ...partial }));
   }
 
   function next() {
+    if (step === "date" && criteria.dates.length === 0) {
+      setStepError("Scegli almeno una data per continuare.");
+      return;
+    }
+
+    if (step === "guests") {
+      guestsRef.current?.commit();
+    }
+
+    if (step === "budget") {
+      const range = budgetRef.current?.commit();
+      if (!range) {
+        setStepError("Inserisci un minimo e un massimo budget validi.");
+        return;
+      }
+    }
+
     if (isLast) {
+      if (criteria.dates.length === 0) {
+        setStepError("Scegli almeno una data per continuare.");
+        return;
+      }
       const finalized = normalizePartyCriteria({
         ...criteria,
         guestCount: criteria.guestCount ?? EXPLORE_GUEST_MIN,
+        budgetMin: criteria.budgetMin ?? EXPLORE_PRICE_MIN,
+        budgetMax: criteria.budgetMax ?? DEFAULT_EXPLORE_MAX_PRICE,
       });
       applyCriteria(finalized);
       onClose();
       setTab("explore");
       setStepIndex(0);
+      setStepError(null);
       return;
     }
 
-    // Persist the guests value shown in the stepper when advancing without edits.
-    if (step === "guests" && criteria.guestCount == null) {
-      setCriteria((prev) => ({ ...prev, guestCount: EXPLORE_GUEST_MIN }));
-    }
+    setStepError(null);
     setStepIndex((i) => i + 1);
   }
 
@@ -104,6 +136,7 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
   function handleClose() {
     onClose();
     setStepIndex(0);
+    setStepError(null);
   }
 
   return createPortal(
@@ -166,10 +199,18 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
               <DateStep criteria={criteria} onChange={patch} />
             ) : null}
             {step === "guests" ? (
-              <GuestsStep criteria={criteria} onChange={patch} />
+              <GuestsStep
+                criteria={criteria}
+                onChange={patch}
+                stepperRef={guestsRef}
+              />
             ) : null}
             {step === "budget" ? (
-              <BudgetStep criteria={criteria} onChange={patch} />
+              <BudgetStep
+                criteria={criteria}
+                onChange={patch}
+                rangeRef={budgetRef}
+              />
             ) : null}
             {step === "description" ? (
               <DescriptionStep criteria={criteria} onChange={patch} />
@@ -183,6 +224,11 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
             paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
           }}
         >
+          {stepError ? (
+            <p className="mb-2 text-xs font-semibold text-brand-pink">
+              {stepError}
+            </p>
+          ) : null}
           <div className="flex gap-3">
             <Button
               variant="outline"
@@ -296,9 +342,11 @@ function DateStep({
 function GuestsStep({
   criteria,
   onChange,
+  stepperRef,
 }: {
   criteria: PartyCriteria;
   onChange: (partial: Partial<PartyCriteria>) => void;
+  stepperRef: Ref<GuestCountStepperHandle>;
 }) {
   const guestCount = criteria.guestCount ?? EXPLORE_GUEST_MIN;
 
@@ -308,6 +356,7 @@ function GuestsStep({
         Numero persone
       </legend>
       <GuestCountStepper
+        ref={stepperRef}
         value={guestCount}
         onChange={(next) => onChange({ guestCount: next })}
       />
@@ -326,10 +375,13 @@ function GuestsStep({
 function BudgetStep({
   criteria,
   onChange,
+  rangeRef,
 }: {
   criteria: PartyCriteria;
   onChange: (partial: Partial<PartyCriteria>) => void;
+  rangeRef: Ref<PriceRangeInputsHandle>;
 }) {
+  const minValue = criteria.budgetMin ?? EXPLORE_PRICE_MIN;
   const maxValue = criteria.budgetMax ?? DEFAULT_EXPLORE_MAX_PRICE;
 
   return (
@@ -338,8 +390,11 @@ function BudgetStep({
         Budget location
       </legend>
       <PriceRangeInputs
-        value={[EXPLORE_PRICE_MIN, maxValue]}
-        onChange={([, budgetMax]) => onChange({ budgetMax })}
+        ref={rangeRef}
+        value={[minValue, maxValue]}
+        onChange={([budgetMin, budgetMax]) =>
+          onChange({ budgetMin, budgetMax })
+        }
       />
     </fieldset>
   );

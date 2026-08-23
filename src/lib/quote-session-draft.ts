@@ -2,6 +2,7 @@ import {
   DEFAULT_DRINKS_PER_INVITEE,
   type DrinkPackageMode,
 } from "@/lib/drinks-quote";
+import { EXPLORE_GUEST_MIN } from "@/types/location";
 
 const STORAGE_KEY = "vibeup-quote-session-draft-v1";
 
@@ -43,7 +44,9 @@ export function readQuoteSessionDraft(): QuoteSessionDraft | null {
           ? parsed.endTime
           : "23:00",
       guestCount:
-        Number.isFinite(guestCount) && guestCount >= 1 ? guestCount : 60,
+        Number.isFinite(guestCount) && guestCount >= 1
+          ? guestCount
+          : EXPLORE_GUEST_MIN,
       drinkMode: isDrinkMode(parsed.drinkMode) ? parsed.drinkMode : "none",
       drinksPerInvitee:
         Number.isFinite(drinksPerInvitee) && drinksPerInvitee >= 1

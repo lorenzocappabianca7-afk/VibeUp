@@ -5,28 +5,29 @@ import {
   EXPLORE_GUEST_MIN,
   EXPLORE_GUEST_STEP,
 } from "@/types/location";
+import {
+  collapseCaret,
+  NUMERIC_FIELD_INPUT_PROPS,
+  scheduleCollapseCaret,
+} from "@/lib/numeric-field";
 import { cn } from "@/lib/utils";
 import { Minus, Plus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
+
+export type GuestCountStepperHandle = {
+  commit: () => number;
+};
 
 interface GuestCountStepperProps {
   value: number;
   onChange: (value: number) => void;
   className?: string;
   autoFocus?: boolean;
+  ref?: Ref<GuestCountStepperHandle>;
 }
 
 function clampGuestCount(value: number) {
   return Math.min(EXPLORE_GUEST_MAX, Math.max(EXPLORE_GUEST_MIN, value));
-}
-
-function collapseCaret(node: HTMLInputElement) {
-  const end = node.value.length;
-  try {
-    node.setSelectionRange(end, end);
-  } catch {
-    // Some native types reject setSelectionRange.
-  }
 }
 
 export function GuestCountStepper({
@@ -34,6 +35,7 @@ export function GuestCountStepper({
   onChange,
   className,
   autoFocus = false,
+  ref,
 }: GuestCountStepperProps) {
   const [draft, setDraft] = useState(String(value));
   const [focused, setFocused] = useState(false);
@@ -55,19 +57,24 @@ export function GuestCountStepper({
     if (digits === "") {
       onChange(EXPLORE_GUEST_MIN);
       setDraft(String(EXPLORE_GUEST_MIN));
-      return;
+      return EXPLORE_GUEST_MIN;
     }
 
     const parsed = Number.parseInt(digits, 10);
     if (Number.isNaN(parsed)) {
       setDraft(String(value));
-      return;
+      return value;
     }
 
     const next = clampGuestCount(parsed);
     onChange(next);
     setDraft(String(next));
+    return next;
   }
+
+  useImperativeHandle(ref, () => ({
+    commit: () => commitDraft(focused ? draft : String(value)),
+  }));
 
   function decrement() {
     if (!atMin) {
@@ -117,21 +124,13 @@ export function GuestCountStepper({
 
         <input
           ref={inputRef}
-          type="text"
-          inputMode="tel"
-          pattern="[0-9]*"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
+          {...NUMERIC_FIELD_INPUT_PROPS}
           value={visible}
           onFocus={(event) => {
             const node = event.currentTarget;
             setFocused(true);
             setDraft(String(value));
-            collapseCaret(node);
-            requestAnimationFrame(() => collapseCaret(node));
-            window.setTimeout(() => collapseCaret(node), 50);
+            scheduleCollapseCaret(node);
           }}
           onMouseUp={(event) => {
             event.preventDefault();

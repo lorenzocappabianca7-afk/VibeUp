@@ -1,16 +1,26 @@
 "use client";
 
+import {
+  collapseCaret,
+  NUMERIC_FIELD_INPUT_PROPS,
+  scheduleCollapseCaret,
+} from "@/lib/numeric-field";
 import { cn } from "@/lib/utils";
 import {
   EXPLORE_PRICE_MIN,
   EXPLORE_PRICE_STEP,
 } from "@/types/location";
-import { useMemo, useState } from "react";
+import { useImperativeHandle, useMemo, useState, type Ref } from "react";
+
+export type PriceRangeInputsHandle = {
+  commit: () => [number, number] | null;
+};
 
 interface PriceRangeInputsProps {
   value: [number, number];
   onChange: (value: [number, number]) => void;
   className?: string;
+  ref?: Ref<PriceRangeInputsHandle>;
 }
 
 function parseBudget(raw: string) {
@@ -27,12 +37,13 @@ function normalizeRange(min: number, max: number): [number, number] {
 }
 
 const inputClassName =
-  "w-full min-w-0 rounded-2xl border border-primary-black/10 bg-paper px-3.5 py-3 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+  "vibeup-light-field vibeup-numeric-field w-full min-w-0 rounded-2xl border border-primary-black/10 bg-paper px-3.5 py-3 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20";
 
 export function PriceRangeInputs({
   value,
   onChange,
   className,
+  ref,
 }: PriceRangeInputsProps) {
   const [minValue, maxValue] = value;
   const [minDraft, setMinDraft] = useState(String(minValue));
@@ -40,7 +51,6 @@ export function PriceRangeInputs({
   const [minFocused, setMinFocused] = useState(false);
   const [maxFocused, setMaxFocused] = useState(false);
 
-  // Keep drafts aligned with external value while the field is not being edited.
   const visibleMinDraft = minFocused ? minDraft : String(minValue);
   const visibleMaxDraft = maxFocused ? maxDraft : String(maxValue);
 
@@ -68,20 +78,36 @@ export function PriceRangeInputs({
     const parsedMax = parseBudget(nextMaxDraft);
 
     if (parsedMin === null || parsedMax === null || parsedMax < parsedMin) {
-      return;
+      return null;
     }
 
-    onChange(normalizeRange(parsedMin, parsedMax));
+    const next = normalizeRange(parsedMin, parsedMax);
+    onChange(next);
+    setMinDraft(String(next[0]));
+    setMaxDraft(String(next[1]));
+    return next;
   }
 
+  useImperativeHandle(ref, () => ({
+    commit: () => {
+      const range = commitDrafts(
+        minFocused ? minDraft : String(minValue),
+        maxFocused ? maxDraft : String(maxValue),
+      );
+      if (range) {
+        setMinFocused(false);
+        setMaxFocused(false);
+      }
+      return range;
+    },
+  }));
+
   function handleMinInputChange(raw: string) {
-    const nextDraft = raw.replace(/\D/g, "");
-    setMinDraft(nextDraft);
+    setMinDraft(raw.replace(/\D/g, ""));
   }
 
   function handleMaxInputChange(raw: string) {
-    const nextDraft = raw.replace(/\D/g, "");
-    setMaxDraft(nextDraft);
+    setMaxDraft(raw.replace(/\D/g, ""));
   }
 
   function stepMin(delta: number) {
@@ -104,14 +130,23 @@ export function PriceRangeInputs({
             Minimo budget (€)
           </span>
           <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
+            {...NUMERIC_FIELD_INPUT_PROPS}
             value={visibleMinDraft}
             onChange={(e) => handleMinInputChange(e.target.value)}
-            onFocus={() => {
+            onFocus={(event) => {
               setMinDraft(String(minValue));
               setMinFocused(true);
+              scheduleCollapseCaret(event.currentTarget);
+            }}
+            onMouseUp={(event) => {
+              event.preventDefault();
+              collapseCaret(event.currentTarget);
+            }}
+            onSelect={(event) => {
+              const node = event.currentTarget;
+              if (node.selectionStart !== node.selectionEnd) {
+                collapseCaret(node);
+              }
             }}
             onBlur={() => {
               setMinFocused(false);
@@ -134,6 +169,7 @@ export function PriceRangeInputs({
             placeholder={String(EXPLORE_PRICE_MIN)}
             aria-label="Budget minimo location"
             className={inputClassName}
+            style={{ colorScheme: "light" }}
           />
         </label>
         <label className="block min-w-0">
@@ -141,14 +177,23 @@ export function PriceRangeInputs({
             Massimo budget (€)
           </span>
           <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
+            {...NUMERIC_FIELD_INPUT_PROPS}
             value={visibleMaxDraft}
             onChange={(e) => handleMaxInputChange(e.target.value)}
-            onFocus={() => {
+            onFocus={(event) => {
               setMaxDraft(String(maxValue));
               setMaxFocused(true);
+              scheduleCollapseCaret(event.currentTarget);
+            }}
+            onMouseUp={(event) => {
+              event.preventDefault();
+              collapseCaret(event.currentTarget);
+            }}
+            onSelect={(event) => {
+              const node = event.currentTarget;
+              if (node.selectionStart !== node.selectionEnd) {
+                collapseCaret(node);
+              }
             }}
             onBlur={() => {
               setMaxFocused(false);
@@ -171,6 +216,7 @@ export function PriceRangeInputs({
             placeholder="Es. 3000"
             aria-label="Budget massimo location"
             className={inputClassName}
+            style={{ colorScheme: "light" }}
           />
         </label>
       </div>

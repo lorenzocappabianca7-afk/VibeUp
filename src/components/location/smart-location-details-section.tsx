@@ -47,6 +47,11 @@ import {
   UtensilsCrossed,
   Wand2,
 } from "lucide-react";
+import {
+  collapseCaret,
+  NUMERIC_FIELD_INPUT_PROPS,
+  scheduleCollapseCaret,
+} from "@/lib/numeric-field";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
@@ -807,16 +812,25 @@ export function SmartLocationDetailsSection({
                   <Minus className="h-3.5 w-3.5" aria-hidden />
                 </HoldStepButton>
                 <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
+                  {...NUMERIC_FIELD_INPUT_PROPS}
                   value={guestCountVisible}
-                  onFocus={() => {
+                  onFocus={(event) => {
                     setGuestCountFocused(true);
                     setGuestCountInput(String(guestCount));
+                    scheduleCollapseCaret(event.currentTarget);
+                  }}
+                  onMouseUp={(event) => {
+                    event.preventDefault();
+                    collapseCaret(event.currentTarget);
+                  }}
+                  onSelect={(event) => {
+                    const node = event.currentTarget;
+                    if (node.selectionStart !== node.selectionEnd) {
+                      collapseCaret(node);
+                    }
                   }}
                   onChange={(event) => {
-                    const nextValue = event.target.value;
+                    const nextValue = event.target.value.replace(/\D/g, "");
                     if (nextValue === "") {
                       setGuestCountInput("");
                       return;
@@ -838,7 +852,8 @@ export function SmartLocationDetailsSection({
                     }
                     setGuestCountFocused(false);
                   }}
-                  className="vibeup-light-field min-w-[3.5rem] flex-1 bg-transparent text-center text-xl font-black tabular-nums text-ink-inverse outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  size={1}
+                  className="vibeup-light-field vibeup-numeric-field min-w-0 flex-1 bg-transparent text-center text-xl font-black tabular-nums text-ink-inverse outline-none"
                   style={{ colorScheme: "light" }}
                   aria-label="Numero invitati"
                 />

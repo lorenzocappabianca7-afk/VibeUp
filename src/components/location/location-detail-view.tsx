@@ -12,6 +12,7 @@ import { useChat } from "@/context/chat-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { assignHomeHref, isHomePath } from "@/lib/home-navigation";
+import { buildLocationHref } from "@/lib/location-href";
 import { datePriceBandLabel } from "@/lib/location-date-price";
 import type { AvailabilityEventPayload } from "@/types/availability-request";
 import {
@@ -42,7 +43,12 @@ import { getLocationPricePresentation } from "@/lib/utils";
 import type { ManagedLocationListing } from "@/types/admin";
 import { isManagedListingLive } from "@/types/admin";
 import type { BookedServiceCategory, MenuAllergenRestriction } from "@/types/event";
-import type { BookingQuote, ExtraServiceId, Location } from "@/types/location";
+import {
+  EXPLORE_GUEST_MIN,
+  type BookingQuote,
+  type ExtraServiceId,
+  type Location,
+} from "@/types/location";
 import {
   buildSavedQuoteId,
   type SavedQuote,
@@ -108,6 +114,26 @@ const EMPTY_QUOTE: BookingQuote = {
 const MAX_QUOTE_GUESTS = 300;
 const MAX_COMPARE_LOCATIONS = 3;
 
+function parseIncomingGuestCount(
+  queryValue?: string,
+  criteriaValue?: number | null,
+) {
+  const fromQuery = Number(queryValue);
+  if (Number.isFinite(fromQuery) && fromQuery >= 1) return fromQuery;
+  if (
+    typeof criteriaValue === "number" &&
+    Number.isFinite(criteriaValue) &&
+    criteriaValue >= 1
+  ) {
+    return criteriaValue;
+  }
+  return null;
+}
+
+function clampQuoteGuests(value: number) {
+  return Math.min(Math.max(value, 1), MAX_QUOTE_GUESTS);
+}
+
 export function LocationDetailView({
   location,
   initialQuoteContext,
@@ -167,17 +193,17 @@ export function LocationDetailView({
   );
   const [startTime, setStartTime] = useState("18:00");
   const [endTime, setEndTime] = useState("23:00");
-  const [guestCount, setGuestCount] = useState(
-    Math.min(
-      Math.max(
-        Number(initialQuoteContext?.guestCount) ||
-          criteria.guestCount ||
-          60,
-        1,
-      ),
-      MAX_QUOTE_GUESTS,
-    ),
+  const incomingGuestCount = parseIncomingGuestCount(
+    initialQuoteContext?.guestCount,
+    criteria.guestCount,
   );
+  const [guestCount, setGuestCount] = useState(
+    clampQuoteGuests(incomingGuestCount ?? EXPLORE_GUEST_MIN),
+  );
+  useEffect(() => {
+    if (incomingGuestCount == null) return;
+    setGuestCount(clampQuoteGuests(incomingGuestCount));
+  }, [incomingGuestCount]);
   const internalServices = useMemo(
     () => getInternalLocationServices(location),
     [location],
@@ -215,10 +241,8 @@ export function LocationDetailView({
             setDate(draft.date);
           }
         }
-        if (!initialQuoteContext?.guestCount) {
-          setGuestCount(
-            Math.min(Math.max(draft.guestCount, 1), MAX_QUOTE_GUESTS),
-          );
+        if (!initialQuoteContext?.guestCount && incomingGuestCount == null) {
+          setGuestCount(clampQuoteGuests(draft.guestCount));
         }
         setStartTime(draft.startTime);
         setEndTime(draft.endTime);
@@ -889,10 +913,8 @@ export function LocationDetailView({
                   : undefined
             }
             isReady={isReady}
-            canGenerateQuote={canGenerateQuote}
             quoteGenerated={quote !== null}
             quoteNeedsRefresh={generatedQuote !== null && !quoteIsCurrent}
-            onGenerateQuote={generateQuote}
             candidateDatePrices={candidateDatePrices}
             selectedDate={date}
             onSelectDate={setDate}
@@ -919,7 +941,20 @@ export function LocationDetailView({
       </div>
 
       <ScrollForSimilarHint />
-      <SimilarLocationsCarousel locations={similarLocations} />
+      <SimilarLocationsCarousel
+        locations={similarLocations}
+        hrefFor={(id) =>
+          buildLocationHref(id, {
+            guestCount,
+            dates:
+              preferredDates.length > 0
+                ? preferredDates
+                : date
+                  ? [date]
+                  : [],
+          })
+        }
+      />
       <RecommendedDjsCarousel djs={recommendedDjs} />
       <LocationReviewsSection location={location} />
 
@@ -945,7 +980,13 @@ function ScrollForSimilarHint() {
   );
 }
 
-function SimilarLocationsCarousel({ locations }: { locations: Location[] }) {
+function SimilarLocationsCarousel({
+  locations,
+  hrefFor,
+}: {
+  locations: Location[];
+  hrefFor: (locationId: string) => string;
+}) {
   if (locations.length === 0) return null;
 
   return (
@@ -970,7 +1011,7 @@ function SimilarLocationsCarousel({ locations }: { locations: Location[] }) {
               className="w-[15rem] shrink-0 lg:w-[17rem]"
             >
               <SoftNavLink
-                href={`/location/${similarLocation.id}`}
+                href={hrefFor(similarLocation.id)}
                 className="block h-full overflow-clip rounded-3xl border border-primary-black/10 bg-background shadow-sm transition-colors duration-150 hover:border-primary-black touch-pan-y"
                 draggable={false}
               >

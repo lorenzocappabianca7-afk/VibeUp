@@ -22,10 +22,8 @@ interface BookingSummaryProps {
   /** Override the location line label (e.g. serata / a partecipante). */
   locationPriceLabel?: string;
   isReady: boolean;
-  canGenerateQuote: boolean;
   quoteGenerated: boolean;
   quoteNeedsRefresh: boolean;
-  onGenerateQuote: () => void;
   candidateDatePrices?: CandidateDatePrice[];
   selectedDate?: string;
   onSelectDate?: (date: string) => void;
@@ -48,10 +46,8 @@ export function BookingSummary({
   hourlyPrice,
   locationPriceLabel,
   isReady,
-  canGenerateQuote,
   quoteGenerated,
   quoteNeedsRefresh,
-  onGenerateQuote,
   candidateDatePrices = [],
   selectedDate,
   onSelectDate,
@@ -95,7 +91,7 @@ export function BookingSummary({
     }
     if (!quoteGenerated || !isReady || quote.total <= 0) {
       setSendHint(
-        "Prima completa il passo 1: genera il preventivo. Poi puoi inviare la richiesta di disponibilità al gestore.",
+        "Prima genera il preventivo nel riquadro Configura la tua serata. Poi puoi inviare la richiesta di disponibilità al gestore.",
       );
       return;
     }
@@ -305,22 +301,10 @@ export function BookingSummary({
       ) : null}
 
       <div className="space-y-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full rounded-2xl py-4 text-base font-semibold"
-          disabled={!canGenerateQuote && !quoteGenerated}
-          onClick={() => {
-            setSendHint(null);
-            onGenerateQuote();
-          }}
-        >
-          1. Genera preventivo
-        </Button>
-
         {quoteNeedsRefresh && quoteGenerated ? (
           <p className="text-center text-xs text-primary-black/55">
-            Hai cambiato i dettagli: rigenera il preventivo prima di inviare.
+            Hai cambiato i dettagli: rigenera il preventivo nel riquadro sopra
+            prima di inviare.
           </p>
         ) : null}
 
@@ -356,9 +340,9 @@ export function BookingSummary({
               Richiesta inviata al gestore
             </span>
           ) : canRetry ? (
-            "2. Invia di nuovo la richiesta"
+            "Invia di nuovo la richiesta"
           ) : (
-            "2. Invia richiesta di disponibilità al gestore"
+            "Invia richiesta di disponibilità al gestore"
           )}
         </Button>
 

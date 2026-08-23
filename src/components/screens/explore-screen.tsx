@@ -8,6 +8,7 @@ import { useAccountGate } from "@/context/account-gate-context";
 import { useAppState } from "@/context/app-state-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
+import { buildLocationHrefFromCriteria } from "@/lib/location-href";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
 import {
   estimateLocationTotalCost,
@@ -179,6 +180,7 @@ function filterLocationsByPartyCriteria(
 ) {
   const normalizedQuery = query.trim().toLowerCase();
   const guestCount = hasAppliedCriteria ? criteria.guestCount : null;
+  const budgetMin = hasAppliedCriteria ? criteria.budgetMin : null;
   const budgetMax = hasAppliedCriteria ? criteria.budgetMax : null;
 
   return locations.filter((location) => {
@@ -193,14 +195,16 @@ function filterLocationsByPartyCriteria(
     const matchesCapacity =
       guestCount == null || location.capacity >= guestCount;
 
-    const matchesBudget =
-      budgetMax == null ||
-      estimateLocationTotalCost(
-        location,
-        guestCount ?? EXPLORE_GUEST_MIN,
-      ) <= budgetMax;
+    const estimatedCost = estimateLocationTotalCost(
+      location,
+      guestCount ?? EXPLORE_GUEST_MIN,
+    );
+    const matchesBudgetMax =
+      budgetMax == null || estimatedCost <= budgetMax;
+    const matchesBudgetMin =
+      budgetMin == null || estimatedCost >= budgetMin;
 
-    return matchesQuery && matchesCapacity && matchesBudget;
+    return matchesQuery && matchesCapacity && matchesBudgetMax && matchesBudgetMin;
   });
 }
 
@@ -255,37 +259,6 @@ function getPublishedManagedServices(listings: ManagedListing[]): ServiceProvide
       supportsInPerson: listing.category === "decorazioni" ? true : undefined,
     };
   });
-}
-
-function buildLocationHref(
-  locationId: string,
-  criteria: PartyCriteria,
-  eventGuestCount?: number,
-  eventDate?: string,
-): string {
-  const params = new URLSearchParams();
-  const guestCount =
-    criteria.guestCount ?? eventGuestCount ?? EXPLORE_GUEST_MIN;
-  params.set("guestCount", String(guestCount));
-  const dates =
-    criteria.dates.length > 0
-      ? criteria.dates
-      : eventDate
-        ? [eventDate]
-        : [];
-  if (dates.length > 0) params.set("dates", dates.join(","));
-  const dateFrom = dates[0] ?? criteria.dateFrom ?? eventDate ?? null;
-  const dateTo =
-    dates[dates.length - 1] ??
-    criteria.dateTo ??
-    criteria.dateFrom ??
-    eventDate ??
-    null;
-  if (dateFrom) params.set("dateFrom", dateFrom);
-  if (dateTo) params.set("dateTo", dateTo);
-
-  const query = params.toString();
-  return query ? `/location/${locationId}?${query}` : `/location/${locationId}`;
 }
 
 export function ExploreScreen({
@@ -520,7 +493,11 @@ export function ExploreScreen({
       parts.push(toLabel ? `${fromLabel} – ${toLabel}` : fromLabel);
     }
     if (criteria.guestCount) parts.push(`${criteria.guestCount} invitati`);
-    if (criteria.budgetMax) {
+    if (criteria.budgetMin != null && criteria.budgetMin > 0 && criteria.budgetMax) {
+      parts.push(
+        `${formatCurrency(criteria.budgetMin)}–${formatCurrency(criteria.budgetMax)}`,
+      );
+    } else if (criteria.budgetMax) {
       parts.push(`fino a ${formatCurrency(criteria.budgetMax)}`);
     }
     if (criteria.freeText.trim()) parts.push("ordinato per descrizione");
@@ -588,12 +565,10 @@ export function ExploreScreen({
       new Map(
         filteredLocations.map((location) => [
           location.id,
-          buildLocationHref(
-            location.id,
-            criteria,
-            eventContext?.guestCount,
-            eventContext?.date,
-          ),
+          buildLocationHrefFromCriteria(location.id, criteria, {
+            guestCount: eventContext?.guestCount,
+            date: eventContext?.date,
+          }),
         ]),
       ),
     [criteria, eventContext?.date, eventContext?.guestCount, filteredLocations],

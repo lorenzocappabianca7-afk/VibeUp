@@ -3,7 +3,9 @@
 import { SettingsShell } from "@/components/profile/settings/settings-shell";
 import { SafeImage } from "@/components/ui/safe-image";
 import { useAppState } from "@/context/app-state-context";
+import { usePartyCriteria } from "@/context/party-criteria-context";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
+import { buildLocationHrefFromCriteria } from "@/lib/location-href";
 import {
   SERVICE_PROVIDERS,
   type ServiceProvider,
@@ -30,6 +32,7 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
     removeFavoriteLocation,
     removeFavoriteService,
   } = useAppState();
+  const { criteria } = usePartyCriteria();
 
   const favoriteLocations = useMemo(() => {
     const managedLocations = managedListings
@@ -119,7 +122,7 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
                   className="relative overflow-hidden rounded-2xl border border-primary-black/8 bg-background"
                 >
                   <SoftNavLink
-                    href={`/location/${location.id}`}
+                    href={buildLocationHrefFromCriteria(location.id, criteria)}
                     className="flex gap-3 p-2 pr-11 touch-pan-y"
                     draggable={false}
                   >
