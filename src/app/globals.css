@@ -103,6 +103,11 @@ select {
   color-scheme: dark;
 }
 
+/* Light paper controls (guest stepper, etc.) — unlayered so it beats the rule above. */
+input.vibeup-light-field {
+  color-scheme: light;
+}
+
 input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;

@@ -108,12 +108,9 @@ export function GuestCountStepper({
 
         <input
           ref={inputRef}
-          type="number"
+          type="text"
           inputMode="numeric"
           pattern="[0-9]*"
-          min={EXPLORE_GUEST_MIN}
-          max={EXPLORE_GUEST_MAX}
-          step={1}
           enterKeyHint="done"
           autoComplete="off"
           value={visible}
@@ -135,7 +132,8 @@ export function GuestCountStepper({
             }
           }}
           aria-label="Numero invitati"
-          className="h-12 min-w-0 flex-1 rounded-xl bg-background text-center text-2xl font-black tabular-nums text-ink-inverse outline-none ring-1 ring-primary-black/10 focus:ring-2 focus:ring-brand-teal/40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className="vibeup-light-field h-12 min-w-0 flex-1 rounded-xl bg-paper-deep text-center text-2xl font-black tabular-nums text-ink-inverse outline-none ring-1 ring-primary-black/10 focus:ring-2 focus:ring-brand-teal/40"
+          style={{ colorScheme: "light" }}
         />
 
         <button

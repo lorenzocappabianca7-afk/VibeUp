@@ -807,10 +807,9 @@ export function SmartLocationDetailsSection({
                   <Minus className="h-3.5 w-3.5" aria-hidden />
                 </HoldStepButton>
                 <input
-                  type="number"
-                  min={1}
-                  max={maxGuests}
+                  type="text"
                   inputMode="numeric"
+                  pattern="[0-9]*"
                   value={guestCountVisible}
                   onFocus={() => {
                     setGuestCountFocused(true);
@@ -839,7 +838,8 @@ export function SmartLocationDetailsSection({
                     }
                     setGuestCountFocused(false);
                   }}
-                  className="min-w-[3.5rem] flex-1 bg-transparent text-center text-xl font-black tabular-nums text-ink-inverse outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  className="vibeup-light-field min-w-[3.5rem] flex-1 bg-transparent text-center text-xl font-black tabular-nums text-ink-inverse outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  style={{ colorScheme: "light" }}
                   aria-label="Numero invitati"
                 />
                 <HoldStepButton
