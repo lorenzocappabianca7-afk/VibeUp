@@ -1,26 +1,17 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useSyncExternalStore } from "react";
 import {
   demoteCriticalPaint,
   markSplashOverlaySkip,
   revealAppShell,
-  SPLASH_LOGO_SRC,
 } from "@/lib/critical-paint";
 import { recoverInteractiveSession } from "@/lib/session-health";
 import {
-  HOLD_AFTER_TAGLINE_MS,
-  LOGO_BOUNCE_MS,
   SPLASH_EXIT_MS,
-  SPLASH_LOGO_DISPLAY_PX,
+  SPLASH_HOLD_MS,
   SPLASH_STORAGE_KEY,
-  TAGLINE_DELAY_MS,
 } from "@/lib/splash";
-
-/** Survives Strict Mode remount — settle class without replaying bounce CSS. */
-let splashBounceAlreadyPlayed = false;
-
-type Phase = "enter" | "exit" | "gone";
 
 function removeBootSplash() {
   document.getElementById("vibeup-boot-splash")?.remove();
@@ -78,18 +69,9 @@ function handoffToApp() {
   });
 }
 
-function skipStraightToApp() {
-  handoffToApp();
-}
-
-function revealExplore() {
-  handoffToApp();
-}
-
 /**
- * Cold-start intro from Home Screen bookmark → Explore.
- * Black plate stays solid; only logo/tagline fade. Cover is removed only after
- * Explore has been revealed underneath.
+ * Times the static HTML splash. Does not render a second logo — a second
+ * overlay was painting a different size/animation on top of the boot splash.
  */
 export function SplashScreen() {
   const skipSplash = useSyncExternalStore(
@@ -97,128 +79,32 @@ export function SplashScreen() {
     shouldSkipSplash,
     () => false,
   );
-  const [phase, setPhase] = useState<Phase>("enter");
-  const [showTagline, setShowTagline] = useState(false);
-  const [bounceDone, setBounceDone] = useState(() => splashBounceAlreadyPlayed);
 
   useLayoutEffect(() => {
-    if (skipSplash) {
-      skipStraightToApp();
-      return;
-    }
-    // Hand off from static HTML splash to the animated React splash.
-    removeBootSplash();
+    if (skipSplash) handoffToApp();
   }, [skipSplash]);
 
   useEffect(() => {
     if (skipSplash) {
-      skipStraightToApp();
+      handoffToApp();
       return;
     }
 
-    splashBounceAlreadyPlayed = true;
-    removeBootSplash();
-
-    // Do not lock html/body overflow during splash — fixed overlay already
-    // blocks interaction, and orphan overflow:hidden freezes desktop scroll.
-
-    const taglineTimer = window.setTimeout(() => {
-      setShowTagline(true);
-    }, TAGLINE_DELAY_MS);
-
-    const settleTimer = window.setTimeout(() => {
-      setBounceDone(true);
-    }, LOGO_BOUNCE_MS + 40);
+    const boot = document.getElementById("vibeup-boot-splash");
 
     const exitTimer = window.setTimeout(() => {
-      setPhase("exit");
-    }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS);
+      boot?.classList.add("vibeup-splash--exit");
+    }, SPLASH_HOLD_MS);
 
     const doneTimer = window.setTimeout(() => {
-      setPhase("gone");
-      revealExplore();
-    }, TAGLINE_DELAY_MS + HOLD_AFTER_TAGLINE_MS + SPLASH_EXIT_MS);
+      handoffToApp();
+    }, SPLASH_HOLD_MS + SPLASH_EXIT_MS);
 
     return () => {
-      window.clearTimeout(taglineTimer);
-      window.clearTimeout(settleTimer);
       window.clearTimeout(exitTimer);
       window.clearTimeout(doneTimer);
     };
   }, [skipSplash]);
 
-  if (skipSplash || phase === "gone") return null;
-
-  return (
-    <div
-      className={`vibeup-splash${phase === "exit" ? " vibeup-splash--exit" : ""}`}
-      role="presentation"
-      aria-hidden
-      suppressHydrationWarning
-      style={{
-        position: "fixed",
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0,
-        zIndex: 10000,
-        backgroundColor: "#000000",
-        opacity: 1,
-        transition: "none",
-        pointerEvents: phase === "exit" ? "none" : "auto",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <div
-        className="vibeup-splash__stage"
-        style={{
-          opacity: phase === "exit" ? 0 : 1,
-          transition:
-            phase === "exit"
-              ? `opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`
-              : "none",
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={SPLASH_LOGO_SRC}
-          alt=""
-          width={SPLASH_LOGO_DISPLAY_PX}
-          height={SPLASH_LOGO_DISPLAY_PX}
-          className={
-            bounceDone
-              ? "vibeup-splash__logo vibeup-splash__logo--settled"
-              : "vibeup-splash__logo"
-          }
-          style={{
-            width: SPLASH_LOGO_DISPLAY_PX,
-            height: SPLASH_LOGO_DISPLAY_PX,
-            maxWidth: SPLASH_LOGO_DISPLAY_PX,
-            maxHeight: SPLASH_LOGO_DISPLAY_PX,
-            opacity: 1,
-          }}
-          draggable={false}
-          decoding="sync"
-          fetchPriority="high"
-          onAnimationEnd={(event) => {
-            if (!event.animationName.includes("vibeup-splash-bounce")) return;
-            setBounceDone(true);
-          }}
-        />
-        <p
-          className={`vibeup-splash__tagline${showTagline ? " vibeup-splash__tagline--in" : ""}`}
-          aria-label="Cool people plan cool eighteenth."
-        >
-          Cool people plan cool{" "}
-          <span className="vibeup-splash__eighteen">
-            18
-            <sup className="vibeup-splash__ordinal">th</sup>
-          </span>
-          .
-        </p>
-      </div>
-    </div>
-  );
+  return null;
 }

@@ -10,14 +10,8 @@ export const SPLASH_LOGO_DISPLAY_PX = 112;
 /** Stage lift used by HTML splash and generated iOS launch images */
 export const SPLASH_STAGE_LIFT_VH = 14;
 
-/** Logo bounce — longer = smoother spring */
-export const LOGO_BOUNCE_MS = 1400;
-
-/** Tagline appears shortly after the logo starts bouncing */
-export const TAGLINE_DELAY_MS = 520;
-
-/** Hold after the tagline is visible, then start exit */
-export const HOLD_AFTER_TAGLINE_MS = 3500;
+/** Hold with logo + tagline already visible, then start exit */
+export const SPLASH_HOLD_MS = 4000;
 
 /** Soft fade of logo/tagline only — the black plate stays solid until cut */
 export const SPLASH_EXIT_MS = 420;

@@ -1,5 +1,4 @@
 import {
-  LOGO_BOUNCE_MS,
   SPLASH_EXIT_MS,
   SPLASH_LOGO_DISPLAY_PX,
   SPLASH_STAGE_LIFT_VH,
@@ -88,16 +87,9 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   object-fit:contain!important;
   object-position:center!important;
   opacity:1!important;
-  transform:none;
-  transform-origin:center center;
-  -webkit-user-drag:none;
-  animation:vibeup-splash-bounce ${LOGO_BOUNCE_MS}ms cubic-bezier(0.16,1,0.3,1) both;
-}
-.vibeup-splash__logo--settled{
-  animation:none!important;
   transform:none!important;
-  filter:none!important;
-  will-change:auto!important;
+  animation:none!important;
+  -webkit-user-drag:none;
 }
 .vibeup-splash__tagline{
   margin:1.15rem 0 0;
@@ -112,8 +104,8 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   white-space:nowrap;
   color:#fff;
   text-align:center;
-  opacity:0;
-  transform:translate3d(0,10px,0);
+  opacity:1;
+  transform:none;
 }
 .vibeup-splash__eighteen{
   font-size:1.08em;
@@ -129,26 +121,7 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   top:-0.12em;
   margin-left:0.02em;
 }
-.vibeup-splash__tagline--in{
-  animation:vibeup-splash-tagline-in 640ms cubic-bezier(0.16,1,0.3,1) both;
-}
-@keyframes vibeup-splash-bounce{
-  0%{transform:translate3d(0,0,0) scale(1)}
-  35%{transform:translate3d(0,0,0) scale(1.06)}
-  55%{transform:translate3d(0,0,0) scale(0.98)}
-  75%{transform:translate3d(0,0,0) scale(1.02)}
-  100%{transform:translate3d(0,0,0) scale(1)}
-}
-@keyframes vibeup-splash-tagline-in{
-  from{opacity:0;transform:translate3d(0,10px,0)}
-  to{opacity:1;transform:translate3d(0,0,0)}
-}
 @media (prefers-reduced-motion:reduce){
-  .vibeup-splash__logo,.vibeup-splash__tagline--in{
-    animation:none!important;
-    opacity:1!important;
-    transform:none!important;
-  }
   .vibeup-splash--exit .vibeup-splash__stage{transition:none!important}
 }
 #vibeup-app-shell{

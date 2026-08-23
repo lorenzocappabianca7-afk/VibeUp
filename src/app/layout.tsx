@@ -6,6 +6,7 @@ import { AppChrome } from "@/components/layout/app-chrome";
 import { AppProviders } from "@/components/providers/app-providers";
 import { CriticalPaint } from "@/components/splash/critical-paint";
 import { SplashScreen } from "@/components/splash/splash-screen";
+import { APPLE_STARTUP_IMAGES } from "@/lib/apple-startup";
 import {
   CRITICAL_PAINT_CSS,
   CRITICAL_PAINT_SCRIPT,
@@ -42,73 +43,6 @@ const brandDisplay = localFont({
   display: "swap",
 });
 
-const APPLE_STARTUP_IMAGES = [
-  /* Fallback first — unmatched devices otherwise flash a white native splash */
-  {
-    url: "/splash/apple-startup-1170x2532-v2.png",
-  },
-  {
-    url: "/splash/apple-startup-1320x2868-v2.png",
-    media:
-      "screen and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1206x2622-v2.png",
-    media:
-      "screen and (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1290x2796-v2.png",
-    media:
-      "screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1179x2556-v2.png",
-    media:
-      "screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1284x2778-v2.png",
-    media:
-      "screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1170x2532-v2.png",
-    media:
-      "screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1125x2436-v2.png",
-    media:
-      "screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1242x2688-v2.png",
-    media:
-      "screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-828x1792-v2.png",
-    media:
-      "screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-750x1334-v2.png",
-    media:
-      "screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1668x2388-v2.png",
-    media:
-      "screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-2048x2732-v2.png",
-    media:
-      "screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
-  },
-] as const;
-
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
@@ -132,8 +66,6 @@ export const metadata: Metadata = {
     title: "VibeUp",
     /* "black" (not translucent) avoids a light strip/flash under the status bar on iOS */
     statusBarStyle: "black",
-    /* Black + logo launch images — continuous icon→splash handoff on Home Screen */
-    startupImage: [...APPLE_STARTUP_IMAGES],
   },
   /* Next emits only mobile-web-app-capable; Safari still keys standalone off the apple-prefixed tag. */
   other: {
@@ -228,6 +160,14 @@ export default function RootLayout({
           type="image/png"
           fetchPriority="high"
         />
+        {APPLE_STARTUP_IMAGES.map((image) => (
+          <link
+            key={`${image.url}:${"media" in image ? image.media : "fallback"}`}
+            rel="apple-touch-startup-image"
+            href={image.url}
+            {...("media" in image ? { media: image.media } : {})}
+          />
+        ))}
       </head>
       <body
         className="min-h-dvh text-primary-black"
@@ -242,8 +182,7 @@ export default function RootLayout({
         />
         {/* Black shell with inline styles — demoted behind app after splash */}
         <CriticalPaint />
-        {/* Static splash in first HTML — must match React splash geometry
-            (stage + tagline slot + 14vh lift) or the logo jumps on hydrate. */}
+        {/* Sole splash overlay — logo + tagline at final size from first paint. */}
         <div
           id="vibeup-boot-splash"
           className="vibeup-splash"
@@ -288,13 +227,13 @@ export default function RootLayout({
                 display: "block",
               }}
             />
-            {/* Reserve tagline height so handoff to React does not shift the logo */}
             <p
               className="vibeup-splash__tagline"
               style={{
                 margin: "1.15rem 0 0",
                 minHeight: "1.5em",
-                opacity: 0,
+                opacity: 1,
+                color: "#ffffff",
               }}
             >
               Cool people plan cool{" "}
