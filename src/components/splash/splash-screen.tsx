@@ -207,8 +207,14 @@ export function SplashScreen() {
         />
         <p
           className={`vibeup-splash__tagline${showTagline ? " vibeup-splash__tagline--in" : ""}`}
+          aria-label="Cool people plan cool eighteenth."
         >
-          Cool people plan cool eighteen.
+          Cool people plan cool{" "}
+          <span className="vibeup-splash__eighteen">
+            18
+            <sup className="vibeup-splash__ordinal">th</sup>
+          </span>
+          .
         </p>
       </div>
     </div>

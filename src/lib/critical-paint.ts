@@ -95,20 +95,34 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   will-change:auto!important;
 }
 .vibeup-splash__tagline{
-  margin:1rem 0 0;
-  min-height:1.3em;
-  max-width:calc(100vw - 1.5rem);
-  padding:0 0.75rem;
+  margin:1.15rem 0 0;
+  min-height:1.5em;
+  max-width:calc(100vw - 0.75rem);
+  padding:0 0.25rem;
   font-family:var(--font-brand),system-ui,sans-serif;
-  font-size:clamp(0.92rem,3.7vw,1.35rem);
+  font-size:clamp(1.55rem,7.6vw,3.4rem);
   font-weight:700;
-  letter-spacing:-0.025em;
-  line-height:1.2;
+  letter-spacing:-0.05em;
+  line-height:1.28;
   white-space:nowrap;
   color:#fff;
   text-align:center;
   opacity:0;
   transform:translate3d(0,10px,0);
+}
+.vibeup-splash__eighteen{
+  font-size:1.08em;
+  letter-spacing:-0.06em;
+}
+.vibeup-splash__ordinal{
+  font-size:0.38em;
+  font-weight:700;
+  line-height:1;
+  letter-spacing:0;
+  vertical-align:super;
+  position:relative;
+  top:-0.12em;
+  margin-left:0.02em;
 }
 .vibeup-splash__tagline--in{
   animation:vibeup-splash-tagline-in 640ms cubic-bezier(0.16,1,0.3,1) both;

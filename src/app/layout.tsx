@@ -290,12 +290,17 @@ export default function RootLayout({
             <p
               className="vibeup-splash__tagline"
               style={{
-                margin: "1rem 0 0",
-                minHeight: "1.3em",
+                margin: "1.15rem 0 0",
+                minHeight: "1.5em",
                 opacity: 0,
               }}
             >
-              Cool people plan cool eighteen.
+              Cool people plan cool{" "}
+              <span className="vibeup-splash__eighteen">
+                18
+                <sup className="vibeup-splash__ordinal">th</sup>
+              </span>
+              .
             </p>
           </div>
         </div>
