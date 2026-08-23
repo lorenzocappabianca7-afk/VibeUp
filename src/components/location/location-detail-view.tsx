@@ -163,7 +163,7 @@ export function LocationDetailView({
     );
   }, [incomingPreferredDates]);
   const [date, setDate] = useState(
-    initialQuoteContext?.dateFrom ?? preferredDates[0] ?? "",
+    initialQuoteContext?.dateFrom ?? incomingPreferredDates[0] ?? "",
   );
   const [startTime, setStartTime] = useState("18:00");
   const [endTime, setEndTime] = useState("23:00");
@@ -208,7 +208,12 @@ export function LocationDetailView({
     queueMicrotask(() => {
       if (draft) {
         if (!initialQuoteContext?.dateFrom && draft.date) {
-          setDate(draft.date);
+          if (
+            incomingPreferredDates.length === 0 ||
+            incomingPreferredDates.includes(draft.date)
+          ) {
+            setDate(draft.date);
+          }
         }
         if (!initialQuoteContext?.guestCount) {
           setGuestCount(
@@ -228,9 +233,12 @@ export function LocationDetailView({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount hydrate
   }, []);
 
-  if (!date && preferredDates[0]) {
-    setDate(preferredDates[0]);
-  }
+  useEffect(() => {
+    if (preferredDates.length === 0) return;
+    if (!preferredDates.includes(date)) {
+      setDate(preferredDates[0]);
+    }
+  }, [date, preferredDates]);
 
   useEffect(() => {
     if (!quoteSessionReady || !persistQuoteSession) return;

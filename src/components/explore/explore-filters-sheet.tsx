@@ -43,7 +43,7 @@ const filterDateFormatter = new Intl.DateTimeFormat("it-IT", {
 });
 
 function resolveFilterDates(filters: Pick<ExploreFilters, "dates" | "dateFrom" | "dateTo">) {
-  if (filters.dates.length > 0) return normalizePartyDates(filters.dates);
+  if (filters.dates?.length) return normalizePartyDates(filters.dates);
   return normalizePartyDates(
     [filters.dateFrom, filters.dateTo].filter(
       (item): item is string => typeof item === "string" && item.length > 0,

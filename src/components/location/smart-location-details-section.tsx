@@ -21,7 +21,7 @@ import {
 import { EXTRA_SERVICES } from "@/lib/mock/extra-services";
 import { cn, formatCurrency } from "@/lib/utils";
 import { VibeUpCalendar } from "@/components/ui/vibeup-calendar";
-import { MAX_PARTY_DATES } from "@/types/party-criteria";
+import { MAX_PARTY_DATES, normalizePartyDates } from "@/types/party-criteria";
 import type {
   BookingQuote,
   ExtraService,
@@ -350,8 +350,13 @@ export function SmartLocationDetailsSection({
     setOpenPicker((current) => (current === panel ? null : panel));
   }
 
-  const calendarDates =
-    preferredDates.length > 0 ? preferredDates : date ? [date] : [];
+  const calendarDates = normalizePartyDates(
+    preferredDates.length > 0
+      ? [...preferredDates, date]
+      : date
+        ? [date]
+        : [],
+  );
 
   function selectPreferredDate(value: string) {
     if (!onPreferredDatesChange) {
@@ -361,14 +366,18 @@ export function SmartLocationDetailsSection({
     }
 
     if (calendarDates.includes(value)) {
+      if (date !== value) {
+        onDateChange(value);
+        return;
+      }
       const next = calendarDates.filter((item) => item !== value);
       onPreferredDatesChange(next);
-      if (date === value) onDateChange(next[0] ?? "");
+      onDateChange(next[0] ?? "");
       return;
     }
 
     if (calendarDates.length >= MAX_PARTY_DATES) return;
-    onPreferredDatesChange([...calendarDates, value].sort());
+    onPreferredDatesChange(normalizePartyDates([...calendarDates, value]));
     onDateChange(value);
   }
 
