@@ -720,10 +720,7 @@ export function SmartLocationDetailsSection({
               </button>
             </div>
 
-            <div
-              className="vibeup-guest-stepper rounded-xl border border-white/10 bg-paper px-3 py-2.5 shadow-sm"
-              onSelectStart={(event) => event.preventDefault()}
-            >
+            <div className="vibeup-guest-stepper rounded-xl border border-white/10 bg-paper px-3 py-2.5 shadow-sm">
               <span className="flex items-center gap-1 text-[10px] font-semibold text-ink-inverse/50">
                 <Users className="h-3 w-3" aria-hidden />
                 Invitati

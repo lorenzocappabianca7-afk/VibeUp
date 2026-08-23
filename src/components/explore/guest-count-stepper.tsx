@@ -94,7 +94,6 @@ export function GuestCountStepper({
         "vibeup-guest-stepper min-w-0 w-full rounded-2xl border border-primary-black/10 bg-paper px-4 py-3",
         className,
       )}
-      onSelectStart={(event) => event.preventDefault()}
     >
       <label className="block text-sm font-semibold text-ink-inverse">
         Invitati

@@ -69,14 +69,16 @@ export function HoldStepButton({
     const node = buttonRef.current;
     if (!node) return;
 
-    const blockNativeCallout = (event: TouchEvent) => {
+    const blockNativeCallout = (event: Event) => {
       if (node.disabled) return;
       event.preventDefault();
     };
 
     node.addEventListener("touchstart", blockNativeCallout, { passive: false });
+    node.addEventListener("selectstart", blockNativeCallout);
     return () => {
       node.removeEventListener("touchstart", blockNativeCallout);
+      node.removeEventListener("selectstart", blockNativeCallout);
     };
   }, []);
 
@@ -102,7 +104,6 @@ export function HoldStepButton({
       onPointerUp={stop}
       onPointerCancel={stop}
       onContextMenu={(event) => event.preventDefault()}
-      onSelectStart={(event) => event.preventDefault()}
       onClick={() => {
         if (pointerStartedRef.current) {
           pointerStartedRef.current = false;
