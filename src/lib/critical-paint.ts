@@ -1,6 +1,8 @@
 import {
   LOGO_BOUNCE_MS,
   SPLASH_EXIT_MS,
+  SPLASH_LOGO_DISPLAY_PX,
+  SPLASH_STAGE_LIFT_VH,
   SPLASH_STORAGE_KEY,
 } from "@/lib/splash";
 
@@ -71,14 +73,17 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   display:flex;
   flex-direction:column;
   align-items:center;
-  margin-bottom:14vh;
+  margin-bottom:${SPLASH_STAGE_LIFT_VH}vh;
   opacity:1;
 }
 .vibeup-splash__logo{
   display:block!important;
-  width:7rem!important;
-  max-width:7rem!important;
-  height:auto!important;
+  width:${SPLASH_LOGO_DISPLAY_PX}px!important;
+  height:${SPLASH_LOGO_DISPLAY_PX}px!important;
+  min-width:${SPLASH_LOGO_DISPLAY_PX}px!important;
+  min-height:${SPLASH_LOGO_DISPLAY_PX}px!important;
+  max-width:${SPLASH_LOGO_DISPLAY_PX}px!important;
+  max-height:${SPLASH_LOGO_DISPLAY_PX}px!important;
   aspect-ratio:1/1!important;
   object-fit:contain!important;
   object-position:center!important;
@@ -145,9 +150,6 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
     transform:none!important;
   }
   .vibeup-splash--exit .vibeup-splash__stage{transition:none!important}
-}
-@media (max-width:380px){
-  .vibeup-splash__logo{width:6.25rem!important;max-width:6.25rem!important}
 }
 #vibeup-app-shell{
   position:relative;

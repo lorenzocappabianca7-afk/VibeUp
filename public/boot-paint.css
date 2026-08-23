@@ -53,6 +53,27 @@ html.vibeup-paint-demoted #vibeup-critical-paint {
   transition: none !important;
 }
 
+.vibeup-splash__stage {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 14vh;
+}
+
+.vibeup-splash__logo {
+  display: block !important;
+  width: 112px !important;
+  height: 112px !important;
+  min-width: 112px !important;
+  min-height: 112px !important;
+  max-width: 112px !important;
+  max-height: 112px !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
 #vibeup-app-shell {
   position: relative;
   z-index: 1;

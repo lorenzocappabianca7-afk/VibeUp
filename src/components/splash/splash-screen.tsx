@@ -12,6 +12,7 @@ import {
   HOLD_AFTER_TAGLINE_MS,
   LOGO_BOUNCE_MS,
   SPLASH_EXIT_MS,
+  SPLASH_LOGO_DISPLAY_PX,
   SPLASH_STORAGE_KEY,
   TAGLINE_DELAY_MS,
 } from "@/lib/splash";
@@ -184,17 +185,18 @@ export function SplashScreen() {
         <img
           src={SPLASH_LOGO_SRC}
           alt=""
-          width={640}
-          height={640}
+          width={SPLASH_LOGO_DISPLAY_PX}
+          height={SPLASH_LOGO_DISPLAY_PX}
           className={
             bounceDone
               ? "vibeup-splash__logo vibeup-splash__logo--settled"
               : "vibeup-splash__logo"
           }
           style={{
-            width: "7rem",
-            maxWidth: "7rem",
-            height: "auto",
+            width: SPLASH_LOGO_DISPLAY_PX,
+            height: SPLASH_LOGO_DISPLAY_PX,
+            maxWidth: SPLASH_LOGO_DISPLAY_PX,
+            maxHeight: SPLASH_LOGO_DISPLAY_PX,
             opacity: 1,
           }}
           draggable={false}
