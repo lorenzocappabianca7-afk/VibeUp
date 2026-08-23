@@ -285,7 +285,7 @@ export default function RootLayout({
               className="vibeup-splash__tagline"
               style={{
                 margin: "1rem 0 0",
-                minHeight: "2.3em",
+                minHeight: "1.3em",
                 opacity: 0,
               }}
             >

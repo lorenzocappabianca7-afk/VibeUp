@@ -96,14 +96,15 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
 }
 .vibeup-splash__tagline{
   margin:1rem 0 0;
-  min-height:2.3em;
-  max-width:16.5rem;
-  padding:0 0.5rem;
+  min-height:1.3em;
+  max-width:calc(100vw - 1.5rem);
+  padding:0 0.75rem;
   font-family:var(--font-brand),system-ui,sans-serif;
-  font-size:1.35rem;
+  font-size:clamp(0.92rem,3.7vw,1.35rem);
   font-weight:700;
   letter-spacing:-0.025em;
-  line-height:1.15;
+  line-height:1.2;
+  white-space:nowrap;
   color:#fff;
   text-align:center;
   opacity:0;
