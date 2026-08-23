@@ -158,6 +158,18 @@ select.bg-surface {
 input.vibeup-numeric-field {
   caret-color: var(--ink-inverse);
   -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Hold-to-repeat +/- : long-press must not start native text selection. */
+button.vibeup-hold-step,
+.vibeup-guest-stepper,
+.vibeup-guest-stepper * {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  touch-action: manipulation;
 }
 
 input.vibeup-numeric-field::selection {

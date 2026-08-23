@@ -52,8 +52,9 @@ import {
   NUMERIC_FIELD_INPUT_PROPS,
   scheduleCollapseCaret,
 } from "@/lib/numeric-field";
+import { HoldStepButton } from "@/components/ui/hold-step-button";
 import type { LucideIcon } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, useState } from "react";
 
 const SERVICE_ICONS: Record<ExtraServiceId, LucideIcon> = {
   menu: UtensilsCrossed,
@@ -165,84 +166,6 @@ function formatDateLabel(value: string): string {
 function clampGuestCount(value: number, maxGuests: number) {
   if (!Number.isFinite(value)) return 1;
   return Math.min(maxGuests, Math.max(1, Math.round(value)));
-}
-
-function useHoldRepeat(step: () => void) {
-  const stepRef = useRef(step);
-  stepRef.current = step;
-  const stopRef = useRef<(() => void) | null>(null);
-
-  useEffect(() => () => stopRef.current?.(), []);
-
-  function stop() {
-    stopRef.current?.();
-  }
-
-  function start() {
-    stop();
-    stepRef.current();
-
-    let intervalMs = 140;
-    let intervalId = 0;
-    const delayId = window.setTimeout(() => {
-      const tick = () => {
-        stepRef.current();
-        intervalMs = Math.max(36, Math.round(intervalMs * 0.82));
-        intervalId = window.setTimeout(tick, intervalMs);
-      };
-      intervalId = window.setTimeout(tick, intervalMs);
-    }, 380);
-
-    stopRef.current = () => {
-      window.clearTimeout(delayId);
-      window.clearTimeout(intervalId);
-      stopRef.current = null;
-    };
-  }
-
-  return { start, stop };
-}
-
-function HoldStepButton({
-  label,
-  disabled,
-  className,
-  onStep,
-  children,
-}: {
-  label: string;
-  disabled: boolean;
-  className: string;
-  onStep: () => void;
-  children: ReactNode;
-}) {
-  const { start, stop } = useHoldRepeat(onStep);
-
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      aria-label={label}
-      onPointerDown={(event) => {
-        if (disabled) return;
-        if (event.pointerType === "mouse" && event.button !== 0) return;
-        event.preventDefault();
-        event.currentTarget.setPointerCapture(event.pointerId);
-        start();
-      }}
-      onPointerUp={stop}
-      onPointerCancel={stop}
-      onLostPointerCapture={stop}
-      onContextMenu={(event) => event.preventDefault()}
-      onClick={(event) => {
-        if (event.detail > 0) return;
-        if (!disabled) onStep();
-      }}
-      className={className}
-    >
-      {children}
-    </button>
-  );
 }
 
 function BookingTimePicker({
@@ -797,7 +720,10 @@ export function SmartLocationDetailsSection({
               </button>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-paper px-3 py-2.5 shadow-sm">
+            <div
+              className="vibeup-guest-stepper rounded-xl border border-white/10 bg-paper px-3 py-2.5 shadow-sm"
+              onSelectStart={(event) => event.preventDefault()}
+            >
               <span className="flex items-center gap-1 text-[10px] font-semibold text-ink-inverse/50">
                 <Users className="h-3 w-3" aria-hidden />
                 Invitati

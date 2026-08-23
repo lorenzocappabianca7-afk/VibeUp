@@ -174,7 +174,7 @@ export const DEFAULT_EXPLORE_MAX_PRICE = 3_000;
 export const EXPLORE_PRICE_STEP = 50;
 export const EXPLORE_GUEST_MIN = 10;
 export const EXPLORE_GUEST_MAX = 300;
-export const EXPLORE_GUEST_STEP = 10;
+export const EXPLORE_GUEST_STEP = 1;
 
 export const PARTY_TYPE_LABELS: Record<PartyType, string> = {
   compleanno: "Compleanno",

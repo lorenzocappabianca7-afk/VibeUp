@@ -10,6 +10,7 @@ import {
   NUMERIC_FIELD_INPUT_PROPS,
   scheduleCollapseCaret,
 } from "@/lib/numeric-field";
+import { HoldStepButton } from "@/components/ui/hold-step-button";
 import { cn } from "@/lib/utils";
 import { Minus, Plus } from "lucide-react";
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
@@ -40,6 +41,8 @@ export function GuestCountStepper({
   const [draft, setDraft] = useState(String(value));
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const valueRef = useRef(value);
+  valueRef.current = value;
   const atMin = value <= EXPLORE_GUEST_MIN;
   const atMax = value >= EXPLORE_GUEST_MAX;
   const visible = focused ? draft : String(value);
@@ -76,28 +79,22 @@ export function GuestCountStepper({
     commit: () => commitDraft(focused ? draft : String(value)),
   }));
 
-  function decrement() {
-    if (!atMin) {
-      const next = Math.max(EXPLORE_GUEST_MIN, value - EXPLORE_GUEST_STEP);
-      onChange(next);
-      setDraft(String(next));
-    }
-  }
-
-  function increment() {
-    if (!atMax) {
-      const next = Math.min(EXPLORE_GUEST_MAX, value + EXPLORE_GUEST_STEP);
-      onChange(next);
-      setDraft(String(next));
-    }
+  function stepBy(delta: number) {
+    const current = valueRef.current;
+    const next = clampGuestCount(current + delta);
+    if (next === current) return;
+    valueRef.current = next;
+    onChange(next);
+    setDraft(String(next));
   }
 
   return (
     <div
       className={cn(
-        "min-w-0 w-full rounded-2xl border border-primary-black/10 bg-paper px-4 py-3",
+        "vibeup-guest-stepper min-w-0 w-full rounded-2xl border border-primary-black/10 bg-paper px-4 py-3",
         className,
       )}
+      onSelectStart={(event) => event.preventDefault()}
     >
       <label className="block text-sm font-semibold text-ink-inverse">
         Invitati
@@ -107,11 +104,10 @@ export function GuestCountStepper({
       </p>
 
       <div className="mt-3 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={decrement}
+        <HoldStepButton
+          label="Riduci numero invitati"
           disabled={atMin}
-          aria-label="Riduci numero invitati"
+          onStep={() => stepBy(-EXPLORE_GUEST_STEP)}
           className={cn(
             "touch-target touch-feedback flex shrink-0 items-center justify-center rounded-full transition-colors",
             atMin
@@ -120,7 +116,7 @@ export function GuestCountStepper({
           )}
         >
           <Minus className="h-4 w-4" aria-hidden />
-        </button>
+        </HoldStepButton>
 
         <input
           ref={inputRef}
@@ -155,11 +151,10 @@ export function GuestCountStepper({
           style={{ colorScheme: "light" }}
         />
 
-        <button
-          type="button"
-          onClick={increment}
+        <HoldStepButton
+          label="Aumenta numero invitati"
           disabled={atMax}
-          aria-label="Aumenta numero invitati"
+          onStep={() => stepBy(EXPLORE_GUEST_STEP)}
           className={cn(
             "touch-target touch-feedback flex shrink-0 items-center justify-center rounded-full transition-colors",
             atMax
@@ -168,8 +163,11 @@ export function GuestCountStepper({
           )}
         >
           <Plus className="h-4 w-4" aria-hidden />
-        </button>
+        </HoldStepButton>
       </div>
+      <p className="mt-2 text-center text-[10px] font-medium text-ink-inverse/40">
+        ±1 a tap · tieni premuto per accelerare
+      </p>
     </div>
   );
 }
