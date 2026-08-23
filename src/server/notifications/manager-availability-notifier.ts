@@ -1,4 +1,5 @@
 import type { AvailabilityRequest } from "@/types/availability-request";
+import { buildAvailabilityRequestDetailsBlock } from "@/lib/availability-request-details";
 import { sendTransactionalEmail } from "@/lib/email/mailer";
 import { getSiteUrl } from "@/lib/site";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -23,7 +24,7 @@ const PUBLIC_SITE = getSiteUrl();
 /**
  * Template testuale IT (plain). Placeholder:
  * {{requesterName}} {{locationName}} {{title}} {{descriptionLine}}
- * {{dateLabel}} {{timeLabel}} {{guests}} {{total}} {{responseLink}}
+ * {{dateLabel}} {{timeLabel}} {{guests}} {{detailsBlock}} {{total}} {{responseLink}}
  */
 export const AVAILABILITY_REQUEST_MESSAGE_TEMPLATE = `Ciao! 👋 Qui è VibeUp.
 
@@ -33,6 +34,7 @@ export const AVAILABILITY_REQUEST_MESSAGE_TEMPLATE = `Ciao! 👋 Qui è VibeUp.
 🎉 {{title}}{{descriptionLine}}
 📅 {{dateLabel}} · {{timeLabel}}
 👥 {{guests}} invitati
+{{detailsBlock}}
 💶 Totale stimato (VibeUp): {{total}}
 
 Puoi rispondere in tre modi dal tuo link personale:
@@ -78,6 +80,7 @@ export function buildAvailabilityRequestMessageBody(
       : "n.d.";
   const description = (payload.description || "").trim();
   const descriptionLine = description ? `\n📝 ${description}` : "";
+  const detailsBlock = buildAvailabilityRequestDetailsBlock(payload);
   const responseLink = `${PUBLIC_SITE}/r/${encodeURIComponent(request.responseToken)}`;
 
   return fillTemplate(AVAILABILITY_REQUEST_MESSAGE_TEMPLATE, {
@@ -88,6 +91,7 @@ export function buildAvailabilityRequestMessageBody(
     dateLabel,
     timeLabel,
     guests,
+    detailsBlock,
     total,
     responseLink,
   });

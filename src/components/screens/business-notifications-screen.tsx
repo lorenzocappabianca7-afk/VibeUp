@@ -1,5 +1,6 @@
 "use client";
 
+import { AvailabilityRequestDetails } from "@/components/availability/availability-request-details";
 import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import {
   formatAvailabilityRequestTime,
@@ -78,6 +79,7 @@ function AvailabilityRequestCard({
               {payload.guestCount} invitati · Totale{" "}
               {formatCurrency(payload.totalCost)}
             </p>
+            <AvailabilityRequestDetails payload={payload} compact />
           </div>
           <p className="mt-1.5 text-xs text-primary-black/40">
             {formatAvailabilityRequestTime(request.createdAt)}

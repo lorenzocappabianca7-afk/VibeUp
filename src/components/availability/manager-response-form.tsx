@@ -1,5 +1,6 @@
 "use client";
 
+import { AvailabilityRequestDetails } from "@/components/availability/availability-request-details";
 import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type {
@@ -141,6 +142,9 @@ export function ManagerResponseForm({
           <div className="flex justify-between gap-3">
             <dt className="text-primary-black/60">Ospiti</dt>
             <dd className="font-medium text-primary-black">{payload.guestCount}</dd>
+          </div>
+          <div className="border-t border-primary-black/10 pt-3">
+            <AvailabilityRequestDetails payload={payload} />
           </div>
           <div className="flex justify-between gap-3 border-t border-primary-black/10 pt-2">
             <dt className="font-semibold text-primary-black">Totale stimato</dt>

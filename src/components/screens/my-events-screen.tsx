@@ -3,7 +3,17 @@
 import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import { DiscountInviteBanner } from "@/components/discount-invite-banner";
 import { EventCountdown } from "@/components/events/event-countdown";
+import { EventHintLink } from "@/components/events/event-hint-link";
+import { EventInfoSheet } from "@/components/events/event-info-sheet";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
+import {
+  EVENT_CHECKLIST,
+  EVENT_CHECKLIST_INTRO,
+  EVENT_CHECKLIST_TITLE,
+  EVENT_TIPS,
+  EVENT_TIPS_INTRO,
+  EVENT_TIPS_TITLE,
+} from "@/lib/event-organizer-guides";
 import { useAppState } from "@/context/app-state-context";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
 import { useProfileCommunications } from "@/context/profile-communications-context";
@@ -499,6 +509,13 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   const [titleDraft, setTitleDraft] = useState(event.title);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [openPanel, setOpenPanel] = useState<
+    "tips" | "checklist" | "payment" | null
+  >(null);
+
+  if (!isActive && openPanel) {
+    setOpenPanel(null);
+  }
   const titleInputRef = useRef<HTMLInputElement>(null);
   const totalCost =
     event.totalCost ??
@@ -625,6 +642,21 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
               <span className="min-w-0">{event.guestCount} ospiti</span>
             </p>
           </div>
+
+          <div className="mt-3 flex flex-col items-start gap-1.5">
+            <EventHintLink
+              onClick={() => setOpenPanel("tips")}
+              className="text-[color:var(--postit-ink)] decoration-[color:var(--postit-ink)]/40"
+            >
+              I nostri consigli
+            </EventHintLink>
+            <EventHintLink
+              onClick={() => setOpenPanel("checklist")}
+              className="text-[color:var(--postit-ink)] decoration-[color:var(--postit-ink)]/40"
+            >
+              Cosa devi ricordarti di fare
+            </EventHintLink>
+          </div>
         </div>
 
         <DepositDeadlineTimer
@@ -636,44 +668,12 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
         />
 
         <div className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
-          <h3 className="text-sm font-bold text-[color:var(--postit-ink)]">
-            Da pagare
-          </h3>
-
-          <ul className="mt-3 min-w-0 space-y-2">
-            {event.services.map((service) => (
-              <li
-                key={service.id}
-                className="flex min-w-0 items-baseline justify-between gap-3 text-sm font-semibold text-[color:var(--postit-ink)]"
-              >
-                <span className="min-w-0 truncate font-bold">
-                  {service.name}
-                </span>
-                <span className="shrink-0 font-bold tabular-nums">
-                  {formatCurrency(service.amountPaid)}
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          <dl className="mt-4 min-w-0 space-y-2 border-t border-black/10 pt-4 text-sm">
-            <div className="flex min-w-0 items-center justify-between gap-3">
-              <dt className="min-w-0 font-semibold text-[color:var(--postit-ink-muted)]">
-                Caparra location
-              </dt>
-              <dd className="shrink-0 font-bold tabular-nums text-[color:var(--postit-ink)]">
-                {formatCurrency(depositAmount)}
-              </dd>
-            </div>
-            <div className="flex min-w-0 items-center justify-between gap-3">
-              <dt className="font-bold text-[color:var(--postit-ink)]">
-                Totale
-              </dt>
-              <dd className="shrink-0 text-base font-extrabold tabular-nums text-[color:var(--postit-ink)]">
-                {formatCurrency(totalCost)}
-              </dd>
-            </div>
-          </dl>
+          <EventHintLink
+            onClick={() => setOpenPanel("payment")}
+            className="text-[color:var(--postit-ink)] decoration-[color:var(--postit-ink)]/40"
+          >
+            Dettaglio del pagamento
+          </EventHintLink>
         </div>
 
         {missingSuggestions.length > 0 && (
@@ -744,6 +744,84 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
           </button>
         )}
       </div>
+
+      <EventInfoSheet
+        open={openPanel === "tips"}
+        title={EVENT_TIPS_TITLE}
+        intro={EVENT_TIPS_INTRO}
+        onClose={() => setOpenPanel(null)}
+      >
+        <ol className="space-y-2.5">
+          {EVENT_TIPS.map((tip, index) => (
+            <li
+              key={tip}
+              className="flex gap-2.5 text-sm leading-relaxed text-primary-black/80"
+            >
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-teal/15 text-[11px] font-black text-brand-teal">
+                {index + 1}
+              </span>
+              <span>{tip}</span>
+            </li>
+          ))}
+        </ol>
+      </EventInfoSheet>
+
+      <EventInfoSheet
+        open={openPanel === "checklist"}
+        title={EVENT_CHECKLIST_TITLE}
+        intro={EVENT_CHECKLIST_INTRO}
+        onClose={() => setOpenPanel(null)}
+      >
+        <ul className="space-y-2.5">
+          {EVENT_CHECKLIST.map((item) => (
+            <li
+              key={item}
+              className="flex gap-2.5 text-sm leading-relaxed text-primary-black/80"
+            >
+              <span
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border border-primary-black/25"
+                aria-hidden
+              />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </EventInfoSheet>
+
+      <EventInfoSheet
+        open={openPanel === "payment"}
+        title="Dettaglio del pagamento"
+        intro="Costi della festa, caparra e servizi prenotati."
+        onClose={() => setOpenPanel(null)}
+      >
+        <ul className="space-y-2">
+          {event.services.map((service) => (
+            <li
+              key={service.id}
+              className="flex items-baseline justify-between gap-3 text-sm font-semibold text-primary-black"
+            >
+              <span className="min-w-0 truncate">{service.name}</span>
+              <span className="shrink-0 tabular-nums">
+                {formatCurrency(service.amountPaid)}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <dl className="mt-4 space-y-2 border-t border-primary-black/10 pt-4 text-sm">
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-primary-black/60">Caparra location</dt>
+            <dd className="font-bold tabular-nums text-primary-black">
+              {formatCurrency(depositAmount)}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <dt className="font-bold text-primary-black">Totale festa</dt>
+            <dd className="text-base font-extrabold tabular-nums text-primary-black">
+              {formatCurrency(totalCost)}
+            </dd>
+          </div>
+        </dl>
+      </EventInfoSheet>
     </>
   );
 });

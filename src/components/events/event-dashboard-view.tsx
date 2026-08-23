@@ -2,6 +2,8 @@
 
 import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import { EventCountdown } from "@/components/events/event-countdown";
+import { EventHintLink } from "@/components/events/event-hint-link";
+import { EventInfoSheet } from "@/components/events/event-info-sheet";
 import { EventManagerContactSection } from "@/components/events/event-manager-contact-section";
 import { RefundReportModal } from "@/components/events/refund-report-modal";
 import { ServiceStatusList } from "@/components/events/service-status-list";
@@ -19,7 +21,6 @@ import {
   MapPin,
   Music,
   Plus,
-  ReceiptText,
   Sparkles,
   Users,
   X,
@@ -42,6 +43,7 @@ export function EventDashboardView({
   );
   const [refundOpen, setRefundOpen] = useState(false);
   const [addServicesOpen, setAddServicesOpen] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
 
   if (!event) {
     if (!isStorageHydrated) {
@@ -155,16 +157,10 @@ export function EventDashboardView({
       </section>
 
       <section className="rounded-2xl border border-primary-black/10 bg-primary-black/[0.02] p-5">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="flex items-center gap-2 text-xl font-black text-primary-black">
-              <ReceiptText className="h-5 w-5 text-brand-teal" aria-hidden />
-              Costi evento
-            </h2>
-            <p className="mt-1 text-sm text-primary-black/60">
-              Totale aggiornato con locale e servizi selezionati.
-            </p>
-          </div>
+        <div className="flex items-center justify-between gap-3">
+          <EventHintLink onClick={() => setPaymentOpen(true)}>
+            Dettaglio del pagamento
+          </EventHintLink>
           <button
             type="button"
             onClick={() => setAddServicesOpen(true)}
@@ -174,19 +170,39 @@ export function EventDashboardView({
             <Plus className="h-5 w-5" aria-hidden />
           </button>
         </div>
+      </section>
 
-        <dl className="space-y-2 text-sm">
+      <ServiceStatusList
+        event={currentEvent}
+        onRequestRefund={handleRequestRefund}
+      />
+
+      <RefundReportModal
+        open={refundOpen}
+        service={refundService}
+        onClose={handleCloseRefund}
+      />
+
+      <EventInfoSheet
+        open={paymentOpen}
+        title="Dettaglio del pagamento"
+        intro="Costi della festa, caparra e servizi prenotati."
+        onClose={() => setPaymentOpen(false)}
+      >
+        <ul className="space-y-2 text-sm">
           {currentEvent.services.map((service) => (
-            <div key={service.id} className="flex justify-between gap-3">
-              <dt className="min-w-0 truncate text-primary-black/60">
+            <li key={service.id} className="flex justify-between gap-3">
+              <span className="min-w-0 truncate text-primary-black/70">
                 {service.name} · {service.providerName}
-              </dt>
-              <dd className="shrink-0 font-medium text-primary-black">
+              </span>
+              <span className="shrink-0 font-semibold text-primary-black">
                 {formatCurrency(service.amountPaid)}
-              </dd>
-            </div>
+              </span>
+            </li>
           ))}
-          <div className="flex justify-between border-t border-primary-black/10 pt-3">
+        </ul>
+        <dl className="mt-4 space-y-3 border-t border-primary-black/10 pt-4 text-sm">
+          <div className="flex justify-between">
             <dt className="font-semibold text-primary-black">Totale evento</dt>
             <dd className="text-lg font-bold text-primary-black">
               {formatCurrency(totalCost)}
@@ -215,18 +231,7 @@ export function EventDashboardView({
             </div>
           </div>
         </dl>
-      </section>
-
-      <ServiceStatusList
-        event={currentEvent}
-        onRequestRefund={handleRequestRefund}
-      />
-
-      <RefundReportModal
-        open={refundOpen}
-        service={refundService}
-        onClose={handleCloseRefund}
-      />
+      </EventInfoSheet>
 
       <AddServicesModal
         open={addServicesOpen}
