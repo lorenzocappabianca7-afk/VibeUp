@@ -1,4 +1,5 @@
 import type { ManagedLocationListing } from "@/types/admin";
+import { normalizeCharacteristics } from "@/lib/location-characteristics";
 import type {
   AvailableLocationService,
   DintorniZone,
@@ -31,6 +32,7 @@ export type LocationPublishFormData = {
   zone: DintorniZone | "";
   partyTypes: PartyType[];
   description: string;
+  characteristics: [string, string, string];
   capacity: string;
   surfaceSqm: string;
   parkingSpots: string;
@@ -65,6 +67,7 @@ export const EMPTY_LOCATION_PUBLISH_FORM = (): LocationPublishFormData => ({
   zone: "",
   partyTypes: ["festa"],
   description: "",
+  characteristics: ["", "", ""],
   capacity: "50",
   surfaceSqm: "80",
   parkingSpots: "0",
@@ -283,6 +286,7 @@ export function buildLocationFromPublishForm(
     description:
       form.description.trim() ||
       "Location gestita dal catalogo privato VibeUp.",
+    characteristics: normalizeCharacteristics(form.characteristics),
     technicalDetails: {
       surfaceSqm: Number(form.surfaceSqm) || 0,
       parkingSpots: Number(form.parkingSpots) || 0,
@@ -330,6 +334,11 @@ export function locationToPublishForm(location: Location): LocationPublishFormDa
     zone: location.zone ?? "",
     partyTypes: [...location.partyTypes],
     description: location.description,
+    characteristics: [
+      location.characteristics?.[0] ?? "",
+      location.characteristics?.[1] ?? "",
+      location.characteristics?.[2] ?? "",
+    ],
     capacity: String(location.capacity),
     surfaceSqm: String(location.technicalDetails.surfaceSqm || ""),
     parkingSpots: String(location.technicalDetails.parkingSpots || ""),

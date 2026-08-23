@@ -57,6 +57,7 @@ const torinoCityLocations: LocationSeed[] = [
     ],
     description:
       "Sala elegante nel cuore di Torino, a pochi passi da Piazza Castello. Ideale per compleanni importanti e eventi aziendali con servizio catering interno.",
+    characteristics: ["Centro città", "Ambiente elegante", "Cena"],
     technicalDetails: {
       surfaceSqm: 200,
       parkingSpots: 0,
@@ -217,6 +218,7 @@ const dintorniLocations: LocationSeed[] = [
     ],
     description:
       "Perfetta per feste estive, con ampi spazi aperti, dehors ombreggiato, area piscina e zona grigliate attrezzata. Ideale per compleanni all'aperto e feste di paese in stile moderno.",
+    characteristics: ["Zona esterna", "Piscina", "Dehors"],
     technicalDetails: {
       surfaceSqm: 600,
       parkingSpots: 35,
@@ -258,6 +260,7 @@ const dintorniLocations: LocationSeed[] = [
     ],
     description:
       "Location di alto livello ed elegante nei pressi della Reggia di Venaria. Sale raffinate e giardino formale, ideale per compleanni importanti, cerimonie e eventi corporate esclusivi.",
+    characteristics: ["Ambiente elegante", "Vista", "Zona esterna"],
     technicalDetails: {
       surfaceSqm: 400,
       parkingSpots: 30,

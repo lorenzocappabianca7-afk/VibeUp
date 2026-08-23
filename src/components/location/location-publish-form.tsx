@@ -2,6 +2,10 @@
 
 import { SafeImage } from "@/components/ui/safe-image";
 import {
+  LOCATION_CHARACTERISTIC_SUGGESTIONS,
+  MAX_LOCATION_CHARACTERISTICS,
+} from "@/lib/location-characteristics";
+import {
   EMPTY_AVAILABLE_SERVICE_ROW,
   type LocationPublishFormData,
 } from "@/lib/location-publish-form";
@@ -263,6 +267,70 @@ export function LocationPublishForm({
             className="w-full min-w-0 rounded-2xl border border-primary-black/10 bg-background px-4 py-3 text-sm outline-none focus:border-brand-teal"
           />
         </label>
+
+        <div>
+          <FieldLabel hint="Massimo 3. Servono a far comparire il locale prima quando l'utente cerca queste cose.">
+            3 caratteristiche chiave
+          </FieldLabel>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {value.characteristics.map((item, index) => (
+              <input
+                key={`characteristic-${index}`}
+                value={item}
+                maxLength={40}
+                placeholder={`Es. ${LOCATION_CHARACTERISTIC_SUGGESTIONS[index] ?? "Caratteristica"}`}
+                onChange={(event) => {
+                  const next = [...value.characteristics] as [
+                    string,
+                    string,
+                    string,
+                  ];
+                  next[index] = event.target.value;
+                  patch({ characteristics: next });
+                }}
+                className="w-full min-w-0 rounded-2xl border border-primary-black/10 bg-background px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
+              />
+            ))}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {LOCATION_CHARACTERISTIC_SUGGESTIONS.map((suggestion) => {
+              const selected = value.characteristics.some(
+                (item) => item.toLowerCase() === suggestion.toLowerCase(),
+              );
+              return (
+                <ToggleChip
+                  key={suggestion}
+                  active={selected}
+                  onClick={() => {
+                    const next = [...value.characteristics] as [
+                      string,
+                      string,
+                      string,
+                    ];
+                    if (selected) {
+                      const index = next.findIndex(
+                        (item) =>
+                          item.toLowerCase() === suggestion.toLowerCase(),
+                      );
+                      if (index >= 0) next[index] = "";
+                    } else {
+                      const emptyIndex = next.findIndex((item) => !item.trim());
+                      if (emptyIndex < 0) return;
+                      next[emptyIndex] = suggestion;
+                    }
+                    patch({ characteristics: next });
+                  }}
+                >
+                  {suggestion}
+                </ToggleChip>
+              );
+            })}
+          </div>
+          <p className="mt-1.5 text-[11px] text-primary-black/45">
+            {value.characteristics.filter((item) => item.trim()).length}/
+            {MAX_LOCATION_CHARACTERISTICS} selezionate
+          </p>
+        </div>
       </section>
 
       <section className="space-y-3 rounded-3xl border border-primary-black/10 bg-primary-black/[0.02] p-4">

@@ -127,6 +127,14 @@ export function LocationInfo({ location }: LocationInfoProps) {
               {PARTY_TYPE_LABELS[type]}
             </span>
           ))}
+          {location.characteristics?.map((trait) => (
+            <span
+              key={trait}
+              className="rounded-full bg-brand-teal/15 px-3 py-1 text-xs font-medium text-brand-teal"
+            >
+              {trait}
+            </span>
+          ))}
         </div>
       </div>
 

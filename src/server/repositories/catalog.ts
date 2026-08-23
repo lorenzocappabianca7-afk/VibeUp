@@ -149,6 +149,7 @@ export function catalogRowToLocation(row: CatalogListingRow): Location | null {
     partyTypes: asPartyTypes(data.partyTypes),
     deposit: asNumber(data.deposit, Math.round(asNumber(data.hourlyPrice, 100) * 2)),
     includedServices: asStringArray(data.includedServices),
+    characteristics: asStringArray(data.characteristics).slice(0, 3),
     availableServices: Array.isArray(data.availableServices)
       ? (data.availableServices as Location["availableServices"])
       : undefined,

@@ -20,9 +20,14 @@ import { requestActivationEmail } from "@/lib/auth/request-activation-email";
 import {
   buildManagedLocationListing,
   EMPTY_LOCATION_PUBLISH_FORM,
+  locationToPublishForm,
   validateLocationPublishForm,
   type LocationPublishFormData,
 } from "@/lib/location-publish-form";
+import {
+  isManagedLocationListing,
+  listingsForBusiness,
+} from "@/lib/manager-listings";
 import {
   BUSINESS_CATEGORY_LABELS,
   isPerformerCategory,
@@ -33,7 +38,7 @@ import {
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
 import { assignHomeHref } from "@/lib/home-navigation";
 import { ArrowLeft, Briefcase, CheckCircle2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const CATEGORIES = Object.entries(BUSINESS_CATEGORY_LABELS) as [
   BusinessCategory,
@@ -178,8 +183,15 @@ function isValidEmail(value: string) {
   return value.includes("@") && value.includes(".");
 }
 
-export function BusinessOnboardingView() {
+export function BusinessOnboardingView({
+  listingId,
+  createNew = false,
+}: {
+  listingId?: string;
+  createNew?: boolean;
+}) {
   const navigateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hydratedListingIdRef = useRef<string | null>(null);
   const {
     accounts,
     businessProfile,
@@ -189,7 +201,35 @@ export function BusinessOnboardingView() {
     saveBusinessProfile,
     updateCurrentUser,
     upsertManagedListing,
+    managedListings,
   } = useAppState();
+
+  const matchedListing = useMemo(() => {
+    if (createNew) return null;
+    const ownListings = listingsForBusiness(managedListings, {
+      email: currentUser.email,
+      businessName: businessProfile?.businessName,
+    });
+    if (listingId) {
+      return (
+        ownListings.find((listing) => listing.id === listingId) ??
+        managedListings.find(
+          (listing) =>
+            isManagedLocationListing(listing) && listing.id === listingId,
+        ) ??
+        null
+      );
+    }
+    if (!isBusinessUser) return null;
+    return ownListings[0] ?? null;
+  }, [
+    businessProfile?.businessName,
+    createNew,
+    currentUser.email,
+    isBusinessUser,
+    listingId,
+    managedListings,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -245,7 +285,24 @@ export function BusinessOnboardingView() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (!matchedListing || matchedListing.category !== "locali") return;
+    if (hydratedListingIdRef.current === matchedListing.id) return;
+    hydratedListingIdRef.current = matchedListing.id;
+    const form = locationToPublishForm(matchedListing.location);
+    setLocationListing(form);
+    setLocaleData({
+      businessName: form.name,
+      address: form.address,
+      maxCapacity: form.capacity,
+      hourlyPrice: form.listPrice,
+    });
+  }, [matchedListing]);
+
   const isLocale = category === "locale";
+  const existingListingId = createNew
+    ? undefined
+    : (matchedListing?.id ?? listingId);
 
   function handleCategoryChange(value: string) {
     const next = value as BusinessCategory;
@@ -341,6 +398,7 @@ export function BusinessOnboardingView() {
             status: "pending_review",
             source: "business",
             submitterEmail: email,
+            existingId: existingListingId,
           }),
         );
       }
@@ -402,6 +460,7 @@ export function BusinessOnboardingView() {
             status: "pending_review",
             source: "business",
             submitterEmail: email,
+            existingId: existingListingId,
           }),
         );
       }
@@ -445,14 +504,24 @@ export function BusinessOnboardingView() {
           Account Pro
         </span>
         <h1 className="mt-3 text-2xl font-bold text-primary-black">
-          {editingExisting ? "Modifica account Business" : "Passa a Business"}
+          {createNew
+            ? "Nuova pubblicazione"
+            : existingListingId
+              ? "Modifica pubblicazione"
+              : editingExisting
+                ? "Modifica account Business"
+                : "Passa a Business"}
         </h1>
         <p className="mt-2 text-sm text-primary-black/60">
-          {editingExisting
-            ? "Aggiorna i dati della tua attività Pro."
-            : isLocale
-              ? "Crea l’account Pro e l’annuncio location: lo controlleremo in Gestione pubblicazioni prima di metterlo online."
-              : "Crea un account Pro separato per la tua attività: email nuova oppure un nome diverso rispetto agli account già presenti."}
+          {createNew
+            ? "Crea una nuova scheda locale. Resta in revisione finché non la approviamo."
+            : existingListingId
+              ? "Aggiorna la scheda del locale, comprese le 3 caratteristiche chiave usate in Esplora."
+              : editingExisting
+                ? "Aggiorna i dati della tua attività Pro."
+                : isLocale
+                  ? "Crea l’account Pro e l’annuncio location: lo controlleremo in Gestione pubblicazioni prima di metterlo online."
+                  : "Crea un account Pro separato per la tua attività: email nuova oppure un nome diverso rispetto agli account già presenti."}
         </p>
       </header>
 
@@ -620,9 +689,11 @@ export function BusinessOnboardingView() {
             >
               {submitting
                 ? "Creo account…"
-                : editingExisting
-                  ? "Salva profilo Business"
-                  : "Crea account Pro"}
+                : createNew || existingListingId
+                  ? "Salva pubblicazione"
+                  : editingExisting
+                    ? "Salva profilo Business"
+                    : "Crea account Pro"}
             </button>
           )}
         </form>

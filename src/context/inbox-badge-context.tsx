@@ -13,8 +13,10 @@ interface InboxBadgeContextValue {
   hasUnreadMessages: boolean;
   hasUnreadNotifications: boolean;
   hasUnreadProfileComms: boolean;
+  seenNotificationIds: string[];
   markMessagesSeen: () => void;
   markNotificationsSeen: () => void;
+  markNotificationIdsSeen: (ids: string[]) => void;
   markProfileCommsSeen: () => void;
   /** Keep the Messaggi tab badge in sync with live chat unread counts. */
   syncUnreadMessages: (count: number) => void;
@@ -30,12 +32,23 @@ export function InboxBadgeProvider({ children }: { children: ReactNode }) {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [unreadProfileComms, setUnreadProfileComms] = useState(0);
+  const [seenNotificationIds, setSeenNotificationIds] = useState<string[]>([]);
 
   const markMessagesSeen = useCallback(() => {
     setUnreadMessages(0);
   }, []);
 
   const markNotificationsSeen = useCallback(() => {
+    setUnreadNotifications(0);
+  }, []);
+
+  const markNotificationIdsSeen = useCallback((ids: string[]) => {
+    if (ids.length === 0) return;
+    setSeenNotificationIds((current) => {
+      const next = new Set(current);
+      for (const id of ids) next.add(id);
+      return [...next];
+    });
     setUnreadNotifications(0);
   }, []);
 
@@ -60,8 +73,10 @@ export function InboxBadgeProvider({ children }: { children: ReactNode }) {
       hasUnreadMessages: unreadMessages > 0,
       hasUnreadNotifications: unreadNotifications > 0,
       hasUnreadProfileComms: unreadProfileComms > 0,
+      seenNotificationIds,
       markMessagesSeen,
       markNotificationsSeen,
+      markNotificationIdsSeen,
       markProfileCommsSeen,
       syncUnreadMessages,
       syncUnreadNotifications,
@@ -71,8 +86,10 @@ export function InboxBadgeProvider({ children }: { children: ReactNode }) {
       unreadMessages,
       unreadNotifications,
       unreadProfileComms,
+      seenNotificationIds,
       markMessagesSeen,
       markNotificationsSeen,
+      markNotificationIdsSeen,
       markProfileCommsSeen,
       syncUnreadMessages,
       syncUnreadNotifications,

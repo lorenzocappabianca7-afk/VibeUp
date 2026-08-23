@@ -20,6 +20,7 @@ import {
   Heart,
   X,
 } from "lucide-react";
+import { BusinessPublicationsPanel } from "@/components/business/business-publications-panel";
 import { AvatarCropModal } from "@/components/profile/avatar-crop-modal";
 import { ProfileSettingsView } from "@/components/profile/settings/profile-settings-view";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
@@ -1069,6 +1070,8 @@ export function ProfileScreen({
           )}
         </section>
       )}
+
+      {isBusinessUser ? <BusinessPublicationsPanel /> : null}
 
       {!isBusinessUser && (
         <HardNavLink

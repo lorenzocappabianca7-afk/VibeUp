@@ -1,3 +1,5 @@
+import { expandSearchTerms, foldItalian } from "@/lib/location-characteristics";
+
 const STOPWORDS_IT = new Set([
   "il",
   "lo",
@@ -57,30 +59,48 @@ export type RankableLocation = {
   description?: string;
   city?: string;
   zoneLabel?: string;
+  district?: string;
   partyTypes?: string[];
   includedServices?: string[];
+  characteristics?: string[];
   tags?: string[];
+  technicalDetails?: { outdoorArea?: boolean };
 };
 
 function locationHaystack(loc: RankableLocation): string {
-  return [
-    loc.name,
-    loc.description,
-    loc.city,
-    loc.zoneLabel,
-    ...(loc.partyTypes ?? []),
-    ...(loc.includedServices ?? []),
-    ...(loc.tags ?? []),
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "");
+  const implicit: string[] = [];
+  if (loc.technicalDetails?.outdoorArea) {
+    implicit.push("zona esterna", "esterna", "dehors", "giardino");
+  }
+  if (loc.district === "centro") {
+    implicit.push("centro citta", "centro");
+  }
+
+  return foldItalian(
+    [
+      loc.name,
+      loc.description,
+      loc.city,
+      loc.zoneLabel,
+      loc.district,
+      ...(loc.partyTypes ?? []),
+      ...(loc.includedServices ?? []),
+      ...(loc.characteristics ?? []),
+      ...(loc.tags ?? []),
+      ...implicit,
+    ]
+      .filter(Boolean)
+      .join(" "),
+  );
+}
+
+function characteristicHaystack(loc: RankableLocation): string {
+  return foldItalian((loc.characteristics ?? []).join(" "));
 }
 
 /**
  * Rank locations by free-text keyword affinity.
+ * Matching a venue's 3 key characteristics boosts the score the most.
  * Never excludes items — score 0 stays at the bottom.
  */
 export function rankLocationsByKeywords<T extends RankableLocation>(
@@ -91,13 +111,17 @@ export function rankLocationsByKeywords<T extends RankableLocation>(
 
   const keywords = extractKeywords(freeText);
   if (keywords.length === 0) return locations;
+  const terms = expandSearchTerms(keywords);
 
   const scored = locations.map((loc, index) => {
     const haystack = locationHaystack(loc);
-    const score = keywords.reduce(
-      (acc, kw) => acc + (haystack.includes(kw) ? 1 : 0),
-      0,
-    );
+    const traits = characteristicHaystack(loc);
+    const score = terms.reduce((acc, term) => {
+      if (!term) return acc;
+      if (traits.includes(term)) return acc + 4;
+      if (haystack.includes(term)) return acc + 1;
+      return acc;
+    }, 0);
     return { loc, score, index };
   });
 

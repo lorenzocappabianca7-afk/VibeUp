@@ -6,69 +6,11 @@ import {
   useAvailabilityRequests,
 } from "@/context/availability-request-context";
 import { useAppState } from "@/context/app-state-context";
-import {
-  MOCK_BUSINESS_NOTIFICATIONS,
-  type BusinessNotification,
-} from "@/lib/mock/business-inbox";
+import { useInboxBadge } from "@/context/inbox-badge-context";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { AvailabilityRequest } from "@/types/availability-request";
-import {
-  Bell,
-  CalendarCheck2,
-  CreditCard,
-  MessageCircle,
-  Sparkles,
-  Users,
-} from "lucide-react";
-import { memo, useState } from "react";
-
-const KIND_ICON = {
-  booking: CalendarCheck2,
-  payment: CreditCard,
-  message: MessageCircle,
-  system: Sparkles,
-} as const;
-
-function NotificationRow({ item }: { item: BusinessNotification }) {
-  const Icon = KIND_ICON[item.kind];
-
-  return (
-    <li
-      className={`flex gap-3 rounded-2xl border p-4 transition-colors ${
-        item.unread
-          ? "border-brand-teal/20 bg-brand-teal/5"
-          : "border-primary-black/8 bg-background"
-      }`}
-    >
-      <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-          item.unread
-            ? "bg-brand-teal/15 text-brand-teal"
-            : "bg-primary-black/5 text-primary-black/50"
-        }`}
-      >
-        <Icon className="h-5 w-5" aria-hidden />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <p className="min-w-0 truncate text-sm font-semibold text-primary-black">
-            {item.title}
-          </p>
-          {item.unread && (
-            <span
-              className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-pink"
-              aria-label="Non letta"
-            />
-          )}
-        </div>
-        <p className="mt-0.5 line-clamp-2 text-sm text-primary-black/60">
-          {item.body}
-        </p>
-        <p className="mt-1 text-xs text-primary-black/40">{item.time}</p>
-      </div>
-    </li>
-  );
-}
+import { Bell, CalendarCheck2, Users } from "lucide-react";
+import { memo, useEffect, useState } from "react";
 
 function AvailabilityRequestCard({
   request,
@@ -156,7 +98,7 @@ function AvailabilityRequestCard({
               type="button"
               disabled={busy}
               onClick={onAccept}
-              className="flex-1 rounded-xl bg-brand-teal px-3 py-2.5 text-sm font-bold text-primary-black disabled:opacity-60"
+              className="flex-1 rounded-xl bg-brand-teal px-3 py-2.5 text-sm font-bold text-ink-inverse disabled:opacity-60"
             >
               Accetta
             </button>
@@ -170,6 +112,7 @@ function AvailabilityRequestCard({
 export const BusinessNotificationsScreen = memo(
   function BusinessNotificationsScreen() {
     const { businessProfile, currentUser } = useAppState();
+    const { markNotificationIdsSeen } = useInboxBadge();
     const {
       pendingManagerRequests,
       managedRequests,
@@ -183,6 +126,10 @@ export const BusinessNotificationsScreen = memo(
       Record<string, string>
     >({});
     const [busyId, setBusyId] = useState<string | null>(null);
+
+    useEffect(() => {
+      markNotificationIdsSeen(pendingManagerRequests.map((item) => item.id));
+    }, [markNotificationIdsSeen, pendingManagerRequests]);
 
     const locationName =
       businessProfile?.businessName ?? currentUser.name ?? "la tua location";
@@ -225,7 +172,7 @@ export const BusinessNotificationsScreen = memo(
             </span>
           </div>
           <p className="mt-1 text-sm text-primary-black/60">
-            Aggiornamenti su prenotazioni, pagamenti e messaggi per{" "}
+            Richieste e aggiornamenti per{" "}
             <span className="font-medium text-primary-black">{locationName}</span>
           </p>
           {pendingManagerRequests.length > 0 && (
@@ -236,7 +183,7 @@ export const BusinessNotificationsScreen = memo(
           )}
         </header>
 
-        {pendingManagerRequests.length > 0 && (
+        {pendingManagerRequests.length > 0 ? (
           <section className="space-y-2">
             <h2 className="text-sm font-bold text-primary-black">
               Richieste da gestire
@@ -254,9 +201,20 @@ export const BusinessNotificationsScreen = memo(
               ))}
             </ul>
           </section>
+        ) : (
+          <section className="rounded-2xl border border-dashed border-primary-black/12 px-4 py-8 text-center">
+            <Bell className="mx-auto h-7 w-7 text-primary-black/30" aria-hidden />
+            <p className="mt-3 text-sm font-semibold text-primary-black">
+              Nessuna richiesta in attesa
+            </p>
+            <p className="mt-1 text-xs text-primary-black/55">
+              Quando un organizzatore chiede disponibilità, la noti qui e puoi
+              accettare o rifiutare.
+            </p>
+          </section>
         )}
 
-        {otherManagedRequests.length > 0 && (
+        {otherManagedRequests.length > 0 ? (
           <section className="space-y-2">
             <h2 className="text-sm font-bold text-primary-black">
               Storico richieste
@@ -286,18 +244,7 @@ export const BusinessNotificationsScreen = memo(
               ))}
             </ul>
           </section>
-        )}
-
-        <section className="space-y-2">
-          <h2 className="text-sm font-bold text-primary-black">
-            Altre notifiche
-          </h2>
-          <ul className="space-y-2">
-            {MOCK_BUSINESS_NOTIFICATIONS.map((item) => (
-              <NotificationRow key={item.id} item={item} />
-            ))}
-          </ul>
-        </section>
+        ) : null}
       </div>
     );
   },

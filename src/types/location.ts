@@ -101,6 +101,8 @@ export interface Location {
   partyTypes: PartyType[];
   deposit: number;
   includedServices: string[];
+  /** Up to 3 key traits used to rank venues against user free-text. */
+  characteristics?: string[];
   /** Optional curated list of bookable venue services. */
   availableServices?: AvailableLocationService[];
   /** Optional drink / open-bar rates for quotes. */

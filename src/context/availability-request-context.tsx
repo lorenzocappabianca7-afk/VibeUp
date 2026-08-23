@@ -192,7 +192,7 @@ export function AvailabilityRequestProvider({
     isGuest,
     managedListings,
   } = useAppState();
-  const { syncUnreadNotifications } = useInboxBadge();
+  const { seenNotificationIds, syncUnreadNotifications } = useInboxBadge();
   const { addRequestStatusNotice } = useProfileCommunications();
 
   const [requests, setRequests] = useState<AvailabilityRequest[]>([]);
@@ -386,8 +386,16 @@ export function AvailabilityRequestProvider({
       syncUnreadNotifications(0);
       return;
     }
-    syncUnreadNotifications(pendingManagerRequests.length);
-  }, [isBusinessUser, pendingManagerRequests.length, syncUnreadNotifications]);
+    const seen = new Set(seenNotificationIds);
+    syncUnreadNotifications(
+      pendingManagerRequests.filter((item) => !seen.has(item.id)).length,
+    );
+  }, [
+    isBusinessUser,
+    pendingManagerRequests,
+    seenNotificationIds,
+    syncUnreadNotifications,
+  ]);
 
   const sendAvailabilityRequest = useCallback(
     async (input: {
