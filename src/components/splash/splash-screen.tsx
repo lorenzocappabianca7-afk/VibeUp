@@ -208,7 +208,7 @@ export function SplashScreen() {
         <p
           className={`vibeup-splash__tagline${showTagline ? " vibeup-splash__tagline--in" : ""}`}
         >
-          VibeUp your life
+          Cool people plan cool eighteen.
         </p>
       </div>
     </div>

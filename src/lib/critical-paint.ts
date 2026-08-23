@@ -96,16 +96,16 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
 }
 .vibeup-splash__tagline{
   margin:1rem 0 0;
-  min-height:1.15em;
+  min-height:2.3em;
+  max-width:16.5rem;
   padding:0 0.5rem;
   font-family:var(--font-brand),system-ui,sans-serif;
-  font-size:1.75rem;
+  font-size:1.35rem;
   font-weight:700;
   letter-spacing:-0.025em;
   line-height:1.15;
   color:#fff;
   text-align:center;
-  white-space:nowrap;
   opacity:0;
   transform:translate3d(0,10px,0);
 }
