@@ -310,7 +310,6 @@ function GuestsStep({
       <GuestCountStepper
         value={guestCount}
         onChange={(next) => onChange({ guestCount: next })}
-        autoFocus
       />
       <p className="mt-2 text-xs text-primary-black/50">
         Tocca il numero e digita gli invitati (es. 45). Mostra location con

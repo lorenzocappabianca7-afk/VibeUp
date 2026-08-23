@@ -20,6 +20,15 @@ function clampGuestCount(value: number) {
   return Math.min(EXPLORE_GUEST_MAX, Math.max(EXPLORE_GUEST_MIN, value));
 }
 
+function collapseCaret(node: HTMLInputElement) {
+  const end = node.value.length;
+  try {
+    node.setSelectionRange(end, end);
+  } catch {
+    // Some native types reject setSelectionRange.
+  }
+}
+
 export function GuestCountStepper({
   value,
   onChange,
@@ -38,7 +47,7 @@ export function GuestCountStepper({
     const node = inputRef.current;
     if (!node) return;
     node.focus();
-    node.select();
+    collapseCaret(node);
   }, [autoFocus]);
 
   function commitDraft(raw: string) {
@@ -109,15 +118,30 @@ export function GuestCountStepper({
         <input
           ref={inputRef}
           type="text"
-          inputMode="numeric"
+          inputMode="tel"
           pattern="[0-9]*"
-          enterKeyHint="done"
           autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
           value={visible}
           onFocus={(event) => {
+            const node = event.currentTarget;
             setFocused(true);
             setDraft(String(value));
-            event.currentTarget.select();
+            collapseCaret(node);
+            requestAnimationFrame(() => collapseCaret(node));
+            window.setTimeout(() => collapseCaret(node), 50);
+          }}
+          onMouseUp={(event) => {
+            event.preventDefault();
+            collapseCaret(event.currentTarget);
+          }}
+          onSelect={(event) => {
+            const node = event.currentTarget;
+            if (node.selectionStart !== node.selectionEnd) {
+              collapseCaret(node);
+            }
           }}
           onChange={(event) => {
             setDraft(event.target.value.replace(/\D/g, ""));
@@ -126,14 +150,9 @@ export function GuestCountStepper({
             commitDraft(draft);
             setFocused(false);
           }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.currentTarget.blur();
-            }
-          }}
           aria-label="Numero invitati"
           size={1}
-          className="vibeup-light-field h-12 w-0 min-w-0 flex-1 rounded-xl bg-paper-deep text-center text-2xl font-black tabular-nums text-ink-inverse outline-none ring-1 ring-primary-black/10 focus:ring-2 focus:ring-brand-teal/40"
+          className="vibeup-light-field vibeup-numeric-field h-12 w-0 min-w-0 flex-1 rounded-xl bg-paper-deep text-center text-2xl font-black tabular-nums text-ink-inverse outline-none ring-1 ring-primary-black/10 focus:ring-2 focus:ring-brand-teal/40"
           style={{ colorScheme: "light" }}
         />
 

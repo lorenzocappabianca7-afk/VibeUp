@@ -154,6 +154,17 @@ select.bg-surface {
   color: var(--foreground);
 }
 
+/* Dedicated numeric fields: no iOS selection handles / callout chrome. */
+input.vibeup-numeric-field {
+  caret-color: var(--ink-inverse);
+  -webkit-touch-callout: none;
+}
+
+input.vibeup-numeric-field::selection {
+  background: transparent;
+  color: inherit;
+}
+
 input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;
