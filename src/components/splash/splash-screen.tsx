@@ -18,6 +18,15 @@ function removeBootSplash() {
 }
 
 function shouldSkipSplash() {
+  if (typeof window !== "undefined") {
+    try {
+      if (/(?:^|[?&])splash=force(?:&|$)/.test(window.location.search)) {
+        return false;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
   if (typeof document !== "undefined") {
     if (document.documentElement.classList.contains("vibeup-splash-skip")) {
       return true;

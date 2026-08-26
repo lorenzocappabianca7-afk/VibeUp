@@ -7,8 +7,13 @@ import {
 } from "@/components/profile/settings/settings-section";
 import { SettingsShell } from "@/components/profile/settings/settings-shell";
 import { useAppState } from "@/context/app-state-context";
+import { useTabNavigation } from "@/context/tab-navigation-context";
+import {
+  canAccessAdminCatalog,
+  setAdminManagerViewEnabled,
+} from "@/lib/admin-access";
 import { normalizeUserSettings } from "@/types/user-settings";
-import { AtSign, Globe, Mail, Phone, UserRound } from "lucide-react";
+import { AtSign, Briefcase, Globe, Mail, Phone, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface AccountSettingsPanelProps {
@@ -33,11 +38,17 @@ export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
   const {
     currentUser,
     isGuest,
+    isBusinessUser,
     updateCurrentUser,
     updateUserSettings,
     changeAccountEmail,
   } = useAppState();
+  const { setTab } = useTabNavigation();
   const settings = normalizeUserSettings(currentUser.settings);
+  const canOpenManagerView = canAccessAdminCatalog(
+    currentUser.email,
+    currentUser.role,
+  );
   const [draft, setDraft] = useState(() => profileDraftFromUser(currentUser));
   const [draftUserId, setDraftUserId] = useState(currentUser.id);
   const [emailMessage, setEmailMessage] = useState<string | null>(null);
@@ -107,6 +118,24 @@ export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
       setEmailMessage(null);
       flashTimerRef.current = null;
     }, 2000);
+  }
+
+  function openManagerView() {
+    setAdminManagerViewEnabled(true);
+    updateCurrentUser({ accountType: "business" });
+    onBack();
+    window.setTimeout(() => {
+      setTab("notifications");
+    }, 0);
+  }
+
+  function exitManagerView() {
+    setAdminManagerViewEnabled(false);
+    updateCurrentUser({ accountType: "consumer" });
+    onBack();
+    window.setTimeout(() => {
+      setTab("profile");
+    }, 0);
   }
 
   return (
@@ -252,6 +281,29 @@ export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
           description="Usata per preventivi e pagamenti in app."
         />
       </SettingsSection>
+
+      {canOpenManagerView ? (
+        <SettingsSection
+          title="Vista gestore"
+          description="Apri notifiche, calendario e pubblicazioni come un gestore, senza cambiare account."
+        >
+          {isBusinessUser ? (
+            <SettingsNavRow
+              icon={Briefcase}
+              label="Torna alla vista organizzatore"
+              description="Esplora, Home ed eventi dell’account admin."
+              onClick={exitManagerView}
+            />
+          ) : (
+            <SettingsNavRow
+              icon={Briefcase}
+              label="Apri schermata gestore"
+              description="Notifiche, calendario e pubblicazioni."
+              onClick={openManagerView}
+            />
+          )}
+        </SettingsSection>
+      ) : null}
     </SettingsShell>
   );
 }

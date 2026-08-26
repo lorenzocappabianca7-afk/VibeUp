@@ -131,6 +131,7 @@ export function ImageCarousel({
         className="pointer-events-none select-none object-cover"
         sizes={sizes}
         priority={priority}
+        loading={priority ? "eager" : undefined}
       />
     );
 
@@ -170,6 +171,7 @@ export function ImageCarousel({
               className="pointer-events-none select-none object-cover"
               sizes={sizes}
               priority={priority && imageIndex === 0}
+              loading={priority && imageIndex === 0 ? "eager" : undefined}
               draggable={false}
             />
           );

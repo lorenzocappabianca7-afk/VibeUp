@@ -77,19 +77,23 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
 }
 .vibeup-splash__logo{
   display:block!important;
+  box-sizing:border-box!important;
   width:${SPLASH_LOGO_DISPLAY_PX}px!important;
   height:${SPLASH_LOGO_DISPLAY_PX}px!important;
   min-width:${SPLASH_LOGO_DISPLAY_PX}px!important;
   min-height:${SPLASH_LOGO_DISPLAY_PX}px!important;
   max-width:${SPLASH_LOGO_DISPLAY_PX}px!important;
   max-height:${SPLASH_LOGO_DISPLAY_PX}px!important;
-  aspect-ratio:1/1!important;
-  object-fit:contain!important;
-  object-position:center!important;
+  flex-shrink:0!important;
+  overflow:hidden!important;
+  background-image:url(/vibeup-splash-logo-boot.png)!important;
+  background-repeat:no-repeat!important;
+  background-position:center!important;
+  background-size:${SPLASH_LOGO_DISPLAY_PX}px ${SPLASH_LOGO_DISPLAY_PX}px!important;
   opacity:1!important;
   transform:none!important;
   animation:none!important;
-  -webkit-user-drag:none;
+  transition:none!important;
 }
 .vibeup-splash__tagline{
   margin:1.15rem 0 0;
@@ -97,29 +101,15 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   max-width:calc(100vw - 0.75rem);
   padding:0 0.25rem;
   font-family:var(--font-brand),system-ui,sans-serif;
-  font-size:clamp(1.55rem,7.6vw,3.4rem);
+  font-size:clamp(1.2rem,5.8vw,2.55rem);
   font-weight:700;
-  letter-spacing:-0.05em;
+  letter-spacing:-0.055em;
   line-height:1.28;
   white-space:nowrap;
   color:#fff;
   text-align:center;
   opacity:1;
   transform:none;
-}
-.vibeup-splash__eighteen{
-  font-size:1.08em;
-  letter-spacing:-0.06em;
-}
-.vibeup-splash__ordinal{
-  font-size:0.38em;
-  font-weight:700;
-  line-height:1;
-  letter-spacing:0;
-  vertical-align:super;
-  position:relative;
-  top:-0.12em;
-  margin-left:0.02em;
 }
 @media (prefers-reduced-motion:reduce){
   .vibeup-splash--exit .vibeup-splash__stage{transition:none!important}
@@ -139,7 +129,7 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
  * until React demotes it after Explore has painted — demoting in <head> caused
  * a white Home Screen frame before body existed.
  */
-export const CRITICAL_PAINT_SCRIPT = `(function(){try{var d=document.documentElement;d.style.setProperty("background-color","#000000","important");d.style.setProperty("color-scheme","dark","important");d.style.backgroundColor="#000000";d.style.colorScheme="dark";if(sessionStorage.getItem(${JSON.stringify(SPLASH_STORAGE_KEY)})==="1"){d.classList.add("vibeup-splash-skip");d.classList.add("vibeup-app-ready");}var b=document.body;if(b){b.style.setProperty("background-color","#000000","important");b.style.backgroundColor="#000000";}if(!document.getElementById("vibeup-boot-style")){var s=document.createElement("style");s.id="vibeup-boot-style";s.textContent=${JSON.stringify(CRITICAL_PAINT_CSS)};var h=document.head;if(h){h.insertBefore(s,h.firstChild);}else{d.appendChild(s);}}}catch(e){}})();`;
+export const CRITICAL_PAINT_SCRIPT = `(function(){try{var d=document.documentElement;d.style.setProperty("background-color","#000000","important");d.style.setProperty("color-scheme","dark","important");d.style.backgroundColor="#000000";d.style.colorScheme="dark";var force=false;try{force=/(?:^|[?&])splash=force(?:&|$)/.test(location.search);}catch(e){}if(!force&&sessionStorage.getItem(${JSON.stringify(SPLASH_STORAGE_KEY)})==="1"){d.classList.add("vibeup-splash-skip");d.classList.add("vibeup-app-ready");}var b=document.body;if(b){b.style.setProperty("background-color","#000000","important");b.style.backgroundColor="#000000";}if(!document.getElementById("vibeup-boot-style")){var s=document.createElement("style");s.id="vibeup-boot-style";s.textContent=${JSON.stringify(CRITICAL_PAINT_CSS)};var h=document.head;if(h){h.insertBefore(s,h.firstChild);}else{d.appendChild(s);}}}catch(e){}})();`;
 
 export const CRITICAL_PAINT_ID = "vibeup-critical-paint";
 

@@ -27,6 +27,10 @@ import {
   type AppRole,
 } from "@/lib/auth/supabase-auth";
 import {
+  isAdminManagerViewEnabled,
+  setAdminManagerViewEnabled,
+} from "@/lib/admin-access";
+import {
   getSupabaseBrowser,
   isSupabaseBrowserConfigured,
 } from "@/lib/supabase/browser";
@@ -1352,7 +1356,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const profile = await fetchSupabaseProfile(params.userId);
       const role: AppRole =
         profile?.role ?? params.preferredRole ?? "consumer";
-      const accountType = mapProfileRoleToAccountType(role);
+      const accountType =
+        role === "admin" && isAdminManagerViewEnabled()
+          ? "business"
+          : mapProfileRoleToAccountType(role);
       const now = new Date().toISOString();
       const existing = accountsRef.current.find(
         (item) =>
@@ -1989,6 +1996,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setPendingBiometricSetup(false);
       unlockSessionRef.current += 1;
       if (id === GUEST_USER.id) {
+        setAdminManagerViewEnabled(false);
         void supabaseSignOut();
         setCurrentUserId(GUEST_USER.id);
         setIsAccountLocked(false);

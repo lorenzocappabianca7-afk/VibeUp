@@ -20,6 +20,8 @@ interface LocationCardProps {
   href?: string;
   /** Hide compare control (e.g. Home suggestions carousel). */
   showCompare?: boolean;
+  /** First above-the-fold card: eager LCP image. */
+  priority?: boolean;
 }
 
 export const LocationCard = memo(function LocationCard({
@@ -30,6 +32,7 @@ export const LocationCard = memo(function LocationCard({
   onToggleCompare,
   href = `/location/${location.id}`,
   showCompare = true,
+  priority = false,
 }: LocationCardProps) {
   const { contactsBeenHere } = location;
   const hasContacts = contactsBeenHere.count > 0;
@@ -49,6 +52,7 @@ export const LocationCard = memo(function LocationCard({
           frameClassName="aspect-[16/10]"
           sizes="(max-width: 448px) 100vw, 448px"
           showDots={photos.length > 1}
+          priority={priority}
           renderSlide={(_image, _index, imageNode) => (
             <SoftNavLink
               href={href}

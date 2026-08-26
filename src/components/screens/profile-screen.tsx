@@ -1073,7 +1073,7 @@ export function ProfileScreen({
 
       {isBusinessUser ? <BusinessPublicationsPanel /> : null}
 
-      {!isBusinessUser && (
+      {!isBusinessUser && !canManagePublications && (
         <HardNavLink
           href="/business/onboarding"
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-pink py-3.5 text-sm font-semibold text-primary-black transition-colors hover:bg-brand-pink/90"
@@ -1083,7 +1083,7 @@ export function ProfileScreen({
         </HardNavLink>
       )}
 
-      {isBusinessUser && (
+      {isBusinessUser && businessProfile ? (
         <HardNavLink
           href="/business/onboarding"
           className="flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-400/40 bg-amber-400/15 py-3.5 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-400/25"
@@ -1091,7 +1091,7 @@ export function ProfileScreen({
           <Briefcase className="h-4 w-4" aria-hidden />
           Modifica profilo Business
         </HardNavLink>
-      )}
+      ) : null}
 
       <button
         type="button"

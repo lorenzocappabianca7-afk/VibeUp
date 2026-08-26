@@ -142,7 +142,7 @@ export default function RootLayout({
         {/* Render-blocking black paint — must stay before Next CSS chunks.
             next/no-css-tags is intentional: preinit was too late for Safari FOUC. */}
         {/* eslint-disable-next-line @next/next/no-css-tags -- boot FOUC shield */}
-        <link rel="stylesheet" href="/boot-paint.css" />
+        <link rel="stylesheet" href="/boot-paint.css?v=splash-logo-5" />
         {/* Fallback inline CSS if the link is delayed/relocated */}
         <style
           dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_CSS }}
@@ -208,23 +208,25 @@ export default function RootLayout({
               flexDirection: "column",
               alignItems: "center",
               marginBottom: "14vh",
+              transform: "none",
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/vibeup-splash-logo-boot.png"
-              alt=""
-              width={SPLASH_LOGO_DISPLAY_PX}
-              height={SPLASH_LOGO_DISPLAY_PX}
+            <div
               className="vibeup-splash__logo vibeup-splash__logo--settled"
-              decoding="sync"
-              fetchPriority="high"
+              aria-hidden
               style={{
-                width: SPLASH_LOGO_DISPLAY_PX,
-                height: SPLASH_LOGO_DISPLAY_PX,
-                maxWidth: SPLASH_LOGO_DISPLAY_PX,
-                maxHeight: SPLASH_LOGO_DISPLAY_PX,
-                display: "block",
+                width: `${SPLASH_LOGO_DISPLAY_PX}px`,
+                height: `${SPLASH_LOGO_DISPLAY_PX}px`,
+                minWidth: `${SPLASH_LOGO_DISPLAY_PX}px`,
+                minHeight: `${SPLASH_LOGO_DISPLAY_PX}px`,
+                maxWidth: `${SPLASH_LOGO_DISPLAY_PX}px`,
+                maxHeight: `${SPLASH_LOGO_DISPLAY_PX}px`,
+                flexShrink: 0,
+                backgroundImage: "url(/vibeup-splash-logo-boot.png)",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center",
+                backgroundSize: `${SPLASH_LOGO_DISPLAY_PX}px ${SPLASH_LOGO_DISPLAY_PX}px`,
+                transform: "none",
               }}
             />
             <p
@@ -236,12 +238,7 @@ export default function RootLayout({
                 color: "#ffffff",
               }}
             >
-              Cool people plan cool{" "}
-              <span className="vibeup-splash__eighteen">
-                18
-                <sup className="vibeup-splash__ordinal">th</sup>
-              </span>
-              .
+              Cool people plan cool party.
             </p>
           </div>
         </div>
