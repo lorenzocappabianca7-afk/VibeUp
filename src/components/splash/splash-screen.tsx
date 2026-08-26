@@ -86,8 +86,8 @@ function handoffToApp() {
 }
 
 /**
- * Times the static HTML splash. Does not render a second logo — a second
- * overlay was painting a different size/animation on top of the boot splash.
+ * Times the static HTML splash in `#vibeup-boot-splash`. Must return null —
+ * a second React overlay was painting a different size on top of the boot splash.
  */
 export function SplashScreen() {
   const skipSplash = useSyncExternalStore(

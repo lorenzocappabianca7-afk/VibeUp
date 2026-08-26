@@ -1,0 +1,28 @@
+---
+description: Do not change the splash / Home Screen launch screen unless the user explicitly asks.
+alwaysApply: true
+---
+
+# Splash screen is locked
+
+The Home Screen loading screen is working. Do **not** edit it while changing the rest of the app.
+
+Do not touch unless the user explicitly asks to change the splash / schermata di caricamento / apple-touch-startup-image:
+
+- `public/boot-paint.css`
+- `src/lib/splash.ts`, `src/lib/critical-paint.ts`, `src/lib/apple-startup.ts`
+- `src/components/splash/**`
+- splash markup in `src/app/layout.tsx` (`#vibeup-boot-splash`)
+- `public/splash/**`, `public/vibeup-splash-logo-112.png`
+
+App CSS (`globals.css`, Tailwind, layout chrome) must **never** target `#vibeup-boot-splash` or `.vibeup-splash*`.
+
+Never:
+
+- Swap the logo `div` for `<img>` (`img { height: auto }` resizes it)
+- Put the splash inside `AppProviders`
+- Skip the HTML splash in standalone / PWA (`navigator.standalone`)
+- Add a second React splash overlay (`SplashScreen` must return `null`)
+- Change logo size away from `112px` or the position `50% - 14vh - 56px`
+- Add a media-less `apple-touch-startup-image` fallback
+---

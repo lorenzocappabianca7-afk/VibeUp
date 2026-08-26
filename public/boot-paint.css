@@ -1,4 +1,6 @@
-/* Earliest paint — pure black before Next CSS chunk arrives. */
+/* Earliest paint — pure black before Next CSS chunk arrives.
+   Splash overlay rules are scoped to #vibeup-boot-splash so app CSS cannot
+   move/resize the logo. Do not fold this file into globals.css. */
 html,
 body {
   background: #000000 !important;
@@ -11,7 +13,7 @@ html:not(.vibeup-app-ready) #vibeup-app-shell {
   visibility: hidden !important;
 }
 
-html.vibeup-splash-skip .vibeup-splash {
+html.vibeup-splash-skip #vibeup-boot-splash {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
@@ -33,36 +35,51 @@ html.vibeup-paint-demoted #vibeup-critical-paint {
   pointer-events: none !important;
 }
 
-.vibeup-splash {
+#vibeup-boot-splash {
   position: fixed !important;
   inset: 0 !important;
   z-index: 10000 !important;
+  isolation: isolate !important;
   background: #000000 !important;
   background-color: #000000 !important;
   pointer-events: auto !important;
   display: block !important;
   opacity: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+  animation: none !important;
+  filter: none !important;
   transition: none !important;
 }
 
-.vibeup-splash--exit {
+#vibeup-boot-splash.vibeup-splash--exit {
   opacity: 1 !important;
   pointer-events: none !important;
   transition: none !important;
 }
 
-.vibeup-splash__stage {
-  position: absolute;
-  top: calc(50% - 14vh - 56px);
-  left: calc(50% - 56px);
-  width: 112px;
-  height: 112px;
-  margin: 0;
-  box-sizing: border-box;
-  overflow: visible;
+#vibeup-boot-splash.vibeup-splash--exit .vibeup-splash__stage {
+  opacity: 0 !important;
+  transition: opacity 420ms cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-.vibeup-splash__logo {
+/* Geometry must match iOS apple-touch-startup-image: 50% - 14vh - 56px. */
+#vibeup-boot-splash .vibeup-splash__stage {
+  position: absolute !important;
+  top: calc(50% - 14vh - 56px) !important;
+  left: calc(50% - 56px) !important;
+  width: 112px !important;
+  height: 112px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+#vibeup-boot-splash .vibeup-splash__logo {
   display: block !important;
   box-sizing: border-box !important;
   width: 112px !important;
@@ -71,21 +88,27 @@ html.vibeup-paint-demoted #vibeup-critical-paint {
   min-height: 112px !important;
   max-width: 112px !important;
   max-height: 112px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
   flex-shrink: 0 !important;
   overflow: hidden !important;
   background-image: url(/vibeup-splash-logo-112.png) !important;
   background-repeat: no-repeat !important;
   background-position: center !important;
   background-size: 112px 112px !important;
+  opacity: 1 !important;
   transform: none !important;
   animation: none !important;
   transition: none !important;
+  filter: none !important;
 }
 
-.vibeup-splash__tagline {
+#vibeup-boot-splash .vibeup-splash__tagline {
   position: absolute;
   top: 100%;
   left: 50%;
+  display: block;
   width: max-content;
   margin: 1.15rem 0 0;
   padding: 0 0.25rem;
@@ -98,12 +121,13 @@ html.vibeup-paint-demoted #vibeup-critical-paint {
   white-space: nowrap;
   color: #fff;
   text-align: center;
+  /* opacity is animated — do not use !important here */
   opacity: 0;
   transform: translateX(-50%);
   animation: vibeup-splash-tagline-in 450ms ease 800ms forwards;
 }
 
-.vibeup-splash--tagline .vibeup-splash__tagline {
+#vibeup-boot-splash.vibeup-splash--tagline .vibeup-splash__tagline {
   opacity: 1;
   animation: none;
 }
@@ -118,9 +142,13 @@ html.vibeup-paint-demoted #vibeup-critical-paint {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vibeup-splash__tagline {
+  #vibeup-boot-splash .vibeup-splash__tagline {
     animation: none;
     opacity: 1;
+  }
+
+  #vibeup-boot-splash.vibeup-splash--exit .vibeup-splash__stage {
+    transition: none !important;
   }
 }
 

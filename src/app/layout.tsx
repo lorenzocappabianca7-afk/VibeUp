@@ -148,7 +148,7 @@ export default function RootLayout({
         {/* Render-blocking black paint — must stay before Next CSS chunks.
             next/no-css-tags is intentional: preinit was too late for Safari FOUC. */}
         {/* eslint-disable-next-line @next/next/no-css-tags -- boot FOUC shield */}
-        <link rel="stylesheet" href="/boot-paint.css?v=splash-logo-7" />
+        <link rel="stylesheet" href="/boot-paint.css?v=splash-logo-8" />
         {/* Fallback inline CSS if the link is delayed/relocated */}
         <style
           dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_CSS }}
@@ -192,7 +192,8 @@ export default function RootLayout({
         />
         {/* Black shell with inline styles — demoted behind app after splash */}
         <CriticalPaint />
-        {/* Sole splash overlay — logo first, same geometry as iOS launch PNGs. */}
+        {/* Splash is outside AppProviders on purpose. Do not wrap it, do not
+            add Tailwind classes, and do not replace the logo div with <img>. */}
         <div
           id="vibeup-boot-splash"
           className="vibeup-splash"
@@ -204,6 +205,7 @@ export default function RootLayout({
             bottom: 0,
             left: 0,
             zIndex: 10000,
+            isolation: "isolate",
             backgroundColor: "#000000",
             display: "block",
           }}
@@ -238,7 +240,7 @@ export default function RootLayout({
                 transform: "none",
               }}
             />
-            <p
+            <div
               className="vibeup-splash__tagline"
               style={{
                 margin: "1.15rem 0 0",
@@ -246,7 +248,7 @@ export default function RootLayout({
               }}
             >
               Cool people plan cool party.
-            </p>
+            </div>
           </div>
         </div>
         <SplashScreen />

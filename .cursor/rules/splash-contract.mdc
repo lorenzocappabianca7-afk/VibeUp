@@ -1,0 +1,18 @@
+---
+description: Invariants for the VibeUp splash and iOS Home Screen launch images.
+globs: public/boot-paint.css,src/lib/splash.ts,src/lib/critical-paint.ts,src/lib/apple-startup.ts,src/components/splash/**,src/app/layout.tsx
+alwaysApply: false
+---
+
+# Splash contract
+
+Only edit these files when the user asked to change the splash.
+
+- Logo box is **112px**, `background-image` (not `<img>`), `transform: none`
+- Position: `top: calc(50% - 14vh - 56px); left: calc(50% - 56px)` — same formula as generated iOS PNGs
+- Sequence: logo first, tagline fades in after ~800ms; tagline is `position: absolute` so the logo does not move
+- `#vibeup-boot-splash` stays outside `AppProviders`; `SplashScreen` returns `null`
+- Standalone PWA must **not** skip the HTML splash (iOS always shows a native splash first)
+- `apple-touch-startup-image`: every link needs a media query; include dark + landscape variants
+- Status bar: `black-translucent` so native PNG and HTML share one coordinate space
+---

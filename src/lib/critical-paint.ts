@@ -31,7 +31,7 @@ html,body{
 html:not(.vibeup-app-ready) #vibeup-app-shell{
   visibility:hidden!important;
 }
-html.vibeup-splash-skip .vibeup-splash{
+html.vibeup-splash-skip #vibeup-boot-splash{
   display:none!important;
   visibility:hidden!important;
   opacity:0!important;
@@ -49,38 +49,46 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   background-color:#000000!important;
   pointer-events:none!important;
 }
-.vibeup-splash{
+#vibeup-boot-splash{
   position:fixed!important;
   inset:0!important;
   z-index:10000!important;
+  isolation:isolate!important;
   background:#000000!important;
   background-color:#000000!important;
   pointer-events:auto!important;
   display:block!important;
   opacity:1!important;
+  margin:0!important;
+  padding:0!important;
+  transform:none!important;
+  animation:none!important;
+  filter:none!important;
   transition:none!important;
 }
-.vibeup-splash--exit{
+#vibeup-boot-splash.vibeup-splash--exit{
   opacity:1!important;
   pointer-events:none!important;
   transition:none!important;
 }
-.vibeup-splash--exit .vibeup-splash__stage{
+#vibeup-boot-splash.vibeup-splash--exit .vibeup-splash__stage{
   opacity:0!important;
   transition:opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.4,0,0.2,1)!important;
 }
-.vibeup-splash__stage{
-  position:absolute;
-  top:calc(50% - ${SPLASH_STAGE_LIFT_VH}vh - ${SPLASH_LOGO_HALF_PX}px);
-  left:calc(50% - ${SPLASH_LOGO_HALF_PX}px);
-  width:${SPLASH_LOGO_DISPLAY_PX}px;
-  height:${SPLASH_LOGO_DISPLAY_PX}px;
-  margin:0;
-  box-sizing:border-box;
-  overflow:visible;
-  opacity:1;
+#vibeup-boot-splash .vibeup-splash__stage{
+  position:absolute!important;
+  top:calc(50% - ${SPLASH_STAGE_LIFT_VH}vh - ${SPLASH_LOGO_HALF_PX}px)!important;
+  left:calc(50% - ${SPLASH_LOGO_HALF_PX}px)!important;
+  width:${SPLASH_LOGO_DISPLAY_PX}px!important;
+  height:${SPLASH_LOGO_DISPLAY_PX}px!important;
+  margin:0!important;
+  padding:0!important;
+  box-sizing:border-box!important;
+  overflow:visible!important;
+  transform:none!important;
+  animation:none!important;
 }
-.vibeup-splash__logo{
+#vibeup-boot-splash .vibeup-splash__logo{
   display:block!important;
   box-sizing:border-box!important;
   width:${SPLASH_LOGO_DISPLAY_PX}px!important;
@@ -89,6 +97,9 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   min-height:${SPLASH_LOGO_DISPLAY_PX}px!important;
   max-width:${SPLASH_LOGO_DISPLAY_PX}px!important;
   max-height:${SPLASH_LOGO_DISPLAY_PX}px!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
   flex-shrink:0!important;
   overflow:hidden!important;
   background-image:url(${SPLASH_LOGO_SRC})!important;
@@ -100,10 +111,11 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   animation:none!important;
   transition:none!important;
 }
-.vibeup-splash__tagline{
+#vibeup-boot-splash .vibeup-splash__tagline{
   position:absolute;
   top:100%;
   left:50%;
+  display:block;
   width:max-content;
   margin:1.15rem 0 0;
   padding:0 0.25rem;
@@ -120,7 +132,7 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   transform:translateX(-50%);
   animation:vibeup-splash-tagline-in ${TAGLINE_FADE_MS}ms ease ${TAGLINE_DELAY_MS}ms forwards;
 }
-.vibeup-splash--tagline .vibeup-splash__tagline{
+#vibeup-boot-splash.vibeup-splash--tagline .vibeup-splash__tagline{
   opacity:1;
   animation:none;
 }
@@ -129,8 +141,8 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   to{opacity:1}
 }
 @media (prefers-reduced-motion:reduce){
-  .vibeup-splash__tagline{animation:none;opacity:1}
-  .vibeup-splash--exit .vibeup-splash__stage{transition:none!important}
+  #vibeup-boot-splash .vibeup-splash__tagline{animation:none;opacity:1}
+  #vibeup-boot-splash.vibeup-splash--exit .vibeup-splash__stage{transition:none!important}
 }
 #vibeup-app-shell{
   position:relative;
