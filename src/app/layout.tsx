@@ -142,7 +142,7 @@ export default function RootLayout({
         {/* Render-blocking black paint — must stay before Next CSS chunks.
             next/no-css-tags is intentional: preinit was too late for Safari FOUC. */}
         {/* eslint-disable-next-line @next/next/no-css-tags -- boot FOUC shield */}
-        <link rel="stylesheet" href="/boot-paint.css?v=splash-logo-5" />
+        <link rel="stylesheet" href="/boot-paint.css?v=splash-logo-6" />
         {/* Fallback inline CSS if the link is delayed/relocated */}
         <style
           dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_CSS }}
@@ -182,7 +182,7 @@ export default function RootLayout({
         />
         {/* Black shell with inline styles — demoted behind app after splash */}
         <CriticalPaint />
-        {/* Sole splash overlay — logo + tagline at final size from first paint. */}
+        {/* Sole splash overlay — logo first at final size, tagline fades in after. */}
         <div
           id="vibeup-boot-splash"
           className="vibeup-splash"
@@ -203,6 +203,7 @@ export default function RootLayout({
           <div
             className="vibeup-splash__stage"
             style={{
+              position: "relative",
               boxSizing: "border-box",
               display: "flex",
               flexDirection: "column",
@@ -233,8 +234,6 @@ export default function RootLayout({
               className="vibeup-splash__tagline"
               style={{
                 margin: "1.15rem 0 0",
-                minHeight: "1.5em",
-                opacity: 1,
                 color: "#ffffff",
               }}
             >

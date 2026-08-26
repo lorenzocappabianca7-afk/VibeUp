@@ -11,6 +11,8 @@ import {
   SPLASH_EXIT_MS,
   SPLASH_HOLD_MS,
   SPLASH_STORAGE_KEY,
+  TAGLINE_DELAY_MS,
+  TAGLINE_FADE_MS,
 } from "@/lib/splash";
 
 function removeBootSplash() {
@@ -101,6 +103,10 @@ export function SplashScreen() {
 
     const boot = document.getElementById("vibeup-boot-splash");
 
+    const taglineTimer = window.setTimeout(() => {
+      boot?.classList.add("vibeup-splash--tagline");
+    }, TAGLINE_DELAY_MS + TAGLINE_FADE_MS);
+
     const exitTimer = window.setTimeout(() => {
       boot?.classList.add("vibeup-splash--exit");
     }, SPLASH_HOLD_MS);
@@ -110,6 +116,7 @@ export function SplashScreen() {
     }, SPLASH_HOLD_MS + SPLASH_EXIT_MS);
 
     return () => {
+      window.clearTimeout(taglineTimer);
       window.clearTimeout(exitTimer);
       window.clearTimeout(doneTimer);
     };

@@ -3,6 +3,8 @@ import {
   SPLASH_LOGO_DISPLAY_PX,
   SPLASH_STAGE_LIFT_VH,
   SPLASH_STORAGE_KEY,
+  TAGLINE_DELAY_MS,
+  TAGLINE_FADE_MS,
 } from "@/lib/splash";
 
 /**
@@ -68,6 +70,7 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   transition:opacity ${SPLASH_EXIT_MS}ms cubic-bezier(0.4,0,0.2,1)!important;
 }
 .vibeup-splash__stage{
+  position:relative;
   box-sizing:border-box;
   display:flex;
   flex-direction:column;
@@ -96,10 +99,13 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   transition:none!important;
 }
 .vibeup-splash__tagline{
+  position:absolute;
+  top:100%;
+  left:50%;
+  width:max-content;
   margin:1.15rem 0 0;
-  min-height:1.5em;
-  max-width:calc(100vw - 0.75rem);
   padding:0 0.25rem;
+  max-width:calc(100vw - 0.75rem);
   font-family:var(--font-brand),system-ui,sans-serif;
   font-size:clamp(1.2rem,5.8vw,2.55rem);
   font-weight:700;
@@ -108,10 +114,20 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   white-space:nowrap;
   color:#fff;
   text-align:center;
+  opacity:0;
+  transform:translateX(-50%);
+  animation:vibeup-splash-tagline-in ${TAGLINE_FADE_MS}ms ease ${TAGLINE_DELAY_MS}ms forwards;
+}
+.vibeup-splash--tagline .vibeup-splash__tagline{
   opacity:1;
-  transform:none;
+  animation:none;
+}
+@keyframes vibeup-splash-tagline-in{
+  from{opacity:0}
+  to{opacity:1}
 }
 @media (prefers-reduced-motion:reduce){
+  .vibeup-splash__tagline{animation:none;opacity:1}
   .vibeup-splash--exit .vibeup-splash__stage{transition:none!important}
 }
 #vibeup-app-shell{

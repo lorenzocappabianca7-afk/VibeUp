@@ -10,7 +10,12 @@ export const SPLASH_LOGO_DISPLAY_PX = 112;
 /** Stage lift used by HTML splash and generated iOS launch images */
 export const SPLASH_STAGE_LIFT_VH = 14;
 
-/** Hold with logo + tagline already visible, then start exit */
+/** Logo alone, then tagline fades in — no scale/translate on the logo */
+export const TAGLINE_DELAY_MS = 800;
+
+export const TAGLINE_FADE_MS = 450;
+
+/** Hold from first paint (logo already visible), then start exit */
 export const SPLASH_HOLD_MS = 4000;
 
 /** Soft fade of logo/tagline only — the black plate stays solid until cut */
