@@ -11,7 +11,12 @@ import {
   CRITICAL_PAINT_CSS,
   CRITICAL_PAINT_SCRIPT,
 } from "@/lib/critical-paint";
-import { SPLASH_LOGO_DISPLAY_PX } from "@/lib/splash";
+import {
+  SPLASH_LOGO_DISPLAY_PX,
+  SPLASH_LOGO_HALF_PX,
+  SPLASH_LOGO_SRC,
+  SPLASH_STAGE_LIFT_VH,
+} from "@/lib/splash";
 import { getSiteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -64,8 +69,9 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "VibeUp",
-    /* "black" (not translucent) avoids a light strip/flash under the status bar on iOS */
-    statusBarStyle: "black",
+    /* Full-screen under the status bar so the native launch image and HTML
+       splash share the same coordinate space. App chrome pads safe-area. */
+    statusBarStyle: "black-translucent",
   },
   /* Next emits only mobile-web-app-capable; Safari still keys standalone off the apple-prefixed tag. */
   other: {
@@ -142,7 +148,7 @@ export default function RootLayout({
         {/* Render-blocking black paint — must stay before Next CSS chunks.
             next/no-css-tags is intentional: preinit was too late for Safari FOUC. */}
         {/* eslint-disable-next-line @next/next/no-css-tags -- boot FOUC shield */}
-        <link rel="stylesheet" href="/boot-paint.css?v=splash-logo-6" />
+        <link rel="stylesheet" href="/boot-paint.css?v=splash-logo-7" />
         {/* Fallback inline CSS if the link is delayed/relocated */}
         <style
           dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_CSS }}
@@ -153,9 +159,13 @@ export default function RootLayout({
         />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
         <link
           rel="preload"
-          href="/vibeup-splash-logo-boot.png"
+          href={SPLASH_LOGO_SRC}
           as="image"
           type="image/png"
           fetchPriority="high"
@@ -182,7 +192,7 @@ export default function RootLayout({
         />
         {/* Black shell with inline styles — demoted behind app after splash */}
         <CriticalPaint />
-        {/* Sole splash overlay — logo first at final size, tagline fades in after. */}
+        {/* Sole splash overlay — logo first, same geometry as iOS launch PNGs. */}
         <div
           id="vibeup-boot-splash"
           className="vibeup-splash"
@@ -195,20 +205,18 @@ export default function RootLayout({
             left: 0,
             zIndex: 10000,
             backgroundColor: "#000000",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: "block",
           }}
         >
           <div
             className="vibeup-splash__stage"
             style={{
-              position: "relative",
-              boxSizing: "border-box",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              marginBottom: "14vh",
+              position: "absolute",
+              top: `calc(50% - ${SPLASH_STAGE_LIFT_VH}vh - ${SPLASH_LOGO_HALF_PX}px)`,
+              left: `calc(50% - ${SPLASH_LOGO_HALF_PX}px)`,
+              width: `${SPLASH_LOGO_DISPLAY_PX}px`,
+              height: `${SPLASH_LOGO_DISPLAY_PX}px`,
+              margin: 0,
               transform: "none",
             }}
           >
@@ -223,7 +231,7 @@ export default function RootLayout({
                 maxWidth: `${SPLASH_LOGO_DISPLAY_PX}px`,
                 maxHeight: `${SPLASH_LOGO_DISPLAY_PX}px`,
                 flexShrink: 0,
-                backgroundImage: "url(/vibeup-splash-logo-boot.png)",
+                backgroundImage: `url(${SPLASH_LOGO_SRC})`,
                 backgroundRepeat: "no-repeat",
                 backgroundPosition: "center",
                 backgroundSize: `${SPLASH_LOGO_DISPLAY_PX}px ${SPLASH_LOGO_DISPLAY_PX}px`,

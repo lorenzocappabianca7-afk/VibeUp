@@ -8,6 +8,7 @@ import {
 } from "@/lib/critical-paint";
 import { recoverInteractiveSession } from "@/lib/session-health";
 import {
+  isStandalonePwa,
   SPLASH_EXIT_MS,
   SPLASH_HOLD_MS,
   SPLASH_STORAGE_KEY,
@@ -29,6 +30,10 @@ function shouldSkipSplash() {
       /* ignore */
     }
   }
+  /* iOS Home Screen always shows a native splash. Skipping the HTML overlay
+     leaves a black gap (logo vanishes) between that image and Explore. */
+  if (isStandalonePwa()) return false;
+
   if (typeof document !== "undefined") {
     if (document.documentElement.classList.contains("vibeup-splash-skip")) {
       return true;

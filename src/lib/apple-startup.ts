@@ -1,70 +1,70 @@
 /** iOS `apple-touch-startup-image` list — keep in the first HTML `<head>`.
  *  Every entry MUST have a media query. A match-all fallback makes iOS
- *  reject the set and zoom the small Home Screen icon instead. */
-export const APPLE_STARTUP_IMAGES = [
-  {
-    url: "/splash/apple-startup-1320x2868-v6.png",
-    media:
-      "screen and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1260x2736-v6.png",
-    media:
-      "screen and (device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1206x2622-v6.png",
-    media:
-      "screen and (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1290x2796-v6.png",
-    media:
-      "screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1179x2556-v6.png",
-    media:
-      "screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1284x2778-v6.png",
-    media:
-      "screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1170x2532-v6.png",
-    media:
-      "screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1125x2436-v6.png",
-    media:
-      "screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1242x2688-v6.png",
-    media:
-      "screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-828x1792-v6.png",
-    media:
-      "screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-750x1334-v6.png",
-    media:
-      "screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-1668x2388-v6.png",
-    media:
-      "screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
-  },
-  {
-    url: "/splash/apple-startup-2048x2732-v6.png",
-    media:
-      "screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
-  },
+ *  reject the set and zoom the small Home Screen icon instead.
+ *
+ *  Dark-mode duplicates are required: in Dark Mode, iOS ignores images that
+ *  do not mention `prefers-color-scheme` and falls back to a zoomed icon.
+ *  Landscape duplicates stop a portrait-only set from being rejected.
+ */
+const APPLE_STARTUP_VERSION = "v7";
+
+const APPLE_STARTUP_DEVICES = [
+  { cssW: 440, cssH: 956, dpr: 3 },
+  { cssW: 420, cssH: 912, dpr: 3 },
+  { cssW: 402, cssH: 874, dpr: 3 },
+  { cssW: 430, cssH: 932, dpr: 3 },
+  { cssW: 393, cssH: 852, dpr: 3 },
+  { cssW: 428, cssH: 926, dpr: 3 },
+  { cssW: 390, cssH: 844, dpr: 3 },
+  { cssW: 375, cssH: 812, dpr: 3 },
+  { cssW: 360, cssH: 780, dpr: 3 },
+  { cssW: 414, cssH: 896, dpr: 3 },
+  { cssW: 414, cssH: 736, dpr: 3 },
+  { cssW: 414, cssH: 896, dpr: 2 },
+  { cssW: 375, cssH: 667, dpr: 2 },
+  { cssW: 834, cssH: 1194, dpr: 2 },
+  { cssW: 1024, cssH: 1366, dpr: 2 },
 ] as const;
+
+function startupFile(pixelW: number, pixelH: number) {
+  return `/splash/apple-startup-${pixelW}x${pixelH}-${APPLE_STARTUP_VERSION}.png`;
+}
+
+function startupMedia(
+  cssW: number,
+  cssH: number,
+  dpr: number,
+  orientation: "portrait" | "landscape",
+  scheme?: "dark",
+) {
+  const device = `(device-width: ${cssW}px) and (device-height: ${cssH}px) and (-webkit-device-pixel-ratio: ${dpr}) and (orientation: ${orientation})`;
+  if (scheme === "dark") {
+    return `screen and (prefers-color-scheme: dark) and ${device}`;
+  }
+  return `screen and ${device}`;
+}
+
+export const APPLE_STARTUP_IMAGES = APPLE_STARTUP_DEVICES.flatMap((d) => {
+  const portraitPxW = d.cssW * d.dpr;
+  const portraitPxH = d.cssH * d.dpr;
+  const portrait = startupFile(portraitPxW, portraitPxH);
+  const landscape = startupFile(portraitPxH, portraitPxW);
+  return [
+    {
+      url: portrait,
+      media: startupMedia(d.cssW, d.cssH, d.dpr, "portrait"),
+    },
+    {
+      url: portrait,
+      media: startupMedia(d.cssW, d.cssH, d.dpr, "portrait", "dark"),
+    },
+    {
+      url: landscape,
+      media: startupMedia(d.cssW, d.cssH, d.dpr, "landscape"),
+    },
+    {
+      url: landscape,
+      media: startupMedia(d.cssW, d.cssH, d.dpr, "landscape", "dark"),
+    },
+  ];
+});
