@@ -7,11 +7,29 @@ import { Suspense, useEffect, useState } from "react";
 function PaymentCancelInner() {
   const params = useSearchParams();
   const requestId = params.get("request_id") ?? "";
+  const bookingId = params.get("booking_id") ?? "";
+  const kind = params.get("kind") ?? "";
   const [message, setMessage] = useState("Annullamento pagamento…");
 
   useEffect(() => {
     let cancelled = false;
     async function revert() {
+      if (kind === "siae" && bookingId) {
+        try {
+          await fetch(
+            `/api/bookings/${encodeURIComponent(bookingId)}/siae-cancel`,
+            { method: "POST", credentials: "same-origin" },
+          );
+        } catch {
+          // webhook expired will also revert
+        }
+        if (!cancelled) {
+          setMessage(
+            "Pagamento SIAE annullato. Puoi riprovare dal pannello dell’evento.",
+          );
+        }
+        return;
+      }
       if (!requestId) {
         setMessage("Pagamento annullato. Puoi riprovare dalla conferma in app.");
         return;
@@ -34,7 +52,7 @@ function PaymentCancelInner() {
     return () => {
       cancelled = true;
     };
-  }, [requestId]);
+  }, [requestId, bookingId, kind]);
 
   return (
     <main className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col items-center justify-center gap-4 px-4 text-center">

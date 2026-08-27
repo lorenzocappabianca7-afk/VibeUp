@@ -1,6 +1,6 @@
 import { formatConfirmationDeadlineIt } from "@/lib/availability/confirmation-deadline";
 import type { AvailabilityRequestStatus } from "@/types/availability-request";
-import type { EventStatus } from "@/types/event";
+import { EVENT_STATUS_LABELS, type EventStatus } from "@/types/event";
 
 /** User-facing lifecycle states for requests / booking flow. */
 export type RequestDisplayStatus =
@@ -111,7 +111,7 @@ export function getEventStatusPresentation(params: {
   const key = mapEventStatusToDisplay(params.status);
   const label =
     key === "confirmed"
-      ? "Confermata"
+      ? EVENT_STATUS_LABELS.confirmed
       : key === "awaiting_response"
         ? "In attesa di risposta"
         : getRequestStatusPresentation({
@@ -125,7 +125,7 @@ export function getEventStatusPresentation(params: {
 
   return {
     key,
-    label: key === "confirmed" ? "Confermata" : label,
+    label: key === "confirmed" ? EVENT_STATUS_LABELS.confirmed : label,
     badgeClassName: BADGE_STYLES[key],
   };
 }

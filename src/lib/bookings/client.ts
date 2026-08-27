@@ -3,6 +3,7 @@ import type {
   AvailabilityRequest,
 } from "@/types/availability-request";
 import type { UserEvent } from "@/types/event";
+import type { SiaeChoice } from "@/lib/siae";
 
 type Action =
   | "accept"
@@ -253,6 +254,93 @@ export async function adminReviewAvailabilityRequestRemote(params: {
       return { ok: false, error: "Risposta revisione non valida." };
     }
     return { ok: true, request: payload.request as AvailabilityRequest };
+  } catch {
+    return { ok: false, error: "Connessione non disponibile." };
+  }
+}
+
+export async function saveSiaeChoiceRemote(params: {
+  eventId: string;
+  choice: Extract<SiaeChoice, "diy" | "venue">;
+}): Promise<{ ok: true; event: UserEvent } | { ok: false; error: string }> {
+  try {
+    const response = await fetch(
+      `/api/bookings/${encodeURIComponent(params.eventId)}/siae`,
+      {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ choice: params.choice }),
+      },
+    );
+    const payload = await parseJson(response);
+    if (!response.ok) {
+      return {
+        ok: false,
+        error:
+          typeof payload?.error === "string"
+            ? payload.error
+            : "Salvataggio scelta SIAE fallito.",
+      };
+    }
+    if (!payload?.event || typeof payload.event !== "object") {
+      return { ok: false, error: "Risposta SIAE non valida." };
+    }
+    return { ok: true, event: payload.event as UserEvent };
+  } catch {
+    return { ok: false, error: "Connessione non disponibile." };
+  }
+}
+
+export async function startSiaeCheckoutRemote(params: {
+  eventId: string;
+}): Promise<
+  | { ok: true; checkoutUrl: string; sessionId: string; event: UserEvent }
+  | { ok: true; alreadyPaid: true; event: UserEvent }
+  | { ok: false; error: string }
+> {
+  try {
+    const response = await fetch(
+      `/api/bookings/${encodeURIComponent(params.eventId)}/siae-checkout`,
+      {
+        method: "POST",
+        credentials: "same-origin",
+      },
+    );
+    const payload = await parseJson(response);
+    if (!response.ok) {
+      return {
+        ok: false,
+        error:
+          typeof payload?.error === "string"
+            ? payload.error
+            : "Avvio pagamento SIAE fallito.",
+      };
+    }
+    if (payload?.alreadyPaid) {
+      if (!payload.event || typeof payload.event !== "object") {
+        return { ok: false, error: "Risposta SIAE non valida." };
+      }
+      return {
+        ok: true,
+        alreadyPaid: true,
+        event: payload.event as UserEvent,
+      };
+    }
+    if (
+      typeof payload?.checkoutUrl !== "string" ||
+      !payload.checkoutUrl ||
+      !payload.event ||
+      typeof payload.event !== "object"
+    ) {
+      return { ok: false, error: "Risposta checkout SIAE non valida." };
+    }
+    return {
+      ok: true,
+      checkoutUrl: payload.checkoutUrl,
+      sessionId: String(payload.sessionId ?? ""),
+      event: payload.event as UserEvent,
+    };
   } catch {
     return { ok: false, error: "Connessione non disponibile." };
   }

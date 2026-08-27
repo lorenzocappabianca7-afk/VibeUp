@@ -10,8 +10,10 @@ import { Suspense, useEffect, useState } from "react";
 function PaymentSuccessInner() {
   const params = useSearchParams();
   const requestId = params.get("request_id") ?? "";
+  const bookingId = params.get("booking_id") ?? "";
+  const kind = params.get("kind") ?? "";
   const { setTab } = useTabNavigation();
-  const { addEvent } = useAppState();
+  const { addEvent, updateEventSiae } = useAppState();
   const { requests, cloudSyncEnabled } = useAvailabilityRequests();
   const [message, setMessage] = useState("Verifico il pagamento…");
 
@@ -19,6 +21,16 @@ function PaymentSuccessInner() {
     let cancelled = false;
 
     async function sync() {
+      if (kind === "siae" && bookingId) {
+        updateEventSiae(bookingId, {
+          siaeChoice: "vibeup",
+          siaeStatus: "managed",
+          siaePaidAt: new Date().toISOString(),
+        });
+        setMessage("Documento SIAE in gestione da VibeUp.");
+        setTab("events");
+        return;
+      }
       if (!requestId) {
         setMessage("Pagamento ricevuto. Torna all’app per vedere l’evento.");
         return;
@@ -64,11 +76,13 @@ function PaymentSuccessInner() {
     return () => {
       cancelled = true;
     };
-  }, [requestId, cloudSyncEnabled, requests, setTab, addEvent]);
+  }, [requestId, bookingId, kind, cloudSyncEnabled, requests, setTab, addEvent, updateEventSiae]);
 
   return (
     <main className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
-      <h1 className="text-2xl font-bold text-primary-black">Pagamento caparra</h1>
+      <h1 className="text-2xl font-bold text-primary-black">
+        {kind === "siae" ? "Pagamento documento SIAE" : "Pagamento caparra"}
+      </h1>
       <p className="text-sm text-primary-black/70">{message}</p>
       <SoftNavLink
         href="/?tab=events"

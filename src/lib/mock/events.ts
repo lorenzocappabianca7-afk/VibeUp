@@ -1,4 +1,8 @@
 import type { UserEvent } from "@/types/event";
+import {
+  buildAdminPreviewEvent,
+  isAdminPreviewEventId,
+} from "@/lib/admin-preview-event";
 
 export const MOCK_EVENTS: UserEvent[] = [
   {
@@ -115,5 +119,6 @@ export const MOCK_EVENTS: UserEvent[] = [
 ];
 
 export function getEventById(id: string): UserEvent | undefined {
+  if (isAdminPreviewEventId(id)) return buildAdminPreviewEvent();
   return MOCK_EVENTS.find((event) => event.id === id);
 }

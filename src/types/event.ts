@@ -1,3 +1,5 @@
+import type { SiaeChoice, SiaeStatus } from "@/lib/siae";
+
 export type EventStatus = "draft" | "organizing" | "confirmed" | "completed";
 
 export type ServiceStatus = "confirmed" | "pending" | "cancelled";
@@ -58,6 +60,14 @@ export interface UserEvent {
   /** ISO timestamp when the event was confirmed/created (deposit window start). */
   createdAt?: string;
   menuSelections?: EventMenuSelection[];
+  /** Organizer choice for the SIAE filing (after deposit). */
+  siaeChoice?: SiaeChoice | null;
+  siaeStatus?: SiaeStatus;
+  siaePaidAt?: string;
+  /** Venue-quoted SIAE fee when the location publishes one. */
+  siaeVenueFee?: number | null;
+  /** Checked organizer checklist item ids (persisted locally). */
+  checklistCheckedIds?: string[];
 }
 
 export interface CountdownTime {

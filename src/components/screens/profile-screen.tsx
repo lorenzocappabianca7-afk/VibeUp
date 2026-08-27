@@ -24,16 +24,22 @@ import { BusinessPublicationsPanel } from "@/components/business/business-public
 import { AvatarCropModal } from "@/components/profile/avatar-crop-modal";
 import { ProfileSettingsView } from "@/components/profile/settings/profile-settings-view";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
+import { ExpandedEventCard } from "@/components/screens/my-events-screen";
 import { useAccountGate } from "@/context/account-gate-context";
 import { GUEST_USER, isProAccount, useAppState } from "@/context/app-state-context";
 import { useProfileCommunications } from "@/context/profile-communications-context";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
+import {
+  buildAdminPreviewEvent,
+  getAdminPreviewDepositPaymentKey,
+  isAdminPreviewEventId,
+} from "@/lib/admin-preview-event";
 import { BUSINESS_CATEGORY_LABELS } from "@/types/business";
 import type { SettingsPanelId } from "@/types/user-settings";
 import { formatCurrency } from "@/lib/utils";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { requestActivationEmail } from "@/lib/auth/request-activation-email";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const primaryMenuItems: Array<{
   id: SettingsPanelId;
@@ -93,10 +99,16 @@ export function ProfileScreen({
     createAccount,
     currentUser,
     deleteAccount,
+    deleteEvent,
+    events,
     isBusinessUser,
     isGuest,
+    paymentStates,
     switchAccount,
+    toggleEventChecklistItem,
     updateCurrentUser,
+    updateEventSiae,
+    updateEventTitle,
     isStorageHydrated,
   } = useAppState();
   const { openAuth } = useAccountGate();
@@ -150,6 +162,29 @@ export function ProfileScreen({
     currentUser.email,
     currentUser.role,
   );
+  const adminPreviewEvent = useMemo(() => {
+    if (!canManagePublications) return null;
+    const stored = events.find((event) => isAdminPreviewEventId(event.id));
+    if (!stored) return buildAdminPreviewEvent();
+    return {
+      ...buildAdminPreviewEvent(),
+      checklistCheckedIds: stored.checklistCheckedIds,
+      siaeChoice: stored.siaeChoice,
+      siaeStatus: stored.siaeStatus,
+      siaePaidAt: stored.siaePaidAt,
+    };
+  }, [canManagePublications, events]);
+  const adminPreviewPaymentStates = useMemo(
+    () => ({
+      ...paymentStates,
+      [getAdminPreviewDepositPaymentKey()]: {
+        paid: true,
+        method: "card",
+      },
+    }),
+    [paymentStates],
+  );
+  const ignorePreviewDepositPayment = useCallback(() => {}, []);
 
   // Render-phase clear (same pattern as Events payment modal) so scroll unlocks
   // in the same commit as the tab hide — no one-frame freeze window.
@@ -682,6 +717,32 @@ export function ProfileScreen({
           </div>
         )}
       </div>
+
+      {adminPreviewEvent ? (
+        <section className="min-w-0 space-y-2">
+          <div>
+            <h2 className="text-sm font-bold text-primary-black">
+              Anteprima evento confermato
+            </h2>
+            <p className="mt-1 text-xs text-primary-black/55">
+              Così appare il pannello in I miei eventi dopo il pagamento della
+              caparra.
+            </p>
+          </div>
+          <div className="mx-auto w-full min-w-0 max-w-[24rem] sm:max-w-[26.5rem]">
+            <ExpandedEventCard
+              event={adminPreviewEvent}
+              isActive={isActive}
+              paymentStates={adminPreviewPaymentStates}
+              onOpenDepositPayment={ignorePreviewDepositPayment}
+              onTitleChange={updateEventTitle}
+              onSiaePatch={updateEventSiae}
+              onToggleChecklistItem={toggleEventChecklistItem}
+              onDeleteEvent={deleteEvent}
+            />
+          </div>
+        </section>
+      ) : null}
 
       <nav>
         <ul className="divide-y divide-primary-black/8 overflow-hidden rounded-2xl border border-primary-black/10">

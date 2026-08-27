@@ -5,12 +5,15 @@ import { EventCountdown } from "@/components/events/event-countdown";
 import { EventHintLink } from "@/components/events/event-hint-link";
 import { EventInfoSheet } from "@/components/events/event-info-sheet";
 import { EventManagerContactSection } from "@/components/events/event-manager-contact-section";
+import { SiaeDocumentCard } from "@/components/events/siae-document-card";
 import { RefundReportModal } from "@/components/events/refund-report-modal";
 import { ServiceStatusList } from "@/components/events/service-status-list";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
 import { useAppState } from "@/context/app-state-context";
 import { calculateLocationDeposit, getDepositCheckoutAmounts } from "@/lib/booking-money";
+import { isCloudBookingId } from "@/lib/siae";
+import { isAdminPreviewEventId } from "@/lib/admin-preview-event";
 import type { BookedService, UserEvent } from "@/types/event";
 import { formatCurrency, formatDate, MODAL_SAFE_BOTTOM_STYLE } from "@/lib/utils";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
@@ -36,7 +39,8 @@ export function EventDashboardView({
   eventId,
   initialEvent,
 }: EventDashboardViewProps) {
-  const { getEvent, isStorageHydrated } = useAppState();
+  const { getEvent, isStorageHydrated, paymentStates, updateEventSiae } =
+    useAppState();
   const event = getEvent(eventId) ?? initialEvent;
   const [refundService, setRefundService] = useState<BookedService | null>(
     null,
@@ -138,6 +142,16 @@ export function EventDashboardView({
       <EventCountdown event={currentEvent} />
 
       <EventManagerContactSection event={currentEvent} />
+
+      {paymentStates[`${currentEvent.id}:${currentEvent.id}-deposit`]?.paid ||
+      isCloudBookingId(currentEvent.id) ||
+      isAdminPreviewEventId(currentEvent.id) ? (
+        <SiaeDocumentCard
+          event={currentEvent}
+          layout="page"
+          onLocalPatch={updateEventSiae}
+        />
+      ) : null}
 
       <section className="rounded-2xl border border-brand-pink/20 bg-brand-pink/12 p-4">
         <div className="flex items-start gap-3">

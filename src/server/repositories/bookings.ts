@@ -23,6 +23,12 @@ import type {
   ManagerProposedDate,
 } from "@/types/availability-request";
 import type { BookedService, UserEvent } from "@/types/event";
+import {
+  parseSiaeChoice,
+  parseSiaeStatus,
+  type SiaeChoice,
+  type SiaeStatus,
+} from "@/lib/siae";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -99,6 +105,13 @@ export interface BookingRow {
   deposit_due_at: string;
   created_at: string;
   updated_at: string;
+  siae_choice?: string | null;
+  siae_status?: string | null;
+  siae_stripe_checkout_session_id?: string | null;
+  siae_stripe_payment_intent_id?: string | null;
+  siae_paid_at?: string | null;
+  siae_notified_at?: string | null;
+  siae_venue_fee?: number | string | null;
 }
 
 function isUuid(value: string): boolean {
@@ -292,6 +305,19 @@ export function bookingRowToUserEvent(row: BookingRow): UserEvent {
     totalCost: Number(row.total_cost) || 0,
     depositAmount: Number(row.deposit_amount) || 0,
     createdAt: row.created_at,
+    siaeChoice: parseSiaeChoice(row.siae_choice),
+    siaeStatus:
+      row.siae_status == null || row.siae_status === ""
+        ? undefined
+        : parseSiaeStatus(row.siae_status),
+    siaePaidAt:
+      typeof row.siae_paid_at === "string" && row.siae_paid_at
+        ? row.siae_paid_at
+        : undefined,
+    siaeVenueFee:
+      row.siae_venue_fee === null || row.siae_venue_fee === undefined
+        ? null
+        : Number(row.siae_venue_fee),
   };
 }
 
@@ -1335,6 +1361,60 @@ export async function listBookingsForOrganizer(
   }
 
   return (data as BookingRow[]).map(bookingRowToUserEvent);
+}
+
+export async function getBookingRow(
+  bookingId: string,
+): Promise<BookingRow | null> {
+  if (!isUuid(bookingId) || !isSupabaseConfigured()) return null;
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("*")
+    .eq("id", bookingId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as BookingRow;
+}
+
+export async function updateBookingSiae(params: {
+  bookingId: string;
+  organizerId?: string;
+  patch: {
+    siae_choice?: SiaeChoice | null;
+    siae_status?: SiaeStatus;
+    siae_stripe_checkout_session_id?: string | null;
+    siae_stripe_payment_intent_id?: string | null;
+    siae_paid_at?: string | null;
+    siae_notified_at?: string | null;
+  };
+}): Promise<{ ok: true; event: UserEvent } | { ok: false; error: string }> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Supabase non configurato." };
+  }
+  if (!isUuid(params.bookingId)) {
+    return { ok: false, error: "Evento non valido." };
+  }
+
+  const existing = await getBookingRow(params.bookingId);
+  if (!existing) return { ok: false, error: "Evento non trovato." };
+  if (params.organizerId && existing.organizer_id !== params.organizerId) {
+    return { ok: false, error: "Non puoi modificare questo evento." };
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("bookings")
+    .update(params.patch)
+    .eq("id", params.bookingId)
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    return { ok: false, error: error?.message ?? "Aggiornamento SIAE fallito." };
+  }
+
+  return { ok: true, event: bookingRowToUserEvent(data as BookingRow) };
 }
 
 export async function getProfileRole(userId: string): Promise<string | null> {

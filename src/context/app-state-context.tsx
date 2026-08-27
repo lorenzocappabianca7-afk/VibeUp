@@ -27,9 +27,15 @@ import {
   type AppRole,
 } from "@/lib/auth/supabase-auth";
 import {
+  canAccessAdminCatalog,
   isAdminManagerViewEnabled,
   setAdminManagerViewEnabled,
 } from "@/lib/admin-access";
+import {
+  buildAdminPreviewEvent,
+  getAdminPreviewDepositPaymentKey,
+  isAdminPreviewEventId,
+} from "@/lib/admin-preview-event";
 import {
   getSupabaseBrowser,
   isSupabaseBrowserConfigured,
@@ -67,6 +73,7 @@ import type {
   MenuAllergenRestriction,
   UserEvent,
 } from "@/types/event";
+import type { SiaeChoice, SiaeStatus } from "@/lib/siae";
 import type { SavedPaymentCard } from "@/types/payment";
 import type { SavedQuote } from "@/types/saved-quote";
 import { MAX_SAVED_QUOTES } from "@/types/saved-quote";
@@ -201,6 +208,15 @@ interface AppStateContextValue {
   deleteEvent: (eventId: string) => void;
   prunePastEvents: () => void;
   updateEventTitle: (eventId: string, title: string) => void;
+  updateEventSiae: (
+    eventId: string,
+    patch: {
+      siaeChoice?: SiaeChoice | null;
+      siaeStatus?: SiaeStatus;
+      siaePaidAt?: string;
+    },
+  ) => void;
+  toggleEventChecklistItem: (eventId: string, itemId: string) => void;
   updateEventMenuSelections: (
     eventId: string,
     selections: EventMenuSelection[],
@@ -341,6 +357,11 @@ function normalizeUserScopedState(
             guestCount:
               typeof event.guestCount === "number" ? event.guestCount : 0,
             services: Array.isArray(event.services) ? event.services : [],
+            checklistCheckedIds: Array.isArray(event.checklistCheckedIds)
+              ? event.checklistCheckedIds.filter(
+                  (id): id is string => typeof id === "string" && id.length > 0,
+                )
+              : undefined,
           }))
       : fallback.events,
     paymentStates:
@@ -361,7 +382,9 @@ function normalizeUserScopedState(
 
 function prunePastEventsFromState(state: UserScopedState): UserScopedState {
   const sourceEvents = Array.isArray(state.events) ? state.events : [];
-  const events = sourceEvents.filter((event) => !isEventPast(event));
+  const events = sourceEvents.filter(
+    (event) => isAdminPreviewEventId(event.id) || !isEventPast(event),
+  );
   if (events.length === sourceEvents.length) return state;
 
   const remainingIds = new Set(events.map((event) => event.id));
@@ -1009,11 +1032,61 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     };
   }, [hydratedFromStorage]);
 
+  useEffect(() => {
+    if (!hydratedFromStorage) return;
+    if (!canAccessAdminCatalog(currentUser.email, currentUser.role)) return;
+
+    updateCurrentUserState((state) => {
+      const hasPreview = state.events.some((event) =>
+        isAdminPreviewEventId(event.id),
+      );
+      const depositKey = getAdminPreviewDepositPaymentKey();
+      const depositPaid = Boolean(state.paymentStates[depositKey]?.paid);
+      if (hasPreview && depositPaid) return state;
+
+      return {
+        ...state,
+        events: hasPreview
+          ? state.events
+          : [buildAdminPreviewEvent(), ...state.events],
+        paymentStates: depositPaid
+          ? state.paymentStates
+          : {
+              ...state.paymentStates,
+              [depositKey]: { paid: true, method: "card" },
+            },
+      };
+    });
+  }, [
+    currentUser.email,
+    currentUser.role,
+    hydratedFromStorage,
+    updateCurrentUserState,
+  ]);
+
   const addEvent = useCallback((event: UserEvent) => {
-    updateCurrentUserState((state) => ({
-      ...state,
-      events: [event, ...state.events.filter((item) => item.id !== event.id)],
-    }));
+    updateCurrentUserState((state) => {
+      const existing = state.events.find((item) => item.id === event.id);
+      const merged: UserEvent = existing
+        ? {
+            ...existing,
+            ...event,
+            siaeChoice: event.siaeChoice ?? existing.siaeChoice ?? null,
+            siaeStatus: event.siaeStatus ?? existing.siaeStatus,
+            siaePaidAt: event.siaePaidAt ?? existing.siaePaidAt,
+            siaeVenueFee:
+              event.siaeVenueFee !== undefined
+                ? event.siaeVenueFee
+                : existing.siaeVenueFee,
+            checklistCheckedIds:
+              event.checklistCheckedIds ?? existing.checklistCheckedIds,
+          }
+        : event;
+      return {
+        ...state,
+        events: [merged, ...state.events.filter((item) => item.id !== event.id)],
+      };
+    });
   }, [updateCurrentUserState]);
 
   const mergeCloudEvents = useCallback(
@@ -1022,7 +1095,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       updateCurrentUserState((state) => {
         const byId = new Map<string, UserEvent>();
         for (const event of state.events) byId.set(event.id, event);
-        for (const event of cloudEvents) byId.set(event.id, event);
+        for (const event of cloudEvents) {
+          const existing = byId.get(event.id);
+          byId.set(event.id, {
+            ...existing,
+            ...event,
+            siaeChoice: event.siaeChoice ?? existing?.siaeChoice ?? null,
+            siaeStatus: event.siaeStatus ?? existing?.siaeStatus,
+            siaePaidAt: event.siaePaidAt ?? existing?.siaePaidAt,
+            siaeVenueFee:
+              event.siaeVenueFee !== undefined
+                ? event.siaeVenueFee
+                : existing?.siaeVenueFee,
+            checklistCheckedIds:
+              event.checklistCheckedIds ?? existing?.checklistCheckedIds,
+          });
+        }
         return {
           ...state,
           events: Array.from(byId.values()).sort((a, b) => {
@@ -1072,6 +1160,42 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       ),
     }));
   }, [updateCurrentUserState]);
+
+  const updateEventSiae = useCallback(
+    (
+      eventId: string,
+      patch: {
+        siaeChoice?: SiaeChoice | null;
+        siaeStatus?: SiaeStatus;
+        siaePaidAt?: string;
+      },
+    ) => {
+      updateCurrentUserState((state) => ({
+        ...state,
+        events: state.events.map((event) =>
+          event.id === eventId ? { ...event, ...patch } : event,
+        ),
+      }));
+    },
+    [updateCurrentUserState],
+  );
+
+  const toggleEventChecklistItem = useCallback(
+    (eventId: string, itemId: string) => {
+      updateCurrentUserState((state) => ({
+        ...state,
+        events: state.events.map((event) => {
+          if (event.id !== eventId) return event;
+          const current = event.checklistCheckedIds ?? [];
+          const next = current.includes(itemId)
+            ? current.filter((id) => id !== itemId)
+            : [...current, itemId];
+          return { ...event, checklistCheckedIds: next };
+        }),
+      }));
+    },
+    [updateCurrentUserState],
+  );
 
   const updateEventMenuSelections = useCallback(
     (eventId: string, selections: EventMenuSelection[]) => {
@@ -2545,6 +2669,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       deleteEvent,
       prunePastEvents,
       updateEventTitle,
+      updateEventSiae,
+      toggleEventChecklistItem,
       updateEventMenuSelections,
       updateEventMenuAllergens,
       addServiceToEvent,
@@ -2601,6 +2727,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       deleteEvent,
       prunePastEvents,
       updateEventTitle,
+      updateEventSiae,
+      toggleEventChecklistItem,
       updateEventMenuSelections,
       updateEventMenuAllergens,
       addServiceToEvent,

@@ -5,6 +5,7 @@ import { DiscountInviteBanner } from "@/components/discount-invite-banner";
 import { EventCountdown } from "@/components/events/event-countdown";
 import { EventHintLink } from "@/components/events/event-hint-link";
 import { EventInfoSheet } from "@/components/events/event-info-sheet";
+import { SiaeDocumentCard } from "@/components/events/siae-document-card";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import {
   EVENT_CHECKLIST,
@@ -14,10 +15,17 @@ import {
   EVENT_TIPS_INTRO,
   EVENT_TIPS_TITLE,
 } from "@/lib/event-organizer-guides";
+import { canAccessAdminCatalog } from "@/lib/admin-access";
+import {
+  buildAdminPreviewEvent,
+  getAdminPreviewDepositPaymentKey,
+  isAdminPreviewEventId,
+} from "@/lib/admin-preview-event";
 import { useAppState } from "@/context/app-state-context";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
 import { useProfileCommunications } from "@/context/profile-communications-context";
 import { getCountdown, isEventPast } from "@/lib/event";
+import { formatSiaePrice, isCloudBookingId, SIAE_VIBEUP_TOTAL_EUR, type SiaeChoice, type SiaeStatus } from "@/lib/siae";
 import { calculateLocationDeposit } from "@/lib/booking-money";
 import {
   type BookedService,
@@ -223,13 +231,20 @@ export const MyEventsScreen = memo(function MyEventsScreen({
   isActive = true,
 }: MyEventsScreenProps) {
   const {
+    currentUser,
     events,
     deleteEvent,
     markServicePaid: markServicePaidInState,
     paymentStates,
     prunePastEvents,
     updateEventTitle,
+    updateEventSiae,
+    toggleEventChecklistItem,
   } = useAppState();
+  const isAdminCatalog = canAccessAdminCatalog(
+    currentUser.email,
+    currentUser.role,
+  );
   const { organizerOpenRequests, resumeAvailabilityConfirm } =
     useAvailabilityRequests();
   const { communications, markRequestStatusSeen } = useProfileCommunications();
@@ -262,10 +277,39 @@ export const MyEventsScreen = memo(function MyEventsScreen({
     [communications],
   );
 
-  const activeEvents = useMemo(
-    () => events.filter((event) => !isEventPast(event)),
-    [events],
-  );
+  const activeEvents = useMemo(() => {
+    const upcoming = events.filter((event) => !isEventPast(event));
+    if (!isAdminCatalog) {
+      return upcoming.filter((event) => !isAdminPreviewEventId(event.id));
+    }
+    const storedPreview = events.find((event) =>
+      isAdminPreviewEventId(event.id),
+    );
+    const preview = storedPreview
+      ? {
+          ...buildAdminPreviewEvent(),
+          checklistCheckedIds: storedPreview.checklistCheckedIds,
+          siaeChoice: storedPreview.siaeChoice,
+          siaeStatus: storedPreview.siaeStatus,
+          siaePaidAt: storedPreview.siaePaidAt,
+        }
+      : buildAdminPreviewEvent();
+    return [
+      preview,
+      ...upcoming.filter((event) => !isAdminPreviewEventId(event.id)),
+    ];
+  }, [events, isAdminCatalog]);
+
+  const eventPaymentStates = useMemo(() => {
+    if (!isAdminCatalog) return paymentStates;
+    return {
+      ...paymentStates,
+      [getAdminPreviewDepositPaymentKey()]: {
+        paid: true,
+        method: "card",
+      },
+    };
+  }, [isAdminCatalog, paymentStates]);
 
   const markServicePaid = useCallback((
     eventId: string,
@@ -471,9 +515,11 @@ export const MyEventsScreen = memo(function MyEventsScreen({
                 <ExpandedEventCard
                   event={event}
                   isActive={isActive}
-                  paymentStates={paymentStates}
+                  paymentStates={eventPaymentStates}
                   onOpenDepositPayment={openDepositPayment}
                   onTitleChange={updateEventTitle}
+                  onSiaePatch={updateEventSiae}
+                  onToggleChecklistItem={toggleEventChecklistItem}
                   onDeleteEvent={deleteEvent}
                 />
               </li>
@@ -491,12 +537,14 @@ export const MyEventsScreen = memo(function MyEventsScreen({
   );
 });
 
-const ExpandedEventCard = memo(function ExpandedEventCard({
+export const ExpandedEventCard = memo(function ExpandedEventCard({
   event,
   isActive,
   paymentStates,
   onOpenDepositPayment,
   onTitleChange,
+  onSiaePatch,
+  onToggleChecklistItem,
   onDeleteEvent,
 }: {
   event: UserEvent;
@@ -504,17 +552,28 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   paymentStates: Record<string, ServicePaymentState>;
   onOpenDepositPayment: (event: UserEvent) => void;
   onTitleChange: (eventId: string, title: string) => void;
+  onSiaePatch: (
+    eventId: string,
+    patch: {
+      siaeChoice?: SiaeChoice | null;
+      siaeStatus?: SiaeStatus;
+      siaePaidAt?: string;
+    },
+  ) => void;
+  onToggleChecklistItem: (eventId: string, itemId: string) => void;
   onDeleteEvent: (eventId: string) => void;
 }) {
   const [titleDraft, setTitleDraft] = useState(event.title);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [openPanel, setOpenPanel] = useState<
-    "tips" | "checklist" | "payment" | null
-  >(null);
+  const [openPanel, setOpenPanel] = useState<"payment" | null>(null);
+  const [tipsOpen, setTipsOpen] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
 
-  if (!isActive && openPanel) {
+  if (!isActive && (openPanel || tipsOpen || checklistOpen)) {
     setOpenPanel(null);
+    setTipsOpen(false);
+    setChecklistOpen(false);
   }
   const titleInputRef = useRef<HTMLInputElement>(null);
   const totalCost =
@@ -528,6 +587,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
   const depositPayment = paymentStates[`${event.id}:${event.id}-deposit`] ?? {
     paid: false,
   };
+  const depositPaid = depositPayment.paid || isCloudBookingId(event.id);
   const missingSuggestions = getMissingServiceSuggestions(event);
   const payDeposit = useCallback(() => {
     onOpenDepositPayment(event);
@@ -561,7 +621,14 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       <article className="event-postit box-border mx-auto w-full min-w-0 max-w-full">
         <div className="event-postit-section min-w-0 border-b px-3 sm:px-4">
           <div className="min-w-0 overflow-hidden">
-            <RequestStatusBadge kind="event" status={event.status} />
+            <div className="flex flex-wrap items-center gap-2">
+              <RequestStatusBadge kind="event" status={event.status} />
+              {isAdminPreviewEventId(event.id) ? (
+                <span className="inline-flex items-center rounded-full bg-brand-teal/15 px-2 py-0.5 text-[11px] font-semibold leading-tight text-brand-teal-strong">
+                  Anteprima
+                </span>
+              ) : null}
+            </div>
             <div className="mt-1 flex min-w-0 items-center gap-2 leading-none">
               {isEditingTitle ? (
                 <input
@@ -593,6 +660,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                   {event.title}
                 </HardNavLink>
               )}
+              {isAdminPreviewEventId(event.id) ? null : (
               <button
                 type="button"
                 onClick={() => {
@@ -614,6 +682,7 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
                   <Pencil className="h-3.5 w-3.5" aria-hidden />
                 )}
               </button>
+              )}
             </div>
             {event.description && (
               <p className="mt-1 line-clamp-2 break-words text-sm font-semibold text-[color:var(--postit-ink-muted)]">
@@ -644,19 +713,63 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
             </p>
           </div>
 
-          <div className="mt-3 flex flex-col items-start gap-1.5">
-            <EventHintLink
-              onClick={() => setOpenPanel("tips")}
-              className="text-[color:var(--postit-ink)] decoration-[color:var(--postit-ink)]/40"
-            >
-              I nostri consigli
-            </EventHintLink>
-            <EventHintLink
-              onClick={() => setOpenPanel("checklist")}
-              className="text-[color:var(--postit-ink)] decoration-[color:var(--postit-ink)]/40"
-            >
-              Cosa devi ricordarti di fare
-            </EventHintLink>
+          <div className="mt-3 flex flex-col items-start gap-2">
+            <div className="w-full min-w-0">
+              <EventHintLink
+                icon="none"
+                expanded={checklistOpen}
+                onClick={() => setChecklistOpen((open) => !open)}
+                className="text-[color:var(--postit-ink)]"
+              >
+                {EVENT_CHECKLIST_TITLE}
+              </EventHintLink>
+              {checklistOpen ? (
+                <div className="mt-2">
+                  <p className="text-xs font-semibold text-[color:var(--postit-ink-muted)]">
+                    {EVENT_CHECKLIST_INTRO}
+                  </p>
+                  <ul className="mt-2 space-y-2">
+                    {EVENT_CHECKLIST.map((item) => {
+                      const checked =
+                        event.checklistCheckedIds?.includes(item.id) ?? false;
+                      return (
+                        <li key={item.id}>
+                          <button
+                            type="button"
+                            role="checkbox"
+                            aria-checked={checked}
+                            onClick={() =>
+                              onToggleChecklistItem(event.id, item.id)
+                            }
+                            className="flex w-full gap-2.5 text-left text-sm font-semibold leading-relaxed text-[color:var(--postit-ink)]"
+                          >
+                            <span
+                              className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                                checked
+                                  ? "border-brand-teal bg-brand-teal text-white"
+                                  : "border-[color:var(--postit-ink)]/25"
+                              }`}
+                              aria-hidden
+                            >
+                              {checked ? (
+                                <Check className="h-3 w-3" strokeWidth={3} />
+                              ) : null}
+                            </span>
+                            <span
+                              className={
+                                checked ? "line-through opacity-55" : undefined
+                              }
+                            >
+                              {item.label}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
 
@@ -667,6 +780,41 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
           payment={depositPayment}
           onPayDeposit={payDeposit}
         />
+
+        <section className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
+          <EventHintLink
+            icon="none"
+            expanded={tipsOpen}
+            onClick={() => setTipsOpen((open) => !open)}
+            className="text-[color:var(--postit-ink)]"
+          >
+            {EVENT_TIPS_TITLE}
+          </EventHintLink>
+          {tipsOpen ? (
+            <div className="mt-2">
+              <p className="text-xs font-semibold text-[color:var(--postit-ink-muted)]">
+                {EVENT_TIPS_INTRO}
+              </p>
+              <ol className="mt-2 space-y-2">
+                {EVENT_TIPS.map((tip, index) => (
+                  <li
+                    key={tip}
+                    className="flex gap-2.5 text-sm font-semibold leading-relaxed text-[color:var(--postit-ink)]"
+                  >
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-teal/20 text-[11px] font-black text-brand-teal-strong">
+                      {index + 1}
+                    </span>
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
+        </section>
+
+        {depositPaid ? (
+          <SiaeDocumentCard event={event} onLocalPatch={onSiaePatch} />
+        ) : null}
 
         <div className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
           <EventHintLink
@@ -713,7 +861,12 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       </article>
 
       <div className="mt-2 flex flex-col items-center gap-2 px-1">
-        {confirmDelete ? (
+        {isAdminPreviewEventId(event.id) ? (
+          <p className="text-center text-[11px] font-medium text-primary-black/45">
+            Pannello di riferimento: così lo vedono gli organizzatori dopo la
+            caparra.
+          </p>
+        ) : confirmDelete ? (
           <div className="flex w-full max-w-sm flex-col items-center gap-2 rounded-xl bg-white/5 px-3 py-2.5 ring-1 ring-white/10">
             <p className="text-center text-xs text-primary-black/70">
               Eliminare “{event.title}”? L’azione non si può annullare.
@@ -747,49 +900,6 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
       </div>
 
       <EventInfoSheet
-        open={openPanel === "tips"}
-        title={EVENT_TIPS_TITLE}
-        intro={EVENT_TIPS_INTRO}
-        onClose={() => setOpenPanel(null)}
-      >
-        <ol className="space-y-2.5">
-          {EVENT_TIPS.map((tip, index) => (
-            <li
-              key={tip}
-              className="flex gap-2.5 text-sm leading-relaxed text-primary-black/80"
-            >
-              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-teal/15 text-[11px] font-black text-brand-teal">
-                {index + 1}
-              </span>
-              <span>{tip}</span>
-            </li>
-          ))}
-        </ol>
-      </EventInfoSheet>
-
-      <EventInfoSheet
-        open={openPanel === "checklist"}
-        title={EVENT_CHECKLIST_TITLE}
-        intro={EVENT_CHECKLIST_INTRO}
-        onClose={() => setOpenPanel(null)}
-      >
-        <ul className="space-y-2.5">
-          {EVENT_CHECKLIST.map((item) => (
-            <li
-              key={item}
-              className="flex gap-2.5 text-sm leading-relaxed text-primary-black/80"
-            >
-              <span
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border border-primary-black/25"
-                aria-hidden
-              />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      </EventInfoSheet>
-
-      <EventInfoSheet
         open={openPanel === "payment"}
         title="Dettaglio del pagamento"
         intro="Costi della festa, caparra e servizi prenotati."
@@ -815,6 +925,14 @@ const ExpandedEventCard = memo(function ExpandedEventCard({
               {formatCurrency(depositAmount)}
             </dd>
           </div>
+          {event.siaeStatus === "managed" ? (
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-primary-black/60">Documento SIAE (VibeUp)</dt>
+              <dd className="font-bold tabular-nums text-primary-black">
+                {formatSiaePrice(SIAE_VIBEUP_TOTAL_EUR)}
+              </dd>
+            </div>
+          ) : null}
           <div className="flex items-center justify-between gap-3">
             <dt className="font-bold text-primary-black">Totale festa</dt>
             <dd className="text-base font-extrabold tabular-nums text-primary-black">

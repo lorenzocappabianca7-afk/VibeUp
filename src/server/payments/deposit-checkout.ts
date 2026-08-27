@@ -14,6 +14,7 @@ import type {
 } from "@/types/availability-request";
 import type { UserEvent } from "@/types/event";
 import type Stripe from "stripe";
+import { handleSiaeStripeEvent } from "@/server/payments/siae-checkout";
 
 const PAYABLE_FROM: AvailabilityRequestStatus[] = [
   "pending_user_confirm",
@@ -203,12 +204,14 @@ export async function startDepositCheckout(params: {
       },
     ],
     metadata: {
+      kind: "deposit",
       availability_request_id: params.requestId,
       organizer_id: params.organizerId,
       previous_status: previousStatus,
     },
     payment_intent_data: {
       metadata: {
+        kind: "deposit",
         availability_request_id: params.requestId,
         organizer_id: params.organizerId,
       },
@@ -355,6 +358,9 @@ export async function finalizeDepositPayment(params: {
 export async function handleStripeCheckoutEvent(
   event: Stripe.Event,
 ): Promise<{ ok: boolean; detail?: string }> {
+  const siae = await handleSiaeStripeEvent(event);
+  if (siae) return siae;
+
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const requestId = session.metadata?.availability_request_id;

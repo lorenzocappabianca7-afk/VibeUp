@@ -20,10 +20,36 @@ export const EVENT_CHECKLIST_INTRO =
   "Una lista pratica da spuntare prima del giorno X.";
 
 export const EVENT_CHECKLIST = [
-  "Paga la caparra entro 36 ore per tenere bloccato il locale.",
-  "Rivedi il numero di invitati e avvisa il gestore se cambia.",
-  "Aggiorna allergie e intolleranze se qualcuno si aggiunge o rinuncia.",
-  "Controlla parcheggio, mezzi e come si arriva al locale.",
-  "Conferma orario di ingresso, allestimento e ritiro materiale.",
-  "Salva il contatto del locale e porta un documento il giorno della festa.",
+  {
+    id: "pay-deposit",
+    label: "Paga la caparra entro 36 ore per tenere bloccato il locale.",
+  },
+  {
+    id: "siae",
+    label:
+      "Decidi come gestire il documento SIAE: fai da te (tariffa ufficiale ~148€), locale o VibeUp (+20€ di gestione).",
+  },
+  {
+    id: "guest-count",
+    label: "Rivedi il numero di invitati e avvisa il gestore se cambia.",
+  },
+  {
+    id: "allergens",
+    label: "Aggiorna allergie e intolleranze se qualcuno si aggiunge o rinuncia.",
+  },
+  {
+    id: "travel",
+    label: "Controlla parcheggio, mezzi e come si arriva al locale.",
+  },
+  {
+    id: "setup-times",
+    label: "Conferma orario di ingresso, allestimento e ritiro materiale.",
+  },
+  {
+    id: "documents",
+    label:
+      "Salva il contatto del locale e porta un documento il giorno della festa.",
+  },
 ] as const;
+
+export type EventChecklistItemId = (typeof EVENT_CHECKLIST)[number]["id"];
