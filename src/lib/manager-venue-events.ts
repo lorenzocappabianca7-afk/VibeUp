@@ -1,6 +1,7 @@
 import { getRequestStatusShortLabel } from "@/lib/availability/request-status-display";
 import { MOCK_BUSINESS_CONFIRMED_EVENTS } from "@/lib/mock/business-inbox";
 import type { AvailabilityRequest } from "@/types/availability-request";
+import { PARTY_TYPE_LABELS, type PartyType } from "@/types/location";
 
 export type ManagerEventStatus =
   | "pending"
@@ -102,14 +103,55 @@ export function managerVenueEventsForDisplay(
   return live.length > 0 ? live : demoManagerVenueEvents();
 }
 
-export function upcomingManagerEvents(events: ManagerVenueEvent[]): ManagerVenueEvent[] {
+function todayIsoDate(): string {
   const today = new Date();
-  const todayIso = [
+  return [
     today.getFullYear(),
     String(today.getMonth() + 1).padStart(2, "0"),
     String(today.getDate()).padStart(2, "0"),
   ].join("-");
+}
+
+export function upcomingManagerEvents(events: ManagerVenueEvent[]): ManagerVenueEvent[] {
+  const todayIso = todayIsoDate();
   return events.filter(
     (event) => event.date >= todayIso && event.status !== "cancelled",
   );
+}
+
+const PARTY_TYPE_HINTS: Array<{ type: PartyType; needles: string[] }> = [
+  { type: "compleanno", needles: ["compleanno", "birthday"] },
+  { type: "matrimonio", needles: ["matrimonio", "nozze", "wedding"] },
+  { type: "laurea", needles: ["laurea"] },
+  { type: "aziendale", needles: ["aziendale", "corporate", "azienda"] },
+];
+
+export function partyTypeLabelForEvent(title: string): string {
+  const lower = title.toLowerCase();
+  for (const { type, needles } of PARTY_TYPE_HINTS) {
+    if (needles.some((needle) => lower.includes(needle))) {
+      return PARTY_TYPE_LABELS[type];
+    }
+  }
+  return PARTY_TYPE_LABELS.festa;
+}
+
+/** Upcoming first (soonest date), then past events (most recent first). */
+export function sortManagerEventsByNearestDate(
+  events: ManagerVenueEvent[],
+): ManagerVenueEvent[] {
+  const todayIso = todayIsoDate();
+  return [...events].sort((a, b) => {
+    const aUpcoming = a.date >= todayIso;
+    const bUpcoming = b.date >= todayIso;
+    if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1;
+    if (aUpcoming) {
+      const dateCmp = a.date.localeCompare(b.date);
+      if (dateCmp !== 0) return dateCmp;
+      return a.startTime.localeCompare(b.startTime);
+    }
+    const dateCmp = b.date.localeCompare(a.date);
+    if (dateCmp !== 0) return dateCmp;
+    return b.startTime.localeCompare(a.startTime);
+  });
 }

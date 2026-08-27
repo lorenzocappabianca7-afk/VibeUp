@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  ManagerEventCheckup,
-  ManagerEventCheckupBadge,
-} from "@/components/business/manager-event-checkup";
 import { useAppState } from "@/context/app-state-context";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
-import { checkupForManagerVenueEvent } from "@/lib/manager-event-checkup";
 import { listingsForBusiness } from "@/lib/manager-listings";
 import {
   managerEventsFromRequests,
@@ -18,12 +13,11 @@ import {
 import { cn, formatCurrency } from "@/lib/utils";
 import {
   CalendarDays,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Users,
 } from "lucide-react";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useMemo, useState } from "react";
 
 const WEEKDAYS = ["L", "M", "M", "G", "V", "S", "D"];
 
@@ -84,8 +78,6 @@ export const BusinessCalendarScreen = memo(function BusinessCalendarScreen() {
   const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [locationFilter, setLocationFilter] = useState<string>("all");
-  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
-  const checkupPanelRef = useRef<HTMLDivElement>(null);
   const todayIso = toIsoDate(new Date());
   const days = useMemo(() => buildCalendarDays(visibleMonth), [visibleMonth]);
 
@@ -132,43 +124,6 @@ export const BusinessCalendarScreen = memo(function BusinessCalendarScreen() {
       : upcomingManagerEvents(filteredEvents);
     return [...source];
   }, [eventsByDate, filteredEvents, selectedDate]);
-
-  const tableEvents = useMemo(
-    () =>
-      [...filteredEvents].sort((a, b) => {
-        const dateCmp = a.date.localeCompare(b.date);
-        return dateCmp !== 0 ? dateCmp : a.startTime.localeCompare(b.startTime);
-      }),
-    [filteredEvents],
-  );
-
-  const expandedEvent = useMemo(
-    () =>
-      tableEvents.find((event) => event.id === expandedEventId) ??
-      tableEvents[0] ??
-      null,
-    [expandedEventId, tableEvents],
-  );
-
-  useEffect(() => {
-    if (tableEvents.length === 0) {
-      setExpandedEventId(null);
-      return;
-    }
-    setExpandedEventId((current) =>
-      current && tableEvents.some((event) => event.id === current)
-        ? current
-        : tableEvents[0].id,
-    );
-  }, [tableEvents]);
-
-  useEffect(() => {
-    if (!expandedEvent) return;
-    checkupPanelRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest",
-    });
-  }, [expandedEvent]);
 
   function moveMonth(delta: number) {
     setVisibleMonth(
@@ -220,129 +175,6 @@ export const BusinessCalendarScreen = memo(function BusinessCalendarScreen() {
           appariranno gli eventi confermati.
         </p>
       ) : null}
-
-      <section className="overflow-hidden rounded-[1.35rem] border border-primary-black/10 bg-surface">
-        <div className="border-b border-white/8 px-4 py-3">
-          <h2 className="text-sm font-black text-primary-black">
-            Tabella eventi
-          </h2>
-          <p className="mt-0.5 text-xs text-primary-black/50">
-            {tableEvents.length} eventi collegati al locale. Il checkup
-            dell’evento selezionato è sotto la tabella.
-          </p>
-        </div>
-        {tableEvents.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-[44rem] w-full text-left text-xs">
-              <thead className="bg-background/70 text-[10px] font-black uppercase tracking-wide text-primary-black/45">
-                <tr>
-                  <th className="w-8 px-2 py-2.5" aria-hidden />
-                  <th className="px-3 py-2.5">Data</th>
-                  <th className="px-3 py-2.5">Evento</th>
-                  <th className="px-3 py-2.5">Ospiti</th>
-                  <th className="px-3 py-2.5">Organizzatore</th>
-                  <th className="px-3 py-2.5">Info</th>
-                  <th className="px-3 py-2.5">Stato</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tableEvents.map((event) => {
-                  const checkup = checkupForManagerVenueEvent(event);
-                  const expanded = expandedEventId === event.id;
-                  return (
-                    <tr
-                      key={event.id}
-                      className={cn(
-                        "cursor-pointer border-t border-white/6 text-primary-black transition-colors duration-150",
-                        expanded
-                          ? "bg-white/[0.04]"
-                          : "hover:bg-white/[0.03]",
-                      )}
-                      onClick={() => setExpandedEventId(event.id)}
-                    >
-                      <td className="px-2 py-2.5">
-                        <button
-                          type="button"
-                          className="touch-feedback flex h-7 w-7 items-center justify-center rounded-full text-primary-black/45"
-                          aria-expanded={expanded}
-                          aria-label={`${event.title}: ${expanded ? "chiudi" : "apri"} checkup informazioni`}
-                            onClick={(clickEvent) => {
-                              clickEvent.stopPropagation();
-                              setExpandedEventId(event.id);
-                            }}
-                        >
-                          <ChevronDown
-                            className={cn(
-                              "h-3.5 w-3.5 transition-transform duration-200",
-                              expanded && "rotate-180",
-                            )}
-                            aria-hidden
-                          />
-                        </button>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 font-semibold">
-                        {formatEventDay(event.date)}
-                        <span className="mt-0.5 block text-[11px] font-medium text-primary-black/50">
-                          {event.startTime}–{event.endTime}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <p className="font-semibold">{event.title}</p>
-                        <p className="text-[11px] text-primary-black/50">
-                          {event.locationName}
-                        </p>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
-                        {event.guestCount}
-                      </td>
-                      <td className="px-3 py-2.5">{event.organizerName}</td>
-                      <td className="px-3 py-2.5">
-                        <ManagerEventCheckupBadge checkup={checkup} />
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <span
-                          className={cn(
-                            "inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
-                            statusTone(event.status),
-                          )}
-                        >
-                          {event.statusLabel}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="px-4 py-8 text-center">
-            <CalendarDays
-              className="mx-auto h-8 w-8 text-primary-black/30"
-              aria-hidden
-            />
-            <p className="mt-3 text-sm font-medium text-primary-black">
-              Nessun evento associato
-            </p>
-            <p className="mt-1 text-xs text-primary-black/55">
-              Quando un organizzatore invia una richiesta, la trovi qui.
-            </p>
-          </div>
-        )}
-        {expandedEvent ? (
-          <div
-            ref={checkupPanelRef}
-            className="border-t border-white/6 bg-white/[0.02] px-3 py-3.5 sm:px-4"
-          >
-            <p className="mb-3 text-xs font-semibold text-primary-black/55">
-              {expandedEvent.title}
-            </p>
-            <ManagerEventCheckup
-              checkup={checkupForManagerVenueEvent(expandedEvent)}
-            />
-          </div>
-        ) : null}
-      </section>
 
       <section className="rounded-[1.35rem] border border-primary-black/10 bg-surface p-4">
         <div className="mb-3 flex items-center justify-between gap-3">
@@ -472,9 +304,6 @@ export const BusinessCalendarScreen = memo(function BusinessCalendarScreen() {
                     {event.totalCost > 0 ? (
                       <span>{formatCurrency(event.totalCost)}</span>
                     ) : null}
-                    <ManagerEventCheckupBadge
-                      checkup={checkupForManagerVenueEvent(event)}
-                    />
                   </div>
                 </article>
               </li>

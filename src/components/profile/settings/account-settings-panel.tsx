@@ -285,7 +285,7 @@ export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
       {canOpenManagerView ? (
         <SettingsSection
           title="Vista gestore"
-          description="Apri notifiche, calendario e pubblicazioni come un gestore, senza cambiare account."
+          description="Apri notifiche, calendario, feste e pubblicazioni come un gestore, senza cambiare account."
         >
           {isBusinessUser ? (
             <SettingsNavRow
@@ -298,7 +298,7 @@ export function AccountSettingsPanel({ onBack }: AccountSettingsPanelProps) {
             <SettingsNavRow
               icon={Briefcase}
               label="Apri schermata gestore"
-              description="Notifiche, calendario e pubblicazioni."
+              description="Notifiche, calendario, feste e pubblicazioni."
               onClick={openManagerView}
             />
           )}

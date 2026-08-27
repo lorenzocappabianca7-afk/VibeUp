@@ -1,5 +1,5 @@
 export type ConsumerTabId = "explore" | "home" | "events" | "messages" | "profile";
-export type BusinessTabId = "notifications" | "calendar" | "profile";
+export type BusinessTabId = "notifications" | "calendar" | "feste" | "profile";
 export type TabId = ConsumerTabId | BusinessTabId;
 
 export interface TabItem {
@@ -17,6 +17,7 @@ export const CONSUMER_TABS: TabItem[] = [
 export const BUSINESS_TABS: TabItem[] = [
   { id: "notifications", label: "Notifiche" },
   { id: "calendar", label: "Calendario" },
+  { id: "feste", label: "Feste" },
   { id: "profile", label: "Profilo" },
 ];
 
@@ -31,7 +32,7 @@ export const ALL_TAB_IDS = new Set<TabId>([
 ]);
 
 export function isBusinessTabId(tab: string): tab is BusinessTabId {
-  return tab === "notifications" || tab === "calendar" || tab === "profile";
+  return BUSINESS_TABS.some((item) => item.id === tab);
 }
 
 export function isConsumerTabId(tab: string): tab is ConsumerTabId {

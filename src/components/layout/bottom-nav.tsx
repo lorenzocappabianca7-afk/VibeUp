@@ -13,6 +13,7 @@ import {
   Bell,
   Calendar,
   CalendarDays,
+  ClipboardCheck,
   Home,
   MessageCircle,
   Search,
@@ -27,6 +28,7 @@ const TAB_ICONS: Record<TabId, LucideIcon> = {
   messages: MessageCircle,
   notifications: Bell,
   calendar: CalendarDays,
+  feste: ClipboardCheck,
   profile: User,
 };
 

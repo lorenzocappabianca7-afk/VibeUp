@@ -311,6 +311,7 @@ export function buildEventCheckup(request: AvailabilityRequest): EventCheckup {
 }
 
 export function buildDemoEventCheckup(input: {
+  id?: string;
   title: string;
   date: string;
   startTime: string;
@@ -320,10 +321,17 @@ export function buildDemoEventCheckup(input: {
   locationName: string;
   notes?: string;
 }): EventCheckup {
+  const variant =
+    input.id === "be-2" ? "low" : input.id === "be-4" ? "complete" : "mid";
+
   const received: EventCheckupItem[] = [
     { id: "organizer", label: "Organizzatore", detail: input.organizerName },
     { id: "location", label: "Location", detail: input.locationName },
     { id: "title", label: "Titolo evento", detail: input.title },
+  ];
+  const missing: EventCheckupItem[] = [];
+
+  const extras: EventCheckupItem[] = [
     { id: "date", label: "Data", detail: formatDate(input.date) },
     {
       id: "time",
@@ -336,27 +344,38 @@ export function buildDemoEventCheckup(input: {
       detail: `${input.guestCount} ospiti`,
     },
     { id: "deposit", label: "Caparra", detail: "Pagata" },
-  ];
-  const missing: EventCheckupItem[] = [
     {
       id: "siae",
       label: "Documento SIAE",
-      detail: "Dopo la caparra l’organizzatore deve ancora scegliere come gestirlo.",
+      detail:
+        variant === "complete"
+          ? "Scelta registrata"
+          : "Dopo la caparra l’organizzatore deve ancora scegliere come gestirlo.",
     },
   ];
   if (input.notes?.trim()) {
-    received.push({
+    extras.push({
       id: "notes",
       label: "Dettagli evento",
       detail: input.notes.trim(),
     });
-  } else {
-    missing.push({
+  } else if (variant !== "complete") {
+    extras.push({
       id: "notes",
       label: "Note o dettagli extra",
       detail: "L’organizzatore non ha aggiunto indicazioni particolari.",
     });
   }
+
+  if (variant === "complete") {
+    received.push(...extras);
+  } else if (variant === "low") {
+    missing.push(...extras);
+  } else {
+    received.push(...extras.slice(0, 3));
+    missing.push(...extras.slice(3));
+  }
+
   const total = received.length + missing.length;
   return {
     received,
@@ -369,6 +388,7 @@ export function buildDemoEventCheckup(input: {
 }
 
 export function checkupForManagerVenueEvent(event: {
+  id?: string;
   request?: AvailabilityRequest;
   title: string;
   date: string;

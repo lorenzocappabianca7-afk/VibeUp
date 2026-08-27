@@ -4,16 +4,25 @@ import type { EventCheckup } from "@/lib/manager-event-checkup";
 import { cn } from "@/lib/utils";
 import { Check, CircleDashed } from "lucide-react";
 
+export type CheckupPercentTone = "low" | "mid" | "complete";
+
+export function checkupPercentTone(percent: number): CheckupPercentTone {
+  if (percent >= 100) return "complete";
+  if (percent < 40) return "low";
+  return "mid";
+}
+
 export function checkupBadgeClass(checkup: EventCheckup): string {
-  return checkup.complete
-    ? "bg-brand-teal/15 text-brand-teal"
-    : "bg-amber-400/15 text-amber-200";
+  const tone = checkupPercentTone(checkup.percent);
+  if (tone === "complete") return "bg-emerald-500/20 text-emerald-300";
+  if (tone === "low") return "bg-red-500/20 text-red-300";
+  return "bg-amber-400/15 text-amber-200";
 }
 
 export function checkupBadgeLabel(checkup: EventCheckup): string {
   return checkup.complete
-    ? "Info complete"
-    : `Info mancanti · ${checkup.percent}%`;
+    ? "Dati completi · 100%"
+    : `Dati ricevuti · ${checkup.percent}%`;
 }
 
 export function checkupBadgeTitle(checkup: EventCheckup): string {

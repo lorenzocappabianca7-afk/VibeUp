@@ -1,6 +1,7 @@
 "use client";
 
 import { BusinessCalendarScreen } from "@/components/screens/business-calendar-screen";
+import { BusinessFesteScreen } from "@/components/screens/business-feste-screen";
 import { BusinessNotificationsScreen } from "@/components/screens/business-notifications-screen";
 import { ExploreScreen } from "@/components/screens/explore-screen";
 import { HomeScreen } from "@/components/screens/home-screen";
@@ -88,6 +89,13 @@ export function MobileShell() {
                 visited={visitedTabs.has("calendar")}
               >
                 <BusinessCalendarScreen />
+              </TabPanel>
+              <TabPanel
+                tab="feste"
+                activeTab={activeTab}
+                visited={visitedTabs.has("feste")}
+              >
+                <BusinessFesteScreen />
               </TabPanel>
               <TabPanel
                 tab="profile"

@@ -8,6 +8,7 @@ import {
   ALL_TAB_IDS,
   BUSINESS_TABS,
   CONSUMER_TABS,
+  isBusinessTabId,
   type TabId,
 } from "@/types/navigation";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -69,13 +70,7 @@ function resolveTabFromLocation(
     if (tabParam && ALL_TAB_IDS.has(tabParam as TabId)) {
       const tab = tabParam as TabId;
       if (isBusinessUser) {
-        if (
-          tab === "notifications" ||
-          tab === "calendar" ||
-          tab === "profile"
-        ) {
-          return tab;
-        }
+        if (isBusinessTabId(tab)) return tab;
         return "notifications";
       }
       if (
