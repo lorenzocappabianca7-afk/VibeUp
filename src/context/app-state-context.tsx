@@ -46,7 +46,10 @@ import {
   isActivationTokenExpired,
 } from "@/lib/auth/activation";
 import { isEventPast } from "@/lib/event";
-import { calculateLocationDeposit } from "@/lib/booking-money";
+import {
+  calculateLocationDeposit,
+  getEventDepositPaymentKey,
+} from "@/lib/booking-money";
 import {
   allergenRestrictionNames,
   normalizeAllergenRestrictions,
@@ -73,7 +76,11 @@ import type {
   MenuAllergenRestriction,
   UserEvent,
 } from "@/types/event";
-import type { SiaeChoice, SiaeStatus } from "@/lib/siae";
+import {
+  isCloudBookingId,
+  type SiaeChoice,
+  type SiaeStatus,
+} from "@/lib/siae";
 import type { SavedPaymentCard } from "@/types/payment";
 import type { SavedQuote } from "@/types/saved-quote";
 import { MAX_SAVED_QUOTES } from "@/types/saved-quote";
@@ -187,6 +194,25 @@ export type CreateBusinessAccountResult =
 interface PaymentState {
   paid: boolean;
   method?: string;
+}
+
+function markCloudDepositsPaid(
+  paymentStates: Record<string, PaymentState>,
+  eventIds: Iterable<string>,
+): Record<string, PaymentState> {
+  let next = paymentStates;
+  let copied = false;
+  for (const eventId of eventIds) {
+    if (!isCloudBookingId(eventId)) continue;
+    const key = getEventDepositPaymentKey(eventId);
+    if (next[key]?.paid) continue;
+    if (!copied) {
+      next = { ...paymentStates };
+      copied = true;
+    }
+    next[key] = { paid: true, method: "card" };
+  }
+  return next;
 }
 
 interface AppStateContextValue {
@@ -334,40 +360,46 @@ function normalizeUserScopedState(
   const fallback = createDefaultUserState(userId);
   if (!state || typeof state !== "object") return fallback;
 
+  const events = Array.isArray(state.events)
+    ? state.events
+        .filter(
+          (event): event is UserEvent =>
+            Boolean(event) &&
+            typeof event === "object" &&
+            typeof event.id === "string" &&
+            typeof event.date === "string",
+        )
+        .map((event) => ({
+          ...event,
+          title: typeof event.title === "string" ? event.title : "Evento",
+          time: typeof event.time === "string" ? event.time : "20:00",
+          locationName:
+            typeof event.locationName === "string"
+              ? event.locationName
+              : "Location",
+          city: typeof event.city === "string" ? event.city : "",
+          status: event.status ?? "draft",
+          guestCount:
+            typeof event.guestCount === "number" ? event.guestCount : 0,
+          services: Array.isArray(event.services) ? event.services : [],
+          checklistCheckedIds: Array.isArray(event.checklistCheckedIds)
+            ? event.checklistCheckedIds.filter(
+                (id): id is string => typeof id === "string" && id.length > 0,
+              )
+            : undefined,
+        }))
+    : fallback.events;
+  const paymentStates =
+    state.paymentStates && typeof state.paymentStates === "object"
+      ? state.paymentStates
+      : {};
+
   return {
-    events: Array.isArray(state.events)
-      ? state.events
-          .filter(
-            (event): event is UserEvent =>
-              Boolean(event) &&
-              typeof event === "object" &&
-              typeof event.id === "string" &&
-              typeof event.date === "string",
-          )
-          .map((event) => ({
-            ...event,
-            title: typeof event.title === "string" ? event.title : "Evento",
-            time: typeof event.time === "string" ? event.time : "20:00",
-            locationName:
-              typeof event.locationName === "string"
-                ? event.locationName
-                : "Location",
-            city: typeof event.city === "string" ? event.city : "",
-            status: event.status ?? "draft",
-            guestCount:
-              typeof event.guestCount === "number" ? event.guestCount : 0,
-            services: Array.isArray(event.services) ? event.services : [],
-            checklistCheckedIds: Array.isArray(event.checklistCheckedIds)
-              ? event.checklistCheckedIds.filter(
-                  (id): id is string => typeof id === "string" && id.length > 0,
-                )
-              : undefined,
-          }))
-      : fallback.events,
-    paymentStates:
-      state.paymentStates && typeof state.paymentStates === "object"
-        ? state.paymentStates
-        : {},
+    events,
+    paymentStates: markCloudDepositsPaid(
+      paymentStates,
+      events.map((event) => event.id),
+    ),
     favoriteLocationIds: Array.isArray(state.favoriteLocationIds)
       ? state.favoriteLocationIds.filter((id) => typeof id === "string")
       : [],
@@ -1086,6 +1118,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       return {
         ...state,
         events: [merged, ...state.events.filter((item) => item.id !== event.id)],
+        paymentStates: markCloudDepositsPaid(state.paymentStates, [event.id]),
       };
     });
   }, [updateCurrentUserState]);
@@ -1120,6 +1153,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             const bStamp = Date.parse(b.createdAt ?? b.date) || 0;
             return bStamp - aStamp;
           }),
+          paymentStates: markCloudDepositsPaid(
+            state.paymentStates,
+            cloudEvents.map((event) => event.id),
+          ),
         };
       });
     },

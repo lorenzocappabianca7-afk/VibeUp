@@ -21,6 +21,7 @@ export interface ManagerVenueEvent {
   statusLabel: string;
   totalCost: number;
   notes?: string;
+  request?: AvailabilityRequest;
 }
 
 function mapRequestStatus(status: AvailabilityRequest["status"]): ManagerEventStatus {
@@ -65,6 +66,7 @@ export function managerEventsFromRequests(
         statusLabel: getRequestStatusShortLabel(request.status),
         totalCost: payload.totalCost,
         notes: payload.description,
+        request,
       } satisfies ManagerVenueEvent;
     })
     .sort((a, b) => {

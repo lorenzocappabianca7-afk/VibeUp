@@ -1,6 +1,7 @@
-import type {
-  AvailabilityEventPayload,
-  AvailabilityRequest,
+import {
+  normalizeAvailabilityRequest,
+  type AvailabilityEventPayload,
+  type AvailabilityRequest,
 } from "@/types/availability-request";
 import type { UserEvent } from "@/types/event";
 import type { SiaeChoice } from "@/lib/siae";
@@ -47,7 +48,9 @@ export async function fetchAvailabilityRequests(): Promise<{
       ok: true,
       configured: Boolean(payload?.configured),
       requests: Array.isArray(payload?.requests)
-        ? (payload.requests as AvailabilityRequest[])
+        ? (payload.requests as AvailabilityRequest[]).map(
+            normalizeAvailabilityRequest,
+          )
         : [],
     };
   } catch {

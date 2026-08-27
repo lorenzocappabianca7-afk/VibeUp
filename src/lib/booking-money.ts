@@ -21,3 +21,8 @@ export function getDepositCheckoutAmounts(depositAmount: number) {
     total: roundCurrency(base + fee),
   };
 }
+
+/** Local payment-state key for the location deposit of an event. */
+export function getEventDepositPaymentKey(eventId: string): string {
+  return `${eventId}:${eventId}-deposit`;
+}

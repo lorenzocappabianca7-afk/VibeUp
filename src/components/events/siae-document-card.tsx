@@ -18,6 +18,7 @@ import {
   type SiaeChoice,
   type SiaeStatus,
 } from "@/lib/siae";
+import { EventHintLink } from "@/components/events/event-hint-link";
 import { formatDate } from "@/lib/utils";
 import type { UserEvent } from "@/types/event";
 import { Check, FileText, Landmark, User } from "lucide-react";
@@ -214,14 +215,14 @@ export function SiaeDocumentCard({
                 : `Paga ${formatSiaePrice(vibeUpPrice)}`}
             </button>
 
-            <button
-              type="button"
-              aria-expanded={showAlternatives}
+            <EventHintLink
+              expanded={showAlternatives}
+              disabled={Boolean(busy) || locked}
               onClick={() => setShowAlternatives((open) => !open)}
-              className="mt-2.5 text-xs font-semibold text-white/70 underline decoration-white/40 underline-offset-[3px] transition-colors hover:text-white hover:decoration-white"
+              className="mt-2.5 text-xs font-semibold text-white/70 decoration-white/40 hover:text-white hover:decoration-white"
             >
               Oppure
-            </button>
+            </EventHintLink>
 
             {showAlternatives ? (
               <ul className="mt-2 space-y-2">

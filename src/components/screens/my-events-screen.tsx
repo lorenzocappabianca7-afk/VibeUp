@@ -24,8 +24,12 @@ import { useAppState } from "@/context/app-state-context";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
 import { useProfileCommunications } from "@/context/profile-communications-context";
 import { getCountdown, isEventPast } from "@/lib/event";
-import { formatSiaePrice, isCloudBookingId, SIAE_VIBEUP_TOTAL_EUR, type SiaeChoice, type SiaeStatus } from "@/lib/siae";
-import { calculateLocationDeposit } from "@/lib/booking-money";
+import { formatSiaePrice, SIAE_VIBEUP_TOTAL_EUR, type SiaeChoice, type SiaeStatus } from "@/lib/siae";
+import {
+  calculateLocationDeposit,
+  getDepositCheckoutAmounts,
+  getEventDepositPaymentKey,
+} from "@/lib/booking-money";
 import {
   type BookedService,
   type UserEvent,
@@ -57,7 +61,6 @@ import {
 } from "lucide-react";
 import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
-import { getDepositCheckoutAmounts } from "@/lib/booking-money";
 
 /** Platform fee applied on top of the location deposit — paid via Stripe Checkout. */
 
@@ -586,10 +589,10 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
       ?.amountPaid ?? 0;
   const depositAmount =
     event.depositAmount ?? calculateLocationDeposit(locationCost);
-  const depositPayment = paymentStates[`${event.id}:${event.id}-deposit`] ?? {
+  const depositPayment = paymentStates[getEventDepositPaymentKey(event.id)] ?? {
     paid: false,
   };
-  const depositPaid = depositPayment.paid || isCloudBookingId(event.id);
+  const depositPaid = Boolean(depositPayment.paid);
   const missingSuggestions = getMissingServiceSuggestions(event);
   const payDeposit = useCallback(() => {
     onOpenDepositPayment(event);
@@ -718,7 +721,6 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
           <div className="mt-3 flex flex-col items-start gap-2">
             <div className="w-full min-w-0">
               <EventHintLink
-                icon="none"
                 expanded={checklistOpen}
                 onClick={() => setChecklistOpen((open) => !open)}
                 className="text-[color:var(--postit-ink)]"
@@ -731,7 +733,9 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
                     {EVENT_CHECKLIST_INTRO}
                   </p>
                   <ul className="mt-2 space-y-2">
-                    {EVENT_CHECKLIST.map((item) => {
+                    {EVENT_CHECKLIST.filter(
+                      (item) => item.id !== "siae" || depositPaid,
+                    ).map((item) => {
                       const checked =
                         event.checklistCheckedIds?.includes(item.id) ?? false;
                       return (
@@ -783,44 +787,12 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
           onPayDeposit={payDeposit}
         />
 
-        <section className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
-          <EventHintLink
-            icon="none"
-            expanded={tipsOpen}
-            onClick={() => setTipsOpen((open) => !open)}
-            className="text-[color:var(--postit-ink)]"
-          >
-            {EVENT_TIPS_TITLE}
-          </EventHintLink>
-          {tipsOpen ? (
-            <div className="mt-2">
-              <p className="text-xs font-semibold text-[color:var(--postit-ink-muted)]">
-                {EVENT_TIPS_INTRO}
-              </p>
-              <ol className="mt-2 space-y-2">
-                {EVENT_TIPS.map((tip, index) => (
-                  <li
-                    key={tip}
-                    className="flex gap-2.5 text-sm font-semibold leading-relaxed text-[color:var(--postit-ink)]"
-                  >
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-teal/20 text-[11px] font-black text-brand-teal-strong">
-                      {index + 1}
-                    </span>
-                    <span>{tip}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          ) : null}
-        </section>
-
         {depositPaid ? (
           <SiaeDocumentCard event={event} onLocalPatch={onSiaePatch} />
         ) : null}
 
         <section className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
           <EventHintLink
-            icon="none"
             expanded={paymentOpen}
             onClick={() => setPaymentOpen((open) => !open)}
             className="text-[color:var(--postit-ink)]"
@@ -908,6 +880,38 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
             </div>
           </section>
         )}
+
+        <section className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
+          <div className="rounded-[0.85rem] bg-brand-teal p-3.5 text-ink-inverse">
+            <EventHintLink
+              expanded={tipsOpen}
+              onClick={() => setTipsOpen((open) => !open)}
+              className="text-ink-inverse"
+            >
+              {EVENT_TIPS_TITLE}
+            </EventHintLink>
+            {tipsOpen ? (
+              <div className="mt-2">
+                <p className="text-xs font-semibold text-ink-inverse/70">
+                  {EVENT_TIPS_INTRO}
+                </p>
+                <ol className="mt-2 space-y-2">
+                  {EVENT_TIPS.map((tip, index) => (
+                    <li
+                      key={tip}
+                      className="flex gap-2.5 text-sm font-semibold leading-relaxed text-ink-inverse"
+                    >
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink-inverse/15 text-[11px] font-black text-ink-inverse">
+                        {index + 1}
+                      </span>
+                      <span>{tip}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : null}
+          </div>
+        </section>
 
         <EventCountdown event={event} embedded active={isActive} />
       </article>
@@ -1035,60 +1039,22 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
 
   return (
     <section className="event-postit-section min-w-0 overflow-hidden border-b px-3 sm:px-4">
-      <div className="event-postit-dark p-3.5">
+      <div className="event-postit-dark p-3.5" ref={feeInfoRef}>
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2">
               <p className="min-w-0 text-sm font-bold text-white">
                 Caparra {formatCurrency(total)}
               </p>
-              <div className="relative shrink-0" ref={feeInfoRef}>
-                <button
-                  type="button"
-                  onClick={() => setFeeInfoOpen((open) => !open)}
-                  className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/35 text-white/70 transition-colors hover:border-white/55 hover:text-white"
-                  aria-label="Dettaglio commissioni VibeUp"
-                  aria-expanded={feeInfoOpen}
-                >
-                  <CircleAlert className="h-3 w-3" aria-hidden />
-                </button>
-                {feeInfoOpen && (
-                  <div
-                    role="dialog"
-                    aria-label="Dettaglio commissioni VibeUp"
-                    className="absolute left-0 top-[calc(100%+0.4rem)] z-20 w-[min(16.5rem,calc(100vw-3rem))] rounded-xl border border-white/15 bg-[#1A1C21] p-3 shadow-xl"
-                  >
-                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">
-                      Dettaglio importo
-                    </p>
-                    <dl className="mt-2 space-y-1.5 text-xs">
-                      <div className="flex items-center justify-between gap-3">
-                        <dt className="font-semibold text-white/65">Caparra</dt>
-                        <dd className="font-bold tabular-nums text-white">
-                          {formatCurrency(base)}
-                        </dd>
-                      </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <dt className="font-semibold text-white/65">
-                          Commissioni VibeUp (5%)
-                        </dt>
-                        <dd className="font-bold tabular-nums text-white">
-                          {formatCurrency(fee)}
-                        </dd>
-                      </div>
-                      <div className="flex items-center justify-between gap-3 border-t border-white/10 pt-1.5">
-                        <dt className="font-bold text-white">Totale</dt>
-                        <dd className="font-extrabold tabular-nums text-white">
-                          {formatCurrency(total)}
-                        </dd>
-                      </div>
-                    </dl>
-                    <p className="mt-2 text-[11px] font-semibold leading-snug text-white/55">
-                      Il 5% aggiunto alla caparra sono le commissioni VibeUp.
-                    </p>
-                  </div>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={() => setFeeInfoOpen((open) => !open)}
+                className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/35 text-white/70 transition-colors hover:border-white/55 hover:text-white"
+                aria-label="Dettaglio commissioni VibeUp"
+                aria-expanded={feeInfoOpen}
+              >
+                <CircleAlert className="h-3 w-3" aria-hidden />
+              </button>
             </div>
             <p className="event-postit-dark-muted mt-0.5 break-words text-xs font-semibold">
               Entro {formatDepositDeadline(deadline)}
@@ -1127,6 +1093,42 @@ const DepositDeadlineTimer = memo(function DepositDeadlineTimer({
             )}
           </div>
         </div>
+        {feeInfoOpen ? (
+          <div
+            role="dialog"
+            aria-label="Dettaglio commissioni VibeUp"
+            className="mt-3 min-w-0 rounded-xl border border-white/15 bg-[#1A1C21] p-3"
+          >
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">
+              Dettaglio importo
+            </p>
+            <dl className="mt-2 space-y-1.5 text-xs">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="font-semibold text-white/65">Caparra</dt>
+                <dd className="font-bold tabular-nums text-white">
+                  {formatCurrency(base)}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="min-w-0 font-semibold text-white/65">
+                  Commissioni VibeUp (5%)
+                </dt>
+                <dd className="shrink-0 font-bold tabular-nums text-white">
+                  {formatCurrency(fee)}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-3 border-t border-white/10 pt-1.5">
+                <dt className="font-bold text-white">Totale</dt>
+                <dd className="font-extrabold tabular-nums text-white">
+                  {formatCurrency(total)}
+                </dd>
+              </div>
+            </dl>
+            <p className="mt-2 text-[11px] font-semibold leading-snug text-white/55">
+              Il 5% aggiunto alla caparra sono le commissioni VibeUp.
+            </p>
+          </div>
+        ) : null}
       </div>
     </section>
   );

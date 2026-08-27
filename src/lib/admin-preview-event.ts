@@ -1,4 +1,7 @@
-import { calculateLocationDeposit } from "@/lib/booking-money";
+import {
+  calculateLocationDeposit,
+  getEventDepositPaymentKey,
+} from "@/lib/booking-money";
 import type { UserEvent } from "@/types/event";
 
 /** Stable local id — never a cloud booking UUID, so Stripe is not called. */
@@ -9,7 +12,7 @@ export function isAdminPreviewEventId(eventId: string) {
 }
 
 export function getAdminPreviewDepositPaymentKey() {
-  return `${ADMIN_PREVIEW_EVENT_ID}:${ADMIN_PREVIEW_EVENT_ID}-deposit`;
+  return getEventDepositPaymentKey(ADMIN_PREVIEW_EVENT_ID);
 }
 
 function previewPartyDate(): string {

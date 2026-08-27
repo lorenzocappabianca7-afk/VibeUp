@@ -11,9 +11,7 @@ import { ServiceStatusList } from "@/components/events/service-status-list";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
 import { useAppState } from "@/context/app-state-context";
-import { calculateLocationDeposit, getDepositCheckoutAmounts } from "@/lib/booking-money";
-import { isCloudBookingId } from "@/lib/siae";
-import { isAdminPreviewEventId } from "@/lib/admin-preview-event";
+import { calculateLocationDeposit, getDepositCheckoutAmounts, getEventDepositPaymentKey } from "@/lib/booking-money";
 import type { BookedService, UserEvent } from "@/types/event";
 import { formatCurrency, formatDate, MODAL_SAFE_BOTTOM_STYLE } from "@/lib/utils";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
@@ -143,9 +141,7 @@ export function EventDashboardView({
 
       <EventManagerContactSection event={currentEvent} />
 
-      {paymentStates[`${currentEvent.id}:${currentEvent.id}-deposit`]?.paid ||
-      isCloudBookingId(currentEvent.id) ||
-      isAdminPreviewEventId(currentEvent.id) ? (
+      {paymentStates[getEventDepositPaymentKey(currentEvent.id)]?.paid ? (
         <SiaeDocumentCard
           event={currentEvent}
           layout="page"
@@ -172,7 +168,10 @@ export function EventDashboardView({
 
       <section className="rounded-2xl border border-primary-black/10 bg-primary-black/[0.02] p-5">
         <div className="flex items-center justify-between gap-3">
-          <EventHintLink onClick={() => setPaymentOpen(true)}>
+          <EventHintLink
+            expanded={paymentOpen}
+            onClick={() => setPaymentOpen(true)}
+          >
             Dettaglio del pagamento
           </EventHintLink>
           <button

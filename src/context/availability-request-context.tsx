@@ -34,6 +34,7 @@ import {
 
 const STORAGE_KEY = "vibeup-availability-requests-v1";
 const MAX_REQUESTS = 80;
+const MANAGER_REQUESTS_POLL_MS = 25_000;
 const TERMINAL_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 const TERMINAL_STATUSES = new Set([
   "confirmed",
@@ -102,6 +103,34 @@ const AvailabilityRequestContext =
 
 function isAvailabilityRequest(item: unknown): item is AvailabilityRequest {
   return Boolean(item && typeof item === "object" && "id" in item);
+}
+
+function mergeRemoteRequests(
+  prev: AvailabilityRequest[],
+  remote: AvailabilityRequest[],
+): AvailabilityRequest[] {
+  const byId = new Map<string, AvailabilityRequest>();
+  for (const item of prev) byId.set(item.id, item);
+  for (const item of remote) {
+    const existing = byId.get(item.id);
+    if (existing) {
+      const localTs = Date.parse(existing.updatedAt);
+      const remoteTs = Date.parse(item.updatedAt);
+      if (
+        Number.isFinite(localTs) &&
+        Number.isFinite(remoteTs) &&
+        localTs > remoteTs
+      ) {
+        byId.set(item.id, {
+          ...existing,
+          linkedBooking: item.linkedBooking ?? existing.linkedBooking,
+        });
+        continue;
+      }
+    }
+    byId.set(item.id, item);
+  }
+  return pruneAvailabilityRequests(Array.from(byId.values()));
 }
 
 function pruneAvailabilityRequests(
@@ -229,18 +258,41 @@ export function AvailabilityRequestProvider({
     let cancelled = false;
     void fetchAvailabilityRequests().then((result) => {
       if (cancelled || !result.ok) return;
-      setRequests((prev) => {
-        const byId = new Map<string, AvailabilityRequest>();
-        for (const item of prev) byId.set(item.id, item);
-        for (const item of result.requests) byId.set(item.id, item);
-        return pruneAvailabilityRequests(Array.from(byId.values()));
-      });
+      setRequests((prev) => mergeRemoteRequests(prev, result.requests));
     });
 
     return () => {
       cancelled = true;
     };
   }, [cloudSyncEnabled, hydrated, isGuest, currentUser.id]);
+
+  useEffect(() => {
+    if (!hydrated || !cloudSyncEnabled || isGuest || !isBusinessUser) return;
+
+    let cancelled = false;
+    let seq = 0;
+
+    const pull = () => {
+      if (document.visibilityState === "hidden") return;
+      const requestSeq = ++seq;
+      void fetchAvailabilityRequests().then((result) => {
+        if (cancelled || requestSeq !== seq || !result.ok) return;
+        setRequests((prev) => mergeRemoteRequests(prev, result.requests));
+      });
+    };
+
+    const interval = window.setInterval(pull, MANAGER_REQUESTS_POLL_MS);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") pull();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [cloudSyncEnabled, hydrated, isGuest, isBusinessUser, currentUser.id]);
 
   useEffect(() => {
     if (!hydrated) return;

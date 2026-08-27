@@ -1,4 +1,5 @@
 import type { BookedService } from "@/types/event";
+import type { SiaeChoice, SiaeStatus } from "@/lib/siae";
 
 export type AvailabilityRequestStatus =
   | "pending_manager"
@@ -81,6 +82,12 @@ export interface AvailabilityRequest {
   depositPaymentStatus: "pending" | "paid" | "failed" | "abandoned" | null;
   /** Status to restore if Stripe checkout is abandoned/failed. */
   statusBeforePayment: AvailabilityRequestStatus | null;
+  /** Booking snapshot for venue managers (SIAE and post-deposit extras). */
+  linkedBooking?: {
+    siaeChoice?: SiaeChoice | null;
+    siaeStatus?: SiaeStatus;
+    siaePaidAt?: string;
+  } | null;
 }
 
 /** Fill V2 fields for localStorage / partial payloads from older clients. */
@@ -139,5 +146,6 @@ export function normalizeAvailabilityRequest(
     stripePaymentIntentId: item.stripePaymentIntentId ?? null,
     depositPaymentStatus: item.depositPaymentStatus ?? null,
     statusBeforePayment: item.statusBeforePayment ?? null,
+    linkedBooking: item.linkedBooking ?? null,
   };
 }

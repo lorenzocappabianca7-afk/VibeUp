@@ -671,7 +671,9 @@ export async function listAvailabilityRequestsForUser(params: {
       console.error("[bookings] list admin", error?.message);
       return [];
     }
-    return (data as AvailabilityRequestRow[]).map(rowToAvailabilityRequest);
+    return attachLinkedBookings(
+      (data as AvailabilityRequestRow[]).map(rowToAvailabilityRequest),
+    );
   }
 
   const { data: asRequester, error: requesterError } = await supabase
@@ -708,14 +710,61 @@ export async function listAvailabilityRequestsForUser(params: {
     byId.set(row.id, row);
   }
 
-  return Array.from(byId.values())
-    .sort(
-      (a, b) =>
-        Date.parse(b.created_at) - Date.parse(a.created_at) ||
-        b.id.localeCompare(a.id),
-    )
-    .slice(0, 80)
-    .map(rowToAvailabilityRequest);
+  return attachLinkedBookings(
+    Array.from(byId.values())
+      .sort(
+        (a, b) =>
+          Date.parse(b.created_at) - Date.parse(a.created_at) ||
+          b.id.localeCompare(a.id),
+      )
+      .slice(0, 80)
+      .map(rowToAvailabilityRequest),
+  );
+}
+
+async function attachLinkedBookings(
+  requests: AvailabilityRequest[],
+): Promise<AvailabilityRequest[]> {
+  const ids = requests.map((request) => request.id).filter(isUuid);
+  if (ids.length === 0 || !isSupabaseConfigured()) return requests;
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("availability_request_id, siae_choice, siae_status, siae_paid_at")
+    .in("availability_request_id", ids);
+
+  if (error || !data) {
+    if (error) {
+      console.error("[bookings] attach linked bookings", error.message);
+    }
+    return requests;
+  }
+
+  const byRequestId = new Map<
+    string,
+    NonNullable<AvailabilityRequest["linkedBooking"]>
+  >();
+  for (const row of data) {
+    const requestId =
+      typeof row.availability_request_id === "string"
+        ? row.availability_request_id
+        : "";
+    if (!requestId) continue;
+    byRequestId.set(requestId, {
+      siaeChoice: parseSiaeChoice(row.siae_choice),
+      siaeStatus: parseSiaeStatus(row.siae_status),
+      siaePaidAt:
+        typeof row.siae_paid_at === "string" && row.siae_paid_at
+          ? row.siae_paid_at
+          : undefined,
+    });
+  }
+
+  return requests.map((request) => {
+    const linked = byRequestId.get(request.id);
+    return linked ? { ...request, linkedBooking: linked } : request;
+  });
 }
 
 export async function getAvailabilityRequest(
