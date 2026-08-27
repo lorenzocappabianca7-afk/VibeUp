@@ -254,6 +254,8 @@ function ContactAvatar({
         alt=""
         title={contact.name}
         draggable={false}
+        loading="lazy"
+        decoding="async"
         className={cn(
           "shrink-0 rounded-full object-cover",
           sizeClass,

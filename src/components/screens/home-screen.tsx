@@ -200,7 +200,7 @@ export function HomeScreen() {
           Location suggerite per te
         </h2>
         <HorizontalTouchScroll className="flex gap-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {suggestedLocations.map((location, index) => (
+          {suggestedLocations.map((location) => (
             <div
               key={location.id}
               className="w-[min(72vw,16.5rem)] shrink-0 sm:w-72"
@@ -211,7 +211,6 @@ export function HomeScreen() {
                 isFavorite={favoriteLocationIds.includes(location.id)}
                 isCompareSelected={false}
                 showCompare={false}
-                priority={index === 0}
                 onToggleFavorite={handleToggleFavorite}
                 onToggleCompare={() => undefined}
               />

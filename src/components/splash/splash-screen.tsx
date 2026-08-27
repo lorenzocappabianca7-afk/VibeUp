@@ -5,6 +5,7 @@ import {
   demoteCriticalPaint,
   markSplashOverlaySkip,
   revealAppShell,
+  whenAppCssReady,
 } from "@/lib/critical-paint";
 import { recoverInteractiveSession } from "@/lib/session-health";
 import {
@@ -62,10 +63,16 @@ function persistSplashSeen() {
 /**
  * Home-screen handoff without a white frame:
  * 1) Hide splash overlay; critical paint still covers at z-index 9990
- * 2) Reveal Explore UNDER the black plate (vibeup-app-ready)
- * 3) After two frames, demote the plate (Explore is already painted)
+ * 2) Wait until app CSS is applied (or timeout)
+ * 3) Reveal Explore UNDER the black plate (vibeup-app-ready)
+ * 4) After two frames, demote the plate (Explore is already painted)
  */
+let handoffStarted = false;
+
 function handoffToApp() {
+  if (handoffStarted) return;
+  handoffStarted = true;
+
   if (typeof document !== "undefined") {
     document.documentElement.style.overflow = "";
   }
@@ -73,12 +80,15 @@ function handoffToApp() {
   removeBootSplash();
   persistSplashSeen();
   markSplashOverlaySkip();
-  revealAppShell();
 
-  requestAnimationFrame(() => {
+  void whenAppCssReady().then(() => {
+    revealAppShell();
+
     requestAnimationFrame(() => {
-      demoteCriticalPaint();
-      recoverInteractiveSession();
+      requestAnimationFrame(() => {
+        demoteCriticalPaint();
+        recoverInteractiveSession();
+      });
     });
   });
 }

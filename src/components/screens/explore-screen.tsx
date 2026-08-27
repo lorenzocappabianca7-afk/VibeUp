@@ -829,7 +829,7 @@ export function ExploreScreen({
           {filteredLocations.length > 0 ? (
             <>
               <ul className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredLocations.map((location, index) => (
+              {filteredLocations.map((location) => (
                 <li key={location.id} className="min-w-0 h-full">
                   <LocationCard
                     location={location}
@@ -837,7 +837,6 @@ export function ExploreScreen({
                     isCompareSelected={compareLocationIdSet.has(location.id)}
                     onToggleFavorite={handleToggleFavoriteLocation}
                     onToggleCompare={handleToggleCompareLocation}
-                    priority={index === 0}
                     href={locationHrefById.get(location.id)}
                   />
                 </li>

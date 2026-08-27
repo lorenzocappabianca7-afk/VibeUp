@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
+import { AppCssLoaderGate } from "@/components/app-css-loader-gate";
 import { AppChrome } from "@/components/layout/app-chrome";
 import { AppProviders } from "@/components/providers/app-providers";
 import { CriticalPaint } from "@/components/splash/critical-paint";
@@ -9,6 +10,7 @@ import { APPLE_STARTUP_IMAGES } from "@/lib/apple-startup";
 import {
   CRITICAL_PAINT_CSS,
   CRITICAL_PAINT_SCRIPT,
+  UNBLOCK_APP_CSS_SCRIPT,
 } from "@/lib/critical-paint";
 import {
   SPLASH_FONT_SRC,
@@ -20,7 +22,9 @@ import {
   SPLASH_TAGLINE,
 } from "@/lib/splash";
 import { getSiteUrl } from "@/lib/site";
-import "./globals.css";
+/* App CSS is loaded by AppCssLoader after first paint. Do not import
+   globals.css here — Next hoists it as a render-blocking <link> and iOS
+   Home Screen drops the native launch image onto a blank canvas. */
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -146,6 +150,11 @@ export default function RootLayout({
       style={{ backgroundColor: "#000000", colorScheme: "only dark" }}
       suppressHydrationWarning
     >
+      {/* Runs before <head> CSS links when React preserves this order — unblocks
+          Next's ~100KB stylesheet so the HTML splash can paint on Home Screen. */}
+      <script
+        dangerouslySetInnerHTML={{ __html: UNBLOCK_APP_CSS_SCRIPT }}
+      />
       <head>
         {/* Render-blocking black paint — must stay before Next CSS chunks.
             next/no-css-tags is intentional: preinit was too late for Safari FOUC. */}
@@ -260,6 +269,7 @@ export default function RootLayout({
           </div>
         </div>
         <SplashScreen />
+        <AppCssLoaderGate />
         <AppProviders>
           <div
             id="vibeup-app-shell"

@@ -47,6 +47,8 @@ export function isStandalonePwa(): boolean {
   if (typeof window === "undefined") return false;
   try {
     if (window.matchMedia("(display-mode: standalone)").matches) return true;
+    if (window.matchMedia("(display-mode: fullscreen)").matches) return true;
+    if (window.matchMedia("(display-mode: minimal-ui)").matches) return true;
   } catch {
     /* ignore */
   }

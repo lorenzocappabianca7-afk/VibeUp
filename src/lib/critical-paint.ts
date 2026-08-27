@@ -153,14 +153,30 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
 }
 `.replace(/\s+/g, " ").trim();
 
+export const APP_CSS_READY_CLASS = "vibeup-app-css-ready";
+
+/**
+ * Tiny IIFE for the earliest HTML slot (first child of `<html>`). Next hoists
+ * a ~100KB CSS `<link>` that is render-blocking — iOS then dismisses the native
+ * Home Screen launch image onto an empty canvas (logo vanishes) until that file
+ * arrives. Switching those sheets to media=print unblocks HTML splash paint.
+ *
+ * If `link.sheet` is already set, force media=all (CSS is cached / already
+ * applied). Never leave a loaded sheet stuck on print.
+ */
+export const UNBLOCK_APP_CSS_SCRIPT = `(function(){try{var d=document.documentElement;d.style.setProperty("background-color","#000000","important");d.style.setProperty("color-scheme","only dark","important");d.style.backgroundColor="#000000";d.style.colorScheme="only dark";function isStandalone(){try{if(window.matchMedia("(display-mode: standalone)").matches)return true;if(window.matchMedia("(display-mode: fullscreen)").matches)return true;if(window.matchMedia("(display-mode: minimal-ui)").matches)return true;}catch(e){}try{if(window.navigator.standalone===true)return true;}catch(e){}return false;}function unblock(l){if(!l||l.getAttribute("data-vibeup-async")==="1")return;var href=l.getAttribute("href")||"";if(href.indexOf("boot-paint")!==-1)return;l.setAttribute("data-vibeup-async","1");var loaded=false;try{loaded=!!l.sheet;}catch(e){}if(loaded){l.media="all";return;}l.media="print";l.addEventListener("load",function(){l.media="all";},{once:true});}function scan(){var nodes=document.querySelectorAll('link[rel="stylesheet"]');for(var i=0;i<nodes.length;i++)unblock(nodes[i]);}scan();if(!window.__vibeupCssWatch){window.__vibeupCssWatch=1;try{new MutationObserver(scan).observe(d,{childList:true,subtree:true});}catch(e){}}window.__vibeupStandalone=isStandalone();}catch(e){}})();`;
+
 /**
  * Boot script: black canvas + restore completed-splash state for return launches.
  *
  * Session skip sets splash-skip + app-ready only. Critical paint stays on top
  * until React demotes it after Explore has painted — demoting in <head> caused
  * a white Home Screen frame before body existed.
+ *
+ * Re-runs CSS unblock (idempotent) in case this script is the first to see
+ * Next's stylesheet link after a reorder.
  */
-export const CRITICAL_PAINT_SCRIPT = `(function(){try{var d=document.documentElement;d.style.setProperty("background-color","#000000","important");d.style.setProperty("color-scheme","only dark","important");d.style.backgroundColor="#000000";d.style.colorScheme="only dark";var force=false;try{force=/(?:^|[?&])splash=force(?:&|$)/.test(location.search);}catch(e){}var standalone=false;try{standalone=window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;}catch(e){}if(!force&&!standalone&&sessionStorage.getItem(${JSON.stringify(SPLASH_STORAGE_KEY)})==="1"){d.classList.add("vibeup-splash-skip");d.classList.add("vibeup-app-ready");}var b=document.body;if(b){b.style.setProperty("background-color","#000000","important");b.style.setProperty("color-scheme","only dark","important");b.style.backgroundColor="#000000";}if(!document.getElementById("vibeup-boot-style")){var s=document.createElement("style");s.id="vibeup-boot-style";s.textContent=${JSON.stringify(CRITICAL_PAINT_CSS)};var h=document.head;if(h){h.insertBefore(s,h.firstChild);}else{d.appendChild(s);}}}catch(e){}})();`;
+export const CRITICAL_PAINT_SCRIPT = `${UNBLOCK_APP_CSS_SCRIPT}(function(){try{var d=document.documentElement;var force=false;try{force=/(?:^|[?&])splash=force(?:&|$)/.test(location.search);}catch(e){}var standalone=window.__vibeupStandalone===true;if(!standalone){try{standalone=window.matchMedia("(display-mode: standalone)").matches||window.matchMedia("(display-mode: fullscreen)").matches||window.matchMedia("(display-mode: minimal-ui)").matches||window.navigator.standalone===true;}catch(e){}}if(!force&&!standalone&&sessionStorage.getItem(${JSON.stringify(SPLASH_STORAGE_KEY)})==="1"){d.classList.add("vibeup-splash-skip");d.classList.add("vibeup-app-ready");}var b=document.body;if(b){b.style.setProperty("background-color","#000000","important");b.style.setProperty("color-scheme","only dark","important");b.style.backgroundColor="#000000";}if(!document.getElementById("vibeup-boot-style")){var s=document.createElement("style");s.id="vibeup-boot-style";s.textContent=${JSON.stringify(CRITICAL_PAINT_CSS)};var h=document.head;if(h){h.insertBefore(s,h.firstChild);}else{d.appendChild(s);}}}catch(e){}})();`;
 
 export const CRITICAL_PAINT_ID = "vibeup-critical-paint";
 
@@ -195,4 +211,54 @@ export function revealAppShell() {
 export function markSplashOverlaySkip() {
   if (typeof document === "undefined") return;
   document.documentElement.classList.add("vibeup-splash-skip");
+}
+
+export function markAppCssReady() {
+  if (typeof document === "undefined") return;
+  document.documentElement.classList.add(APP_CSS_READY_CLASS);
+}
+
+function isAppCssApplied(): boolean {
+  if (typeof document === "undefined") return true;
+  if (document.documentElement.classList.contains(APP_CSS_READY_CLASS)) {
+    return true;
+  }
+  try {
+    return (
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--background")
+        .trim() !== ""
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Wait until Tailwind/app CSS is applied so we never uncover an unstyled shell. */
+export function whenAppCssReady(timeoutMs = 4000): Promise<void> {
+  if (typeof document === "undefined") return Promise.resolve();
+  if (isAppCssApplied()) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      window.clearInterval(poll);
+      observer.disconnect();
+      resolve();
+    };
+    const observer = new MutationObserver(() => {
+      if (isAppCssApplied()) finish();
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    const poll = window.setInterval(() => {
+      if (isAppCssApplied()) finish();
+    }, 50);
+    const timer = window.setTimeout(finish, timeoutMs);
+  });
 }
