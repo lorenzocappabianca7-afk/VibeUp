@@ -573,12 +573,10 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [tipsOpen, setTipsOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
-  const [paymentOpen, setPaymentOpen] = useState(false);
 
-  if (!isActive && (tipsOpen || checklistOpen || paymentOpen)) {
+  if (!isActive && (tipsOpen || checklistOpen)) {
     setTipsOpen(false);
     setChecklistOpen(false);
-    setPaymentOpen(false);
   }
   const titleInputRef = useRef<HTMLInputElement>(null);
   const totalCost =
@@ -723,19 +721,17 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
               <EventHintLink
                 expanded={checklistOpen}
                 onClick={() => setChecklistOpen((open) => !open)}
-                className="text-[color:var(--postit-ink)]"
+                className="w-full justify-between no-underline rounded-[0.85rem] bg-brand-pink px-3 py-2.5 text-ink-inverse hover:opacity-90"
               >
                 {EVENT_CHECKLIST_TITLE}
               </EventHintLink>
               {checklistOpen ? (
-                <div className="mt-2">
+                <div className="mt-2 rounded-[0.85rem] bg-white p-3.5">
                   <p className="text-xs font-semibold text-[color:var(--postit-ink-muted)]">
                     {EVENT_CHECKLIST_INTRO}
                   </p>
                   <ul className="mt-2 space-y-2">
-                    {EVENT_CHECKLIST.filter(
-                      (item) => item.id !== "siae" || depositPaid,
-                    ).map((item) => {
+                    {EVENT_CHECKLIST.map((item) => {
                       const checked =
                         event.checklistCheckedIds?.includes(item.id) ?? false;
                       return (
@@ -787,66 +783,57 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
           onPayDeposit={payDeposit}
         />
 
-        {depositPaid ? (
-          <SiaeDocumentCard event={event} onLocalPatch={onSiaePatch} />
-        ) : null}
+        <SiaeDocumentCard
+          event={event}
+          unlocked={depositPaid}
+          onLocalPatch={onSiaePatch}
+        />
 
         <section className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
-          <EventHintLink
-            expanded={paymentOpen}
-            onClick={() => setPaymentOpen((open) => !open)}
-            className="text-[color:var(--postit-ink)]"
-          >
-            Dettaglio del pagamento
-          </EventHintLink>
-          {paymentOpen ? (
-            <div className="mt-2">
-              <p className="text-xs font-semibold text-[color:var(--postit-ink-muted)]">
-                Costi della festa, caparra e servizi prenotati.
-              </p>
-              <ul className="mt-2 space-y-2">
-                {event.services.map((service) => (
-                  <li
-                    key={service.id}
-                    className="flex items-baseline justify-between gap-3 text-sm font-semibold text-[color:var(--postit-ink)]"
-                  >
-                    <span className="min-w-0 truncate">{service.name}</span>
-                    <span className="shrink-0 tabular-nums">
-                      {formatCurrency(service.amountPaid)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <dl className="mt-3 space-y-2 border-t border-[color:var(--postit-ink)]/12 pt-3 text-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <dt className="font-semibold text-[color:var(--postit-ink-muted)]">
-                    Caparra location
-                  </dt>
-                  <dd className="font-bold tabular-nums text-[color:var(--postit-ink)]">
-                    {formatCurrency(depositAmount)}
-                  </dd>
-                </div>
-                {event.siaeStatus === "managed" ? (
-                  <div className="flex items-center justify-between gap-3">
-                    <dt className="font-semibold text-[color:var(--postit-ink-muted)]">
-                      Documento SIAE (VibeUp)
-                    </dt>
-                    <dd className="font-bold tabular-nums text-[color:var(--postit-ink)]">
-                      {formatSiaePrice(SIAE_VIBEUP_TOTAL_EUR)}
-                    </dd>
-                  </div>
-                ) : null}
-                <div className="flex items-center justify-between gap-3">
-                  <dt className="font-bold text-[color:var(--postit-ink)]">
-                    Totale festa
-                  </dt>
-                  <dd className="text-base font-extrabold tabular-nums text-[color:var(--postit-ink)]">
-                    {formatCurrency(totalCost)}
-                  </dd>
-                </div>
-              </dl>
+          <h3 className="text-sm font-semibold text-[color:var(--postit-ink)]">
+            Da pagare
+          </h3>
+          <ul className="mt-2 space-y-2">
+            {event.services.map((service) => (
+              <li
+                key={service.id}
+                className="flex items-baseline justify-between gap-3 text-sm font-semibold text-[color:var(--postit-ink)]"
+              >
+                <span className="min-w-0 truncate">{service.name}</span>
+                <span className="shrink-0 tabular-nums">
+                  {formatCurrency(service.amountPaid)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <dl className="mt-3 space-y-2 border-t border-[color:var(--postit-ink)]/12 pt-3 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <dt className="font-semibold text-[color:var(--postit-ink-muted)]">
+                Caparra location
+              </dt>
+              <dd className="font-bold tabular-nums text-[color:var(--postit-ink)]">
+                {formatCurrency(depositAmount)}
+              </dd>
             </div>
-          ) : null}
+            {event.siaeStatus === "managed" ? (
+              <div className="flex items-center justify-between gap-3">
+                <dt className="font-semibold text-[color:var(--postit-ink-muted)]">
+                  Documento SIAE (VibeUp)
+                </dt>
+                <dd className="font-bold tabular-nums text-[color:var(--postit-ink)]">
+                  {formatSiaePrice(SIAE_VIBEUP_TOTAL_EUR)}
+                </dd>
+              </div>
+            ) : null}
+            <div className="flex items-center justify-between gap-3">
+              <dt className="font-bold text-[color:var(--postit-ink)]">
+                Totale festa
+              </dt>
+              <dd className="text-base font-extrabold tabular-nums text-[color:var(--postit-ink)]">
+                {formatCurrency(totalCost)}
+              </dd>
+            </div>
+          </dl>
         </section>
 
         {missingSuggestions.length > 0 && (
@@ -882,35 +869,33 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
         )}
 
         <section className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
-          <div className="rounded-[0.85rem] bg-brand-teal p-3.5 text-ink-inverse">
-            <EventHintLink
-              expanded={tipsOpen}
-              onClick={() => setTipsOpen((open) => !open)}
-              className="text-ink-inverse"
-            >
-              {EVENT_TIPS_TITLE}
-            </EventHintLink>
-            {tipsOpen ? (
-              <div className="mt-2">
-                <p className="text-xs font-semibold text-ink-inverse/70">
-                  {EVENT_TIPS_INTRO}
-                </p>
-                <ol className="mt-2 space-y-2">
-                  {EVENT_TIPS.map((tip, index) => (
-                    <li
-                      key={tip}
-                      className="flex gap-2.5 text-sm font-semibold leading-relaxed text-ink-inverse"
-                    >
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink-inverse/15 text-[11px] font-black text-ink-inverse">
-                        {index + 1}
-                      </span>
-                      <span>{tip}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            ) : null}
-          </div>
+          <EventHintLink
+            expanded={tipsOpen}
+            onClick={() => setTipsOpen((open) => !open)}
+            className="w-full justify-between no-underline rounded-[0.85rem] bg-brand-teal px-3 py-2.5 text-ink-inverse hover:opacity-90"
+          >
+            {EVENT_TIPS_TITLE}
+          </EventHintLink>
+          {tipsOpen ? (
+            <div className="mt-2 rounded-[0.85rem] bg-white p-3.5">
+              <p className="text-xs font-semibold text-[color:var(--postit-ink-muted)]">
+                {EVENT_TIPS_INTRO}
+              </p>
+              <ol className="mt-2 space-y-2">
+                {EVENT_TIPS.map((tip, index) => (
+                  <li
+                    key={tip}
+                    className="flex gap-2.5 text-sm font-semibold leading-relaxed text-[color:var(--postit-ink)]"
+                  >
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-teal/20 text-[11px] font-black text-brand-teal-strong">
+                      {index + 1}
+                    </span>
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
         </section>
 
         <EventCountdown event={event} embedded active={isActive} />

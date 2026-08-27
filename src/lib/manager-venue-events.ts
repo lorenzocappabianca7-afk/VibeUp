@@ -1,4 +1,5 @@
 import { getRequestStatusShortLabel } from "@/lib/availability/request-status-display";
+import { MOCK_BUSINESS_CONFIRMED_EVENTS } from "@/lib/mock/business-inbox";
 import type { AvailabilityRequest } from "@/types/availability-request";
 
 export type ManagerEventStatus =
@@ -74,6 +75,31 @@ export function managerEventsFromRequests(
       if (dateCmp !== 0) return dateCmp;
       return a.startTime.localeCompare(b.startTime);
     });
+}
+
+export function demoManagerVenueEvents(): ManagerVenueEvent[] {
+  return MOCK_BUSINESS_CONFIRMED_EVENTS.map((event) => ({
+    id: event.id,
+    title: event.title,
+    date: event.date,
+    startTime: event.startTime,
+    endTime: event.endTime,
+    guestCount: event.guestCount,
+    organizerName: event.organizerName,
+    locationName: "Locale di esempio",
+    locationId: "demo",
+    status: "confirmed" as const,
+    statusLabel: "Confermato",
+    totalCost: 0,
+    notes: event.notes,
+  }));
+}
+
+export function managerVenueEventsForDisplay(
+  requests: AvailabilityRequest[],
+): ManagerVenueEvent[] {
+  const live = managerEventsFromRequests(requests);
+  return live.length > 0 ? live : demoManagerVenueEvents();
 }
 
 export function upcomingManagerEvents(events: ManagerVenueEvent[]): ManagerVenueEvent[] {

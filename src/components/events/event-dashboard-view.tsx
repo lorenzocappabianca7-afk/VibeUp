@@ -141,13 +141,14 @@ export function EventDashboardView({
 
       <EventManagerContactSection event={currentEvent} />
 
-      {paymentStates[getEventDepositPaymentKey(currentEvent.id)]?.paid ? (
-        <SiaeDocumentCard
-          event={currentEvent}
-          layout="page"
-          onLocalPatch={updateEventSiae}
-        />
-      ) : null}
+      <SiaeDocumentCard
+        event={currentEvent}
+        layout="page"
+        unlocked={Boolean(
+          paymentStates[getEventDepositPaymentKey(currentEvent.id)]?.paid,
+        )}
+        onLocalPatch={updateEventSiae}
+      />
 
       <section className="rounded-2xl border border-brand-pink/20 bg-brand-pink/12 p-4">
         <div className="flex items-start gap-3">

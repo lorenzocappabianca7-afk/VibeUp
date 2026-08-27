@@ -10,11 +10,11 @@ import { checkupForManagerVenueEvent } from "@/lib/manager-event-checkup";
 import { listingsForBusiness } from "@/lib/manager-listings";
 import {
   managerEventsFromRequests,
+  managerVenueEventsForDisplay,
   upcomingManagerEvents,
   type ManagerEventStatus,
   type ManagerVenueEvent,
 } from "@/lib/manager-venue-events";
-import { MOCK_BUSINESS_CONFIRMED_EVENTS } from "@/lib/mock/business-inbox";
 import { cn, formatCurrency } from "@/lib/utils";
 import {
   CalendarDays,
@@ -78,24 +78,6 @@ function statusTone(status: ManagerEventStatus) {
   return "bg-white/8 text-primary-black/70";
 }
 
-function eventsFromMocks(): ManagerVenueEvent[] {
-  return MOCK_BUSINESS_CONFIRMED_EVENTS.map((event) => ({
-    id: event.id,
-    title: event.title,
-    date: event.date,
-    startTime: event.startTime,
-    endTime: event.endTime,
-    guestCount: event.guestCount,
-    organizerName: event.organizerName,
-    locationName: "Locale di esempio",
-    locationId: "demo",
-    status: "confirmed",
-    statusLabel: "Confermato",
-    totalCost: 0,
-    notes: event.notes,
-  }));
-}
-
 export const BusinessCalendarScreen = memo(function BusinessCalendarScreen() {
   const { businessProfile, currentUser, managedListings } = useAppState();
   const { managedRequests } = useAvailabilityRequests();
@@ -121,10 +103,10 @@ export const BusinessCalendarScreen = memo(function BusinessCalendarScreen() {
     [managedRequests],
   );
 
-  const allEvents = useMemo(() => {
-    if (liveEvents.length > 0) return liveEvents;
-    return eventsFromMocks();
-  }, [liveEvents]);
+  const allEvents = useMemo(
+    () => managerVenueEventsForDisplay(managedRequests),
+    [managedRequests],
+  );
 
   const usingDemo = liveEvents.length === 0;
   const filteredEvents = useMemo(() => {
@@ -161,9 +143,24 @@ export const BusinessCalendarScreen = memo(function BusinessCalendarScreen() {
   );
 
   const expandedEvent = useMemo(
-    () => tableEvents.find((event) => event.id === expandedEventId) ?? null,
+    () =>
+      tableEvents.find((event) => event.id === expandedEventId) ??
+      tableEvents[0] ??
+      null,
     [expandedEventId, tableEvents],
   );
+
+  useEffect(() => {
+    if (tableEvents.length === 0) {
+      setExpandedEventId(null);
+      return;
+    }
+    setExpandedEventId((current) =>
+      current && tableEvents.some((event) => event.id === current)
+        ? current
+        : tableEvents[0].id,
+    );
+  }, [tableEvents]);
 
   useEffect(() => {
     if (!expandedEvent) return;
@@ -230,8 +227,8 @@ export const BusinessCalendarScreen = memo(function BusinessCalendarScreen() {
             Tabella eventi
           </h2>
           <p className="mt-0.5 text-xs text-primary-black/50">
-            {tableEvents.length} eventi collegati al locale. Apri una riga per
-            il checkup delle informazioni.
+            {tableEvents.length} eventi collegati al locale. Il checkup
+            dell’evento selezionato è sotto la tabella.
           </p>
         </div>
         {tableEvents.length > 0 ? (
@@ -261,9 +258,7 @@ export const BusinessCalendarScreen = memo(function BusinessCalendarScreen() {
                           ? "bg-white/[0.04]"
                           : "hover:bg-white/[0.03]",
                       )}
-                      onClick={() =>
-                        setExpandedEventId(expanded ? null : event.id)
-                      }
+                      onClick={() => setExpandedEventId(event.id)}
                     >
                       <td className="px-2 py-2.5">
                         <button
@@ -271,10 +266,10 @@ export const BusinessCalendarScreen = memo(function BusinessCalendarScreen() {
                           className="touch-feedback flex h-7 w-7 items-center justify-center rounded-full text-primary-black/45"
                           aria-expanded={expanded}
                           aria-label={`${event.title}: ${expanded ? "chiudi" : "apri"} checkup informazioni`}
-                          onClick={(clickEvent) => {
-                            clickEvent.stopPropagation();
-                            setExpandedEventId(expanded ? null : event.id);
-                          }}
+                            onClick={(clickEvent) => {
+                              clickEvent.stopPropagation();
+                              setExpandedEventId(event.id);
+                            }}
                         >
                           <ChevronDown
                             className={cn(

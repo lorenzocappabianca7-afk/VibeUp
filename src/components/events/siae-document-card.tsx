@@ -21,13 +21,15 @@ import {
 import { EventHintLink } from "@/components/events/event-hint-link";
 import { formatDate } from "@/lib/utils";
 import type { UserEvent } from "@/types/event";
-import { Check, FileText, Landmark, User } from "lucide-react";
+import { Check, ChevronDown, FileText, Landmark, User } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 interface SiaeDocumentCardProps {
   event: UserEvent;
   /** `page` drops the post-it section chrome (event dashboard). */
   layout?: "postit" | "page";
+  /** Pay/choose actions unlock after the location deposit is paid. */
+  unlocked?: boolean;
   onLocalPatch: (
     eventId: string,
     patch: {
@@ -45,9 +47,20 @@ function venueFeeLabel(fee: number | null | undefined) {
   return "Di solito più caro";
 }
 
+function vibeUpVsVenueCopy(
+  venueFee: number | null | undefined,
+  vibeUpPrice: number,
+): string {
+  if (typeof venueFee === "number" && venueFee > vibeUpPrice) {
+    return `Se ti serve, con VibeUp paghi ${formatSiaePrice(venueFee - vibeUpPrice)} in meno del locale.`;
+  }
+  return "Se ti serve il permesso, con VibeUp paghi meno che al locale.";
+}
+
 export function SiaeDocumentCard({
   event,
   layout = "postit",
+  unlocked = true,
   onLocalPatch,
 }: SiaeDocumentCardProps) {
   const [busy, setBusy] = useState<SiaeChoice | null>(null);
@@ -55,8 +68,10 @@ export function SiaeDocumentCard({
   const [showAlternatives, setShowAlternatives] = useState(
     () => event.siaeStatus === "diy" || event.siaeStatus === "venue",
   );
-
   const status: SiaeStatus = event.siaeStatus ?? "unselected";
+  const decided = status !== "unselected";
+  const [expanded, setExpanded] = useState(decided);
+
   const reminder = isSiaeReminderDue(event.date, status);
   const deadline = getSiaeDeadline(event.date);
   const preview = isAdminPreviewEventId(event.id);
@@ -68,7 +83,8 @@ export function SiaeDocumentCard({
     if (status === "diy" || status === "venue") {
       setShowAlternatives(true);
     }
-  }, [status]);
+    if (decided) setExpanded(true);
+  }, [decided, status]);
 
   const applyEvent = useCallback(
     (next: UserEvent) => {
@@ -148,14 +164,51 @@ export function SiaeDocumentCard({
     setBusy(null);
   }, [applyEvent, event.id, onLocalPatch]);
 
+  const actionsLocked = locked || !unlocked || Boolean(busy);
+  const shellClass =
+    layout === "page"
+      ? "min-w-0 overflow-hidden rounded-2xl"
+      : "event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4";
+  const savingsCopy = vibeUpVsVenueCopy(event.siaeVenueFee, vibeUpPrice);
+
+  if (!expanded) {
+    return (
+      <section className={shellClass}>
+        <div className="event-postit-dark px-3 py-2.5">
+          <div className="flex min-w-0 items-start gap-2">
+            <FileText
+              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-teal"
+              aria-hidden
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-white">Documento SIAE</p>
+              <p className="mt-0.5 text-[11px] font-semibold leading-snug text-white/65">
+                {savingsCopy}
+              </p>
+              <p className="mt-1.5 text-[11px] font-bold text-white">
+                VibeUp {formatSiaePrice(vibeUpPrice)}
+                <span className="font-semibold text-white/50">
+                  {" "}
+                  · locale {venueFeeLabel(event.siaeVenueFee).toLowerCase()}
+                </span>
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-brand-teal"
+          >
+            Ingrandisci
+            <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section
-      className={
-        layout === "page"
-          ? "min-w-0 overflow-hidden rounded-2xl"
-          : "event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4"
-      }
-    >
+    <section className={shellClass}>
       <div className="event-postit-dark p-3.5">
         <div className="flex min-w-0 items-start justify-between gap-2">
           <div className="min-w-0">
@@ -164,14 +217,24 @@ export function SiaeDocumentCard({
               Documento SIAE
             </p>
             <p className="event-postit-dark-muted mt-0.5 text-xs font-semibold">
-              Spesso richiesto per i diciottesimi e le feste con musica.
+              {savingsCopy}
             </p>
           </div>
-          {reminder && (
-            <span className="shrink-0 rounded-full bg-brand-teal px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-ink-inverse">
-              Decidi in tempo
-            </span>
-          )}
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            {reminder ? (
+              <span className="rounded-full bg-brand-teal px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-ink-inverse">
+                Decidi in tempo
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              className="inline-flex items-center gap-0.5 text-[11px] font-bold text-white/55"
+            >
+              Riduci
+              <ChevronDown className="h-3.5 w-3.5 rotate-180" aria-hidden />
+            </button>
+          </div>
         </div>
 
         {status === "managed" ? (
@@ -204,16 +267,23 @@ export function SiaeDocumentCard({
             </p>
             <button
               type="button"
-              disabled={Boolean(busy) || locked}
+              disabled={actionsLocked}
               onClick={() => void chooseVibeUp()}
-              className={`mt-3 inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-bold text-ink-inverse transition-colors hover:bg-brand-teal/90 ${
+              className={`mt-3 inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-bold text-ink-inverse transition-colors hover:bg-brand-teal/90 disabled:opacity-50 ${
                 status === "pending_payment" ? "ring-2 ring-brand-teal/40" : ""
               }`}
             >
               {status === "pending_payment"
                 ? `Completa pagamento ${formatSiaePrice(vibeUpPrice)}`
-                : `Paga ${formatSiaePrice(vibeUpPrice)}`}
+                : unlocked
+                  ? `Paga ${formatSiaePrice(vibeUpPrice)}`
+                  : `VibeUp ${formatSiaePrice(vibeUpPrice)}`}
             </button>
+            {!unlocked ? (
+              <p className="mt-1.5 text-[11px] font-semibold text-white/50">
+                Potrai sceglierlo e pagarlo dopo la caparra.
+              </p>
+            ) : null}
 
             <EventHintLink
               expanded={showAlternatives}
@@ -229,7 +299,7 @@ export function SiaeDocumentCard({
                 <li>
                   <button
                     type="button"
-                    disabled={Boolean(busy) || locked}
+                    disabled={actionsLocked}
                     onClick={() => void chooseSelfServe("diy")}
                     className={`flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
                       status === "diy"
@@ -269,7 +339,7 @@ export function SiaeDocumentCard({
                 <li>
                   <button
                     type="button"
-                    disabled={Boolean(busy) || locked}
+                    disabled={actionsLocked}
                     onClick={() => void chooseSelfServe("venue")}
                     className={`flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
                       status === "venue"
