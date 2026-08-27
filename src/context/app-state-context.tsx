@@ -1037,24 +1037,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!canAccessAdminCatalog(currentUser.email, currentUser.role)) return;
 
     updateCurrentUserState((state) => {
-      const hasPreview = state.events.some((event) =>
+      const existingPreview = state.events.find((event) =>
         isAdminPreviewEventId(event.id),
+      );
+      const extraEvents = state.events.filter(
+        (event) => !isAdminPreviewEventId(event.id),
       );
       const depositKey = getAdminPreviewDepositPaymentKey();
       const depositPaid = Boolean(state.paymentStates[depositKey]?.paid);
-      if (hasPreview && depositPaid) return state;
+      if (existingPreview && depositPaid && extraEvents.length === 0) {
+        return state;
+      }
 
+      const preview = existingPreview ?? buildAdminPreviewEvent();
       return {
         ...state,
-        events: hasPreview
-          ? state.events
-          : [buildAdminPreviewEvent(), ...state.events],
-        paymentStates: depositPaid
-          ? state.paymentStates
-          : {
-              ...state.paymentStates,
-              [depositKey]: { paid: true, method: "card" },
-            },
+        events: [preview],
+        paymentStates: {
+          [depositKey]: { paid: true, method: "card" },
+        },
       };
     });
   }, [
@@ -1092,6 +1093,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const mergeCloudEvents = useCallback(
     (cloudEvents: UserEvent[]) => {
       if (cloudEvents.length === 0) return;
+      if (canAccessAdminCatalog(currentUser.email, currentUser.role)) return;
       updateCurrentUserState((state) => {
         const byId = new Map<string, UserEvent>();
         for (const event of state.events) byId.set(event.id, event);
@@ -1121,7 +1123,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         };
       });
     },
-    [updateCurrentUserState],
+    [currentUser.email, currentUser.role, updateCurrentUserState],
   );
 
   const getEvent = useCallback(

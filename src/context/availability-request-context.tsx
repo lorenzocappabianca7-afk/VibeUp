@@ -1,6 +1,7 @@
 "use client";
 
 import { useAppState } from "@/context/app-state-context";
+import { canAccessAdminCatalog } from "@/lib/admin-access";
 import { useInboxBadge } from "@/context/inbox-badge-context";
 import {
   createAvailabilityRequestRemote,
@@ -202,6 +203,7 @@ export function AvailabilityRequestProvider({
   const currentUserIdRef = useRef(currentUser.id);
   const confirmLockRef = useRef<Set<string>>(new Set());
   const requestsRef = useRef<AvailabilityRequest[]>([]);
+  const adminCancelledRequestIdsRef = useRef<Set<string>>(new Set());
 
   const cloudSyncEnabled = currentUser.authProvider === "supabase";
 
@@ -369,6 +371,7 @@ export function AvailabilityRequestProvider({
 
   const organizerOpenRequests = useMemo(() => {
     if (isGuest || isBusinessUser) return [];
+    if (canAccessAdminCatalog(currentUser.email, currentUser.role)) return [];
     return requests
       .filter(
         (item) =>
@@ -379,7 +382,14 @@ export function AvailabilityRequestProvider({
           item.status !== "expired",
       )
       .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
-  }, [currentUser.id, isBusinessUser, isGuest, requests]);
+  }, [
+    currentUser.email,
+    currentUser.id,
+    currentUser.role,
+    isBusinessUser,
+    isGuest,
+    requests,
+  ]);
 
   useEffect(() => {
     if (!isBusinessUser) {
@@ -961,6 +971,32 @@ export function AvailabilityRequestProvider({
     },
     [cloudSyncEnabled],
   );
+
+  useEffect(() => {
+    if (!hydrated || isGuest || isBusinessUser) return;
+    if (!canAccessAdminCatalog(currentUser.email, currentUser.role)) return;
+
+    const open = requests.filter(
+      (item) =>
+        item.requesterUserId === currentUser.id &&
+        !TERMINAL_STATUSES.has(item.status),
+    );
+
+    for (const item of open) {
+      if (adminCancelledRequestIdsRef.current.has(item.id)) continue;
+      adminCancelledRequestIdsRef.current.add(item.id);
+      void cancelAvailabilityRequest(item.id);
+    }
+  }, [
+    cancelAvailabilityRequest,
+    currentUser.email,
+    currentUser.id,
+    currentUser.role,
+    hydrated,
+    isBusinessUser,
+    isGuest,
+    requests,
+  ]);
 
   const snoozeAvailabilityConfirm = useCallback((requestId: string) => {
     setSnoozedConfirmIds((prev) =>

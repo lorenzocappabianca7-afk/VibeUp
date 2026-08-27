@@ -270,11 +270,17 @@ export const MyEventsScreen = memo(function MyEventsScreen({
 
   const statusNotices = useMemo(
     () =>
-      communications
-        .filter((item) => item.kind === "request_status")
-        .slice(0, 4),
-    [communications],
+      isAdminCatalog
+        ? []
+        : communications
+            .filter((item) => item.kind === "request_status")
+            .slice(0, 4),
+    [communications, isAdminCatalog],
   );
+
+  const visibleOrganizerRequests = isAdminCatalog
+    ? []
+    : organizerOpenRequests;
 
   const activeEvents = useMemo(() => {
     const upcoming = events.filter((event) => !isEventPast(event));
@@ -293,10 +299,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
           siaePaidAt: storedPreview.siaePaidAt,
         }
       : buildAdminPreviewEvent();
-    return [
-      preview,
-      ...upcoming.filter((event) => !isAdminPreviewEventId(event.id)),
-    ];
+    return [preview];
   }, [events, isAdminCatalog]);
 
   const eventPaymentStates = useMemo(() => {
@@ -440,13 +443,13 @@ export const MyEventsScreen = memo(function MyEventsScreen({
         </section>
       )}
 
-      {organizerOpenRequests.length > 0 && (
+      {visibleOrganizerRequests.length > 0 && (
         <section className="min-w-0 space-y-3">
           <h2 className="text-base font-semibold text-primary-black">
             Richieste in corso
           </h2>
           <ul className="space-y-2">
-            {organizerOpenRequests.map((request) => (
+            {visibleOrganizerRequests.map((request) => (
               <li
                 key={request.id}
                 className="rounded-2xl border border-primary-black/10 bg-surface p-4"
@@ -483,7 +486,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
         </section>
       )}
 
-      {activeEvents.length === 0 && organizerOpenRequests.length === 0 && (
+      {activeEvents.length === 0 && visibleOrganizerRequests.length === 0 && (
         <section className="min-w-0 rounded-2xl border border-dashed border-primary-black/15 bg-primary-black/[0.02] px-4 py-8 text-center">
           <p className="text-base font-semibold text-primary-black">
             Nessun evento ancora
