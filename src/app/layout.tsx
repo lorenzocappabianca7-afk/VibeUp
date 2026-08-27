@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
-import Script from "next/script";
 import { AppChrome } from "@/components/layout/app-chrome";
 import { AppProviders } from "@/components/providers/app-providers";
 import { CriticalPaint } from "@/components/splash/critical-paint";
@@ -124,12 +123,12 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
-  /* Black matches PWA native launch splash / home-screen icon expand */
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#000000" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-  ],
-  colorScheme: "dark",
+  /* Media-less so iOS applies it before prefers-color-scheme is evaluated.
+     `only dark` forces a black WKWebView canvas in iOS Light Mode. */
+  themeColor: "#000000",
+  /* `only dark` is valid CSS; Next's ColorSchemeEnum lists `only light` but
+     not `only dark`. Cast so the emitted meta is the value iOS actually needs. */
+  colorScheme: "only dark" as Viewport["colorScheme"],
 };
 
 export default function RootLayout({
@@ -141,14 +140,16 @@ export default function RootLayout({
     <html
       lang="it"
       className={`${geistSans.variable} ${geistMono.variable} ${brandDisplay.variable} h-full antialiased`}
-      style={{ backgroundColor: "#000000", colorScheme: "dark" }}
+      style={{ backgroundColor: "#000000", colorScheme: "only dark" }}
       suppressHydrationWarning
     >
       <head>
         {/* Render-blocking black paint — must stay before Next CSS chunks.
             next/no-css-tags is intentional: preinit was too late for Safari FOUC. */}
         {/* eslint-disable-next-line @next/next/no-css-tags -- boot FOUC shield */}
-        <link rel="stylesheet" href="/boot-paint.css?v=splash-logo-8" />
+        <meta name="color-scheme" content="only dark" />
+        <meta name="theme-color" content="#000000" />
+        <link rel="stylesheet" href="/boot-paint.css?v=splash-logo-9" />
         {/* Fallback inline CSS if the link is delayed/relocated */}
         <style
           dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_CSS }}
@@ -181,16 +182,12 @@ export default function RootLayout({
       </head>
       <body
         className="min-h-dvh text-primary-black"
-        style={{ backgroundColor: "#000000" }}
+        style={{ backgroundColor: "#000000", colorScheme: "only dark" }}
         suppressHydrationWarning
       >
-        {/* Also via next/script for clients that re-exec on soft recovery */}
-        <Script
-          id="vibeup-critical-paint"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_SCRIPT }}
-        />
-        {/* Black shell with inline styles — demoted behind app after splash */}
+        {/* Black shell with inline styles — demoted behind app after splash.
+            Do not put next/script before this: beforeInteractive was queued
+            as ~4KB of JS before the splash DIV, delaying first paint. */}
         <CriticalPaint />
         {/* Splash is outside AppProviders on purpose. Do not wrap it, do not
             add Tailwind classes, and do not replace the logo div with <img>. */}

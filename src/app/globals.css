@@ -2,7 +2,7 @@
 @config "../../tailwind.config.js";
 
 :root {
-  color-scheme: dark;
+  color-scheme: only dark;
   --background: #0f1115;
   --foreground: #f5f5f7;
   --surface: #1a1c21;

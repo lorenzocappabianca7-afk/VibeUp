@@ -15,4 +15,6 @@ Only edit these files when the user asked to change the splash.
 - Standalone PWA must **not** skip the HTML splash (iOS always shows a native splash first)
 - `apple-touch-startup-image`: every link needs a media query; include dark + landscape variants
 - Status bar: `black-translucent` so native PNG and HTML share one coordinate space
+- `color-scheme` must be `only dark` (html/body/meta/boot CSS) so iOS Light Mode does not paint a white WKWebView canvas between the native launch image and the HTML splash
+- Never inline the full app CSS into `<head>` (`experimental.inlineCss`); it delays `<body>` past the iOS launch-image handoff
 ---

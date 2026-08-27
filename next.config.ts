@@ -18,10 +18,12 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
-  /* Inline CSS with HTML so first paint is black immediately — kills the
-     white flash while waiting for `/_next/static/...css` (Tailwind is small). */
+  /* Do NOT inline Tailwind into <head>. Production was shipping ~99KB of CSS
+     before <body>, so iOS dismissed the native launch image onto a white
+     WKWebView while the HTML splash was still 128KB away. Boot paint is the
+     tiny `/boot-paint.css` + inline critical CSS; app CSS can load in parallel. */
   experimental: {
-    inlineCss: true,
+    inlineCss: false,
   },
   images: {
     remotePatterns: [

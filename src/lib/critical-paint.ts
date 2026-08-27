@@ -12,6 +12,10 @@ import {
 /**
  * Blocking first-paint CSS for Home Screen / PWA cold start.
  *
+ * color-scheme MUST be `only dark` (not just `dark`). iOS Light Mode treats
+ * `dark` as optional and paints a white WKWebView canvas between the native
+ * apple-touch-startup-image and the HTML splash.
+ *
  * Classes (must stay separate — combining them caused a white flash):
  *   vibeup-splash-skip   → hide React splash overlay
  *   vibeup-app-ready     → show #vibeup-app-shell (Explore)
@@ -26,7 +30,7 @@ export const CRITICAL_PAINT_CSS = `
 html,body{
   background:#000000!important;
   background-color:#000000!important;
-  color-scheme:dark!important;
+  color-scheme:only dark!important;
 }
 html:not(.vibeup-app-ready) #vibeup-app-shell{
   visibility:hidden!important;
@@ -159,7 +163,7 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
  * until React demotes it after Explore has painted — demoting in <head> caused
  * a white Home Screen frame before body existed.
  */
-export const CRITICAL_PAINT_SCRIPT = `(function(){try{var d=document.documentElement;d.style.setProperty("background-color","#000000","important");d.style.setProperty("color-scheme","dark","important");d.style.backgroundColor="#000000";d.style.colorScheme="dark";var force=false;try{force=/(?:^|[?&])splash=force(?:&|$)/.test(location.search);}catch(e){}var standalone=false;try{standalone=window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;}catch(e){}if(!force&&!standalone&&sessionStorage.getItem(${JSON.stringify(SPLASH_STORAGE_KEY)})==="1"){d.classList.add("vibeup-splash-skip");d.classList.add("vibeup-app-ready");}var b=document.body;if(b){b.style.setProperty("background-color","#000000","important");b.style.backgroundColor="#000000";}if(!document.getElementById("vibeup-boot-style")){var s=document.createElement("style");s.id="vibeup-boot-style";s.textContent=${JSON.stringify(CRITICAL_PAINT_CSS)};var h=document.head;if(h){h.insertBefore(s,h.firstChild);}else{d.appendChild(s);}}}catch(e){}})();`;
+export const CRITICAL_PAINT_SCRIPT = `(function(){try{var d=document.documentElement;d.style.setProperty("background-color","#000000","important");d.style.setProperty("color-scheme","only dark","important");d.style.backgroundColor="#000000";d.style.colorScheme="only dark";var force=false;try{force=/(?:^|[?&])splash=force(?:&|$)/.test(location.search);}catch(e){}var standalone=false;try{standalone=window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;}catch(e){}if(!force&&!standalone&&sessionStorage.getItem(${JSON.stringify(SPLASH_STORAGE_KEY)})==="1"){d.classList.add("vibeup-splash-skip");d.classList.add("vibeup-app-ready");}var b=document.body;if(b){b.style.setProperty("background-color","#000000","important");b.style.setProperty("color-scheme","only dark","important");b.style.backgroundColor="#000000";}if(!document.getElementById("vibeup-boot-style")){var s=document.createElement("style");s.id="vibeup-boot-style";s.textContent=${JSON.stringify(CRITICAL_PAINT_CSS)};var h=document.head;if(h){h.insertBefore(s,h.firstChild);}else{d.appendChild(s);}}}catch(e){}})();`;
 
 export const CRITICAL_PAINT_ID = "vibeup-critical-paint";
 

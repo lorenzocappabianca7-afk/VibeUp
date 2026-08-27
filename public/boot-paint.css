@@ -5,7 +5,9 @@ html,
 body {
   background: #000000 !important;
   background-color: #000000 !important;
-  color-scheme: dark !important;
+  /* `only dark`: iOS Light Mode otherwise paints a white WKWebView canvas
+     between the native Home Screen launch image and the HTML splash. */
+  color-scheme: only dark !important;
 }
 
 /* Explore stays hidden until explicitly ready (under the black plate). */
