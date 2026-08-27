@@ -149,7 +149,7 @@ export default function RootLayout({
         {/* eslint-disable-next-line @next/next/no-css-tags -- boot FOUC shield */}
         <meta name="color-scheme" content="only dark" />
         <meta name="theme-color" content="#000000" />
-        <link rel="stylesheet" href="/boot-paint.css?v=splash-logo-9" />
+        <link rel="stylesheet" href="/boot-paint.css?v=splash-logo-10" />
         {/* Fallback inline CSS if the link is delayed/relocated */}
         <style
           dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_CSS }}

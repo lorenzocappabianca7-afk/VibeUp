@@ -23,6 +23,6 @@ Never:
 - Put the splash inside `AppProviders`
 - Skip the HTML splash in standalone / PWA (`navigator.standalone`)
 - Add a second React splash overlay (`SplashScreen` must return `null`)
-- Change logo size away from `112px` or the position `50% - 14vh - 56px`
+- Change logo size away from `128px` or the position `50% - 12vh - 64px`
 - Add a media-less `apple-touch-startup-image` fallback
 ---

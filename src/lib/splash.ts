@@ -5,21 +5,21 @@ export const SPLASH_STORAGE_KEY = "vibeup-splash-seen";
  * On-screen logo box. Must stay in px (not rem) so HTML splash, boot CSS,
  * and iOS apple-touch-startup-image all share one size.
  */
-export const SPLASH_LOGO_DISPLAY_PX = 112;
+export const SPLASH_LOGO_DISPLAY_PX = 128;
 
-/** Half the logo box — used by `top/left: calc(50% - 14vh - Npx)`. */
+/** Half the logo box — used by `top/left: calc(50% - 12vh - Npx)`. */
 export const SPLASH_LOGO_HALF_PX = SPLASH_LOGO_DISPLAY_PX / 2;
 
 /**
  * Logo lift from geometric center. HTML and generated iOS launch images MUST
  * use the same formula:
- *   logoTop = 50% - 14vh - 56px
- * Flex + margin-bottom:14vh is NOT equivalent (it only lifts ~7vh) and makes
+ *   logoTop = 50% - 12vh - 64px
+ * Flex + margin-bottom:12vh is NOT equivalent (it only lifts ~6vh) and makes
  * the Home Screen native splash jump when the WebView takes over.
  */
-export const SPLASH_STAGE_LIFT_VH = 14;
+export const SPLASH_STAGE_LIFT_VH = 12;
 
-/** Compact bitmap for the HTML overlay — 3× the 112px box, fast to decode. */
+/** Compact bitmap for the HTML overlay — 3× the original 112px box, fast to decode. */
 export const SPLASH_LOGO_SRC = "/vibeup-splash-logo-112.png";
 
 /** Logo alone, then tagline fades in — no scale/translate on the logo */

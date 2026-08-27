@@ -8,8 +8,8 @@ alwaysApply: false
 
 Only edit these files when the user asked to change the splash.
 
-- Logo box is **112px**, `background-image` (not `<img>`), `transform: none`
-- Position: `top: calc(50% - 14vh - 56px); left: calc(50% - 56px)` — same formula as generated iOS PNGs
+- Logo box is **128px**, `background-image` (not `<img>`), `transform: none`
+- Position: `top: calc(50% - 12vh - 64px); left: calc(50% - 64px)` — same formula as generated iOS PNGs
 - Sequence: logo first, tagline fades in after ~800ms; tagline is `position: absolute` so the logo does not move
 - `#vibeup-boot-splash` stays outside `AppProviders`; `SplashScreen` returns `null`
 - Standalone PWA must **not** skip the HTML splash (iOS always shows a native splash first)
