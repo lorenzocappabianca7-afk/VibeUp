@@ -1,6 +1,14 @@
 /* Earliest paint — pure black before Next CSS chunk arrives.
    Splash overlay rules are scoped to #vibeup-boot-splash so app CSS cannot
    move/resize the logo. Do not fold this file into globals.css. */
+@font-face {
+  font-family: VibeUpSplash;
+  src: url(/splash/montserrat-700.woff2) format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: optional;
+}
+
 html,
 body {
   background: #000000 !important;
@@ -95,7 +103,7 @@ html.vibeup-paint-demoted #vibeup-critical-paint {
   border: 0 !important;
   flex-shrink: 0 !important;
   overflow: hidden !important;
-  background-image: url(/vibeup-splash-logo-112.png) !important;
+  background-image: url(/vibeup-splash-logo-inline.png);
   background-repeat: no-repeat !important;
   background-position: center !important;
   background-size: 128px 128px !important;
@@ -115,7 +123,7 @@ html.vibeup-paint-demoted #vibeup-critical-paint {
   margin: 1.15rem 0 0;
   padding: 0 0.25rem;
   max-width: calc(100vw - 0.75rem);
-  font-family: var(--font-brand), system-ui, sans-serif;
+  font-family: VibeUpSplash, ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(1.2rem, 5.8vw, 2.55rem);
   font-weight: 700;
   letter-spacing: -0.055em;
@@ -123,32 +131,12 @@ html.vibeup-paint-demoted #vibeup-critical-paint {
   white-space: nowrap;
   color: #fff;
   text-align: center;
-  /* opacity is animated — do not use !important here */
-  opacity: 0;
-  transform: translateX(-50%);
-  animation: vibeup-splash-tagline-in 450ms ease 800ms forwards;
-}
-
-#vibeup-boot-splash.vibeup-splash--tagline .vibeup-splash__tagline {
   opacity: 1;
+  transform: translateX(-50%);
   animation: none;
 }
 
-@keyframes vibeup-splash-tagline-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  #vibeup-boot-splash .vibeup-splash__tagline {
-    animation: none;
-    opacity: 1;
-  }
-
   #vibeup-boot-splash.vibeup-splash--exit .vibeup-splash__stage {
     transition: none !important;
   }

@@ -1,3 +1,5 @@
+import { SPLASH_LOGO_DATA_URI } from "@/lib/splash-logo-src";
+
 /** Splash timing — single source of truth */
 export const SPLASH_STORAGE_KEY = "vibeup-splash-seen";
 
@@ -19,13 +21,20 @@ export const SPLASH_LOGO_HALF_PX = SPLASH_LOGO_DISPLAY_PX / 2;
  */
 export const SPLASH_STAGE_LIFT_VH = 12;
 
-/** Compact bitmap for the HTML overlay — 3× the original 112px box, fast to decode. */
-export const SPLASH_LOGO_SRC = "/vibeup-splash-logo-112.png";
+/** Inlined on the logo box so Home Screen HTML paint does not wait on a fetch. */
+export const SPLASH_LOGO_SRC = SPLASH_LOGO_DATA_URI;
 
-/** Logo alone, then tagline fades in — no scale/translate on the logo */
-export const TAGLINE_DELAY_MS = 800;
+/** File fallback if a stylesheet cannot use the data URI. */
+export const SPLASH_LOGO_FILE = "/vibeup-splash-logo-inline.png";
 
-export const TAGLINE_FADE_MS = 450;
+export const SPLASH_TAGLINE = "Cool people plan cool party.";
+
+export const SPLASH_FONT_SRC = "/splash/montserrat-700.woff2";
+
+/** Tagline is visible on the first HTML frame — same as the iOS launch PNG. */
+export const TAGLINE_DELAY_MS = 0;
+
+export const TAGLINE_FADE_MS = 0;
 
 /** Hold from first paint (logo already visible), then start exit */
 export const SPLASH_HOLD_MS = 4000;

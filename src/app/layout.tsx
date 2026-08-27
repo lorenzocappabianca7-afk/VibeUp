@@ -11,10 +11,13 @@ import {
   CRITICAL_PAINT_SCRIPT,
 } from "@/lib/critical-paint";
 import {
+  SPLASH_FONT_SRC,
   SPLASH_LOGO_DISPLAY_PX,
+  SPLASH_LOGO_FILE,
   SPLASH_LOGO_HALF_PX,
   SPLASH_LOGO_SRC,
   SPLASH_STAGE_LIFT_VH,
+  SPLASH_TAGLINE,
 } from "@/lib/splash";
 import { getSiteUrl } from "@/lib/site";
 import "./globals.css";
@@ -149,7 +152,21 @@ export default function RootLayout({
         {/* eslint-disable-next-line @next/next/no-css-tags -- boot FOUC shield */}
         <meta name="color-scheme" content="only dark" />
         <meta name="theme-color" content="#000000" />
-        <link rel="stylesheet" href="/boot-paint.css?v=splash-logo-10" />
+        <link
+          rel="preload"
+          href={SPLASH_FONT_SRC}
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href={SPLASH_LOGO_FILE}
+          as="image"
+          type="image/png"
+          fetchPriority="high"
+        />
+        <link rel="stylesheet" href="/boot-paint.css?v=splash-logo-11" />
         {/* Fallback inline CSS if the link is delayed/relocated */}
         <style
           dangerouslySetInnerHTML={{ __html: CRITICAL_PAINT_CSS }}
@@ -163,13 +180,6 @@ export default function RootLayout({
         <meta
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"
-        />
-        <link
-          rel="preload"
-          href={SPLASH_LOGO_SRC}
-          as="image"
-          type="image/png"
-          fetchPriority="high"
         />
         {APPLE_STARTUP_IMAGES.map((image) => (
           <link
@@ -193,7 +203,7 @@ export default function RootLayout({
             add Tailwind classes, and do not replace the logo div with <img>. */}
         <div
           id="vibeup-boot-splash"
-          className="vibeup-splash"
+          className="vibeup-splash vibeup-splash--tagline"
           aria-hidden
           style={{
             position: "fixed",
@@ -230,7 +240,7 @@ export default function RootLayout({
                 maxWidth: `${SPLASH_LOGO_DISPLAY_PX}px`,
                 maxHeight: `${SPLASH_LOGO_DISPLAY_PX}px`,
                 flexShrink: 0,
-                backgroundImage: `url(${SPLASH_LOGO_SRC})`,
+                backgroundImage: `url("${SPLASH_LOGO_SRC}")`,
                 backgroundRepeat: "no-repeat",
                 backgroundPosition: "center",
                 backgroundSize: `${SPLASH_LOGO_DISPLAY_PX}px ${SPLASH_LOGO_DISPLAY_PX}px`,
@@ -242,9 +252,10 @@ export default function RootLayout({
               style={{
                 margin: "1.15rem 0 0",
                 color: "#ffffff",
+                opacity: 1,
               }}
             >
-              Cool people plan cool party.
+              {SPLASH_TAGLINE}
             </div>
           </div>
         </div>

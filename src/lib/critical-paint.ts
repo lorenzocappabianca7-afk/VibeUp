@@ -1,12 +1,11 @@
 import {
   SPLASH_EXIT_MS,
+  SPLASH_FONT_SRC,
   SPLASH_LOGO_DISPLAY_PX,
+  SPLASH_LOGO_FILE,
   SPLASH_LOGO_HALF_PX,
-  SPLASH_LOGO_SRC,
   SPLASH_STAGE_LIFT_VH,
   SPLASH_STORAGE_KEY,
-  TAGLINE_DELAY_MS,
-  TAGLINE_FADE_MS,
 } from "@/lib/splash";
 
 /**
@@ -27,6 +26,13 @@ import {
  *   3) vibeup-paint-demoted + demoteCriticalPaint() (uncover Explore)
  */
 export const CRITICAL_PAINT_CSS = `
+@font-face{
+  font-family:VibeUpSplash;
+  src:url(${SPLASH_FONT_SRC}) format("woff2");
+  font-weight:700;
+  font-style:normal;
+  font-display:optional;
+}
 html,body{
   background:#000000!important;
   background-color:#000000!important;
@@ -106,7 +112,7 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   border:0!important;
   flex-shrink:0!important;
   overflow:hidden!important;
-  background-image:url(${SPLASH_LOGO_SRC})!important;
+  background-image:url(${SPLASH_LOGO_FILE});
   background-repeat:no-repeat!important;
   background-position:center!important;
   background-size:${SPLASH_LOGO_DISPLAY_PX}px ${SPLASH_LOGO_DISPLAY_PX}px!important;
@@ -124,7 +130,7 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   margin:1.15rem 0 0;
   padding:0 0.25rem;
   max-width:calc(100vw - 0.75rem);
-  font-family:var(--font-brand),system-ui,sans-serif;
+  font-family:VibeUpSplash,ui-sans-serif,system-ui,sans-serif;
   font-size:clamp(1.2rem,5.8vw,2.55rem);
   font-weight:700;
   letter-spacing:-0.055em;
@@ -132,20 +138,11 @@ html.vibeup-paint-demoted #vibeup-critical-paint{
   white-space:nowrap;
   color:#fff;
   text-align:center;
-  opacity:0;
-  transform:translateX(-50%);
-  animation:vibeup-splash-tagline-in ${TAGLINE_FADE_MS}ms ease ${TAGLINE_DELAY_MS}ms forwards;
-}
-#vibeup-boot-splash.vibeup-splash--tagline .vibeup-splash__tagline{
   opacity:1;
+  transform:translateX(-50%);
   animation:none;
 }
-@keyframes vibeup-splash-tagline-in{
-  from{opacity:0}
-  to{opacity:1}
-}
 @media (prefers-reduced-motion:reduce){
-  #vibeup-boot-splash .vibeup-splash__tagline{animation:none;opacity:1}
   #vibeup-boot-splash.vibeup-splash--exit .vibeup-splash__stage{transition:none!important}
 }
 #vibeup-app-shell{

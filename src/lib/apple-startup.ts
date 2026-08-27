@@ -6,7 +6,7 @@
  *  do not mention `prefers-color-scheme` and falls back to a zoomed icon.
  *  Landscape duplicates stop a portrait-only set from being rejected.
  */
-const APPLE_STARTUP_VERSION = "v8";
+const APPLE_STARTUP_VERSION = "v9";
 
 const APPLE_STARTUP_DEVICES = [
   { cssW: 440, cssH: 956, dpr: 3 },
