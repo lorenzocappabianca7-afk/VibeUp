@@ -63,7 +63,7 @@ function persistSplashSeen() {
 /**
  * Home-screen handoff without a white frame:
  * 1) Hide splash overlay; critical paint still covers at z-index 9990
- * 2) Wait until app CSS is applied (or timeout)
+ * 2) App CSS is already applied on the timed path (waited before fade)
  * 3) Reveal Explore UNDER the black plate (vibeup-app-ready)
  * 4) After two frames, demote the plate (Explore is already painted)
  */
@@ -115,20 +115,28 @@ export function SplashScreen() {
     }
 
     const boot = document.getElementById("vibeup-boot-splash");
-    const elapsedMs = performance.now();
-    const holdMs = Math.max(0, SPLASH_HOLD_MS - elapsedMs);
+    let cancelled = false;
+    let holdTimer = 0;
+    let exitTimer = 0;
 
-    const exitTimer = window.setTimeout(() => {
+    const holdDone = new Promise<void>((resolve) => {
+      holdTimer = window.setTimeout(resolve, SPLASH_HOLD_MS);
+    });
+
+    /* Fade only after hold AND app CSS — logo stays up instead of a black gap. */
+    void Promise.all([holdDone, whenAppCssReady()]).then(() => {
+      if (cancelled) return;
       boot?.classList.add("vibeup-splash--exit");
-    }, holdMs);
-
-    const doneTimer = window.setTimeout(() => {
-      handoffToApp();
-    }, holdMs + SPLASH_EXIT_MS);
+      exitTimer = window.setTimeout(() => {
+        if (cancelled) return;
+        handoffToApp();
+      }, SPLASH_EXIT_MS);
+    });
 
     return () => {
+      cancelled = true;
+      window.clearTimeout(holdTimer);
       window.clearTimeout(exitTimer);
-      window.clearTimeout(doneTimer);
     };
   }, [skipSplash]);
 

@@ -36,13 +36,8 @@ export const TAGLINE_DELAY_MS = 0;
 
 export const TAGLINE_FADE_MS = 0;
 
-/**
- * Hold from navigation start (logo already visible), then start exit.
- * Boot time counts toward this, so a slow Home Screen open does not add
- * another wait on top of the native/HTML splash already shown.
- * Cut the opening hold — keep SPLASH_EXIT_MS as the finale.
- */
-export const SPLASH_HOLD_MS = 1000;
+/** Logo+tagline hold after SplashScreen mounts — same on bookmark and standalone. */
+export const SPLASH_HOLD_MS = 500;
 
 /** Soft fade of logo/tagline only — the black plate stays solid until cut */
 export const SPLASH_EXIT_MS = 420;
