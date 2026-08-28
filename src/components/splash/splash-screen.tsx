@@ -115,14 +115,16 @@ export function SplashScreen() {
     }
 
     const boot = document.getElementById("vibeup-boot-splash");
+    const elapsedMs = performance.now();
+    const holdMs = Math.max(0, SPLASH_HOLD_MS - elapsedMs);
 
     const exitTimer = window.setTimeout(() => {
       boot?.classList.add("vibeup-splash--exit");
-    }, SPLASH_HOLD_MS);
+    }, holdMs);
 
     const doneTimer = window.setTimeout(() => {
       handoffToApp();
-    }, SPLASH_HOLD_MS + SPLASH_EXIT_MS);
+    }, holdMs + SPLASH_EXIT_MS);
 
     return () => {
       window.clearTimeout(exitTimer);
