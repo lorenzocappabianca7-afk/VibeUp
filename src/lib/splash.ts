@@ -37,7 +37,7 @@ export const TAGLINE_DELAY_MS = 0;
 export const TAGLINE_FADE_MS = 0;
 
 /** Logo+tagline hold after SplashScreen mounts — same on bookmark and standalone. */
-export const SPLASH_HOLD_MS = 500;
+export const SPLASH_HOLD_MS = 2500;
 
 /** Soft fade of logo/tagline only — the black plate stays solid until cut */
 export const SPLASH_EXIT_MS = 420;
