@@ -19,6 +19,7 @@ import {
   type SiaeStatus,
 } from "@/lib/siae";
 import { EventHintLink } from "@/components/events/event-hint-link";
+import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import { formatDate } from "@/lib/utils";
 import type { UserEvent } from "@/types/event";
 import { Check, ChevronDown, FileText, Landmark, User } from "lucide-react";
@@ -66,7 +67,10 @@ export function SiaeDocumentCard({
   const [busy, setBusy] = useState<SiaeChoice | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showAlternatives, setShowAlternatives] = useState(
-    () => event.siaeStatus === "diy" || event.siaeStatus === "venue",
+    () =>
+      !ONLINE_PAYMENTS_ENABLED ||
+      event.siaeStatus === "diy" ||
+      event.siaeStatus === "venue",
   );
   const status: SiaeStatus = event.siaeStatus ?? "unselected";
   const decided = status !== "unselected";
@@ -80,7 +84,7 @@ export function SiaeDocumentCard({
   const vibeUpPrice = SIAE_VIBEUP_TOTAL_EUR;
 
   useEffect(() => {
-    if (status === "diy" || status === "venue") {
+    if (!ONLINE_PAYMENTS_ENABLED || status === "diy" || status === "venue") {
       setShowAlternatives(true);
     }
     if (decided) setExpanded(true);
@@ -128,6 +132,7 @@ export function SiaeDocumentCard({
   );
 
   const chooseVibeUp = useCallback(async () => {
+    if (!ONLINE_PAYMENTS_ENABLED) return;
     setError(null);
     setBusy("vibeup");
     if (isAdminPreviewEventId(event.id)) {
@@ -141,7 +146,9 @@ export function SiaeDocumentCard({
     }
     if (!isCloudBookingId(event.id)) {
       setError(
-        "Per far gestire il documento a VibeUp serve l’evento confermato con caparra online.",
+        ONLINE_PAYMENTS_ENABLED
+          ? "Per far gestire il documento a VibeUp serve l’evento confermato con caparra online."
+          : "La gestione SIAE tramite VibeUp non è disponibile in questa fase.",
       );
       setBusy(null);
       return;
@@ -183,8 +190,11 @@ export function SiaeDocumentCard({
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-white">Documento SIAE</p>
               <p className="mt-0.5 text-[11px] font-semibold leading-snug text-white/65">
-                {savingsCopy}
+                {ONLINE_PAYMENTS_ENABLED
+                  ? savingsCopy
+                  : "Scegli se farlo tu sul portale SIAE o chiederlo al locale."}
               </p>
+              {ONLINE_PAYMENTS_ENABLED ? (
               <p className="mt-1.5 text-[11px] font-bold text-white">
                 VibeUp {formatSiaePrice(vibeUpPrice)}
                 <span className="font-semibold text-white/50">
@@ -192,6 +202,15 @@ export function SiaeDocumentCard({
                   · locale {venueFeeLabel(event.siaeVenueFee).toLowerCase()}
                 </span>
               </p>
+              ) : (
+              <p className="mt-1.5 text-[11px] font-bold text-white">
+                Fai da te {formatSiaePrice(permitPrice)}
+                <span className="font-semibold text-white/50">
+                  {" "}
+                  · oppure al locale
+                </span>
+              </p>
+              )}
             </div>
           </div>
           <button
@@ -217,7 +236,9 @@ export function SiaeDocumentCard({
               Documento SIAE
             </p>
             <p className="event-postit-dark-muted mt-0.5 text-xs font-semibold">
-              {savingsCopy}
+              {ONLINE_PAYMENTS_ENABLED
+                ? savingsCopy
+                : "Nessun pagamento in app: fai da te o chiedilo al locale."}
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
@@ -254,6 +275,8 @@ export function SiaeDocumentCard({
           </div>
         ) : (
           <div className="mt-3">
+            {ONLINE_PAYMENTS_ENABLED ? (
+              <>
             <p className="text-sm font-bold text-white">
               Fallo gestire a VibeUp
             </p>
@@ -293,8 +316,12 @@ export function SiaeDocumentCard({
             >
               Oppure
             </EventHintLink>
+              </>
+            ) : (
+              <p className="text-sm font-bold text-white">Come gestirlo</p>
+            )}
 
-            {showAlternatives ? (
+            {showAlternatives || !ONLINE_PAYMENTS_ENABLED ? (
               <ul className="mt-2 space-y-2">
                 <li>
                   <button
@@ -379,12 +406,14 @@ export function SiaeDocumentCard({
 
         {status !== "managed" && status !== "unselected" && status !== "pending_payment" ? (
           <p className="mt-2 text-[11px] font-semibold text-white/50">
-            Scelta salvata: {SIAE_STATUS_LABELS[status]}. Puoi cambiarla finché
-            non paghi VibeUp.
+            Scelta salvata: {SIAE_STATUS_LABELS[status]}.
+            {ONLINE_PAYMENTS_ENABLED
+              ? " Puoi cambiarla finché non paghi VibeUp."
+              : " Puoi cambiarla."}
           </p>
         ) : null}
 
-        {status === "pending_payment" ? (
+        {ONLINE_PAYMENTS_ENABLED && status === "pending_payment" ? (
           <p className="mt-2 text-[11px] font-semibold text-white/55">
             Pagamento in corso. Completa Stripe o riprova.
           </p>

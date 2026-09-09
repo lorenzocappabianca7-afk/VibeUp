@@ -30,6 +30,7 @@ import {
   getDepositCheckoutAmounts,
   getEventDepositPaymentKey,
 } from "@/lib/booking-money";
+import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import {
   type BookedService,
   type UserEvent,
@@ -731,7 +732,19 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
                     {EVENT_CHECKLIST_INTRO}
                   </p>
                   <ul className="mt-2 space-y-2">
-                    {EVENT_CHECKLIST.map((item) => {
+                    {(ONLINE_PAYMENTS_ENABLED
+                      ? EVENT_CHECKLIST
+                      : EVENT_CHECKLIST.filter((item) => item.id !== "pay-deposit").map(
+                          (item) =>
+                            item.id === "siae"
+                              ? {
+                                  ...item,
+                                  label:
+                                    "Decidi come gestire il documento SIAE: fai da te oppure chiedilo al locale.",
+                                }
+                              : item,
+                        )
+                    ).map((item) => {
                       const checked =
                         event.checklistCheckedIds?.includes(item.id) ?? false;
                       return (
@@ -775,6 +788,7 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
           </div>
         </div>
 
+        {ONLINE_PAYMENTS_ENABLED ? (
         <DepositDeadlineTimer
           event={event}
           isActive={isActive}
@@ -782,16 +796,17 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
           payment={depositPayment}
           onPayDeposit={payDeposit}
         />
+        ) : null}
 
         <SiaeDocumentCard
           event={event}
-          unlocked={depositPaid}
+          unlocked={ONLINE_PAYMENTS_ENABLED ? depositPaid : true}
           onLocalPatch={onSiaePatch}
         />
 
         <section className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
           <h3 className="text-sm font-semibold text-[color:var(--postit-ink)]">
-            Da pagare
+            {ONLINE_PAYMENTS_ENABLED ? "Da pagare" : "Costi della festa"}
           </h3>
           <ul className="mt-2 space-y-2">
             {event.services.map((service) => (
@@ -807,6 +822,7 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
             ))}
           </ul>
           <dl className="mt-3 space-y-2 border-t border-[color:var(--postit-ink)]/12 pt-3 text-sm">
+            {ONLINE_PAYMENTS_ENABLED ? (
             <div className="flex items-center justify-between gap-3">
               <dt className="font-semibold text-[color:var(--postit-ink-muted)]">
                 Caparra location
@@ -815,6 +831,7 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
                 {formatCurrency(depositAmount)}
               </dd>
             </div>
+            ) : null}
             {event.siaeStatus === "managed" ? (
               <div className="flex items-center justify-between gap-3">
                 <dt className="font-semibold text-[color:var(--postit-ink-muted)]">
@@ -905,7 +922,7 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
         {isAdminPreviewEventId(event.id) ? (
           <p className="text-center text-[11px] font-medium text-primary-black/45">
             Pannello di riferimento: così lo vedono gli organizzatori dopo la
-            caparra.
+            {ONLINE_PAYMENTS_ENABLED ? " caparra" : " conferma"}.
           </p>
         ) : confirmDelete ? (
           <div className="flex w-full max-w-sm flex-col items-center gap-2 rounded-xl bg-white/5 px-3 py-2.5 ring-1 ring-white/10">

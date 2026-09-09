@@ -1,4 +1,5 @@
 import { coerceAllergenRestrictions } from "@/lib/menu-allergens";
+import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import { formatCurrency } from "@/lib/utils";
 import type { AvailabilityEventPayload } from "@/types/availability-request";
 import type { BookedService, MenuAllergenRestriction } from "@/types/event";
@@ -65,7 +66,11 @@ export function buildAvailabilityRequestDetailsBlock(
     );
   }
 
-  if (typeof payload.depositAmount === "number" && payload.depositAmount > 0) {
+  if (
+    ONLINE_PAYMENTS_ENABLED &&
+    typeof payload.depositAmount === "number" &&
+    payload.depositAmount > 0
+  ) {
     lines.push(`💳 Caparra stimata: ${formatCurrency(payload.depositAmount)}`);
   }
 

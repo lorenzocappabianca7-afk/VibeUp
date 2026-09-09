@@ -881,7 +881,7 @@ export function ExploreScreen({
             </h2>
             <p className="mt-1 text-sm text-primary-black/60">
               Aggiungi fino a {MAX_COMPARE_LOCATIONS} locali dai risultati,
-              poi confronta prezzo, servizi e caparra quando ne selezioni almeno 2.
+              poi confronta prezzo e servizi quando ne selezioni almeno 2.
             </p>
           </div>
 

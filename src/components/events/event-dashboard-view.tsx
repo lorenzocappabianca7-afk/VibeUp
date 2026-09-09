@@ -12,6 +12,7 @@ import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
 import { useAppState } from "@/context/app-state-context";
 import { calculateLocationDeposit, getDepositCheckoutAmounts, getEventDepositPaymentKey } from "@/lib/booking-money";
+import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import type { BookedService, UserEvent } from "@/types/event";
 import { formatCurrency, formatDate, MODAL_SAFE_BOTTOM_STYLE } from "@/lib/utils";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
@@ -144,9 +145,14 @@ export function EventDashboardView({
       <SiaeDocumentCard
         event={currentEvent}
         layout="page"
-        unlocked={Boolean(
-          paymentStates[getEventDepositPaymentKey(currentEvent.id)]?.paid,
-        )}
+        unlocked={
+          ONLINE_PAYMENTS_ENABLED
+            ? Boolean(
+                paymentStates[getEventDepositPaymentKey(currentEvent.id)]
+                  ?.paid,
+              )
+            : true
+        }
         onLocalPatch={updateEventSiae}
       />
 
@@ -173,7 +179,9 @@ export function EventDashboardView({
             expanded={paymentOpen}
             onClick={() => setPaymentOpen(true)}
           >
-            Dettaglio del pagamento
+            {ONLINE_PAYMENTS_ENABLED
+              ? "Dettaglio del pagamento"
+              : "Costi della festa"}
           </EventHintLink>
           <button
             type="button"
@@ -199,8 +207,16 @@ export function EventDashboardView({
 
       <EventInfoSheet
         open={paymentOpen}
-        title="Dettaglio del pagamento"
-        intro="Costi della festa, caparra e servizi prenotati."
+        title={
+          ONLINE_PAYMENTS_ENABLED
+            ? "Dettaglio del pagamento"
+            : "Costi della festa"
+        }
+        intro={
+          ONLINE_PAYMENTS_ENABLED
+            ? "Costi della festa, caparra e servizi prenotati."
+            : "Costi della festa e servizi prenotati."
+        }
         onClose={() => setPaymentOpen(false)}
       >
         <ul className="space-y-2 text-sm">
@@ -222,6 +238,7 @@ export function EventDashboardView({
               {formatCurrency(totalCost)}
             </dd>
           </div>
+          {ONLINE_PAYMENTS_ENABLED ? (
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="rounded-xl bg-brand-pink/10 px-3 py-2.5">
               <dt className="text-xs font-medium text-primary-black/60">
@@ -244,6 +261,7 @@ export function EventDashboardView({
               </dd>
             </div>
           </div>
+          ) : null}
         </dl>
       </EventInfoSheet>
 

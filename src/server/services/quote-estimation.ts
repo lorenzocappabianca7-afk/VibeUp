@@ -1,5 +1,6 @@
 import { EXTRA_SERVICES } from "@/lib/mock/extra-services";
 import { calculateLocationDeposit, roundCurrency } from "@/lib/booking-money";
+import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import {
   calculateHours,
   getExtraServicePrice,
@@ -191,7 +192,9 @@ export async function generateInstantQuote(
       ? `Applicata durata minima del locale: ${location.technicalDetails.minHours} ore.`
       : null,
     "I prezzi estratti da foto/listini hanno priorita' sui fallback dei servizi esterni.",
-    "Il deposito e' stimato al 30% del costo della location (esclusa fee VibeUp 5% alla caparra).",
+    ONLINE_PAYMENTS_ENABLED
+      ? "Il deposito e' stimato al 30% del costo della location (esclusa fee VibeUp 5% alla caparra)."
+      : null,
   ].filter((assumption): assumption is string => Boolean(assumption));
   const riskFactors = [
     guestCount > location.capacity

@@ -2,6 +2,7 @@
 
 import { useAppState } from "@/context/app-state-context";
 import { useInboxBadge } from "@/context/inbox-badge-context";
+import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import type { ProfileCommunication } from "@/types/profile-communication";
 import {
   createContext,
@@ -134,18 +135,29 @@ export function ProfileCommunicationsProvider({
       }
 
       if (isGuest) {
-        setCommunications([buildDepositPolicyNotice()]);
+        setCommunications(
+          ONLINE_PAYMENTS_ENABLED ? [buildDepositPolicyNotice()] : [],
+        );
         setHydrated(true);
         return;
       }
 
       const stored = readStored(userId);
       if (stored.length === 0) {
-        setCommunications([buildDepositPolicyNotice()]);
-      } else if (!stored.some((item) => item.kind === "deposit_policy")) {
+        setCommunications(
+          ONLINE_PAYMENTS_ENABLED ? [buildDepositPolicyNotice()] : [],
+        );
+      } else if (
+        ONLINE_PAYMENTS_ENABLED &&
+        !stored.some((item) => item.kind === "deposit_policy")
+      ) {
         setCommunications([buildDepositPolicyNotice(), ...stored]);
       } else {
-        setCommunications(stored);
+        setCommunications(
+          ONLINE_PAYMENTS_ENABLED
+            ? stored
+            : stored.filter((item) => item.kind !== "deposit_policy"),
+        );
       }
       setHydrated(true);
     });

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 
 interface HelpSettingsPanelProps {
   onBack: () => void;
@@ -53,7 +54,9 @@ const FAQS = [
 export function HelpSettingsPanel({ onBack }: HelpSettingsPanelProps) {
   const { setTab } = useTabNavigation();
   const [view, setView] = useState<HelpSubview>("home");
-  const [openFaqId, setOpenFaqId] = useState<string | null>(FAQS[0]?.id ?? null);
+  const [openFaqId, setOpenFaqId] = useState<string | null>(
+    ONLINE_PAYMENTS_ENABLED ? (FAQS[0]?.id ?? null) : "faq-2",
+  );
   const [reportDraft, setReportDraft] = useState({
     topic: "Problema tecnico",
     message: "",
@@ -200,7 +203,10 @@ export function HelpSettingsPanel({ onBack }: HelpSettingsPanelProps) {
         description="Risposte rapide alle cose che chiedono di più."
       >
         <div className="divide-y divide-primary-black/8">
-          {FAQS.map((faq) => {
+          {(ONLINE_PAYMENTS_ENABLED
+            ? FAQS
+            : FAQS.filter((faq) => faq.id !== "faq-1")
+          ).map((faq) => {
             const open = openFaqId === faq.id;
             return (
               <div key={faq.id}>

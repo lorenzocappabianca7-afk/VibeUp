@@ -1,7 +1,5 @@
 "use client";
 
-import { AllergenPickerSheet } from "@/components/location/allergen-picker-sheet";
-import { BookingSummary } from "@/components/location/booking-summary";
 import { LocationGallery } from "@/components/location/location-gallery";
 import { LocationInfo, LocationReviewsSection } from "@/components/location/location-info";
 import { SmartLocationDetailsSection } from "@/components/location/smart-location-details-section";
@@ -42,7 +40,7 @@ import {
 import { getLocationPricePresentation } from "@/lib/utils";
 import type { ManagedLocationListing } from "@/types/admin";
 import { isManagedListingLive } from "@/types/admin";
-import type { BookedServiceCategory, MenuAllergenRestriction } from "@/types/event";
+import type { BookedServiceCategory } from "@/types/event";
 import {
   EXPLORE_GUEST_MIN,
   type BookingQuote,
@@ -90,25 +88,6 @@ const EXTRA_SERVICE_CATEGORY: Record<ExtraServiceId, BookedServiceCategory> = {
   bakery: "bakery",
   catering: "catering",
   audio_lights: "audio_lights",
-};
-
-function isVenueMenuServiceId(
-  serviceId: string,
-  services: ReturnType<typeof getInternalLocationServices>,
-) {
-  return services.some(
-    (service) => service.id === serviceId && service.type === "menu",
-  );
-}
-
-const EMPTY_QUOTE: BookingQuote = {
-  hours: 0,
-  locationCost: 0,
-  extrasCost: 0,
-  drinksCost: 0,
-  venueServicesCost: 0,
-  total: 0,
-  depositAmount: 0,
 };
 
 const MAX_QUOTE_GUESTS = 300;
@@ -211,22 +190,25 @@ export function LocationDetailView({
   const [selectedInternalServices, setSelectedInternalServices] = useState<
     string[]
   >([]);
-  const [menuAllergens, setMenuAllergens] = useState<MenuAllergenRestriction[]>(
-    [],
-  );
-  const [allergenSheetOpen, setAllergenSheetOpen] = useState(false);
+  useEffect(() => {
+    const includedIds = internalServices
+      .filter(
+        (service) => service.available && service.pricing.type === "included",
+      )
+      .map((service) => service.id);
+    if (includedIds.length === 0) return;
+    setSelectedInternalServices((current) => {
+      const missing = includedIds.filter((id) => !current.includes(id));
+      return missing.length === 0 ? current : [...current, ...missing];
+    });
+  }, [internalServices]);
   const [selectedExtras, setSelectedExtras] = useState<ExtraServiceId[]>([]);
   const [cakeKg, setCakeKg] = useState(3);
   const [drinkMode, setDrinkMode] = useState<DrinkPackageMode>("none");
   const [drinksPerInvitee, setDrinksPerInvitee] = useState(
     DEFAULT_DRINKS_PER_INVITEE,
   );
-  const [generatedQuote, setGeneratedQuote] = useState<{
-    key: string;
-    quote: BookingQuote;
-  } | null>(null);
   const [quoteSessionReady, setQuoteSessionReady] = useState(false);
-  const [persistQuoteSession, setPersistQuoteSession] = useState(false);
 
   // Restore shared quote inputs for this browser tab only (sessionStorage).
   useEffect(() => {
@@ -249,7 +231,6 @@ export function LocationDetailView({
         setDrinkMode(draft.drinkMode);
         setDrinksPerInvitee(clampDrinksPerInvitee(draft.drinksPerInvitee));
         setCakeKg(Math.max(1, draft.cakeKg));
-        setPersistQuoteSession(true);
       }
       setQuoteSessionReady(true);
     });
@@ -265,7 +246,7 @@ export function LocationDetailView({
   }, [date, preferredDates]);
 
   useEffect(() => {
-    if (!quoteSessionReady || !persistQuoteSession) return;
+    if (!quoteSessionReady) return;
     writeQuoteSessionDraft({
       date,
       startTime,
@@ -277,7 +258,6 @@ export function LocationDetailView({
     });
   }, [
     quoteSessionReady,
-    persistQuoteSession,
     date,
     startTime,
     endTime,
@@ -287,22 +267,26 @@ export function LocationDetailView({
     cakeKg,
   ]);
   const activeRequest = useMemo(() => {
-    const mine = requests.filter(
+    const mine = [...requests]
+      .filter(
+        (item) =>
+          item.locationId === location.id &&
+          item.requesterUserId === currentUser.id,
+      )
+      .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+    const inFlight = mine.find(
       (item) =>
-        item.locationId === location.id &&
-        item.requesterUserId === currentUser.id,
+        item.status === "pending_manager" ||
+        item.status === "pending_admin_review" ||
+        item.status === "pending_user_confirm" ||
+        item.status === "pending_user_review_proposal" ||
+        item.status === "pending_deposit_payment",
     );
-    // Only in-flight requests lock the CTA; confirmed must not block a new booking.
+    if (inFlight) return inFlight;
     return (
       mine.find(
-        (item) =>
-          item.status === "pending_manager" ||
-          item.status === "pending_user_confirm",
-      ) ??
-      mine.find(
         (item) => item.status === "declined" || item.status === "cancelled",
-      ) ??
-      null
+      ) ?? null
     );
   }, [currentUser.id, location.id, requests]);
   const similarLocations = useMemo(() => {
@@ -471,56 +455,27 @@ export function LocationDetailView({
       selectedInternalServices,
     ],
   );
-  const quoteIsCurrent = generatedQuote?.key === quoteKey;
-  const quote = quoteIsCurrent ? generatedQuote.quote : null;
-  const savedQuoteId =
-    quoteIsCurrent && generatedQuote
-      ? buildSavedQuoteId(location.id, generatedQuote.key)
-      : null;
-  const quoteSaved = savedQuoteId ? isQuoteSaved(savedQuoteId) : false;
-  const canGenerateQuote =
+  const isQuoteReady =
     date.length > 0 &&
     hours >= location.technicalDetails.minHours &&
     guestCount > 0 &&
     guestCount <= MAX_QUOTE_GUESTS &&
     draftQuote.total > 0;
-  const isReady =
-    quote !== null &&
-    date.length > 0 &&
-    hours >= location.technicalDetails.minHours &&
-    quote.total > 0;
+  const savedQuoteId = isQuoteReady
+    ? buildSavedQuoteId(location.id, quoteKey)
+    : null;
+  const quoteSaved = savedQuoteId ? isQuoteSaved(savedQuoteId) : false;
 
   function updateGuestCount(value: number) {
     setGuestCount(Math.min(Math.max(value, 1), MAX_QUOTE_GUESTS));
   }
 
-  function generateQuote() {
-    if (!canGenerateQuote) return;
-    requireAccount(
-      () => {
-        setGeneratedQuote({ key: quoteKey, quote: draftQuote });
-        setRequestError(null);
-        setPersistQuoteSession(true);
-        writeQuoteSessionDraft({
-          date,
-          startTime,
-          endTime,
-          guestCount,
-          drinkMode,
-          drinksPerInvitee,
-          cakeKg,
-        });
-      },
-      "Per generare un preventivo crea un account.",
-    );
-  }
-
   function handleSaveQuote() {
-    if (!quote || !quoteIsCurrent || !generatedQuote) return;
+    if (!isQuoteReady) return;
 
     requireAccount(
       () => {
-        const id = buildSavedQuoteId(location.id, generatedQuote.key);
+        const id = buildSavedQuoteId(location.id, quoteKey);
         if (isQuoteSaved(id)) {
           removeSavedQuote(id);
           return;
@@ -541,7 +496,7 @@ export function LocationDetailView({
           zoneLabel: location.zoneLabel,
           imageUrl: location.imageUrl,
           gallery,
-          quote: { ...quote },
+          quote: { ...draftQuote },
           hourlyPrice: location.hourlyPrice,
           date,
           startTime,
@@ -559,52 +514,18 @@ export function LocationDetailView({
     );
   }
 
-  function hasMenuOrCatering(
-    internalIds: string[],
-    extras: ExtraServiceId[],
-  ) {
-    return (
-      internalIds.some((serviceId) =>
-        isVenueMenuServiceId(serviceId, internalServices),
-      ) ||
-      extras.includes("menu") ||
-      extras.includes("catering")
+  function toggleExtra(id: ExtraServiceId) {
+    setSelectedExtras((prev) =>
+      prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id],
     );
   }
 
-  function toggleExtra(id: ExtraServiceId) {
-    setSelectedExtras((prev) => {
-      const next = prev.includes(id)
-        ? prev.filter((e) => e !== id)
-        : [...prev, id];
-      if (!hasMenuOrCatering(selectedInternalServices, next)) {
-        setMenuAllergens([]);
-        setAllergenSheetOpen(false);
-      }
-      return next;
-    });
-  }
-
   function toggleInternalService(id: string) {
-    setSelectedInternalServices((prev) => {
-      const next = prev.includes(id)
-        ? prev.filter((e) => e !== id)
-        : [...prev, id];
-      if (!hasMenuOrCatering(next, selectedExtras)) {
-        setMenuAllergens([]);
-        setAllergenSheetOpen(false);
-      }
-      return next;
-    });
-  }
-
-  function confirmMenuAllergens(allergens: MenuAllergenRestriction[]) {
-    setMenuAllergens(allergens);
-    setAllergenSheetOpen(false);
-  }
-
-  function closeAllergenSheet() {
-    setAllergenSheetOpen(false);
+    const service = internalServices.find((item) => item.id === id);
+    if (service?.pricing.type === "included") return;
+    setSelectedInternalServices((prev) =>
+      prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id],
+    );
   }
 
   function toggleCompare() {
@@ -667,31 +588,35 @@ export function LocationDetailView({
   }
 
   function sendRequestFromBooking() {
-    if (activeRequest?.status === "pending_user_confirm") {
+    if (
+      activeRequest?.status === "pending_user_confirm" ||
+      activeRequest?.status === "pending_user_review_proposal" ||
+      activeRequest?.status === "pending_deposit_payment"
+    ) {
       resumeAvailabilityConfirm(activeRequest.id);
       return;
     }
 
-    if (!quote) return;
+    if (!isQuoteReady) return;
 
     requireAccount(
       () => {
-        const includedVenueParts = selectedInternalServices.flatMap(
-          (serviceId) => {
+        const includedVenueParts = [
+          ...internalServices
+            .filter(
+              (service) =>
+                service.available && service.pricing.type === "included",
+            )
+            .map((service) => service.name),
+          ...selectedInternalServices.flatMap((serviceId) => {
             const service = internalServices.find(
               (item) => item.id === serviceId,
             );
-            if (!service) return [];
-            if (
-              drinkMode !== "none" &&
-              service.type === "bar" &&
-              service.pricing.type !== "included"
-            ) {
-              return [];
-            }
+            if (!service || service.pricing.type === "included") return [];
+            if (drinkMode !== "none" && service.type === "bar") return [];
             return [service.name];
-          },
-        );
+          }),
+        ].filter((name, index, list) => list.indexOf(name) === index);
         const locationNameParts = [
           "Location",
           ...includedVenueParts,
@@ -704,12 +629,6 @@ export function LocationDetailView({
               ]
             : []),
         ];
-        const venueMenuAllergens = selectedInternalServices.some((serviceId) =>
-          isVenueMenuServiceId(serviceId, internalServices),
-        )
-          ? menuAllergens
-          : [];
-
         const services = [
           {
             id: "draft-location",
@@ -717,12 +636,7 @@ export function LocationDetailView({
             name: locationNameParts.join(" · "),
             providerName: location.name,
             status: "confirmed" as const,
-            amountPaid: quote.locationCost,
-            allergens: selectedInternalServices.some((serviceId) =>
-              isVenueMenuServiceId(serviceId, internalServices),
-            )
-              ? venueMenuAllergens
-              : undefined,
+            amountPaid: draftQuote.locationCost,
           },
           ...selectedExtras.flatMap((extraId) => {
             const service = EXTRA_SERVICES.find((item) => item.id === extraId);
@@ -756,8 +670,8 @@ export function LocationDetailView({
           city: location.city,
           guestCount,
           services,
-          totalCost: quote.total,
-          depositAmount: quote.depositAmount,
+          totalCost: draftQuote.total,
+          depositAmount: draftQuote.depositAmount,
         };
 
         void sendAvailabilityRequest({
@@ -870,7 +784,7 @@ export function LocationDetailView({
           <SmartLocationDetailsSection
             guestCount={guestCount}
             maxGuests={MAX_QUOTE_GUESTS}
-            quote={quote}
+            quote={draftQuote}
             estimatedHours={hours}
             minHours={location.technicalDetails.minHours}
             date={date}
@@ -895,15 +809,9 @@ export function LocationDetailView({
             onDrinksPerInviteeChange={(value) =>
               setDrinksPerInvitee(clampDrinksPerInvitee(value))
             }
-            onGenerateQuote={generateQuote}
-            canGenerateQuote={canGenerateQuote}
-            quoteNeedsRefresh={generatedQuote !== null && !quoteIsCurrent}
+            isQuoteReady={isQuoteReady}
             quoteSaved={quoteSaved}
             onSaveQuote={handleSaveQuote}
-          />
-
-          <BookingSummary
-            quote={quote ?? EMPTY_QUOTE}
             hourlyPrice={location.hourlyPrice}
             locationPriceLabel={
               location.priceModel === "person"
@@ -912,9 +820,6 @@ export function LocationDetailView({
                   ? "tariffa a serata"
                   : undefined
             }
-            isReady={isReady}
-            quoteGenerated={quote !== null}
-            quoteNeedsRefresh={generatedQuote !== null && !quoteIsCurrent}
             candidateDatePrices={candidateDatePrices}
             selectedDate={date}
             onSelectDate={setDate}
@@ -930,12 +835,8 @@ export function LocationDetailView({
             onSendRequest={sendRequestFromBooking}
             onAddToCompare={goToCompareLocations}
             isCompareSelected={isCompareSelected}
-            showAllergenPicker={hasMenuOrCatering(
-              selectedInternalServices,
-              selectedExtras,
-            )}
-            allergenCount={menuAllergens.length}
-            onOpenAllergenPicker={() => setAllergenSheetOpen(true)}
+            drinkUnitPrice={location.drinksPricing?.drinkUnitPrice}
+            openBarPerInvitee={location.drinksPricing?.openBarPerInvitee}
           />
         </aside>
       </div>
@@ -957,14 +858,6 @@ export function LocationDetailView({
       />
       <RecommendedDjsCarousel djs={recommendedDjs} />
       <LocationReviewsSection location={location} />
-
-      <AllergenPickerSheet
-        open={allergenSheetOpen}
-        initialSelected={menuAllergens}
-        maxGuests={guestCount}
-        onClose={closeAllergenSheet}
-        onConfirm={confirmMenuAllergens}
-      />
     </div>
   );
 }

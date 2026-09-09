@@ -5,6 +5,7 @@ import { SoftNavLink } from "@/components/navigation/soft-nav-link";
 import { SafeImage } from "@/components/ui/safe-image";
 import { useAppState } from "@/context/app-state-context";
 import { buildLocationHref } from "@/lib/location-href";
+import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { SavedQuote } from "@/types/saved-quote";
 import {
@@ -116,7 +117,8 @@ function SavedQuoteCard({
                 {quote.locationCity ? ` · ${quote.locationCity}` : ""}
               </span>
             </p>
-            <dl className="mt-2 grid grid-cols-3 gap-1.5 text-center">
+            <dl className={ONLINE_PAYMENTS_ENABLED ? "mt-2 grid grid-cols-3 gap-1.5 text-center" : "mt-2 grid grid-cols-2 gap-1.5 text-center"}>
+              {ONLINE_PAYMENTS_ENABLED ? (
               <div className="rounded-lg bg-background px-1.5 py-1.5">
                 <dt className="text-[9px] font-semibold uppercase tracking-wide text-primary-black/45">
                   Caparra
@@ -125,6 +127,7 @@ function SavedQuoteCard({
                   {formatCurrency(quote.quote.depositAmount)}
                 </dd>
               </div>
+              ) : null}
               <div className="rounded-lg bg-background px-1.5 py-1.5">
                 <dt className="text-[9px] font-semibold uppercase tracking-wide text-primary-black/45">
                   Location
@@ -239,6 +242,7 @@ function SavedQuoteCard({
                 {formatCurrency(quote.quote.total)}
               </dd>
             </div>
+            {ONLINE_PAYMENTS_ENABLED ? (
             <div className="flex justify-between gap-3 rounded-xl bg-brand-pink/10 px-3 py-2">
               <dt className="text-sm font-medium text-primary-black">
                 Caparra (30%)
@@ -247,6 +251,7 @@ function SavedQuoteCard({
                 {formatCurrency(quote.quote.depositAmount)}
               </dd>
             </div>
+            ) : null}
           </dl>
 
           <SoftNavLink

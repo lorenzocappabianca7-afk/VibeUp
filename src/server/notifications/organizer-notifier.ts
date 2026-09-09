@@ -6,6 +6,7 @@ import {
 } from "@/lib/availability/confirmation-deadline";
 import { sendTransactionalEmail } from "@/lib/email/mailer";
 import { getSiteUrl } from "@/lib/site";
+import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export interface NotifyResult {
@@ -95,7 +96,7 @@ function buildDecisionBody(request: AvailabilityRequest): {
 
 Buone notizie da VibeUp: il gestore di ${location} ha accettato la tua richiesta per “${title}”.
 
-Hai ${CONFIRMATION_DEADLINE_DAYS} giorni per confermare e pagare la caparra, altrimenti lo slot viene liberato.
+Hai ${CONFIRMATION_DEADLINE_DAYS} giorni per confermare${ONLINE_PAYMENTS_ENABLED ? " e pagare la caparra" : ""}, altrimenti lo slot viene liberato.
 ⏰ Scadenza: ${deadlineLabel} (${countdown})
 
 Apri l’app VibeUp e conferma:
@@ -240,7 +241,7 @@ Ti ricordiamo che la disponibilità per “${request.eventPayload.title}” a ${
 
 ⏰ Scadenza: ${deadlineLabel} (${countdown})
 
-Se non confermi (e non paghi la caparra) entro quella data, lo slot verrà liberato.
+Se non confermi${ONLINE_PAYMENTS_ENABLED ? " (e non paghi la caparra)" : ""} entro quella data, lo slot verrà liberato.
 
 Apri VibeUp e completa la conferma:
 ${PUBLIC_SITE}

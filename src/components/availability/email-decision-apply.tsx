@@ -5,6 +5,7 @@ import {
   ManagerResponseSuccessCard,
 } from "@/components/availability/manager-response-result";
 import type { AvailabilityRequest } from "@/types/availability-request";
+import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import { useEffect, useState } from "react";
 
 type Decision = "accept" | "decline";
@@ -15,7 +16,9 @@ const lastError = new Map<string, string>();
 
 function successCopy(action: Decision) {
   return action === "accept"
-    ? "Hai accettato la richiesta. Avviseremo il cliente: ha qualche giorno per confermare e pagare la caparra."
+    ? ONLINE_PAYMENTS_ENABLED
+      ? "Hai accettato la richiesta. Avviseremo il cliente: ha qualche giorno per confermare e pagare la caparra."
+      : "Hai accettato la richiesta. Avviseremo il cliente: ha qualche giorno per confermare l’evento."
     : "Hai rifiutato la richiesta. Il cliente verrà avvisato.";
 }
 

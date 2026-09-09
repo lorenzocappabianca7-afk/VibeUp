@@ -4,6 +4,7 @@ import {
   formatServiceRequestLine,
 } from "@/lib/availability-request-details";
 import { SIAE_STATUS_LABELS, type SiaeChoice, type SiaeStatus } from "@/lib/siae";
+import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { AvailabilityRequest } from "@/types/availability-request";
 import type { BookedService } from "@/types/event";
@@ -250,7 +251,7 @@ export function buildEventCheckup(request: AvailabilityRequest): EventCheckup {
     });
   }
 
-  if (depositIsDue(request)) {
+  if (ONLINE_PAYMENTS_ENABLED && depositIsDue(request)) {
     if (isDepositPaid(request)) {
       received.push({
         id: "deposit",
@@ -291,7 +292,9 @@ export function buildEventCheckup(request: AvailabilityRequest): EventCheckup {
       missing.push({
         id: "siae",
         label: "Documento SIAE",
-        detail: "Dopo la caparra l’organizzatore deve ancora scegliere come gestirlo.",
+        detail: ONLINE_PAYMENTS_ENABLED
+          ? "Dopo la caparra l’organizzatore deve ancora scegliere come gestirlo."
+          : "L’organizzatore deve ancora scegliere come gestirlo.",
       });
     }
   }
@@ -343,14 +346,18 @@ export function buildDemoEventCheckup(input: {
       label: "Numero invitati",
       detail: `${input.guestCount} ospiti`,
     },
-    { id: "deposit", label: "Caparra", detail: "Pagata" },
+    ...(ONLINE_PAYMENTS_ENABLED
+      ? [{ id: "deposit", label: "Caparra", detail: "Pagata" }]
+      : []),
     {
       id: "siae",
       label: "Documento SIAE",
       detail:
         variant === "complete"
           ? "Scelta registrata"
-          : "Dopo la caparra l’organizzatore deve ancora scegliere come gestirlo.",
+          : ONLINE_PAYMENTS_ENABLED
+            ? "Dopo la caparra l’organizzatore deve ancora scegliere come gestirlo."
+            : "L’organizzatore deve ancora scegliere come gestirlo.",
     },
   ];
   if (input.notes?.trim()) {

@@ -3,6 +3,7 @@ import { buildAvailabilityRequestDetailsBlock } from "@/lib/availability-request
 import { buildManagerResponseUrl } from "@/lib/availability/manager-response-links";
 import { sendTransactionalEmail } from "@/lib/email/mailer";
 import { getSiteUrl } from "@/lib/site";
+import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export type ManagerNotifyChannel = "whatsapp" | "email";
@@ -46,7 +47,7 @@ Rispondi con uno di questi link unici (valgono pochi giorni, un solo click):
 
 Il primo click su Accetta o Rifiuta aggiorna subito la richiesta. Un secondo click (o un inoltro) non potrà più cambiarla.
 
-I contatti del cliente restano privati finché non viene pagata la caparra.
+I contatti del cliente restano privati {{privacyLine}}.
 
 Grazie,
 Il team VibeUp`;
@@ -102,6 +103,9 @@ function requestCopyVars(request: AvailabilityRequest) {
     acceptLink: buildManagerResponseUrl(token, "accept", PUBLIC_SITE),
     declineLink: buildManagerResponseUrl(token, "decline", PUBLIC_SITE),
     proposeLink: buildManagerResponseUrl(token, "propose", PUBLIC_SITE),
+    privacyLine: ONLINE_PAYMENTS_ENABLED
+      ? "finché non viene pagata la caparra"
+      : "fino alla conferma dell’evento",
   };
 }
 
@@ -195,7 +199,7 @@ export function buildAvailabilityRequestEmailHtml(
                 </table>
                 <p style="margin:0;font-size:12px;line-height:1.5;color:rgba(15,15,17,0.45);">
                   “Proponi alternativa” ti porta su VibeUp per inserire date e/o un prezzo diverso.
-                  I contatti del cliente restano privati fino al pagamento della caparra.
+                  ${ONLINE_PAYMENTS_ENABLED ? "I contatti del cliente restano privati fino al pagamento della caparra." : "I contatti del cliente restano privati fino alla conferma dell’evento."}
                 </p>
               </td>
             </tr>

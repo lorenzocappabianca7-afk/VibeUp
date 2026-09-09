@@ -10,6 +10,7 @@ import {
 } from "@/lib/availability/confirmation-deadline";
 import { notifyAvailabilityUpdate } from "@/lib/browser-notifications";
 import { normalizeUserSettings } from "@/types/user-settings";
+import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { CalendarCheck2, MapPin, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -31,6 +32,8 @@ export function ConfirmAvailabilityModal() {
 
   const isProposal =
     request?.status === "pending_user_review_proposal";
+  const isDepositResume =
+    request?.status === "pending_deposit_payment";
 
   const proposedSlots = useMemo(() => {
     if (!request) return [];
@@ -77,7 +80,9 @@ export function ConfirmAvailabilityModal() {
         : "Richiesta accettata — conferma ora",
       body: `Hai tempo fino a ${
         formatConfirmationDeadlineIt(request.confirmationDeadline) ?? "la scadenza"
-      } (${countdown}) per confermare e pagare la caparra.`,
+      } (${countdown}) per confermare${
+        ONLINE_PAYMENTS_ENABLED ? " e pagare la caparra" : ""
+      }.`,
       tag: `vibeup-confirm-${request.id}`,
       onlyWhenHidden: false,
     });
@@ -205,7 +210,10 @@ export function ConfirmAvailabilityModal() {
           </p>
           {deadlineLabel ? (
             <p className="mt-3 rounded-2xl bg-brand-teal/10 px-3 py-2 text-center text-xs font-semibold text-primary-black">
-              Conferma e paga la caparra online entro {deadlineLabel}
+              {ONLINE_PAYMENTS_ENABLED
+                ? "Conferma e paga la caparra online"
+                : "Conferma"}{" "}
+              entro {deadlineLabel}
               {countdownLabel ? ` · ${countdownLabel}` : ""}. Dopo la scadenza lo
               slot viene liberato.
             </p>
@@ -342,7 +350,13 @@ export function ConfirmAvailabilityModal() {
               onClick={handleConfirmProposal}
               className="flex-1 rounded-2xl bg-brand-teal px-4 py-3 text-sm font-bold text-primary-black disabled:opacity-60"
             >
-              {busy ? "Reindirizzo al pagamento…" : "Paga caparra e conferma"}
+              {busy
+                ? ONLINE_PAYMENTS_ENABLED
+                  ? "Reindirizzo al pagamento…"
+                  : "Conferma in corso…"
+                : ONLINE_PAYMENTS_ENABLED
+                  ? "Paga caparra e conferma"
+                  : "Scegli la data e conferma"}
             </button>
           </div>
           {error ? (
@@ -383,7 +397,9 @@ export function ConfirmAvailabilityModal() {
         >
           {isServiceRequest
             ? "Conferma servizio"
-            : "Conferma creazione evento"}
+            : isDepositResume && ONLINE_PAYMENTS_ENABLED
+              ? "Completa il pagamento della caparra"
+              : "Conferma creazione evento"}
         </h2>
         <p className="mt-2 text-center text-sm text-primary-black/60">
           {isServiceRequest ? (
@@ -392,6 +408,14 @@ export function ConfirmAvailabilityModal() {
                 {request.locationName}
               </span>{" "}
               ha accettato. Confermi di aggiungere il servizio all&apos;evento?
+            </>
+          ) : isDepositResume && ONLINE_PAYMENTS_ENABLED ? (
+            <>
+              Il pagamento della caparra per{" "}
+              <span className="font-semibold text-primary-black">
+                {request.locationName}
+              </span>{" "}
+              non è ancora completato. Continua per confermare l&apos;evento.
             </>
           ) : (
             <>
@@ -405,11 +429,14 @@ export function ConfirmAvailabilityModal() {
           )}
         </p>
         {deadlineLabel ? (
-          <p className="mt-3 rounded-2xl bg-brand-teal/10 px-3 py-2 text-center text-xs font-semibold text-primary-black">
-            Conferma e paga la caparra online entro {deadlineLabel}
-            {countdownLabel ? ` · ${countdownLabel}` : ""}. Dopo la scadenza lo
-            slot viene liberato.
-          </p>
+            <p className="mt-3 rounded-2xl bg-brand-teal/10 px-3 py-2 text-center text-xs font-semibold text-primary-black">
+              {ONLINE_PAYMENTS_ENABLED
+                ? "Conferma e paga la caparra online"
+                : "Conferma"}{" "}
+              entro {deadlineLabel}
+              {countdownLabel ? ` · ${countdownLabel}` : ""}. Dopo la scadenza lo
+              slot viene liberato.
+            </p>
         ) : null}
 
         <div className="mt-4 space-y-2 rounded-2xl border border-primary-black/8 bg-primary-black/[0.02] p-3 text-sm">
@@ -426,7 +453,7 @@ export function ConfirmAvailabilityModal() {
           </p>
         </div>
 
-        {!isServiceRequest ? (
+        {!isServiceRequest && ONLINE_PAYMENTS_ENABLED ? (
           <p className="mt-3 text-center text-xs text-primary-black/55">
             Verrai reindirizzato a Stripe per pagare la caparra (30% + fee). Alla
             conferma del pagamento l&apos;evento viene creato automaticamente.
@@ -448,10 +475,14 @@ export function ConfirmAvailabilityModal() {
             className="flex-1 rounded-2xl bg-brand-teal px-4 py-3 text-sm font-bold text-primary-black disabled:opacity-60"
           >
             {busy
-              ? "Reindirizzo al pagamento…"
+              ? ONLINE_PAYMENTS_ENABLED
+                ? "Reindirizzo al pagamento…"
+                : "Conferma in corso…"
               : isServiceRequest
                 ? "Conferma servizio"
-                : "Paga caparra e crea evento"}
+                : ONLINE_PAYMENTS_ENABLED
+                  ? "Paga caparra e crea evento"
+                  : "Conferma e crea evento"}
           </button>
         </div>
         {error ? (

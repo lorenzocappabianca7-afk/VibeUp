@@ -3,6 +3,7 @@ import {
   formatAllergenRestrictionLabel,
   formatServiceRequestLine,
 } from "@/lib/availability-request-details";
+import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import { formatCurrency } from "@/lib/utils";
 import type { AvailabilityEventPayload } from "@/types/availability-request";
 
@@ -39,7 +40,9 @@ export function AvailabilityRequestDetails({
           : "Nessun allergene segnalato"}
       </p>
 
-      {typeof payload.depositAmount === "number" && payload.depositAmount > 0 ? (
+      {ONLINE_PAYMENTS_ENABLED &&
+      typeof payload.depositAmount === "number" &&
+      payload.depositAmount > 0 ? (
         <p className="text-primary-black/70">
           Caparra stimata {formatCurrency(payload.depositAmount)}
         </p>

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import { rateLimit } from "@/server/http/rate-limit";
 import { startDepositCheckout } from "@/server/payments/deposit-checkout";
 
@@ -32,6 +33,13 @@ export async function POST(
     return NextResponse.json(
       { error: "Supabase non configurato.", configured: false },
       { status: 503 },
+    );
+  }
+
+  if (!ONLINE_PAYMENTS_ENABLED) {
+    return NextResponse.json(
+      { error: "I pagamenti in app sono disattivati." },
+      { status: 400 },
     );
   }
 
