@@ -854,7 +854,7 @@ export function ProfileScreen({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={account.avatarUrl}
-                      alt=""
+                      alt={`Foto profilo di ${account.name}`}
                       className="h-full w-full object-cover"
                     />
                   ) : (

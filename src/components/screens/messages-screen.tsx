@@ -82,7 +82,7 @@ function PeerAvatar({
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={avatarUrl}
-        alt=""
+        alt={`Avatar di ${title}`}
         className={cn(
           "shrink-0 rounded-full object-cover ring-1 ring-white/10",
           sizeClass,

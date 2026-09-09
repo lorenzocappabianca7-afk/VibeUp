@@ -299,7 +299,7 @@ export function AvatarCropModal({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={imageSrc}
-                  alt=""
+                  alt="Anteprima ritaglio foto profilo"
                   draggable={false}
                   className="absolute max-w-none select-none"
                   style={{

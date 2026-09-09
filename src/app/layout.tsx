@@ -90,16 +90,17 @@ export const metadata: Metadata = {
     type: "website",
     locale: "it_IT",
     siteName: "VibeUp",
+    url: "/",
     title: "VibeUp — Organizza feste senza stress",
     description:
-      "Trova location, servizi e organizza la tua festa con VibeUp.",
+      "VibeUp (Vibe Up) è la web app per organizzare feste: trova location, DJ, fotografi e servizi per il tuo evento in un unico posto.",
     images: [{ url: "/vibeup-mark.png", width: 512, height: 512, alt: "VibeUp" }],
   },
   twitter: {
     card: "summary",
     title: "VibeUp — Organizza feste senza stress",
     description:
-      "Trova location, servizi e organizza la tua festa con VibeUp.",
+      "VibeUp (Vibe Up) è la web app per organizzare feste: trova location, DJ, fotografi e servizi per il tuo evento in un unico posto.",
     images: ["/vibeup-mark.png"],
   },
   robots: {

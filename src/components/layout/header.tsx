@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 const navLinks = [
-  { href: "#funzionalita", label: "Funzionalità" },
-  { href: "#come-funziona", label: "Come funziona" },
+  { href: "/", label: "Funzionalità" },
+  { href: "/", label: "Come funziona" },
 ];
 
 export function Header() {
@@ -34,7 +34,7 @@ export function Header() {
         </nav>
 
         <Link
-          href="#inizia"
+          href="/"
           className="rounded-full bg-brand-pink px-5 py-2 text-sm font-medium text-primary-black transition-colors hover:bg-brand-pink/90"
         >
           Inizia gratis

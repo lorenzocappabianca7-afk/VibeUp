@@ -1,4 +1,12 @@
+import { pageMetadata, STATIC_PAGE_METADATA } from "@/lib/seo";
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = pageMetadata({
+  ...STATIC_PAGE_METADATA.locationMissing,
+  path: "/location",
+  canonical: false,
+});
 
 export default function LocationNotFound() {
   return (

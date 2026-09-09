@@ -251,7 +251,7 @@ function ContactAvatar({
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={contact.avatarUrl}
-        alt=""
+        alt={`Avatar di ${contact.name}`}
         title={contact.name}
         draggable={false}
         loading="lazy"

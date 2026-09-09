@@ -100,7 +100,7 @@ export function PrivacySettingsPanel({ onBack }: PrivacySettingsPanelProps) {
 
       <SettingsInfoCard>
         Puoi richiedere l&apos;esportazione o la cancellazione dei tuoi dati
-        scrivendo a privacy@vibeup.app. Le modifiche qui restano salvate sul
+        scrivendo a info@vibeupevents.com. Le modifiche qui restano salvate sul
         tuo account.
       </SettingsInfoCard>
     </SettingsShell>

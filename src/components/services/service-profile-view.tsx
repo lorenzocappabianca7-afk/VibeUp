@@ -24,6 +24,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface ServiceProfileViewProps {
   serviceId: string;
+  initialService: ServiceProvider;
   initialContext?: {
     eventId?: string;
     dateFrom?: string;
@@ -150,6 +151,7 @@ function managedListingToServiceProvider(
 
 export function ServiceProfileView({
   serviceId,
+  initialService,
   initialContext,
 }: ServiceProfileViewProps) {
   const { events, getEvent, isStorageHydrated, managedListings } = useAppState();
@@ -164,10 +166,12 @@ export function ServiceProfileView({
       (listing) => isPublishedManagedService(listing) && listing.id === serviceId,
     );
 
-    return managedService && isPublishedManagedService(managedService)
-      ? managedListingToServiceProvider(managedService)
-      : undefined;
-  }, [managedListings, serviceId]);
+    if (managedService && isPublishedManagedService(managedService)) {
+      return managedListingToServiceProvider(managedService);
+    }
+
+    return initialService;
+  }, [initialService, managedListings, serviceId]);
   const event = initialContext?.eventId
     ? getEvent(initialContext.eventId)
     : undefined;

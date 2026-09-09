@@ -85,9 +85,9 @@ export function HelpSettingsPanel({ onBack }: HelpSettingsPanelProps) {
           <SettingsNavRow
             icon={Mail}
             label="Email"
-            description="support@vibeup.app"
+            description="info@vibeupevents.com"
             onClick={() => {
-              window.location.href = "mailto:support@vibeup.app";
+              window.location.href = "mailto:info@vibeupevents.com";
             }}
           />
           <SettingsNavRow

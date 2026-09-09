@@ -97,7 +97,7 @@ function SavedQuoteCard({
               >
                 <SafeImage
                   src={src}
-                  alt=""
+                  alt={`Foto di ${quote.locationName}`}
                   fill
                   className="object-cover"
                   sizes="56px"
@@ -173,7 +173,7 @@ function SavedQuoteCard({
                 >
                   <SafeImage
                     src={src}
-                    alt=""
+                    alt={`Foto di ${quote.locationName}`}
                     fill
                     className="object-cover"
                     sizes="128px"

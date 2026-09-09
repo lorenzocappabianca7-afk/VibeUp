@@ -6,10 +6,12 @@ import { getLocationById } from "@/lib/location";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import type { ManagedLocationListing } from "@/types/admin";
 import { isManagedListingLive } from "@/types/admin";
+import type { Location } from "@/types/location";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
 
 interface LocationPageClientProps {
   id: string;
+  initialLocation: Location;
   initialQuoteContext?: {
     guestCount?: string;
     partyType?: string;
@@ -21,6 +23,7 @@ interface LocationPageClientProps {
 
 export function LocationPageClient({
   id,
+  initialLocation,
   initialQuoteContext,
 }: LocationPageClientProps) {
   const { managedListings } = useAppState();
@@ -30,7 +33,8 @@ export function LocationPageClient({
       isManagedListingLive(listing) &&
       listing.location.id === id,
   );
-  const location = managedLocation?.location ?? getLocationById(id);
+  const location =
+    managedLocation?.location ?? initialLocation ?? getLocationById(id);
 
   if (!location) {
     return (

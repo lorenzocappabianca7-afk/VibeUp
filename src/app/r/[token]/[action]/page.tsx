@@ -6,6 +6,7 @@ import {
   InvalidLinkCard,
   ManagerResponseShell,
 } from "@/components/availability/manager-response-result";
+import { pageMetadata, STATIC_PAGE_METADATA } from "@/lib/seo";
 import { getAvailabilityRequestByToken } from "@/server/repositories/bookings";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -26,17 +27,17 @@ interface PageProps {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { action } = await params;
-  const title =
+  const { token, action } = await params;
+  const copy =
     action === "accept"
-      ? "Accetta richiesta — VibeUp"
+      ? STATIC_PAGE_METADATA.managerAccept
       : action === "decline"
-        ? "Rifiuta richiesta — VibeUp"
-        : "Proponi alternativa — VibeUp";
-  return {
-    title,
-    robots: { index: false, follow: false },
-  };
+        ? STATIC_PAGE_METADATA.managerDecline
+        : STATIC_PAGE_METADATA.managerPropose;
+  return pageMetadata({
+    ...copy,
+    path: `/r/${token}/${action}`,
+  });
 }
 
 export default async function ManagerEmailActionPage({ params }: PageProps) {

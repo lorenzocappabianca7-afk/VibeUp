@@ -52,7 +52,7 @@ export function LocationGallery({ images, name }: LocationGalleryProps) {
             >
               <SafeImage
                 src={image}
-                alt=""
+                alt={`${name} — miniatura ${index + 1}`}
                 fill
                 draggable={false}
                 className="pointer-events-none select-none object-cover"

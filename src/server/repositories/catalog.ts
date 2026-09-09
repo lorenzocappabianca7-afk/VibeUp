@@ -3,9 +3,15 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { syncListingMediaRows } from "@/lib/storage/listing-media";
 import type { ManagedListingStatus } from "@/types/admin";
 import type {
+  ServiceCategory,
+  ServiceProvider,
+} from "@/lib/mock/service-providers";
+import type {
+  DecorationFulfillment,
   ExploreCategory,
   GeoArea,
   Location,
+  MusicType,
   PartyType,
 } from "@/types/location";
 
@@ -164,6 +170,80 @@ export function catalogRowToLocation(row: CatalogListingRow): Location | null {
   };
 }
 
+function asServiceCategory(value: string): ServiceCategory {
+  if (
+    value === "dj" ||
+    value === "fotografo" ||
+    value === "decorazioni" ||
+    value === "altri"
+  ) {
+    return value;
+  }
+  return "altri";
+}
+
+function asMusicTypes(value: unknown): MusicType[] | undefined {
+  const allowed: MusicType[] = [
+    "commerciale",
+    "house",
+    "hip_hop",
+    "latino",
+    "anni_90",
+    "elettronica",
+  ];
+  if (!Array.isArray(value)) return undefined;
+  const next = value.filter((item): item is MusicType =>
+    allowed.includes(item as MusicType),
+  );
+  return next.length > 0 ? next : undefined;
+}
+
+function asFulfillments(value: unknown): DecorationFulfillment[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const next = value.filter(
+    (item): item is DecorationFulfillment =>
+      item === "delivery" || item === "pickup",
+  );
+  return next.length > 0 ? next : undefined;
+}
+
+export function catalogRowToService(
+  row: CatalogListingRow,
+): ServiceProvider | null {
+  if (row.kind !== "service") return null;
+
+  const data = row.data ?? {};
+  const cover =
+    row.cover_image_url ||
+    asString(data.imageUrl, "") ||
+    asStringArray(data.galleryImageUrls)[0] ||
+    "";
+  const gallery = asStringArray(data.galleryImageUrls);
+  if (cover && !gallery.includes(cover)) gallery.unshift(cover);
+
+  return {
+    id: row.id,
+    category: asServiceCategory(row.category),
+    name: row.name,
+    description: row.description || asString(data.description, ""),
+    providerZone:
+      row.provider_zone || row.city || asString(data.providerZone, "Piemonte"),
+    price: asNumber(data.price, 0),
+    priceSuffix: asString(data.priceSuffix, ""),
+    imageUrl: cover || undefined,
+    galleryImageUrls: gallery.length > 0 ? gallery : undefined,
+    musicTypes: asMusicTypes(data.musicTypes),
+    partyTypes: Array.isArray(data.partyTypes)
+      ? asPartyTypes(data.partyTypes)
+      : undefined,
+    supportsInPerson:
+      typeof data.supportsInPerson === "boolean"
+        ? data.supportsInPerson
+        : undefined,
+    fulfillments: asFulfillments(data.fulfillments),
+  };
+}
+
 export async function listPublishedCatalogLocations(): Promise<Location[]> {
   if (!isSupabaseConfigured()) return [];
 
@@ -187,6 +267,57 @@ export async function listPublishedCatalogLocations(): Promise<Location[]> {
       .filter((location): location is Location => Boolean(location));
   } catch (error) {
     console.error("[catalog] listPublishedCatalogLocations", error);
+    return [];
+  }
+}
+
+export async function getPublishedCatalogListingById(
+  id: string,
+): Promise<CatalogListingRow | null> {
+  if (!id || !isSupabaseConfigured()) return null;
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from("listings")
+      .select("*")
+      .eq("id", id)
+      .eq("status", "published")
+      .maybeSingle();
+
+    if (error) {
+      console.error("[catalog] getPublishedCatalogListingById", error.message);
+      return null;
+    }
+
+    return (data as CatalogListingRow | null) ?? null;
+  } catch (error) {
+    console.error("[catalog] getPublishedCatalogListingById", error);
+    return null;
+  }
+}
+
+export async function listPublishedCatalogListingRefs(): Promise<
+  Pick<CatalogListingRow, "id" | "kind">[]
+> {
+  if (!isSupabaseConfigured()) return [];
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from("listings")
+      .select("id, kind")
+      .eq("status", "published")
+      .order("updated_at", { ascending: false });
+
+    if (error) {
+      console.error("[catalog] listPublishedCatalogListingRefs", error.message);
+      return [];
+    }
+
+    return (data as Pick<CatalogListingRow, "id" | "kind">[]) ?? [];
+  } catch (error) {
+    console.error("[catalog] listPublishedCatalogListingRefs", error);
     return [];
   }
 }
