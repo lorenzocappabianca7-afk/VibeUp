@@ -2,7 +2,7 @@
 
 import { useAppState } from "@/context/app-state-context";
 import { isBodyScrollLocked } from "@/lib/body-scroll-lock";
-import { assignHomeHref } from "@/lib/home-navigation";
+import { pushHomeHref, replaceHomeHref } from "@/lib/home-navigation";
 import { recoverInteractiveSession } from "@/lib/session-health";
 import {
   ALL_TAB_IDS,
@@ -11,7 +11,7 @@ import {
   isBusinessTabId,
   type TabId,
 } from "@/types/navigation";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   createContext,
   startTransition,
@@ -110,17 +110,8 @@ function tabParamFromHref(href: string): string | null {
 
 /**
  * Sync URL search `tab` into state without a Next.js RSC navigation.
- * `router.replace("/?tab=…")` on an already-mounted home shell can fail on
- * flaky networks and Safari then shows “This page couldn’t be loaded”.
+ * `window.history.replaceState` is patched and can remount `/` (boot splash).
  */
-function replaceHomeTabUrl(href: string) {
-  if (typeof window === "undefined") return;
-  const current = `${window.location.pathname}${window.location.search}`;
-  if (current === href || (href === "/" && window.location.pathname === "/" && !window.location.search)) {
-    return;
-  }
-  window.history.replaceState(window.history.state, "", href);
-}
 
 /** Isolated so useSearchParams suspension never blanks the whole app shell. */
 function TabParamSync({ onTab }: { onTab: (tab: string | null) => void }) {
@@ -150,6 +141,7 @@ function TabParamSync({ onTab }: { onTab: (tab: string | null) => void }) {
 
 export function TabNavigationProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname() || "/";
+  const router = useRouter();
   const { isBusinessUser } = useAppState();
   const [tabParam, setTabParam] = useState<string | null>(null);
 
@@ -180,6 +172,14 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
   const activeTab = allowed.has(candidate) ? candidate : fallback;
   const onHome = pathname === "/" || pathname === "";
 
+  useEffect(() => {
+    router.prefetch("/");
+    router.prefetch("/?tab=explore");
+    router.prefetch("/?tab=events");
+    router.prefetch("/?tab=profile");
+    router.prefetch("/?tab=messages");
+  }, [router]);
+
   // Keep the address bar aligned if mode switch invalidates the current tab.
   useEffect(() => {
     if (!onHome) return;
@@ -187,7 +187,7 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
 
     const href = buildTabHref(activeTab, isBusinessUser);
     const nextParam = tabParamFromHref(href);
-    replaceHomeTabUrl(href);
+    replaceHomeHref(href);
     startTransition(() => {
       setTabParam(nextParam);
     });
@@ -228,20 +228,18 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
       setOptimisticTab(tab);
 
       if (onHome) {
-        // Same document — update query locally. Avoid router.replace RSC fetch
-        // (flaky mobile networks → Safari “page couldn’t be loaded”).
+        // Same document — native history only. Next's patched replaceState
+        // remounts `/` and replays the boot splash.
         setTabParam(tabParamFromHref(href));
-        replaceHomeTabUrl(href);
+        replaceHomeHref(href);
         return;
       }
 
-      // From /location|/event|/service etc.: soft router.push also RSC-fetches
-      // and is the usual path to Safari’s “This page couldn’t load” after a
-      // long session. Full assign is reliable; splash is session-skipped.
       skipNextScrollRestoreRef.current = true;
-      assignHomeHref(href);
+      setTabParam(tabParamFromHref(href));
+      pushHomeHref(router, href);
     },
-    [activeTab, isBusinessUser, onHome],
+    [activeTab, isBusinessUser, onHome, router],
   );
 
   const value = useMemo(

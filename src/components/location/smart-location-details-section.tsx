@@ -14,7 +14,6 @@ import {
   type DrinkPackageMode,
 } from "@/lib/drinks-quote";
 import {
-  getExtraServicePrice,
   isEndTimeAfterStart,
   suggestEndTimeAfterStart,
 } from "@/lib/location";
@@ -23,20 +22,14 @@ import { Button } from "@/components/ui/button";
 import { VibeUpCalendar } from "@/components/ui/vibeup-calendar";
 import { getDepositCheckoutAmounts } from "@/lib/booking-money";
 import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
-import { EXTRA_SERVICES } from "@/lib/mock/extra-services";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { MAX_PARTY_DATES, normalizePartyDates } from "@/types/party-criteria";
 import type { AvailabilityRequestStatus } from "@/types/availability-request";
-import type {
-  BookingQuote,
-  ExtraService,
-  ExtraServiceId,
-} from "@/types/location";
+import type { BookingQuote } from "@/types/location";
 import {
   Bookmark,
   Calendar,
   Camera,
-  Cake,
   Check,
   ChefHat,
   ChevronDown,
@@ -45,11 +38,9 @@ import {
   GitCompareArrows,
   GlassWater,
   Lightbulb,
-  MapPin,
   Minus,
   Music,
   Plus,
-  ShieldCheck,
   Sparkles,
   Users,
   UtensilsCrossed,
@@ -64,16 +55,6 @@ import { HoldStepButton } from "@/components/ui/hold-step-button";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import type { LucideIcon } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
-
-const SERVICE_ICONS: Record<ExtraServiceId, LucideIcon> = {
-  menu: UtensilsCrossed,
-  dj: Music,
-  photographer: Camera,
-  decorations: Sparkles,
-  bakery: Cake,
-  catering: UtensilsCrossed,
-  audio_lights: Lightbulb,
-};
 
 const INTERNAL_SERVICE_ICONS: Record<InternalLocationServiceType, LucideIcon> = {
   menu: UtensilsCrossed,
@@ -127,8 +108,6 @@ interface SmartLocationDetailsSectionProps {
   endTime: string;
   internalServices: InternalLocationService[];
   selectedInternalServices: string[];
-  selectedExtras: ExtraServiceId[];
-  cakeKg: number;
   drinkMode: DrinkPackageMode;
   drinksPerInvitee: number;
   onDateChange: (date: string) => void;
@@ -137,8 +116,6 @@ interface SmartLocationDetailsSectionProps {
   onEndTimeChange: (time: string) => void;
   onGuestCountChange: (guestCount: number) => void;
   onToggleInternalService: (id: string) => void;
-  onToggleExtra: (id: ExtraServiceId) => void;
-  onCakeKgChange: (kg: number) => void;
   onDrinkModeChange: (mode: DrinkPackageMode) => void;
   onDrinksPerInviteeChange: (drinks: number) => void;
   isQuoteReady: boolean;
@@ -171,16 +148,6 @@ function formatInternalServicePrice(
     return `${formatCurrency(service.pricing.pricePerPerson)}/partecipante`;
   }
   return formatCurrency(getInternalLocationServicePrice(service, guestCount));
-}
-
-function formatExternalServicePrice(service: ExtraService): string {
-  if (service.pricing.type === "fixed") {
-    return formatCurrency(service.pricing.price);
-  }
-  if (service.pricing.type === "per_kg") {
-    return `${formatCurrency(service.pricing.pricePerKg)}/kg`;
-  }
-  return `da ${formatCurrency(service.pricing.pricePerPerson)}/partecipante`;
 }
 
 function formatDateLabel(value: string): string {
@@ -271,8 +238,6 @@ export function SmartLocationDetailsSection({
   endTime,
   internalServices,
   selectedInternalServices,
-  selectedExtras,
-  cakeKg,
   drinkMode,
   drinksPerInvitee,
   onDateChange,
@@ -281,8 +246,6 @@ export function SmartLocationDetailsSection({
   onEndTimeChange,
   onGuestCountChange,
   onToggleInternalService,
-  onToggleExtra,
-  onCakeKgChange,
   onDrinkModeChange,
   onDrinksPerInviteeChange,
   isQuoteReady,
@@ -306,6 +269,7 @@ export function SmartLocationDetailsSection({
   openBarPerInvitee,
 }: SmartLocationDetailsSectionProps) {
   const [openPicker, setOpenPicker] = useState<PickerPanel>(null);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [guestCountInput, setGuestCountInput] = useState(String(guestCount));
   const [guestCountFocused, setGuestCountFocused] = useState(false);
   const [sendHint, setSendHint] = useState<string | null>(null);
@@ -313,7 +277,6 @@ export function SmartLocationDetailsSection({
   const extrasSectionRef = useRef<HTMLDivElement>(null);
   const venueDetailsRef = useRef<HTMLDetailsElement>(null);
   const drinksDetailsRef = useRef<HTMLDetailsElement>(null);
-  const extrasDetailsRef = useRef<HTMLDetailsElement>(null);
   const guestCountRef = useRef(guestCount);
   guestCountRef.current = guestCount;
   const guestCountVisible = guestCountFocused
@@ -348,12 +311,10 @@ export function SmartLocationDetailsSection({
     candidateDatePrices.some(
       (item) => item.total !== candidateDatePrices[0].total,
     );
-  const hasAdditionalServices =
-    selectedExtras.length > 0 ||
-    selectedInternalServices.some((id) => {
-      const service = internalServices.find((item) => item.id === id);
-      return Boolean(service && service.pricing.type !== "included");
-    });
+  const hasAdditionalServices = selectedInternalServices.some((id) => {
+    const service = internalServices.find((item) => item.id === id);
+    return Boolean(service && service.pricing.type !== "included");
+  });
   const hasDrinks = drinkMode !== "none";
   const sendingWithoutAddons = !hasAdditionalServices && !hasDrinks;
   useBodyScrollLock(bareQuoteConfirmOpen);
@@ -392,7 +353,6 @@ export function SmartLocationDetailsSection({
     setBareQuoteConfirmOpen(false);
     if (venueDetailsRef.current) venueDetailsRef.current.open = true;
     if (drinksDetailsRef.current) drinksDetailsRef.current.open = true;
-    if (extrasDetailsRef.current) extrasDetailsRef.current.open = true;
     extrasSectionRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "start",
@@ -402,6 +362,16 @@ export function SmartLocationDetailsSection({
   function togglePicker(panel: PickerPanel) {
     if (isLocked) return;
     setOpenPicker((current) => (current === panel ? null : panel));
+  }
+
+  function openScheduleEditor() {
+    if (isLocked) return;
+    setScheduleOpen(true);
+  }
+
+  function closeScheduleEditor() {
+    setScheduleOpen(false);
+    setOpenPicker(null);
   }
 
   const calendarDates = normalizePartyDates(
@@ -444,6 +414,14 @@ export function SmartLocationDetailsSection({
     onDateChange(value);
     setOpenPicker(null);
   }
+
+  const dateRecap =
+    calendarDates.length > 1
+      ? `${calendarDates.length} date · ${formatDateLabel(date)}`
+      : formatDateLabel(date);
+  const guestsRecap = `${guestCount} ${guestCount === 1 ? "ospite" : "ospiti"}`;
+  const timeRecap =
+    startTime && endTime ? `${startTime}–${endTime}` : startTime || endTime || "Orario";
 
   function stepGuests(delta: number) {
     if (isLocked) return;
@@ -505,10 +483,89 @@ export function SmartLocationDetailsSection({
           </p>
         ) : null}
 
-        <div className="relative overflow-hidden rounded-[1.35rem] border border-brand-teal/25 bg-gradient-to-b from-brand-teal/16 to-background/40 p-4">
-          <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-brand-teal">
-            Data, orario e invitati
-          </p>
+        <div className="relative overflow-hidden rounded-[1.35rem] border border-brand-teal/25 bg-gradient-to-b from-brand-teal/16 to-background/40 p-3.5">
+          {!scheduleOpen ? (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-teal">
+                    Data, orario e invitati
+                  </p>
+                  <p className="mt-1.5 truncate text-sm font-black text-foreground">
+                    {dateRecap}
+                  </p>
+                  <p className="mt-0.5 text-xs font-semibold text-foreground/60">
+                    {timeRecap} · {guestsRecap}
+                  </p>
+                </div>
+                <div className="flex w-[7.25rem] shrink-0 flex-col items-end gap-1.5">
+                  {!isLocked ? (
+                    <button
+                      type="button"
+                      onClick={openScheduleEditor}
+                      className="rounded-full bg-brand-teal px-3 py-1.5 text-[11px] font-black text-ink-inverse"
+                    >
+                      Modifica
+                    </button>
+                  ) : null}
+                  <p className="text-right text-[10px] font-semibold leading-snug text-foreground/55">
+                    Prima la disponibilità: invia, poi conferma.
+                  </p>
+                </div>
+              </div>
+
+              {(quote.hours > 0 || locationPriceLabel) && (
+                <dl className="space-y-1.5 rounded-xl border border-white/8 bg-background/40 px-3 py-2 text-xs">
+                  <div className="flex justify-between gap-3 text-foreground/70">
+                    <dt className="min-w-0">
+                      Location ({locationLine}
+                      {(quote.drinksCost ?? 0) > 0 ? " + bevande" : ""}
+                      {(quote.venueServicesCost ?? 0) > 0
+                        ? " + servizi locale"
+                        : ""}
+                      )
+                    </dt>
+                    <dd className="shrink-0 font-bold text-foreground">
+                      {formatCurrency(quote.locationCost)}
+                    </dd>
+                  </div>
+                  {(quote.extrasCost ?? 0) > 0 && (
+                    <div className="flex justify-between gap-3 text-foreground/70">
+                      <dt className="min-w-0">Servizi extra</dt>
+                      <dd className="shrink-0 font-bold text-foreground">
+                        {formatCurrency(quote.extrasCost)}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              )}
+
+              {hasInvalidTimeOrder && (
+                <p className="rounded-lg border border-white/10 bg-paper px-3 py-2 text-[11px] font-semibold text-ink-inverse">
+                  L&apos;orario di fine deve essere successivo a quello di
+                  inizio (fino alle 03:00 di notte).
+                </p>
+              )}
+              {hasTimeIssue && (
+                <p className="rounded-lg border border-white/10 bg-paper px-3 py-2 text-[11px] font-semibold text-ink-inverse">
+                  Durata minima richiesta: {minHours} ore.
+                </p>
+              )}
+            </div>
+          ) : (
+            <>
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-teal">
+              Data, orario e invitati
+            </p>
+            <button
+              type="button"
+              onClick={closeScheduleEditor}
+              className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-black text-foreground"
+            >
+              Fatto
+            </button>
+          </div>
           <div className="space-y-2">
             <button
               type="button"
@@ -797,38 +854,31 @@ export function SmartLocationDetailsSection({
               Durata minima richiesta: {minHours} ore.
             </p>
           )}
+            </>
+          )}
         </div>
 
         <div ref={extrasSectionRef} className="grid gap-3">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-foreground/45">
-              Dettagli opzionali
-            </p>
-            <p className="mt-1 text-xs leading-relaxed text-foreground/50">
-              Menu, bevande e extra: aprili quando vuoi, il totale si aggiorna
-              da solo.
-            </p>
-          </div>
 
         <details
           ref={venueDetailsRef}
-          className="group rounded-[1.35rem] border border-white/8 bg-background/55 p-4"
+          className="group rounded-[1.15rem] border border-white/8 bg-background/55 px-3 py-2.5"
         >
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
             <div>
-              <h3 className="text-sm font-black text-foreground">
+              <h3 className="text-sm font-black leading-tight text-foreground">
                 Servizi del locale
               </h3>
-              <p className="mt-0.5 text-xs font-medium text-foreground/50">
+              <p className="mt-0.5 text-[11px] font-medium leading-snug text-foreground/50">
                 Menu, DJ, bar, audio e allestimenti.
               </p>
             </div>
-            <span className="flex shrink-0 items-center gap-2">
-              <span className="rounded-full bg-brand-teal/15 px-2.5 py-1 text-[11px] font-bold tabular-nums text-brand-teal">
+            <span className="flex shrink-0 items-center gap-1.5">
+              <span className="rounded-full bg-brand-teal/15 px-2 py-0.5 text-[10px] font-bold tabular-nums text-brand-teal">
                 {selectedInternalServices.length}/{internalServices.length}
               </span>
               <ChevronDown
-                className="h-4 w-4 text-foreground/40 transition-transform group-open:rotate-180"
+                className="h-3.5 w-3.5 text-foreground/40 transition-transform group-open:rotate-180"
                 aria-hidden
               />
             </span>
@@ -914,22 +964,24 @@ export function SmartLocationDetailsSection({
 
         <details
           ref={drinksDetailsRef}
-          className="group rounded-[1.35rem] border border-white/8 bg-background/55 p-4"
+          className="group rounded-[1.15rem] border border-white/8 bg-background/55 px-3 py-2.5"
         >
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
-            <div className="flex min-w-0 items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-teal/15 text-brand-teal">
-                <GlassWater className="h-5 w-5" aria-hidden />
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-teal/15 text-brand-teal">
+                <GlassWater className="h-4 w-4" aria-hidden />
               </span>
               <span className="min-w-0">
-                <h3 className="text-sm font-black text-foreground">Bevande</h3>
-                <p className="text-xs font-medium text-foreground/50">
+                <h3 className="text-sm font-black leading-tight text-foreground">
+                  Bevande
+                </h3>
+                <p className="text-[11px] font-medium leading-snug text-foreground/50">
                   Drink a partecipante oppure open bar.
                 </p>
               </span>
             </div>
-            <span className="flex shrink-0 items-center gap-2">
-              <span className="rounded-full bg-brand-teal/15 px-2.5 py-1 text-[11px] font-bold text-brand-teal">
+            <span className="flex shrink-0 items-center gap-1.5">
+              <span className="rounded-full bg-brand-teal/15 px-2 py-0.5 text-[10px] font-bold text-brand-teal">
                 {drinkMode === "none"
                   ? "Nessuna"
                   : drinkMode === "open_bar"
@@ -937,7 +989,7 @@ export function SmartLocationDetailsSection({
                     : "Drink"}
               </span>
               <ChevronDown
-                className="h-4 w-4 text-foreground/40 transition-transform group-open:rotate-180"
+                className="h-3.5 w-3.5 text-foreground/40 transition-transform group-open:rotate-180"
                 aria-hidden
               />
             </span>
@@ -1033,123 +1085,24 @@ export function SmartLocationDetailsSection({
             </div>
           )}
         </details>
-
-        <details
-          ref={extrasDetailsRef}
-          className="group rounded-[1.35rem] border border-white/8 bg-background/55 p-4"
-        >
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-black text-foreground [&::-webkit-details-marker]:hidden">
-            <span>
-              Servizi esterni opzionali
-              <span className="mt-0.5 block text-xs font-medium text-foreground/48">
-                DJ, foto, catering e altro da partner VibeUp
-              </span>
-            </span>
-            <span className="flex shrink-0 items-center gap-2">
-              {selectedExtras.length > 0 ? (
-                <span className="rounded-full bg-brand-teal/15 px-2.5 py-1 text-[11px] font-bold tabular-nums text-brand-teal">
-                  {selectedExtras.length}
-                </span>
-              ) : null}
-              <ChevronDown
-                className="h-4 w-4 shrink-0 text-foreground/40 transition-transform group-open:rotate-180"
-                aria-hidden
-              />
-            </span>
-          </summary>
-          <ul className="mt-3 space-y-2">
-            {EXTRA_SERVICES.map((service) => {
-              const Icon = SERVICE_ICONS[service.id];
-              const isSelected = selectedExtras.includes(service.id);
-              const isBakery = service.id === "bakery";
-              const perKgPricing =
-                service.pricing.type === "per_kg" ? service.pricing : null;
-
-              return (
-                <li key={service.id}>
-                  <button
-                    type="button"
-                    disabled={isLocked}
-                    onClick={() => onToggleExtra(service.id)}
-                    className={cn(
-                      "flex w-full items-start gap-3 rounded-2xl border p-3 text-left transition-colors",
-                      isSelected
-                        ? "border-brand-teal/50 bg-brand-teal/10"
-                        : "border-white/8 bg-surface hover:border-white/16",
-                    )}
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background/80 text-foreground/50">
-                      <Icon className="h-4 w-4" aria-hidden />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex justify-between gap-2">
-                        <span className="text-sm font-bold text-foreground">
-                          {service.name}
-                        </span>
-                        <span className="shrink-0 text-xs font-bold text-foreground/70">
-                          {formatExternalServicePrice(service)}
-                        </span>
-                      </span>
-                      {service.providerName && (
-                        <span className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-brand-pink">
-                          <MapPin className="h-3 w-3" aria-hidden />
-                          {service.providerName}
-                        </span>
-                      )}
-                      <span className="mt-0.5 block text-xs text-foreground/48">
-                        {service.description}
-                      </span>
-                      {isBakery && isSelected && perKgPricing && (
-                        <span
-                          className="mt-2 flex items-center gap-2"
-                          onClick={(event) => event.stopPropagation()}
-                          onKeyDown={(event) => event.stopPropagation()}
-                          role="presentation"
-                        >
-                          <span className="text-xs font-semibold text-foreground/60">
-                            Peso torta
-                          </span>
-                          <select
-                            value={cakeKg}
-                            disabled={isLocked}
-                            onChange={(event) =>
-                              onCakeKgChange(Number(event.target.value))
-                            }
-                            className="rounded-lg border border-white/12 bg-background px-2 py-1 text-xs text-foreground focus:border-brand-teal focus:outline-none disabled:opacity-60"
-                          >
-                            {Array.from(
-                              {
-                                length:
-                                  perKgPricing.maxKg - perKgPricing.minKg + 1,
-                              },
-                              (_, index) => perKgPricing.minKg + index,
-                            ).map((kg) => (
-                              <option key={kg} value={kg}>
-                                {kg} kg -{" "}
-                                {formatCurrency(
-                                  getExtraServicePrice(service, { cakeKg: kg }),
-                                )}
-                              </option>
-                            ))}
-                          </select>
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </details>
         </div>
 
         <div className="rounded-[1.35rem] border border-brand-teal/25 bg-gradient-to-b from-brand-teal/12 to-background/40 p-4">
+          <div className="flex items-end justify-between gap-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-teal">
+              Totale
+            </p>
+            <p className="text-[1.45rem] font-black leading-none tracking-tight text-foreground">
+              {showLiveTotal ? formatCurrency(quote.total) : "—"}
+            </p>
+          </div>
+
           {onSaveQuote && showLiveTotal && !isLocked ? (
             <button
               type="button"
               onClick={onSaveQuote}
               className={cn(
-                "inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-black transition-colors",
+                "mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-black transition-colors",
                 quoteSaved
                   ? "bg-brand-pink/25 text-foreground ring-1 ring-white/15"
                   : "bg-brand-pink text-ink-inverse hover:bg-brand-pink/90",
@@ -1165,27 +1118,8 @@ export function SmartLocationDetailsSection({
             </button>
           ) : null}
 
-          <div
-            className={cn(
-              "flex items-start gap-2.5 rounded-xl bg-brand-teal p-3",
-              onSaveQuote && showLiveTotal && "mt-3",
-            )}
-          >
-            <ShieldCheck
-              className="mt-0.5 h-4 w-4 shrink-0 text-ink-inverse"
-              aria-hidden
-            />
-            <p className="text-xs leading-relaxed text-ink-inverse/90">
-              <span className="font-semibold text-ink-inverse">
-                Prima la disponibilità
-              </span>{" "}
-              Invia la richiesta al gestore. Se accetta, potrai confermare e
-              solo allora l&apos;evento verrà aggiunto ai tuoi eventi.
-            </p>
-          </div>
-
-          <label className="mt-3 block rounded-2xl border border-white/10 bg-paper px-4 py-3">
-            <span className="text-xs font-bold uppercase tracking-[0.16em] text-ink-inverse/45">
+          <label className="mt-3 block rounded-xl border border-white/10 bg-paper px-3 py-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-ink-inverse/45">
               Nome evento
             </span>
             <input
@@ -1193,7 +1127,7 @@ export function SmartLocationDetailsSection({
               onChange={(event) => onEventTitleChange(event.target.value)}
               disabled={isLocked}
               placeholder={eventTitlePlaceholder}
-              className="mt-1 w-full bg-transparent text-base font-black text-ink-inverse outline-none placeholder:text-ink-inverse/35 disabled:opacity-70"
+              className="mt-0.5 w-full bg-transparent text-sm font-black leading-tight text-ink-inverse outline-none placeholder:text-ink-inverse/35 disabled:opacity-70"
               aria-label="Nome evento"
             />
           </label>
@@ -1348,9 +1282,10 @@ export function SmartLocationDetailsSection({
               Vuoi procedere senza extra a pagamento o bevande?
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-foreground/60">
-              Non hai aggiunto servizi extra a pagamento né un pacchetto
+              Non hai aggiunto servizi del locale a pagamento né un pacchetto
               bevande. Puoi aggiungerli ora, oppure inviare la richiesta solo
-              per la location.
+              per la location. DJ, foto e altri servizi esterni si aggiungono
+              dopo, da I miei eventi.
             </p>
             <div className="mt-5 grid gap-2">
               <Button className="w-full rounded-2xl py-3 font-semibold" onClick={proceedWithSend}>

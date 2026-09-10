@@ -281,7 +281,7 @@ export function buildEventCheckup(request: AvailabilityRequest): EventCheckup {
     });
   }
 
-  if (isDepositPaid(request)) {
+  if (ONLINE_PAYMENTS_ENABLED && isDepositPaid(request)) {
     if (siaeChoiceMade(siaeStatus, siaeChoice)) {
       received.push({
         id: "siae",
@@ -292,9 +292,8 @@ export function buildEventCheckup(request: AvailabilityRequest): EventCheckup {
       missing.push({
         id: "siae",
         label: "Documento SIAE",
-        detail: ONLINE_PAYMENTS_ENABLED
-          ? "Dopo la caparra l’organizzatore deve ancora scegliere come gestirlo."
-          : "L’organizzatore deve ancora scegliere come gestirlo.",
+        detail:
+          "Dopo la caparra l’organizzatore deve ancora scegliere come gestirlo.",
       });
     }
   }
@@ -347,18 +346,18 @@ export function buildDemoEventCheckup(input: {
       detail: `${input.guestCount} ospiti`,
     },
     ...(ONLINE_PAYMENTS_ENABLED
-      ? [{ id: "deposit", label: "Caparra", detail: "Pagata" }]
+      ? [
+          { id: "deposit", label: "Caparra", detail: "Pagata" },
+          {
+            id: "siae",
+            label: "Documento SIAE",
+            detail:
+              variant === "complete"
+                ? "Scelta registrata"
+                : "Dopo la caparra l’organizzatore deve ancora scegliere come gestirlo.",
+          },
+        ]
       : []),
-    {
-      id: "siae",
-      label: "Documento SIAE",
-      detail:
-        variant === "complete"
-          ? "Scelta registrata"
-          : ONLINE_PAYMENTS_ENABLED
-            ? "Dopo la caparra l’organizzatore deve ancora scegliere come gestirlo."
-            : "L’organizzatore deve ancora scegliere come gestirlo.",
-    },
   ];
   if (input.notes?.trim()) {
     extras.push({

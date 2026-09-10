@@ -734,15 +734,9 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
                   <ul className="mt-2 space-y-2">
                     {(ONLINE_PAYMENTS_ENABLED
                       ? EVENT_CHECKLIST
-                      : EVENT_CHECKLIST.filter((item) => item.id !== "pay-deposit").map(
+                      : EVENT_CHECKLIST.filter(
                           (item) =>
-                            item.id === "siae"
-                              ? {
-                                  ...item,
-                                  label:
-                                    "Decidi come gestire il documento SIAE: fai da te oppure chiedilo al locale.",
-                                }
-                              : item,
+                            item.id !== "pay-deposit" && item.id !== "siae",
                         )
                     ).map((item) => {
                       const checked =
@@ -798,11 +792,13 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
         />
         ) : null}
 
-        <SiaeDocumentCard
-          event={event}
-          unlocked={ONLINE_PAYMENTS_ENABLED ? depositPaid : true}
-          onLocalPatch={onSiaePatch}
-        />
+        {ONLINE_PAYMENTS_ENABLED ? (
+          <SiaeDocumentCard
+            event={event}
+            unlocked={depositPaid}
+            onLocalPatch={onSiaePatch}
+          />
+        ) : null}
 
         <section className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
           <h3 className="text-sm font-semibold text-[color:var(--postit-ink)]">
@@ -832,7 +828,7 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
               </dd>
             </div>
             ) : null}
-            {event.siaeStatus === "managed" ? (
+            {ONLINE_PAYMENTS_ENABLED && event.siaeStatus === "managed" ? (
               <div className="flex items-center justify-between gap-3">
                 <dt className="font-semibold text-[color:var(--postit-ink-muted)]">
                   Documento SIAE (VibeUp)

@@ -54,6 +54,15 @@ const brandDisplay = localFont({
   display: "swap",
 });
 
+/** Irregular italic for the Home “events” wordmark. Self-hosted like Montserrat. */
+const eventsScript = localFont({
+  src: "../fonts/caveat-latin-500-normal.woff2",
+  weight: "500",
+  style: "normal",
+  variable: "--font-events-script",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
@@ -147,7 +156,7 @@ export default function RootLayout({
   return (
     <html
       lang="it"
-      className={`${geistSans.variable} ${geistMono.variable} ${brandDisplay.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${brandDisplay.variable} ${eventsScript.variable} h-full antialiased`}
       style={{ backgroundColor: "#000000", colorScheme: "only dark" }}
       suppressHydrationWarning
     >

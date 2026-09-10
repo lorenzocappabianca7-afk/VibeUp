@@ -1,5 +1,6 @@
 "use client";
 
+import { DjCard } from "@/components/explore/dj-card";
 import { LocationCard } from "@/components/explore/location-card";
 import { PartyWizard } from "@/components/home/party-wizard";
 import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
@@ -12,9 +13,17 @@ import { useTabNavigation } from "@/context/tab-navigation-context";
 import { getRequestStatusShortLabel } from "@/lib/availability/request-status-display";
 import { buildLocationHrefFromCriteria } from "@/lib/location-href";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
+import {
+  SERVICE_PROVIDERS,
+  type ServiceProvider,
+} from "@/lib/mock/service-providers";
 import { formatDate } from "@/lib/utils";
-import { isManagedListingLive } from "@/types/admin";
+import {
+  isManagedListingLive,
+  type ManagedServiceListing,
+} from "@/types/admin";
 import type { Location } from "@/types/location";
+import type { PartyCriteria } from "@/types/party-criteria";
 import { Bell, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -35,6 +44,36 @@ function formatRelative(iso: string) {
   return formatDate(iso);
 }
 
+function managedListingToDj(listing: ManagedServiceListing): ServiceProvider {
+  return {
+    id: listing.id,
+    category: "dj",
+    name: listing.name,
+    description: listing.description,
+    providerZone: listing.providerZone,
+    price: listing.price,
+    priceSuffix: listing.priceSuffix,
+    imageUrl: listing.imageUrl,
+    galleryImageUrls: listing.galleryImageUrls,
+    musicTypes: listing.musicTypes,
+    partyTypes: listing.partyTypes,
+  };
+}
+
+function buildDjHrefFromCriteria(djId: string, criteria: PartyCriteria): string {
+  const params = new URLSearchParams();
+  params.set("category", "dj");
+  if (criteria.guestCount) {
+    params.set("guestCount", String(criteria.guestCount));
+  }
+  if (criteria.dates.length > 0) {
+    params.set("dates", criteria.dates.join(","));
+  }
+  if (criteria.dateFrom) params.set("dateFrom", criteria.dateFrom);
+  if (criteria.dateTo) params.set("dateTo", criteria.dateTo);
+  return `/service/${djId}?${params.toString()}`;
+}
+
 export function HomeScreen() {
   const { criteria, homeBannerText } = usePartyCriteria();
   const { setTab } = useTabNavigation();
@@ -42,8 +81,10 @@ export function HomeScreen() {
     currentUser,
     events,
     favoriteLocationIds,
+    favoriteServiceIds,
     managedListings,
     toggleFavoriteLocation,
+    toggleFavoriteService,
   } = useAppState();
   const { communications } = useProfileCommunications();
   const { requests } = useAvailabilityRequests();
@@ -51,6 +92,10 @@ export function HomeScreen() {
 
   function handleToggleFavorite(id: string) {
     toggleFavoriteLocation(id);
+  }
+
+  function handleToggleFavoriteDj(id: string) {
+    toggleFavoriteService(id);
   }
 
   const notifications = useMemo(() => {
@@ -132,11 +177,61 @@ export function HomeScreen() {
     return unique;
   }, [events, favoriteLocationIds, managedListings]);
 
+  const suggestedDjs = useMemo(() => {
+    const byId = new Map<string, ServiceProvider>();
+    for (const service of SERVICE_PROVIDERS) {
+      if (service.category === "dj") byId.set(service.id, service);
+    }
+    for (const listing of managedListings) {
+      if (listing.category === "dj" && isManagedListingLive(listing)) {
+        byId.set(listing.id, managedListingToDj(listing));
+      }
+    }
+
+    const favorites = favoriteServiceIds
+      .map((id) => byId.get(id))
+      .filter((dj): dj is ServiceProvider => Boolean(dj));
+
+    const fromEvents = events.flatMap((event) =>
+      event.services
+        .filter((service) => service.category === "dj")
+        .map((service) => {
+          const needle = service.providerName.trim().toLowerCase();
+          return [...byId.values()].find(
+            (dj) => dj.name.trim().toLowerCase() === needle,
+          );
+        }),
+    ).filter((dj): dj is ServiceProvider => Boolean(dj));
+
+    const rest = [...byId.values()];
+    const merged = [...favorites, ...fromEvents, ...rest];
+    const unique: ServiceProvider[] = [];
+    const seen = new Set<string>();
+    for (const dj of merged) {
+      if (seen.has(dj.id)) continue;
+      seen.add(dj.id);
+      unique.push(dj);
+      if (unique.length >= 8) break;
+    }
+    return unique;
+  }, [events, favoriteServiceIds, managedListings]);
+
   return (
     <div className="min-w-0 space-y-5 lg:space-y-6">
-      <h1 className="text-center font-[family-name:var(--font-brand)] text-[1.75rem] font-bold tracking-tight text-white">
-        <span className="text-brand-teal">V</span>ibe
-        <span className="text-brand-pink">U</span>p
+      <h1 className="flex items-baseline justify-center gap-[0.22em] font-[family-name:var(--font-brand)] text-[1.75rem] font-bold tracking-tight text-white">
+        <span>
+          <span className="text-brand-teal">V</span>ibe
+          <span className="text-brand-pink">U</span>p
+        </span>
+        <span
+          className="relative top-[-0.08em] inline-block origin-bottom-left font-[family-name:var(--font-events-script)] text-[0.92rem] font-medium leading-none text-white"
+          style={{
+            fontStyle: "italic",
+            transform: "skewX(-16deg) rotate(-8deg)",
+          }}
+        >
+          events
+        </span>
       </h1>
 
       <section className="overflow-hidden rounded-2xl border border-brand-teal/25 bg-brand-teal/10 p-5">
@@ -218,6 +313,29 @@ export function HomeScreen() {
           ))}
         </HorizontalTouchScroll>
       </section>
+
+      {suggestedDjs.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-bold text-primary-black">
+            DJ suggeriti per te
+          </h2>
+          <HorizontalTouchScroll className="flex gap-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {suggestedDjs.map((dj) => (
+              <div
+                key={dj.id}
+                className="w-[min(72vw,16.5rem)] shrink-0 sm:w-72"
+              >
+                <DjCard
+                  dj={dj}
+                  href={buildDjHrefFromCriteria(dj.id, criteria)}
+                  isFavorite={favoriteServiceIds.includes(dj.id)}
+                  onToggleFavorite={handleToggleFavoriteDj}
+                />
+              </div>
+            ))}
+          </HorizontalTouchScroll>
+        </section>
+      ) : null}
 
       <PartyWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
     </div>

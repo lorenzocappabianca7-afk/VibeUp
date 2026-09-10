@@ -9,15 +9,11 @@ import { useAvailabilityRequests } from "@/context/availability-request-context"
 import { useChat } from "@/context/chat-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
-import { assignHomeHref, isHomePath } from "@/lib/home-navigation";
+import { pushHomeHref } from "@/lib/home-navigation";
 import { buildLocationHref } from "@/lib/location-href";
 import { datePriceBandLabel } from "@/lib/location-date-price";
 import type { AvailabilityEventPayload } from "@/types/availability-request";
-import {
-  calculateBookingQuote,
-  calculateHours,
-  getExtraServicePrice,
-} from "@/lib/location";
+import { calculateBookingQuote, calculateHours } from "@/lib/location";
 import { calculateLocationDeposit } from "@/lib/booking-money";
 import {
   calculateDrinksCost,
@@ -30,7 +26,6 @@ import {
   getInternalLocationServicePrice,
   getInternalLocationServices,
 } from "@/lib/location-services";
-import { EXTRA_SERVICES } from "@/lib/mock/extra-services";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
 import { SERVICE_PROVIDERS } from "@/lib/mock/service-providers";
 import {
@@ -40,11 +35,9 @@ import {
 import { getLocationPricePresentation } from "@/lib/utils";
 import type { ManagedLocationListing } from "@/types/admin";
 import { isManagedListingLive } from "@/types/admin";
-import type { BookedServiceCategory } from "@/types/event";
 import {
   EXPLORE_GUEST_MIN,
   type BookingQuote,
-  type ExtraServiceId,
   type Location,
 } from "@/types/location";
 import {
@@ -65,7 +58,7 @@ import { HomeTabLink } from "@/components/navigation/home-tab-link";
 import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
 import { SafeImage } from "@/components/ui/safe-image";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { normalizePartyDates } from "@/types/party-criteria";
 
@@ -79,16 +72,6 @@ interface LocationDetailViewProps {
     dates?: string;
   };
 }
-
-const EXTRA_SERVICE_CATEGORY: Record<ExtraServiceId, BookedServiceCategory> = {
-  menu: "menu",
-  dj: "dj",
-  photographer: "photographer",
-  decorations: "decorations",
-  bakery: "bakery",
-  catering: "catering",
-  audio_lights: "audio_lights",
-};
 
 const MAX_QUOTE_GUESTS = 300;
 const MAX_COMPARE_LOCATIONS = 3;
@@ -133,7 +116,7 @@ export function LocationDetailView({
   const { startVendorConversation } = useChat();
   const { setTab } = useTabNavigation();
   const { criteria } = usePartyCriteria();
-  const pathname = usePathname() || "/";
+  const router = useRouter();
   const [chatError, setChatError] = useState<string | null>(null);
   const {
     requests,
@@ -202,8 +185,6 @@ export function LocationDetailView({
       return missing.length === 0 ? current : [...current, ...missing];
     });
   }, [internalServices]);
-  const [selectedExtras, setSelectedExtras] = useState<ExtraServiceId[]>([]);
-  const [cakeKg, setCakeKg] = useState(3);
   const [drinkMode, setDrinkMode] = useState<DrinkPackageMode>("none");
   const [drinksPerInvitee, setDrinksPerInvitee] = useState(
     DEFAULT_DRINKS_PER_INVITEE,
@@ -230,7 +211,6 @@ export function LocationDetailView({
         setEndTime(draft.endTime);
         setDrinkMode(draft.drinkMode);
         setDrinksPerInvitee(clampDrinksPerInvitee(draft.drinksPerInvitee));
-        setCakeKg(Math.max(1, draft.cakeKg));
       }
       setQuoteSessionReady(true);
     });
@@ -254,7 +234,7 @@ export function LocationDetailView({
       guestCount,
       drinkMode,
       drinksPerInvitee,
-      cakeKg,
+      cakeKg: 3,
     });
   }, [
     quoteSessionReady,
@@ -264,7 +244,6 @@ export function LocationDetailView({
     guestCount,
     drinkMode,
     drinksPerInvitee,
-    cakeKg,
   ]);
   const activeRequest = useMemo(() => {
     const mine = [...requests]
@@ -335,8 +314,7 @@ export function LocationDetailView({
       hourlyPrice: location.hourlyPrice,
       startTime,
       endTime,
-      selectedExtras,
-      cakeKg,
+      selectedExtras: [],
       guestCount,
       location,
       date,
@@ -381,8 +359,6 @@ export function LocationDetailView({
     date,
     startTime,
     endTime,
-    selectedExtras,
-    cakeKg,
     guestCount,
     drinkMode,
     drinksPerInvitee,
@@ -402,8 +378,7 @@ export function LocationDetailView({
         hourlyPrice: location.hourlyPrice,
         startTime,
         endTime,
-        selectedExtras,
-        cakeKg,
+        selectedExtras: [],
         guestCount,
         location,
         date: isoDate,
@@ -418,7 +393,6 @@ export function LocationDetailView({
       };
     });
   }, [
-    cakeKg,
     date,
     draftQuote.drinksCost,
     draftQuote.venueServicesCost,
@@ -426,7 +400,6 @@ export function LocationDetailView({
     guestCount,
     location,
     preferredDates,
-    selectedExtras,
     startTime,
   ]);
   const hours = calculateHours(startTime, endTime);
@@ -437,10 +410,8 @@ export function LocationDetailView({
         startTime,
         endTime,
         guestCount,
-        cakeKg,
         drinkMode,
         drinksPerInvitee,
-        selectedExtras: [...selectedExtras].sort(),
         selectedInternalServices: [...selectedInternalServices].sort(),
       }),
     [
@@ -448,10 +419,8 @@ export function LocationDetailView({
       startTime,
       endTime,
       guestCount,
-      cakeKg,
       drinkMode,
       drinksPerInvitee,
-      selectedExtras,
       selectedInternalServices,
     ],
   );
@@ -505,18 +474,12 @@ export function LocationDetailView({
           eventTitle: eventTitle.trim() || undefined,
           drinkMode,
           drinksPerInvitee,
-          selectedExtraIds: [...selectedExtras],
+          selectedExtraIds: [],
           selectedInternalServiceIds: [...selectedInternalServices],
         };
         saveQuote(snapshot);
       },
       "Per salvare un preventivo crea un account.",
-    );
-  }
-
-  function toggleExtra(id: ExtraServiceId) {
-    setSelectedExtras((prev) =>
-      prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id],
     );
   }
 
@@ -556,12 +519,7 @@ export function LocationDetailView({
       if (!compareLocationIds.includes(location.id)) {
         toggleCompareLocation(location.id);
       }
-      const href = "/?tab=explore&view=compare";
-      if (isHomePath(pathname)) {
-        assignHomeHref(href);
-        return;
-      }
-      assignHomeHref(href);
+      pushHomeHref(router, "/?tab=explore&view=compare");
     };
 
     if (isCompareSelected) {
@@ -638,22 +596,6 @@ export function LocationDetailView({
             status: "confirmed" as const,
             amountPaid: draftQuote.locationCost,
           },
-          ...selectedExtras.flatMap((extraId) => {
-            const service = EXTRA_SERVICES.find((item) => item.id === extraId);
-            if (!service) return [];
-
-            return {
-              id: `draft-${extraId}`,
-              category: EXTRA_SERVICE_CATEGORY[extraId],
-              name: service.name,
-              providerName: service.providerName ?? service.name,
-              status: "pending" as const,
-              amountPaid: getExtraServicePrice(service, {
-                cakeKg,
-                guestCount,
-              }),
-            };
-          }),
         ];
 
         const eventPayload: AvailabilityEventPayload = {
@@ -793,8 +735,6 @@ export function LocationDetailView({
             endTime={endTime}
             internalServices={internalServices}
             selectedInternalServices={selectedInternalServices}
-            selectedExtras={selectedExtras}
-            cakeKg={cakeKg}
             drinkMode={drinkMode}
             drinksPerInvitee={drinksPerInvitee}
             onDateChange={setDate}
@@ -803,8 +743,6 @@ export function LocationDetailView({
             onEndTimeChange={setEndTime}
             onGuestCountChange={updateGuestCount}
             onToggleInternalService={toggleInternalService}
-            onToggleExtra={toggleExtra}
-            onCakeKgChange={setCakeKg}
             onDrinkModeChange={setDrinkMode}
             onDrinksPerInviteeChange={(value) =>
               setDrinksPerInvitee(clampDrinksPerInvitee(value))
@@ -960,7 +898,7 @@ function RecommendedDjsCarousel({
           DJ consigliati
         </h2>
         <p className="mt-1 text-sm text-primary-black/55">
-          Profili musicali adatti alla tua festa, da aggiungere al preventivo.
+          Profili musicali adatti alla tua festa. Li aggiungi dopo, da I miei eventi.
         </p>
       </div>
 

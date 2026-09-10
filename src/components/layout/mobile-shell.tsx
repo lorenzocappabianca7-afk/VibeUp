@@ -44,7 +44,10 @@ function TabPanel({
 export function MobileShell() {
   const { activeTab, setTab, isBusinessUser } = useTabNavigation();
   const [visitedTabs, setVisitedTabs] = useState<Set<TabId>>(
-    () => new Set<TabId>([activeTab]),
+    () =>
+      new Set<TabId>(
+        isBusinessUser ? [activeTab] : [activeTab, "home"],
+      ),
   );
   const [mode, setMode] = useState(isBusinessUser);
 

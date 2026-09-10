@@ -36,8 +36,9 @@ import {
   type BusinessProfile,
 } from "@/types/business";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
-import { assignHomeHref } from "@/lib/home-navigation";
+import { pushHomeHref } from "@/lib/home-navigation";
 import { ArrowLeft, Briefcase, CheckCircle2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const CATEGORIES = Object.entries(BUSINESS_CATEGORY_LABELS) as [
@@ -192,6 +193,7 @@ export function BusinessOnboardingView({
 }) {
   const navigateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hydratedListingIdRef = useRef<string | null>(null);
+  const router = useRouter();
   const {
     accounts,
     businessProfile,
@@ -408,7 +410,7 @@ export function BusinessOnboardingView({
       }
       navigateTimerRef.current = setTimeout(() => {
         navigateTimerRef.current = null;
-        assignHomeHref("/?tab=notifications");
+        pushHomeHref(router, "/?tab=notifications");
       }, 1400);
       return;
     }
@@ -483,7 +485,7 @@ export function BusinessOnboardingView({
       }
       navigateTimerRef.current = setTimeout(() => {
         navigateTimerRef.current = null;
-        assignHomeHref("/?tab=notifications");
+        pushHomeHref(router, "/?tab=notifications");
       }, 1400);
     })();
   }

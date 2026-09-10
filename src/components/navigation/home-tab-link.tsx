@@ -1,9 +1,9 @@
 "use client";
 
 import { useTabNavigation } from "@/context/tab-navigation-context";
-import { assignHomeHref, isHomePath } from "@/lib/home-navigation";
+import { isHomePath, pushHomeHref } from "@/lib/home-navigation";
 import type { TabId } from "@/types/navigation";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   type AnchorHTMLAttributes,
   type MouseEvent,
@@ -16,7 +16,7 @@ type HomeTabLinkProps = Omit<
 > & {
   /** Target home tab. Omit for the mode default (home / notifications). */
   tab?: TabId;
-  /** Extra query (e.g. `category=dj`) — forces a full home load when set. */
+  /** Extra query (e.g. `category=dj`) — applied on the home shell URL. */
   search?: string;
   children: ReactNode;
 };
@@ -35,8 +35,8 @@ function buildHref(tab: TabId | undefined, isBusinessUser: boolean, search?: str
 }
 
 /**
- * Link back into the home tab shell without Next.js soft navigation when
- * leaving detail routes (avoids Safari “page couldn’t load” after long use).
+ * Link back into the home tab shell. Same-document tab switches stay local;
+ * leaving a detail route uses a client navigation so the splash does not replay.
  */
 export function HomeTabLink({
   tab,
@@ -46,6 +46,7 @@ export function HomeTabLink({
   ...rest
 }: HomeTabLinkProps) {
   const pathname = usePathname() || "/";
+  const router = useRouter();
   const { setTab, isBusinessUser } = useTabNavigation();
   const href = buildHref(tab, isBusinessUser, search);
 
@@ -69,7 +70,7 @@ export function HomeTabLink({
       return;
     }
 
-    assignHomeHref(href);
+    pushHomeHref(router, href);
   }
 
   return (
