@@ -17,6 +17,7 @@ interface ServicePageProps {
     eventAddress?: string;
     guestCount?: string;
     hours?: string;
+    quote?: string;
   }>;
 }
 

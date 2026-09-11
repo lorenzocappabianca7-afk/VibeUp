@@ -13,6 +13,12 @@ interface LocationPageProps {
     dateFrom?: string;
     dateTo?: string;
     dates?: string;
+    startTime?: string;
+    endTime?: string;
+    drinkMode?: string;
+    drinks?: string;
+    services?: string;
+    title?: string;
   }>;
 }
 

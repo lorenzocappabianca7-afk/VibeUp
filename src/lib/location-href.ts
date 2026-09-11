@@ -1,3 +1,4 @@
+import type { DrinkPackageMode } from "@/lib/drinks-quote";
 import { EXPLORE_GUEST_MIN } from "@/types/location";
 import {
   normalizePartyDates,
@@ -33,6 +34,64 @@ export function buildLocationHref(
   if (dateTo) params.set("dateTo", dateTo);
 
   return `/location/${locationId}?${params.toString()}`;
+}
+
+export function buildLocationQuoteShareHref(
+  locationId: string,
+  input: {
+    guestCount?: number | null;
+    dates?: readonly string[];
+    dateFrom?: string | null;
+    dateTo?: string | null;
+    startTime?: string;
+    endTime?: string;
+    drinkMode?: DrinkPackageMode;
+    drinksPerInvitee?: number;
+    serviceIds?: string[];
+    title?: string;
+  },
+) {
+  const href = buildLocationHref(locationId, input);
+  const params = new URLSearchParams(href.split("?")[1] ?? "");
+  if (input.startTime) params.set("startTime", input.startTime);
+  if (input.endTime) params.set("endTime", input.endTime);
+  if (input.drinkMode) params.set("drinkMode", input.drinkMode);
+  if (input.drinkMode === "per_invitee" && input.drinksPerInvitee) {
+    params.set("drinks", String(input.drinksPerInvitee));
+  }
+  if (input.serviceIds?.length) {
+    params.set("services", input.serviceIds.join(","));
+  }
+  const title = input.title?.trim();
+  if (title) params.set("title", title.slice(0, 80));
+  return `/location/${locationId}?${params.toString()}#ricapitoliamo`;
+}
+
+export function buildServiceQuoteShareHref(
+  serviceId: string,
+  input: {
+    guestCount?: number | null;
+    dateFrom?: string | null;
+    dateTo?: string | null;
+    hours?: number | null;
+    eventAddress?: string | null;
+    eventId?: string | null;
+  },
+) {
+  const params = new URLSearchParams();
+  if (input.guestCount) params.set("guestCount", String(input.guestCount));
+  if (input.dateFrom) params.set("dateFrom", input.dateFrom);
+  if (input.dateTo) params.set("dateTo", input.dateTo);
+  if (input.hours) params.set("hours", String(input.hours));
+  if (input.eventAddress?.trim()) {
+    params.set("eventAddress", input.eventAddress.trim());
+  }
+  if (input.eventId) params.set("eventId", input.eventId);
+  params.set("quote", "1");
+  const query = params.toString();
+  return query
+    ? `/service/${serviceId}?${query}#preventivo`
+    : `/service/${serviceId}#preventivo`;
 }
 
 export function buildLocationHrefFromCriteria(

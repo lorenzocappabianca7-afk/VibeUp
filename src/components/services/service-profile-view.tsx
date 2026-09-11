@@ -15,12 +15,14 @@ import { isManagedListingLive } from "@/types/admin";
 import type { BookedService, BookedServiceCategory } from "@/types/event";
 import type { MusicType, PartyType } from "@/types/location";
 import { HomeTabLink } from "@/components/navigation/home-tab-link";
+import { QuoteShareButton } from "@/components/ui/quote-share-sheet";
+import { buildServiceQuoteShareHref } from "@/lib/location-href";
 import {
   ImageCarousel,
   uniqueImages,
 } from "@/components/ui/image-carousel";
 import { ArrowLeft, Calendar, Check, Clock, MapPin, Star } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface ServiceProfileViewProps {
   serviceId: string;
@@ -32,6 +34,7 @@ interface ServiceProfileViewProps {
     eventAddress?: string;
     guestCount?: string;
     hours?: string;
+    quote?: string;
   };
 }
 
@@ -258,6 +261,70 @@ export function ServiceProfileView({
     return calculateServiceQuote(service, days, validHours, quoteGuests);
   }, [days, quoteGuests, service, validHours]);
   const canGenerate = Boolean(service && quoteDate && quoteAddress.trim() && validHours > 0);
+  const didAutofillSharedQuote = useRef(false);
+
+  useEffect(() => {
+    if (didAutofillSharedQuote.current) return;
+    if (initialContext?.quote !== "1" || !canGenerate) return;
+    didAutofillSharedQuote.current = true;
+    queueMicrotask(() => setGeneratedQuote(quotePreview));
+  }, [canGenerate, initialContext?.quote, quotePreview]);
+
+  const serviceShareContent = useMemo(() => {
+    if (!service) return null;
+    const total = generatedQuote ?? quotePreview;
+    return {
+      href: buildServiceQuoteShareHref(service.id, {
+        guestCount: quoteGuests,
+        dateFrom: quoteDate || null,
+        dateTo: usesEventSelection ? quoteDate : dateTo || dateFrom || null,
+        hours: validHours || null,
+        eventAddress: quoteAddress || null,
+        eventId: selectedEventId || null,
+      }),
+      title: service.name,
+      details: [
+        quoteDate ? `Data: ${quoteDate}` : "",
+        validHours > 0 ? `${validHours} ore di servizio` : "",
+        quoteGuests ? `${quoteGuests} ospiti` : "",
+        quoteAddress ? quoteAddress : "",
+        total > 0 ? `Totale: ${formatCurrency(total)}` : "",
+      ].filter(Boolean),
+    };
+  }, [
+    dateFrom,
+    dateTo,
+    generatedQuote,
+    quoteAddress,
+    quoteDate,
+    quoteGuests,
+    quotePreview,
+    selectedEventId,
+    service,
+    usesEventSelection,
+    validHours,
+  ]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#preventivo") return;
+
+    const scrollToQuote = () => {
+      document.getElementById("preventivo")?.scrollIntoView({
+        block: "start",
+        behavior: "smooth",
+      });
+    };
+
+    scrollToQuote();
+    const frame = window.requestAnimationFrame(scrollToQuote);
+    const timer = window.setTimeout(scrollToQuote, 360);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, []);
+
   const serviceImages = uniqueImages([
     service?.imageUrl,
     ...(service?.galleryImageUrls ?? []),
@@ -455,7 +522,10 @@ export function ServiceProfileView({
           </div>
 
           {isDecorationShop ? (
-            <aside className="smooth-scroll rounded-2xl bg-brand-teal p-3.5 text-ink-inverse sm:rounded-3xl sm:p-4 xl:sticky xl:top-8 xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
+            <aside
+              id="preventivo"
+              className="smooth-scroll rounded-2xl bg-brand-teal p-3.5 text-ink-inverse sm:rounded-3xl sm:p-4 xl:sticky xl:top-8 xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto"
+            >
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-ink-inverse/80 sm:text-xs sm:tracking-[0.18em]">
                 Seleziona negozio
               </p>
@@ -551,9 +621,19 @@ export function ServiceProfileView({
                   Vai ai miei eventi
                 </HomeTabLink>
               )}
+              {serviceShareContent ? (
+                <QuoteShareButton
+                  content={serviceShareContent}
+                  tone="paper"
+                  className="mt-3"
+                />
+              ) : null}
             </aside>
           ) : (
-            <aside className="smooth-scroll rounded-2xl bg-brand-teal p-3.5 text-ink-inverse sm:rounded-3xl sm:p-4 xl:sticky xl:top-8 xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto">
+            <aside
+              id="preventivo"
+              className="smooth-scroll rounded-2xl bg-brand-teal p-3.5 text-ink-inverse sm:rounded-3xl sm:p-4 xl:sticky xl:top-8 xl:max-h-[calc(100dvh-4rem)] xl:overflow-y-auto"
+            >
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-ink-inverse/80 sm:text-xs sm:tracking-[0.18em]">
               Preventivo servizio
             </p>
@@ -736,6 +816,14 @@ export function ServiceProfileView({
                 )}
               </>
             )}
+
+            {serviceShareContent ? (
+              <QuoteShareButton
+                content={serviceShareContent}
+                tone="paper"
+                className="mt-3"
+              />
+            ) : null}
 
             <p className="mt-3 rounded-2xl bg-surface px-3 py-2 text-xs font-bold text-primary-black/70">
               Prima la disponibilità: il fornitore deve accettare. Poi confermi e

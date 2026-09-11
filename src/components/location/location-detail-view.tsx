@@ -10,7 +10,16 @@ import { useChat } from "@/context/chat-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { pushHomeHref } from "@/lib/home-navigation";
-import { buildLocationHref } from "@/lib/location-href";
+import {
+  buildLocationHref,
+  buildLocationQuoteShareHref,
+} from "@/lib/location-href";
+import {
+  parseSharedDrinkMode,
+  parseSharedDrinksPerInvitee,
+  parseSharedServiceIds,
+  parseSharedTime,
+} from "@/lib/quote-share";
 import { datePriceBandLabel } from "@/lib/location-date-price";
 import type { AvailabilityEventPayload } from "@/types/availability-request";
 import { calculateBookingQuote, calculateHours } from "@/lib/location";
@@ -31,7 +40,6 @@ import {
   readQuoteSessionDraft,
   writeQuoteSessionDraft,
 } from "@/lib/quote-session-draft";
-import { readPartyCriteriaSession } from "@/lib/party-criteria-storage";
 import { getFilteredLocationPricePresentation } from "@/lib/location-preview-price";
 import { formatCurrency } from "@/lib/utils";
 import type { ManagedLocationListing } from "@/types/admin";
@@ -71,6 +79,12 @@ interface LocationDetailViewProps {
     dateFrom?: string;
     dateTo?: string;
     dates?: string;
+    startTime?: string;
+    endTime?: string;
+    drinkMode?: string;
+    drinks?: string;
+    services?: string;
+    title?: string;
   };
 }
 
@@ -127,7 +141,9 @@ export function LocationDetailView({
   const defaultEventTitle = `Festa da ${location.name}`;
   const isFavorite = favoriteLocationIds.includes(location.id);
   const isCompareSelected = compareLocationIds.includes(location.id);
-  const [eventTitle, setEventTitle] = useState(defaultEventTitle);
+  const [eventTitle, setEventTitle] = useState(
+    initialQuoteContext?.title?.trim() || defaultEventTitle,
+  );
   const [requestError, setRequestError] = useState<string | null>(null);
   const incomingPreferredDates = useMemo(() => {
     const fromQuery = normalizePartyDates(
@@ -154,8 +170,18 @@ export function LocationDetailView({
   const [date, setDate] = useState(
     initialQuoteContext?.dateFrom ?? incomingPreferredDates[0] ?? "",
   );
-  const [startTime, setStartTime] = useState("18:00");
-  const [endTime, setEndTime] = useState("23:00");
+  const sharedStartTime = parseSharedTime(initialQuoteContext?.startTime);
+  const sharedEndTime = parseSharedTime(initialQuoteContext?.endTime);
+  const sharedDrinkMode = parseSharedDrinkMode(initialQuoteContext?.drinkMode);
+  const sharedDrinksPerInvitee = parseSharedDrinksPerInvitee(
+    initialQuoteContext?.drinks,
+  );
+  const sharedServiceIds = useMemo(
+    () => parseSharedServiceIds(initialQuoteContext?.services),
+    [initialQuoteContext?.services],
+  );
+  const [startTime, setStartTime] = useState(sharedStartTime ?? "18:00");
+  const [endTime, setEndTime] = useState(sharedEndTime ?? "23:00");
   const incomingGuestCount = parseIncomingGuestCount(
     initialQuoteContext?.guestCount,
     criteria.guestCount,
@@ -180,34 +206,41 @@ export function LocationDetailView({
         (service) => service.available && service.pricing.type === "included",
       )
       .map((service) => service.id);
-    if (includedIds.length === 0) return;
+    const sharedIds = sharedServiceIds.filter((id) =>
+      internalServices.some((service) => service.id === id),
+    );
+    const extraIds = [...new Set([...includedIds, ...sharedIds])];
+    if (extraIds.length === 0) return;
     setSelectedInternalServices((current) => {
-      const missing = includedIds.filter((id) => !current.includes(id));
+      const missing = extraIds.filter((id) => !current.includes(id));
       return missing.length === 0 ? current : [...current, ...missing];
     });
-  }, [internalServices]);
+  }, [internalServices, sharedServiceIds]);
   const comingFromExploreQuote = Boolean(
     initialQuoteContext?.guestCount ||
       initialQuoteContext?.dateFrom ||
       initialQuoteContext?.dates,
   );
   const [drinkMode, setDrinkMode] = useState<DrinkPackageMode>(
-    criteria.drinkMode,
+    sharedDrinkMode ?? criteria.drinkMode,
   );
   const [drinksPerInvitee, setDrinksPerInvitee] = useState(
-    clampDrinksPerInvitee(criteria.drinksPerInvitee),
+    clampDrinksPerInvitee(
+      sharedDrinksPerInvitee ?? criteria.drinksPerInvitee,
+    ),
   );
   const drinksTouchedRef = useRef(false);
   const [quoteSessionReady, setQuoteSessionReady] = useState(false);
+  const hasSharedDrinkParams = Boolean(
+    initialQuoteContext?.drinkMode || initialQuoteContext?.drinks,
+  );
 
   // Restore tab-local quote inputs, but wizard/explore filters always win.
   useEffect(() => {
     const draft = readQuoteSessionDraft();
-    const storedCriteria = readPartyCriteriaSession();
     queueMicrotask(() => {
-      const wizardApplied =
-        storedCriteria?.hasApplied === true || hasAppliedCriteria;
-      const wizardDrinks = storedCriteria?.criteria ?? criteria;
+      const wizardApplied = hasAppliedCriteria;
+      const wizardDrinks = criteria;
 
       if (draft) {
         if (!initialQuoteContext?.dateFrom && draft.date) {
@@ -221,16 +254,26 @@ export function LocationDetailView({
         if (!initialQuoteContext?.guestCount && incomingGuestCount == null) {
           setGuestCount(clampQuoteGuests(draft.guestCount));
         }
-        if (!comingFromExploreQuote) {
+        if (!comingFromExploreQuote && !sharedStartTime) {
           setStartTime(draft.startTime);
+        }
+        if (!comingFromExploreQuote && !sharedEndTime) {
           setEndTime(draft.endTime);
         }
-        if (!wizardApplied && !drinksTouchedRef.current) {
+        if (
+          !hasSharedDrinkParams &&
+          !wizardApplied &&
+          !drinksTouchedRef.current
+        ) {
           setDrinkMode(draft.drinkMode);
           setDrinksPerInvitee(clampDrinksPerInvitee(draft.drinksPerInvitee));
         }
       }
-      if (wizardApplied && !drinksTouchedRef.current) {
+      if (
+        !hasSharedDrinkParams &&
+        wizardApplied &&
+        !drinksTouchedRef.current
+      ) {
         setDrinkMode(wizardDrinks.drinkMode);
         setDrinksPerInvitee(
           clampDrinksPerInvitee(wizardDrinks.drinksPerInvitee),
@@ -246,6 +289,9 @@ export function LocationDetailView({
     if (!quoteSessionReady || drinksTouchedRef.current || !hasAppliedCriteria) {
       return;
     }
+    // A shared link already carries drinks — do not let in-session wizard
+    // filters overwrite the quote the recipient opened.
+    if (hasSharedDrinkParams) return;
     queueMicrotask(() => {
       if (drinksTouchedRef.current) return;
       setDrinkMode(criteria.drinkMode);
@@ -254,6 +300,7 @@ export function LocationDetailView({
   }, [
     quoteSessionReady,
     hasAppliedCriteria,
+    hasSharedDrinkParams,
     criteria.drinkMode,
     criteria.drinksPerInvitee,
   ]);
@@ -817,6 +864,19 @@ export function LocationDetailView({
               hasAppliedCriteria ? criteria.wantedServices : []
             }
             quoteReady={quoteSessionReady}
+            shareHref={buildLocationQuoteShareHref(location.id, {
+              guestCount,
+              dates: preferredDates,
+              dateFrom: date || preferredDates[0] || null,
+              dateTo:
+                preferredDates[preferredDates.length - 1] ?? date ?? null,
+              startTime,
+              endTime,
+              drinkMode,
+              drinksPerInvitee,
+              serviceIds: selectedInternalServices,
+              title: eventTitle,
+            })}
             isQuoteReady={isQuoteReady}
             quoteSaved={quoteSaved}
             onSaveQuote={handleSaveQuote}
@@ -976,7 +1036,7 @@ function RecommendedDjsCarousel({
         </p>
       </div>
 
-      <div className="scrollbar-hidden smooth-scroll max-w-full overflow-x-auto pb-2">
+      <HorizontalTouchScroll className="scrollbar-hidden max-w-full pb-2">
         <ul className="flex w-max gap-3">
           {djs.map((dj) => (
             <li key={dj.id} className="w-[15rem] shrink-0 lg:w-[17rem]">
@@ -1030,7 +1090,7 @@ function RecommendedDjsCarousel({
             </li>
           ))}
         </ul>
-      </div>
+      </HorizontalTouchScroll>
     </section>
   );
 }

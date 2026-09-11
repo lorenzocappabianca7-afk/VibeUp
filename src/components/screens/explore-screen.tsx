@@ -24,6 +24,7 @@ import {
   type Location,
 } from "@/types/location";
 import {
+  PARTY_EXTRA_SERVICE_OPTIONS,
   partyCriteriaRankingText,
   type PartyCriteria,
 } from "@/types/party-criteria";
@@ -503,6 +504,14 @@ export function ExploreScreen({
     } else if (criteria.budgetMax) {
       parts.push(`fino a ${formatCurrency(criteria.budgetMax)}`);
     }
+    if (criteria.wantedServices.length > 0) {
+      const venueServices = PARTY_EXTRA_SERVICE_OPTIONS.filter((item) =>
+        criteria.wantedServices.includes(item.id),
+      )
+        .map((item) => item.label)
+        .join(", ");
+      if (venueServices) parts.push(`nel locale: ${venueServices}`);
+    }
     if (criteria.freeText.trim()) parts.push("ordinato per descrizione");
     return parts.length > 0 ? parts.join(" · ") : "Criteri dalla Home";
   }, [criteria, hasAppliedCriteria]);
@@ -815,7 +824,9 @@ export function ExploreScreen({
               {filteredLocations.length === 1
                 ? "location trovata"
                 : "location trovate"}
-              {hasAppliedCriteria && criteria.freeText.trim() ? (
+              {hasAppliedCriteria &&
+              (criteria.freeText.trim() ||
+                criteria.wantedServices.length > 0) ? (
                 <span className="text-brand-teal">
                   {" "}
                   · ordinate per affinità

@@ -1,3 +1,5 @@
+import { clearPartyCriteriaProfile } from "@/lib/party-criteria-storage";
+
 /** Purge per-user satellite localStorage left outside vibeup-app-state-v2. */
 
 const PROFILE_COMMS_PREFIX = "vibeup-profile-comms-v1:";
@@ -6,6 +8,8 @@ const AVAILABILITY_KEY = "vibeup-availability-requests-v1";
 
 export function purgeUserSatelliteStorage(userId: string) {
   if (typeof window === "undefined" || !userId) return;
+
+  clearPartyCriteriaProfile(userId);
 
   try {
     window.localStorage.removeItem(`${PROFILE_COMMS_PREFIX}${userId}`);

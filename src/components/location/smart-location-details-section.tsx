@@ -20,6 +20,8 @@ import {
 } from "@/lib/location";
 import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import { Button } from "@/components/ui/button";
+import { QuoteShareButton } from "@/components/ui/quote-share-sheet";
+import type { QuoteShareContent } from "@/lib/quote-share";
 import { VibeUpCalendar } from "@/components/ui/vibeup-calendar";
 import { getDepositCheckoutAmounts } from "@/lib/booking-money";
 import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
@@ -141,6 +143,7 @@ interface SmartLocationDetailsSectionProps {
   openBarPerInvitee?: number;
   wantedExtraServices?: ExtraServiceId[];
   quoteReady?: boolean;
+  shareHref?: string;
 }
 
 function formatInternalServicePrice(
@@ -273,6 +276,7 @@ export function SmartLocationDetailsSection({
   openBarPerInvitee,
   wantedExtraServices = [],
   quoteReady = true,
+  shareHref,
 }: SmartLocationDetailsSectionProps) {
   const [openPicker, setOpenPicker] = useState<PickerPanel>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -446,6 +450,59 @@ export function SmartLocationDetailsSection({
     .map((item) => item.label)
     .join(", ");
 
+  const shareContent = useMemo<QuoteShareContent | null>(() => {
+    if (!shareHref) return null;
+    const details = [
+      date ? `${dateRecap}${timeRecap ? ` · ${timeRecap}` : ""}` : "",
+      guestsRecap,
+      venueRecap !== "Nessun extra del locale"
+        ? `Servizi locale: ${venueRecap}`
+        : "",
+      `Bevande: ${drinksRecap}`,
+      extrasRecap ? `Cerchi nel locale: ${extrasRecap}` : "",
+      showLiveTotal ? `Totale: ${formatCurrency(quote.total)}` : "",
+    ].filter(Boolean);
+    return {
+      href: shareHref,
+      title: eventTitle.trim() || eventTitlePlaceholder,
+      details,
+    };
+  }, [
+    date,
+    dateRecap,
+    drinksRecap,
+    eventTitle,
+    eventTitlePlaceholder,
+    extrasRecap,
+    guestsRecap,
+    quote.total,
+    shareHref,
+    showLiveTotal,
+    timeRecap,
+    venueRecap,
+  ]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#ricapitoliamo") return;
+    if (!quoteReady) return;
+
+    const scrollToRecap = () => {
+      document.getElementById("ricapitoliamo")?.scrollIntoView({
+        block: "start",
+        behavior: "smooth",
+      });
+    };
+
+    scrollToRecap();
+    const frame = window.requestAnimationFrame(scrollToRecap);
+    const timer = window.setTimeout(scrollToRecap, 360);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [quoteReady]);
+
   function stepGuests(delta: number) {
     if (isLocked) return;
     const nextValue = clampGuestCount(guestCountRef.current + delta, maxGuests);
@@ -456,8 +513,11 @@ export function SmartLocationDetailsSection({
   }
 
   return (
-    <section className="overflow-hidden rounded-[1.35rem] border border-black/10 bg-white text-[#1c2430] shadow-[0_8px_28px_-18px_rgba(0,0,0,0.35)]">
-      <div className="sticky top-0 z-10 border-b border-black/10 bg-white px-5 py-4">
+    <section
+      id="ricapitoliamo"
+      className="overflow-hidden rounded-[1.35rem] border border-black/10 bg-paper bg-gradient-to-b from-paper to-paper-deep text-[#1c2430] shadow-[0_8px_28px_-18px_rgba(0,0,0,0.35)]"
+    >
+      <div className="sticky top-0 z-10 border-b border-black/10 bg-paper px-5 py-4">
         <div className="relative flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-xl font-black tracking-tight text-[#1c2430]">
@@ -548,7 +608,7 @@ export function SmartLocationDetailsSection({
                         aria-hidden
                       />
                       <span className="min-w-0 leading-snug">
-                        Extra da I miei eventi: {extrasRecap}
+                        Cerchi nel locale: {extrasRecap}
                       </span>
                     </p>
                   ) : null}
@@ -1151,7 +1211,7 @@ export function SmartLocationDetailsSection({
             </div>
             {extrasRecap ? (
               <p className="mt-3 text-[11px] font-semibold leading-snug text-ink-inverse/55">
-                Extra da I miei eventi: {extrasRecap}
+                Cerchi nel locale: {extrasRecap}
               </p>
             ) : null}
             </>
@@ -1167,6 +1227,10 @@ export function SmartLocationDetailsSection({
               {showLiveTotal ? formatCurrency(quote.total) : "—"}
             </p>
           </div>
+
+          {shareContent ? (
+            <QuoteShareButton content={shareContent} className="mt-3" />
+          ) : null}
 
           {onSaveQuote && showLiveTotal && !isLocked ? (
             <button

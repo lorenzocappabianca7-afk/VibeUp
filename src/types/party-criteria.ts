@@ -12,13 +12,11 @@ export const PARTY_EXTRA_SERVICE_OPTIONS: {
   label: string;
   hint: string;
 }[] = [
-  { id: "dj", label: "DJ", hint: "Musica e console" },
-  { id: "photographer", label: "Fotografo", hint: "Foto e video" },
-  { id: "decorations", label: "Decorazioni", hint: "Allestimenti" },
-  { id: "catering", label: "Catering", hint: "Buffet e food" },
-  { id: "bakery", label: "Torta", hint: "Pasticceria" },
-  { id: "audio_lights", label: "Audio e luci", hint: "Impianto festa" },
-  { id: "menu", label: "Menu", hint: "Cibo e drink" },
+  { id: "dj", label: "DJ", hint: "Musica e console del locale" },
+  { id: "photographer", label: "Fotografo", hint: "Foto e video del locale" },
+  { id: "decorations", label: "Decorazioni", hint: "Allestimenti del locale" },
+  { id: "catering", label: "Catering", hint: "Buffet e food del locale" },
+  { id: "bakery", label: "Torta", hint: "Pasticceria del locale" },
 ];
 
 const EXTRA_SERVICE_IDS = new Set(
