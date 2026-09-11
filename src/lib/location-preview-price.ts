@@ -87,7 +87,9 @@ export function getFilteredLocationPricePresentation(
   const { min, max } = estimateLocationFilteredCostRange(location, criteria);
   const hasDateRange = min !== max;
   const guestCount = resolvePreviewGuestCount(criteria);
-  const parts = [`${guestCount} ospiti`];
+  const parts = [
+    `${guestCount} ${guestCount === 1 ? "ospite" : "ospiti"}`,
+  ];
 
   if (criteria?.drinkMode === "open_bar") {
     parts.push("open bar");

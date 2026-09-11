@@ -24,9 +24,9 @@ import { VibeUpCalendar } from "@/components/ui/vibeup-calendar";
 import { getDepositCheckoutAmounts } from "@/lib/booking-money";
 import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
-import { MAX_PARTY_DATES, normalizePartyDates } from "@/types/party-criteria";
+import { MAX_PARTY_DATES, normalizePartyDates, PARTY_EXTRA_SERVICE_OPTIONS } from "@/types/party-criteria";
 import type { AvailabilityRequestStatus } from "@/types/availability-request";
-import type { BookingQuote } from "@/types/location";
+import type { BookingQuote, ExtraServiceId } from "@/types/location";
 import {
   Bookmark,
   Calendar,
@@ -39,6 +39,7 @@ import {
   GitCompareArrows,
   GlassWater,
   Lightbulb,
+  ListPlus,
   Minus,
   Music,
   Plus,
@@ -55,7 +56,7 @@ import {
 import { HoldStepButton } from "@/components/ui/hold-step-button";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import type { LucideIcon } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const INTERNAL_SERVICE_ICONS: Record<InternalLocationServiceType, LucideIcon> = {
   menu: UtensilsCrossed,
@@ -138,6 +139,8 @@ interface SmartLocationDetailsSectionProps {
   isCompareSelected?: boolean;
   drinkUnitPrice?: number;
   openBarPerInvitee?: number;
+  wantedExtraServices?: ExtraServiceId[];
+  quoteReady?: boolean;
 }
 
 function formatInternalServicePrice(
@@ -268,6 +271,8 @@ export function SmartLocationDetailsSection({
   isCompareSelected = false,
   drinkUnitPrice,
   openBarPerInvitee,
+  wantedExtraServices = [],
+  quoteReady = true,
 }: SmartLocationDetailsSectionProps) {
   const [openPicker, setOpenPicker] = useState<PickerPanel>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -276,17 +281,19 @@ export function SmartLocationDetailsSection({
   const [sendHint, setSendHint] = useState<string | null>(null);
   const [bareQuoteConfirmOpen, setBareQuoteConfirmOpen] = useState(false);
   const extrasSectionRef = useRef<HTMLDivElement>(null);
-  const venueDetailsRef = useRef<HTMLDetailsElement>(null);
-  const drinksDetailsRef = useRef<HTMLDetailsElement>(null);
+  const [venueServicesOpen, setVenueServicesOpen] = useState(true);
+  const [drinksOpen, setDrinksOpen] = useState(true);
   const guestCountRef = useRef(guestCount);
-  guestCountRef.current = guestCount;
+  useEffect(() => {
+    guestCountRef.current = guestCount;
+  }, [guestCount]);
   const guestCountVisible = guestCountFocused
     ? guestCountInput
     : String(guestCount);
   const hasTimeIssue = estimatedHours > 0 && estimatedHours < minHours;
   const hasInvalidTimeOrder =
     Boolean(startTime && endTime) && !isEndTimeAfterStart(startTime, endTime);
-  const showLiveTotal = quote.total > 0;
+  const showLiveTotal = quoteReady && quote.total > 0;
   const isPendingManager = requestStatus === "pending_manager";
   const isPendingUserConfirm = requestStatus === "pending_user_confirm";
   const isPendingProposal = requestStatus === "pending_user_review_proposal";
@@ -433,6 +440,11 @@ export function SmartLocationDetailsSection({
     mode: drinkMode,
     drinksPerInvitee,
   });
+  const extrasRecap = PARTY_EXTRA_SERVICE_OPTIONS.filter((item) =>
+    wantedExtraServices.includes(item.id),
+  )
+    .map((item) => item.label)
+    .join(", ");
 
   function stepGuests(delta: number) {
     if (isLocked) return;
@@ -529,6 +541,17 @@ export function SmartLocationDetailsSection({
                     />
                     <span className="min-w-0">Bevande: {drinksRecap}</span>
                   </p>
+                  {extrasRecap ? (
+                    <p className="flex min-w-0 items-start gap-1.5">
+                      <ListPlus
+                        className="mt-0.5 h-4 w-4 shrink-0 text-brand-pink"
+                        aria-hidden
+                      />
+                      <span className="min-w-0 leading-snug">
+                        Extra da I miei eventi: {extrasRecap}
+                      </span>
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex w-[7.25rem] shrink-0 flex-col items-end gap-1.5">
                   {!isLocked ? (
@@ -884,12 +907,13 @@ export function SmartLocationDetailsSection({
             </p>
           )}
             <div className="mt-4 grid gap-3">
-        <details
-          ref={venueDetailsRef}
-          open
-          className="group rounded-[0.85rem] border border-ink-inverse/10 bg-ink-inverse/[0.03] px-3 py-2.5"
-        >
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+        <div className="rounded-[0.85rem] border border-ink-inverse/10 bg-ink-inverse/[0.03] px-3 py-2.5">
+          <button
+            type="button"
+            onClick={() => setVenueServicesOpen((open) => !open)}
+            className="flex w-full items-center justify-between gap-2 text-left"
+            aria-expanded={venueServicesOpen}
+          >
             <div>
               <h3 className="text-sm font-black leading-tight text-ink-inverse">
                 Servizi del locale
@@ -903,12 +927,16 @@ export function SmartLocationDetailsSection({
                 {selectedInternalServices.length}/{internalServices.length}
               </span>
               <ChevronDown
-                className="h-3.5 w-3.5 text-ink-inverse/40 transition-transform group-open:rotate-180"
+                className={cn(
+                  "h-3.5 w-3.5 text-ink-inverse/40 transition-transform",
+                  venueServicesOpen && "rotate-180",
+                )}
                 aria-hidden
               />
             </span>
-          </summary>
+          </button>
 
+          {venueServicesOpen ? (
           <ul className="mt-3 grid gap-2">
             {internalServices.map((service) => {
               const Icon = INTERNAL_SERVICE_ICONS[service.type];
@@ -985,14 +1013,16 @@ export function SmartLocationDetailsSection({
               );
             })}
           </ul>
-        </details>
+          ) : null}
+        </div>
 
-        <details
-          ref={drinksDetailsRef}
-          open
-          className="group rounded-[0.85rem] border border-ink-inverse/10 bg-ink-inverse/[0.03] px-3 py-2.5"
-        >
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+        <div className="rounded-[0.85rem] border border-ink-inverse/10 bg-ink-inverse/[0.03] px-3 py-2.5">
+          <button
+            type="button"
+            onClick={() => setDrinksOpen((open) => !open)}
+            className="flex w-full items-center justify-between gap-2 text-left"
+            aria-expanded={drinksOpen}
+          >
             <div className="flex min-w-0 items-center gap-2.5">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-teal/15 text-brand-teal">
                 <GlassWater className="h-4 w-4" aria-hidden />
@@ -1015,12 +1045,17 @@ export function SmartLocationDetailsSection({
                     : "Drink"}
               </span>
               <ChevronDown
-                className="h-3.5 w-3.5 text-ink-inverse/40 transition-transform group-open:rotate-180"
+                className={cn(
+                  "h-3.5 w-3.5 text-ink-inverse/40 transition-transform",
+                  drinksOpen && "rotate-180",
+                )}
                 aria-hidden
               />
             </span>
-          </summary>
+          </button>
 
+          {drinksOpen ? (
+          <>
           <div className="mt-3 grid grid-cols-3 gap-1.5 rounded-2xl bg-ink-inverse/[0.04] p-1 ring-1 ring-ink-inverse/10">
             {(
               [
@@ -1110,8 +1145,15 @@ export function SmartLocationDetailsSection({
               </span>
             </div>
           )}
-        </details>
+          </>
+          ) : null}
+        </div>
             </div>
+            {extrasRecap ? (
+              <p className="mt-3 text-[11px] font-semibold leading-snug text-ink-inverse/55">
+                Extra da I miei eventi: {extrasRecap}
+              </p>
+            ) : null}
             </>
           )}
         </div>

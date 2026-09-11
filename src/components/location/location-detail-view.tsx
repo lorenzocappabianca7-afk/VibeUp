@@ -18,7 +18,6 @@ import { calculateLocationDeposit } from "@/lib/booking-money";
 import {
   calculateDrinksCost,
   clampDrinksPerInvitee,
-  DEFAULT_DRINKS_PER_INVITEE,
   getDrinkPackageLabel,
   type DrinkPackageMode,
 } from "@/lib/drinks-quote";
@@ -32,6 +31,7 @@ import {
   readQuoteSessionDraft,
   writeQuoteSessionDraft,
 } from "@/lib/quote-session-draft";
+import { readPartyCriteriaSession } from "@/lib/party-criteria-storage";
 import { getFilteredLocationPricePresentation } from "@/lib/location-preview-price";
 import { formatCurrency } from "@/lib/utils";
 import type { ManagedLocationListing } from "@/types/admin";
@@ -116,7 +116,7 @@ export function LocationDetailView({
   const { requireAccount } = useAccountGate();
   const { startVendorConversation } = useChat();
   const { setTab } = useTabNavigation();
-  const { criteria } = usePartyCriteria();
+  const { criteria, hasAppliedCriteria } = usePartyCriteria();
   const router = useRouter();
   const [chatError, setChatError] = useState<string | null>(null);
   const {
@@ -186,16 +186,29 @@ export function LocationDetailView({
       return missing.length === 0 ? current : [...current, ...missing];
     });
   }, [internalServices]);
-  const [drinkMode, setDrinkMode] = useState<DrinkPackageMode>("none");
-  const [drinksPerInvitee, setDrinksPerInvitee] = useState(
-    DEFAULT_DRINKS_PER_INVITEE,
+  const comingFromExploreQuote = Boolean(
+    initialQuoteContext?.guestCount ||
+      initialQuoteContext?.dateFrom ||
+      initialQuoteContext?.dates,
   );
+  const [drinkMode, setDrinkMode] = useState<DrinkPackageMode>(
+    criteria.drinkMode,
+  );
+  const [drinksPerInvitee, setDrinksPerInvitee] = useState(
+    clampDrinksPerInvitee(criteria.drinksPerInvitee),
+  );
+  const drinksTouchedRef = useRef(false);
   const [quoteSessionReady, setQuoteSessionReady] = useState(false);
 
-  // Restore shared quote inputs for this browser tab only (sessionStorage).
+  // Restore tab-local quote inputs, but wizard/explore filters always win.
   useEffect(() => {
     const draft = readQuoteSessionDraft();
+    const storedCriteria = readPartyCriteriaSession();
     queueMicrotask(() => {
+      const wizardApplied =
+        storedCriteria?.hasApplied === true || hasAppliedCriteria;
+      const wizardDrinks = storedCriteria?.criteria ?? criteria;
+
       if (draft) {
         if (!initialQuoteContext?.dateFrom && draft.date) {
           if (
@@ -208,10 +221,20 @@ export function LocationDetailView({
         if (!initialQuoteContext?.guestCount && incomingGuestCount == null) {
           setGuestCount(clampQuoteGuests(draft.guestCount));
         }
-        setStartTime(draft.startTime);
-        setEndTime(draft.endTime);
-        setDrinkMode(draft.drinkMode);
-        setDrinksPerInvitee(clampDrinksPerInvitee(draft.drinksPerInvitee));
+        if (!comingFromExploreQuote) {
+          setStartTime(draft.startTime);
+          setEndTime(draft.endTime);
+        }
+        if (!wizardApplied && !drinksTouchedRef.current) {
+          setDrinkMode(draft.drinkMode);
+          setDrinksPerInvitee(clampDrinksPerInvitee(draft.drinksPerInvitee));
+        }
+      }
+      if (wizardApplied && !drinksTouchedRef.current) {
+        setDrinkMode(wizardDrinks.drinkMode);
+        setDrinksPerInvitee(
+          clampDrinksPerInvitee(wizardDrinks.drinksPerInvitee),
+        );
       }
       setQuoteSessionReady(true);
     });
@@ -219,14 +242,21 @@ export function LocationDetailView({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount hydrate
   }, []);
 
-  const appliedCriteriaDrinks = useRef(false);
   useEffect(() => {
-    if (!quoteSessionReady || appliedCriteriaDrinks.current) return;
-    if (criteria.drinkMode === "none") return;
-    appliedCriteriaDrinks.current = true;
-    setDrinkMode(criteria.drinkMode);
-    setDrinksPerInvitee(clampDrinksPerInvitee(criteria.drinksPerInvitee));
-  }, [criteria.drinkMode, criteria.drinksPerInvitee, quoteSessionReady]);
+    if (!quoteSessionReady || drinksTouchedRef.current || !hasAppliedCriteria) {
+      return;
+    }
+    queueMicrotask(() => {
+      if (drinksTouchedRef.current) return;
+      setDrinkMode(criteria.drinkMode);
+      setDrinksPerInvitee(clampDrinksPerInvitee(criteria.drinksPerInvitee));
+    });
+  }, [
+    quoteSessionReady,
+    hasAppliedCriteria,
+    criteria.drinkMode,
+    criteria.drinksPerInvitee,
+  ]);
 
   useEffect(() => {
     if (preferredDates.length === 0) return;
@@ -732,19 +762,25 @@ export function LocationDetailView({
           <LocationInfo
             location={location}
             quotePrice={
-              draftQuote.total > 0 ? formatCurrency(draftQuote.total) : undefined
+              quoteSessionReady && draftQuote.total > 0
+                ? formatCurrency(draftQuote.total)
+                : undefined
             }
-            quoteDetail={[
-              `${guestCount} ${guestCount === 1 ? "ospite" : "ospiti"}`,
-              drinkMode === "none"
-                ? null
-                : getDrinkPackageLabel({
-                    mode: drinkMode,
-                    drinksPerInvitee,
-                  }),
-            ]
-              .filter(Boolean)
-              .join(" · ")}
+            quoteDetail={
+              quoteSessionReady
+                ? [
+                    `${guestCount} ${guestCount === 1 ? "ospite" : "ospiti"}`,
+                    drinkMode === "none"
+                      ? null
+                      : getDrinkPackageLabel({
+                          mode: drinkMode,
+                          drinksPerInvitee,
+                        }),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
+                : undefined
+            }
           />
         </div>
 
@@ -769,10 +805,18 @@ export function LocationDetailView({
             onEndTimeChange={setEndTime}
             onGuestCountChange={updateGuestCount}
             onToggleInternalService={toggleInternalService}
-            onDrinkModeChange={setDrinkMode}
-            onDrinksPerInviteeChange={(value) =>
-              setDrinksPerInvitee(clampDrinksPerInvitee(value))
+            onDrinkModeChange={(mode) => {
+              drinksTouchedRef.current = true;
+              setDrinkMode(mode);
+            }}
+            onDrinksPerInviteeChange={(value) => {
+              drinksTouchedRef.current = true;
+              setDrinksPerInvitee(clampDrinksPerInvitee(value));
+            }}
+            wantedExtraServices={
+              hasAppliedCriteria ? criteria.wantedServices : []
             }
+            quoteReady={quoteSessionReady}
             isQuoteReady={isQuoteReady}
             quoteSaved={quoteSaved}
             onSaveQuote={handleSaveQuote}
