@@ -86,7 +86,7 @@ export function BookingSummary({
     }
     if (!quoteGenerated || !isReady || quote.total <= 0) {
       setSendHint(
-        "Prima genera il preventivo nel riquadro Configura la tua serata. Poi puoi inviare la richiesta di disponibilità al gestore.",
+        "Prima genera il preventivo nel riquadro Ricapitoliamo. Poi puoi inviare la richiesta di disponibilità al gestore.",
       );
       return;
     }

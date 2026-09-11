@@ -14,6 +14,8 @@ import {
 
 interface LocationInfoProps {
   location: Location;
+  quotePrice?: string;
+  quoteDetail?: string;
 }
 
 export function getLocationReviews(_location: Location) {
@@ -70,7 +72,11 @@ function PinkStarRating({
   );
 }
 
-export function LocationInfo({ location }: LocationInfoProps) {
+export function LocationInfo({
+  location,
+  quotePrice,
+  quoteDetail,
+}: LocationInfoProps) {
   const { technicalDetails: tech } = location;
   const reviews = getLocationReviews(location);
   const averageRating = getLocationAverageRating(location);
@@ -100,6 +106,18 @@ export function LocationInfo({ location }: LocationInfoProps) {
   return (
     <div className="space-y-6">
       <div>
+        {quotePrice ? (
+          <div className="mb-3">
+            <p className="text-[1.65rem] font-black leading-none tracking-tight text-primary-black">
+              {quotePrice}
+            </p>
+            {quoteDetail ? (
+              <p className="mt-1 text-xs font-bold text-brand-teal">
+                {quoteDetail}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
           <h1 className="text-2xl font-bold text-primary-black">
             {location.name}

@@ -15,9 +15,17 @@ import { useTabNavigation } from "@/context/tab-navigation-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { cn, formatDate } from "@/lib/utils";
 import {
+  clampDrinksPerInvitee,
+  DEFAULT_DRINKS_PER_INVITEE,
+  MAX_DRINKS_PER_INVITEE,
+  MIN_DRINKS_PER_INVITEE,
+  type DrinkPackageMode,
+} from "@/lib/drinks-quote";
+import {
   emptyPartyCriteria,
   MAX_PARTY_DATES,
   PARTY_DATES_MANAGER_HINT,
+  PARTY_EXTRA_SERVICE_OPTIONS,
   normalizePartyCriteria,
   syncPartyDateRange,
   type PartyCriteria,
@@ -28,11 +36,11 @@ import {
   EXPLORE_GUEST_MIN,
   EXPLORE_PRICE_MIN,
 } from "@/types/location";
-import { Calendar, ChevronDown, X } from "lucide-react";
+import { Calendar, ChevronDown, Minus, Plus, X } from "lucide-react";
 import { useRef, useState, type Ref } from "react";
 import { createPortal } from "react-dom";
 
-const STEPS = ["date", "guests", "budget", "description"] as const;
+const STEPS = ["date", "guests", "extras", "budget", "description"] as const;
 
 const dateLabelFormatter = new Intl.DateTimeFormat("it-IT", {
   day: "numeric",
@@ -205,6 +213,9 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
                 stepperRef={guestsRef}
               />
             ) : null}
+            {step === "extras" ? (
+              <ExtrasStep criteria={criteria} onChange={patch} />
+            ) : null}
             {step === "budget" ? (
               <BudgetStep
                 criteria={criteria}
@@ -372,6 +383,162 @@ function GuestsStep({
   );
 }
 
+function ExtrasStep({
+  criteria,
+  onChange,
+}: {
+  criteria: PartyCriteria;
+  onChange: (partial: Partial<PartyCriteria>) => void;
+}) {
+  function toggleService(id: (typeof PARTY_EXTRA_SERVICE_OPTIONS)[number]["id"]) {
+    const selected = criteria.wantedServices.includes(id);
+    onChange({
+      wantedServices: selected
+        ? criteria.wantedServices.filter((item) => item !== id)
+        : [...criteria.wantedServices, id],
+    });
+  }
+
+  function setDrinkMode(drinkMode: DrinkPackageMode) {
+    onChange({
+      drinkMode,
+      drinksPerInvitee:
+        drinkMode === "per_invitee" && criteria.drinksPerInvitee < MIN_DRINKS_PER_INVITEE
+          ? DEFAULT_DRINKS_PER_INVITEE
+          : criteria.drinksPerInvitee,
+    });
+  }
+
+  return (
+    <div className="space-y-6">
+      <fieldset>
+        <legend className="mb-1 text-sm font-semibold text-primary-black">
+          Servizi extra
+        </legend>
+        <p className="mb-3 text-xs leading-relaxed text-primary-black/50">
+          Segna cosa ti serve oltre alla location. Li aggiungi dopo, da I miei
+          eventi, quando la festa è confermata.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {PARTY_EXTRA_SERVICE_OPTIONS.map((service) => {
+            const selected = criteria.wantedServices.includes(service.id);
+            return (
+              <button
+                key={service.id}
+                type="button"
+                onClick={() => toggleService(service.id)}
+                aria-pressed={selected}
+                className={cn(
+                  "rounded-2xl border px-3 py-3 text-left transition-colors",
+                  selected
+                    ? "border-brand-teal bg-paper ring-2 ring-brand-teal/40"
+                    : "border-primary-black/10 bg-paper hover:border-brand-teal/40",
+                )}
+              >
+                <span className="block text-sm font-bold text-ink-inverse">
+                  {service.label}
+                </span>
+                <span className="mt-0.5 block text-[11px] font-medium text-ink-inverse/50">
+                  {service.hint}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend className="mb-1 text-sm font-semibold text-primary-black">
+          Drink per persona
+        </legend>
+        <p className="mb-3 text-xs leading-relaxed text-primary-black/50">
+          Quanti drink vuoi prevedere per ogni ospite. Lo useremo sulla scheda
+          della location.
+        </p>
+        <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-paper p-1 ring-1 ring-primary-black/8">
+          {(
+            [
+              { id: "none", label: "Nessuno" },
+              { id: "per_invitee", label: "Drink" },
+              { id: "open_bar", label: "Open bar" },
+            ] as const
+          ).map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setDrinkMode(option.id)}
+              aria-pressed={criteria.drinkMode === option.id}
+              className={cn(
+                "rounded-xl px-2 py-2.5 text-center text-[11px] font-bold transition-colors sm:text-xs",
+                criteria.drinkMode === option.id
+                  ? "bg-brand-teal text-ink-inverse shadow-sm"
+                  : "bg-transparent text-ink-inverse/55 hover:bg-white/40 hover:text-ink-inverse",
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        {criteria.drinkMode === "per_invitee" ? (
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-primary-black/10 bg-paper px-3 py-2.5">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-ink-inverse">
+                Drink per ospite
+              </p>
+              <p className="text-[11px] text-ink-inverse/50">
+                Da {MIN_DRINKS_PER_INVITEE} a {MAX_DRINKS_PER_INVITEE}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  onChange({
+                    drinksPerInvitee: clampDrinksPerInvitee(
+                      criteria.drinksPerInvitee - 1,
+                    ),
+                  })
+                }
+                disabled={criteria.drinksPerInvitee <= MIN_DRINKS_PER_INVITEE}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-teal/15 text-brand-teal disabled:opacity-35"
+                aria-label="Riduci drink per persona"
+              >
+                <Minus className="h-3.5 w-3.5" aria-hidden />
+              </button>
+              <span className="min-w-[2rem] text-center text-lg font-black tabular-nums text-ink-inverse">
+                {criteria.drinksPerInvitee}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  onChange({
+                    drinksPerInvitee: clampDrinksPerInvitee(
+                      criteria.drinksPerInvitee + 1,
+                    ),
+                  })
+                }
+                disabled={criteria.drinksPerInvitee >= MAX_DRINKS_PER_INVITEE}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-teal text-ink-inverse disabled:opacity-35"
+                aria-label="Aumenta drink per persona"
+              >
+                <Plus className="h-3.5 w-3.5" aria-hidden />
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {criteria.drinkMode === "open_bar" ? (
+          <p className="mt-3 rounded-xl border border-primary-black/10 bg-paper px-3 py-2 text-xs font-semibold text-ink-inverse/70">
+            Open bar per tutta la serata, a partecipante. Il prezzo lo vedi
+            sulla scheda della location.
+          </p>
+        ) : null}
+      </fieldset>
+    </div>
+  );
+}
+
 function BudgetStep({
   criteria,
   onChange,
@@ -416,12 +583,12 @@ function DescriptionStep({
         value={criteria.freeText}
         onChange={(e) => onChange({ freeText: e.target.value })}
         rows={4}
-        placeholder="Scrivi qui se cerchi servizi particolari (es. area esterna, cena, DJ)"
+        placeholder="Scrivi qui se cerchi dettagli particolari (es. area esterna, cena, stile)"
         className="w-full resize-none rounded-2xl border border-primary-black/10 bg-paper px-4 py-3 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
       />
       <p className="mt-2 text-xs text-primary-black/50">
-        Usiamo queste parole per ordinare le location più affini in cima —
-        nessuna viene nascosta.
+        Usiamo queste parole, insieme ai servizi scelti, per ordinare le
+        location più affini in cima — nessuna viene nascosta.
       </p>
     </fieldset>
   );

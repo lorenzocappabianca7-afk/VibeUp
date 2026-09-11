@@ -32,7 +32,8 @@ import {
   readQuoteSessionDraft,
   writeQuoteSessionDraft,
 } from "@/lib/quote-session-draft";
-import { getLocationPricePresentation } from "@/lib/utils";
+import { getFilteredLocationPricePresentation } from "@/lib/location-preview-price";
+import { formatCurrency } from "@/lib/utils";
 import type { ManagedLocationListing } from "@/types/admin";
 import { isManagedListingLive } from "@/types/admin";
 import {
@@ -59,7 +60,7 @@ import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
 import { SafeImage } from "@/components/ui/safe-image";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { normalizePartyDates } from "@/types/party-criteria";
 
 interface LocationDetailViewProps {
@@ -217,6 +218,15 @@ export function LocationDetailView({
     // Only hydrate once per location mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount hydrate
   }, []);
+
+  const appliedCriteriaDrinks = useRef(false);
+  useEffect(() => {
+    if (!quoteSessionReady || appliedCriteriaDrinks.current) return;
+    if (criteria.drinkMode === "none") return;
+    appliedCriteriaDrinks.current = true;
+    setDrinkMode(criteria.drinkMode);
+    setDrinksPerInvitee(clampDrinksPerInvitee(criteria.drinksPerInvitee));
+  }, [criteria.drinkMode, criteria.drinksPerInvitee, quoteSessionReady]);
 
   useEffect(() => {
     if (preferredDates.length === 0) return;
@@ -719,7 +729,23 @@ export function LocationDetailView({
         <div className="space-y-6">
           <LocationGallery images={location.gallery} name={location.name} />
 
-          <LocationInfo location={location} />
+          <LocationInfo
+            location={location}
+            quotePrice={
+              draftQuote.total > 0 ? formatCurrency(draftQuote.total) : undefined
+            }
+            quoteDetail={[
+              `${guestCount} ${guestCount === 1 ? "ospite" : "ospiti"}`,
+              drinkMode === "none"
+                ? null
+                : getDrinkPackageLabel({
+                    mode: drinkMode,
+                    drinksPerInvitee,
+                  }),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          />
         </div>
 
         <aside className="space-y-6 xl:sticky xl:top-8">
@@ -818,6 +844,7 @@ function SimilarLocationsCarousel({
   locations: Location[];
   hrefFor: (locationId: string) => string;
 }) {
+  const { criteria } = usePartyCriteria();
   if (locations.length === 0) return null;
 
   return (
@@ -834,7 +861,10 @@ function SimilarLocationsCarousel({
       <HorizontalTouchScroll className="scrollbar-hidden max-w-full pb-2">
         <ul className="flex w-max gap-3">
           {locations.map((similarLocation) => {
-            const price = getLocationPricePresentation(similarLocation);
+            const price = getFilteredLocationPricePresentation(
+              similarLocation,
+              criteria,
+            );
 
             return (
             <li
@@ -868,10 +898,10 @@ function SimilarLocationsCarousel({
                     </span>
                   </p>
                   <p className="text-sm font-black text-brand-teal">
-                    {price.eyebrow} {price.price} {price.unit}
+                    {price.price}
                   </p>
                   <p className="text-[10px] font-bold text-primary-black/45">
-                    {price.badge}
+                    {price.detail}
                   </p>
                 </div>
               </SoftNavLink>

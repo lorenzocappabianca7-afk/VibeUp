@@ -1,4 +1,46 @@
+import {
+  clampDrinksPerInvitee,
+  DEFAULT_DRINKS_PER_INVITEE,
+  type DrinkPackageMode,
+} from "@/lib/drinks-quote";
+import type { ExtraServiceId } from "@/types/location";
+
 export const MAX_PARTY_DATES = 5;
+
+export const PARTY_EXTRA_SERVICE_OPTIONS: {
+  id: ExtraServiceId;
+  label: string;
+  hint: string;
+}[] = [
+  { id: "dj", label: "DJ", hint: "Musica e console" },
+  { id: "photographer", label: "Fotografo", hint: "Foto e video" },
+  { id: "decorations", label: "Decorazioni", hint: "Allestimenti" },
+  { id: "catering", label: "Catering", hint: "Buffet e food" },
+  { id: "bakery", label: "Torta", hint: "Pasticceria" },
+  { id: "audio_lights", label: "Audio e luci", hint: "Impianto festa" },
+  { id: "menu", label: "Menu", hint: "Cibo e drink" },
+];
+
+const EXTRA_SERVICE_IDS = new Set(
+  PARTY_EXTRA_SERVICE_OPTIONS.map((item) => item.id),
+);
+
+function isDrinkMode(value: unknown): value is DrinkPackageMode {
+  return value === "none" || value === "per_invitee" || value === "open_bar";
+}
+
+function normalizeWantedServices(value: unknown): ExtraServiceId[] {
+  if (!Array.isArray(value)) return [];
+  const unique = new Set<ExtraServiceId>();
+  for (const item of value) {
+    if (typeof item === "string" && EXTRA_SERVICE_IDS.has(item as ExtraServiceId)) {
+      unique.add(item as ExtraServiceId);
+    }
+  }
+  return PARTY_EXTRA_SERVICE_OPTIONS.map((item) => item.id).filter((id) =>
+    unique.has(id),
+  );
+}
 
 /** Shown under venue date filters: more options help the manager approve one. */
 export const PARTY_DATES_MANAGER_HINT =
@@ -14,6 +56,9 @@ export interface PartyCriteria {
   guestCount: number | null;
   budgetMin: number | null;
   budgetMax: number | null;
+  wantedServices: ExtraServiceId[];
+  drinkMode: DrinkPackageMode;
+  drinksPerInvitee: number;
   freeText: string;
 }
 
@@ -24,6 +69,9 @@ export const emptyPartyCriteria: PartyCriteria = {
   guestCount: null,
   budgetMin: null,
   budgetMax: null,
+  wantedServices: [],
+  drinkMode: "none",
+  drinksPerInvitee: DEFAULT_DRINKS_PER_INVITEE,
   freeText: "",
 };
 
@@ -81,6 +129,13 @@ export function normalizePartyCriteria(
     guestCount,
     budgetMin,
     budgetMax,
+    wantedServices: normalizeWantedServices(value?.wantedServices),
+    drinkMode: isDrinkMode(value?.drinkMode) ? value.drinkMode : "none",
+    drinksPerInvitee: clampDrinksPerInvitee(
+      typeof value?.drinksPerInvitee === "number"
+        ? value.drinksPerInvitee
+        : DEFAULT_DRINKS_PER_INVITEE,
+    ),
     freeText: typeof value?.freeText === "string" ? value.freeText : "",
   };
 }
@@ -98,6 +153,16 @@ export function partyCriteriaHasHardFilters(criteria: PartyCriteria): boolean {
 
 export function partyCriteriaHasAny(criteria: PartyCriteria): boolean {
   return (
-    partyCriteriaHasHardFilters(criteria) || criteria.freeText.trim().length > 0
+    partyCriteriaHasHardFilters(criteria) ||
+    criteria.freeText.trim().length > 0 ||
+    criteria.wantedServices.length > 0 ||
+    criteria.drinkMode !== "none"
   );
+}
+
+export function partyCriteriaRankingText(criteria: PartyCriteria): string {
+  const serviceLabels = PARTY_EXTRA_SERVICE_OPTIONS.filter((item) =>
+    criteria.wantedServices.includes(item.id),
+  ).map((item) => `${item.label} ${item.hint}`);
+  return [criteria.freeText, ...serviceLabels].filter(Boolean).join(" ");
 }

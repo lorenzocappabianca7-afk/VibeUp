@@ -10,10 +10,8 @@ import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { buildLocationHrefFromCriteria } from "@/lib/location-href";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
-import {
-  estimateLocationTotalCost,
-  rankLocationsByKeywords,
-} from "@/lib/rank-locations-by-keywords";
+import { estimateLocationFilteredCostRange } from "@/lib/location-preview-price";
+import { rankLocationsByKeywords } from "@/lib/rank-locations-by-keywords";
 import {
   SERVICE_PROVIDERS,
   type ServiceCategory,
@@ -25,7 +23,10 @@ import {
   type ExploreCategory,
   type Location,
 } from "@/types/location";
-import type { PartyCriteria } from "@/types/party-criteria";
+import {
+  partyCriteriaRankingText,
+  type PartyCriteria,
+} from "@/types/party-criteria";
 import {
   Building2,
   Camera,
@@ -195,14 +196,14 @@ function filterLocationsByPartyCriteria(
     const matchesCapacity =
       guestCount == null || location.capacity >= guestCount;
 
-    const estimatedCost = estimateLocationTotalCost(
+    const estimatedCost = estimateLocationFilteredCostRange(
       location,
-      guestCount ?? EXPLORE_GUEST_MIN,
+      hasAppliedCriteria ? criteria : null,
     );
     const matchesBudgetMax =
-      budgetMax == null || estimatedCost <= budgetMax;
+      budgetMax == null || estimatedCost.min <= budgetMax;
     const matchesBudgetMin =
-      budgetMin == null || estimatedCost >= budgetMin;
+      budgetMin == null || estimatedCost.max >= budgetMin;
 
     return matchesQuery && matchesCapacity && matchesBudgetMax && matchesBudgetMin;
   });
@@ -415,7 +416,9 @@ export function ExploreScreen({
       hasAppliedCriteria,
     );
 
-    const freeText = hasAppliedCriteria ? criteria.freeText : "";
+    const freeText = hasAppliedCriteria
+      ? partyCriteriaRankingText(criteria)
+      : "";
     return rankLocationsByKeywords(hardFiltered, freeText);
   }, [allLocations, criteria, deferredQuery, hasAppliedCriteria]);
 

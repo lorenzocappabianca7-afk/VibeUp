@@ -16,7 +16,8 @@ import type {
 } from "@/types/admin";
 import { isManagedListingLive } from "@/types/admin";
 import { SoftNavLink } from "@/components/navigation/soft-nav-link";
-import { formatCurrency, getLocationPricePresentation } from "@/lib/utils";
+import { getFilteredLocationPricePresentation } from "@/lib/location-preview-price";
+import { formatCurrency } from "@/lib/utils";
 import { Briefcase, Heart, MapPin, X } from "lucide-react";
 import { useMemo } from "react";
 
@@ -115,7 +116,10 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
         {favoriteLocations.length > 0 ? (
           <ul className="space-y-2">
             {favoriteLocations.map((location) => {
-              const price = getLocationPricePresentation(location);
+              const price = getFilteredLocationPricePresentation(
+                location,
+                criteria,
+              );
               return (
                 <li
                   key={location.id}
@@ -147,10 +151,10 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
                         </span>
                       </p>
                       <p className="mt-2 text-xs font-bold text-brand-teal">
-                        {price.eyebrow} {price.price} {price.unit}
+                        {price.price}
                       </p>
                       <p className="mt-0.5 text-[10px] font-semibold text-primary-black/45">
-                        {price.badge}
+                        {price.detail}
                       </p>
                     </div>
                   </SoftNavLink>

@@ -5,23 +5,19 @@ import { Check, X } from "lucide-react";
 import { memo, useMemo } from "react";
 import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
 import { SafeImage } from "@/components/ui/safe-image";
+import { usePartyCriteria } from "@/context/party-criteria-context";
+import { getFilteredLocationPricePresentation } from "@/lib/location-preview-price";
 
 interface CompareFavoritesProps {
   locations: Location[];
   onRemove: (id: string) => void;
 }
 
-function getPriceBand(hourlyPrice: number): string {
-  if (hourlyPrice <= 80) return "Bassa";
-  if (hourlyPrice <= 150) return "Media";
-  if (hourlyPrice <= 250) return "Alta";
-  return "Molto alta";
-}
-
 export const CompareFavorites = memo(function CompareFavorites({
   locations,
   onRemove,
 }: CompareFavoritesProps) {
+  const { criteria } = usePartyCriteria();
   const allServices = useMemo(
     () =>
       Array.from(
@@ -121,13 +117,22 @@ export const CompareFavorites = memo(function CompareFavorites({
               </th>
             </tr>
             <CompareRow
-              label="Fascia di prezzo"
+              label="Prezzo stimato"
               locations={locations}
-              renderValue={(loc) => (
-                <span className="font-bold text-brand-teal">
-                  {getPriceBand(loc.hourlyPrice)}
-                </span>
-              )}
+              renderValue={(loc) => {
+                const price = getFilteredLocationPricePresentation(
+                  loc,
+                  criteria,
+                );
+                return (
+                  <span className="block font-bold text-brand-teal">
+                    {price.price}
+                    <span className="mt-0.5 block text-[10px] font-semibold text-primary-black/50">
+                      {price.detail}
+                    </span>
+                  </span>
+                );
+              }}
             />
             <CompareRow
               label="Zona"

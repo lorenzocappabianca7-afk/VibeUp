@@ -130,25 +130,3 @@ export function rankLocationsByKeywords<T extends RankableLocation>(
     .map((item) => item.loc);
 }
 
-/** Rough total cost estimate for hard budget filtering. */
-export function estimateLocationTotalCost(
-  location: {
-    hourlyPrice: number;
-    eventPrice?: number;
-    personPrice?: number;
-    priceModel?: "event" | "person";
-  },
-  guestCount: number,
-): number {
-  if (location.priceModel === "event" && typeof location.eventPrice === "number") {
-    return location.eventPrice;
-  }
-  if (
-    (location.priceModel === "person" || typeof location.personPrice === "number") &&
-    typeof location.personPrice === "number"
-  ) {
-    return location.personPrice * Math.max(1, guestCount);
-  }
-  // ~3h typical booking window for hourly venues
-  return location.hourlyPrice * 3;
-}

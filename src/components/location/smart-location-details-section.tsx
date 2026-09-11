@@ -8,6 +8,7 @@ import {
 import {
   calculateDrinksCost,
   DRINK_UNIT_PRICE,
+  getDrinkPackageLabel,
   MAX_DRINKS_PER_INVITEE,
   MIN_DRINKS_PER_INVITEE,
   OPEN_BAR_PER_INVITEE,
@@ -177,7 +178,7 @@ function BookingTimePicker({
   onSelect: (time: string) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-primary-black/8 bg-paper p-3 shadow-sm">
+    <div className="rounded-2xl border border-ink-inverse/8 bg-paper p-3 shadow-sm">
       <p className="mb-2 text-[11px] font-bold text-ink-inverse/70">
         {mode === "start" ? "Orario inizio" : "Orario fine (fino alle 03:00)"}
       </p>
@@ -203,9 +204,9 @@ function BookingTimePicker({
                       "rounded-lg px-2 py-1 text-[11px] font-bold tabular-nums transition-colors",
                       selected
                         ? "bg-brand-teal text-ink-inverse"
-                        : "bg-primary-black/[0.04] text-ink-inverse hover:bg-brand-teal/15",
+                        : "bg-ink-inverse/[0.04] text-ink-inverse hover:bg-brand-teal/15",
                       disabled &&
-                        "cursor-not-allowed opacity-30 hover:bg-primary-black/[0.04]",
+                        "cursor-not-allowed opacity-30 hover:bg-ink-inverse/[0.04]",
                     )}
                   >
                     {time}
@@ -351,8 +352,7 @@ export function SmartLocationDetailsSection({
 
   function dismissBareQuoteConfirm() {
     setBareQuoteConfirmOpen(false);
-    if (venueDetailsRef.current) venueDetailsRef.current.open = true;
-    if (drinksDetailsRef.current) drinksDetailsRef.current.open = true;
+    setScheduleOpen(true);
     extrasSectionRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "start",
@@ -422,6 +422,17 @@ export function SmartLocationDetailsSection({
   const guestsRecap = `${guestCount} ${guestCount === 1 ? "ospite" : "ospiti"}`;
   const timeRecap =
     startTime && endTime ? `${startTime}–${endTime}` : startTime || endTime || "Orario";
+  const selectedVenueServices = internalServices.filter((service) =>
+    selectedInternalServices.includes(service.id),
+  );
+  const venueRecap =
+    selectedVenueServices.length === 0
+      ? "Nessun extra del locale"
+      : selectedVenueServices.map((service) => service.name).join(", ");
+  const drinksRecap = getDrinkPackageLabel({
+    mode: drinkMode,
+    drinksPerInvitee,
+  });
 
   function stepGuests(delta: number) {
     if (isLocked) return;
@@ -433,32 +444,25 @@ export function SmartLocationDetailsSection({
   }
 
   return (
-    <section className="rounded-[1.75rem] border border-white/10 bg-surface shadow-[0_28px_64px_-32px_rgba(0,0,0,0.7)]">
-      <div className="sticky top-0 z-10 overflow-hidden rounded-t-[1.75rem] border-b border-white/8 bg-surface px-5 py-4">
-        <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(62,207,207,0.22),transparent_42%),linear-gradient(180deg,rgba(62,207,207,0.12),transparent_70%)]"
-          aria-hidden
-        />
+    <section className="overflow-hidden rounded-[1.35rem] border border-black/10 bg-white text-[#1c2430] shadow-[0_8px_28px_-18px_rgba(0,0,0,0.35)]">
+      <div className="sticky top-0 z-10 border-b border-black/10 bg-white px-5 py-4">
         <div className="relative flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-brand-teal">
-              Preventivo
-            </p>
-            <h2 className="mt-1.5 text-xl font-black tracking-tight text-foreground">
-              Configura la tua serata
+            <h2 className="text-xl font-black tracking-tight text-[#1c2430]">
+              Ricapitoliamo
             </h2>
           </div>
           <div className="shrink-0 text-right">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-teal">
               Totale
             </p>
-            <p className="mt-0.5 text-[1.65rem] font-black leading-none tracking-tight text-foreground">
+            <p className="mt-0.5 text-[1.65rem] font-black leading-none tracking-tight text-[#1c2430]">
               {showLiveTotal ? formatCurrency(quote.total) : "—"}
             </p>
           </div>
         </div>
         {!isQuoteReady ? (
-          <p className="relative mt-2 text-[11px] font-semibold text-foreground/50">
+          <p className="relative mt-2 text-[11px] font-semibold text-ink-inverse/50">
             {hasInvalidTimeOrder
               ? "L'orario di fine deve essere successivo a quello di inizio."
               : hasTimeIssue
@@ -472,7 +476,7 @@ export function SmartLocationDetailsSection({
 
       <div className="grid gap-4 p-5">
         {isLocked ? (
-          <p className="rounded-xl border border-brand-teal/30 bg-brand-teal/10 px-3 py-2 text-[11px] font-semibold text-foreground/70">
+          <p className="rounded-xl border border-brand-teal/30 bg-brand-teal/10 px-3 py-2 text-[11px] font-semibold text-ink-inverse/70">
             {isPendingUserConfirm || isPendingProposal || (!ONLINE_PAYMENTS_ENABLED && isPendingDeposit)
               ? "Hai già una risposta del gestore: conferma sotto, senza modificare il preventivo."
               : isPendingDeposit
@@ -483,19 +487,47 @@ export function SmartLocationDetailsSection({
           </p>
         ) : null}
 
-        <div className="relative overflow-hidden rounded-[1.35rem] border border-brand-teal/25 bg-gradient-to-b from-brand-teal/16 to-background/40 p-3.5">
+        <div ref={extrasSectionRef} className="relative">
           {!scheduleOpen ? (
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-teal">
-                    Data, orario e invitati
+                <div className="min-w-0 space-y-1.5 text-sm font-semibold text-[#1c2430]">
+                  <p className="flex min-w-0 items-center gap-1.5">
+                    <Calendar
+                      className="h-4 w-4 shrink-0 text-brand-teal-strong"
+                      aria-hidden
+                    />
+                    <span className="min-w-0 truncate">{dateRecap}</span>
                   </p>
-                  <p className="mt-1.5 truncate text-sm font-black text-foreground">
-                    {dateRecap}
+                  <p className="flex min-w-0 items-center gap-1.5">
+                    <Clock
+                      className="h-4 w-4 shrink-0 text-brand-teal-strong"
+                      aria-hidden
+                    />
+                    <span className="min-w-0 truncate">{timeRecap}</span>
                   </p>
-                  <p className="mt-0.5 text-xs font-semibold text-foreground/60">
-                    {timeRecap} · {guestsRecap}
+                  <p className="flex min-w-0 items-center gap-1.5">
+                    <Users
+                      className="h-4 w-4 shrink-0 text-[#3B6FB6]"
+                      aria-hidden
+                    />
+                    <span className="min-w-0">{guestsRecap}</span>
+                  </p>
+                  <p className="flex min-w-0 items-start gap-1.5">
+                    <Sparkles
+                      className="mt-0.5 h-4 w-4 shrink-0 text-brand-pink"
+                      aria-hidden
+                    />
+                    <span className="min-w-0 leading-snug">
+                      Servizi locale: {venueRecap}
+                    </span>
+                  </p>
+                  <p className="flex min-w-0 items-center gap-1.5">
+                    <GlassWater
+                      className="h-4 w-4 shrink-0 text-brand-teal"
+                      aria-hidden
+                    />
+                    <span className="min-w-0">Bevande: {drinksRecap}</span>
                   </p>
                 </div>
                 <div className="flex w-[7.25rem] shrink-0 flex-col items-end gap-1.5">
@@ -508,15 +540,12 @@ export function SmartLocationDetailsSection({
                       Modifica
                     </button>
                   ) : null}
-                  <p className="text-right text-[10px] font-semibold leading-snug text-foreground/55">
-                    Prima la disponibilità: invia, poi conferma.
-                  </p>
                 </div>
               </div>
 
               {(quote.hours > 0 || locationPriceLabel) && (
-                <dl className="space-y-1.5 rounded-xl border border-white/8 bg-background/40 px-3 py-2 text-xs">
-                  <div className="flex justify-between gap-3 text-foreground/70">
+                <dl className="space-y-1.5 border-t border-ink-inverse/10 pt-3 text-xs">
+                  <div className="flex justify-between gap-3 text-ink-inverse/70">
                     <dt className="min-w-0">
                       Location ({locationLine}
                       {(quote.drinksCost ?? 0) > 0 ? " + bevande" : ""}
@@ -525,14 +554,14 @@ export function SmartLocationDetailsSection({
                         : ""}
                       )
                     </dt>
-                    <dd className="shrink-0 font-bold text-foreground">
+                    <dd className="shrink-0 font-bold text-ink-inverse">
                       {formatCurrency(quote.locationCost)}
                     </dd>
                   </div>
                   {(quote.extrasCost ?? 0) > 0 && (
-                    <div className="flex justify-between gap-3 text-foreground/70">
+                    <div className="flex justify-between gap-3 text-ink-inverse/70">
                       <dt className="min-w-0">Servizi extra</dt>
-                      <dd className="shrink-0 font-bold text-foreground">
+                      <dd className="shrink-0 font-bold text-ink-inverse">
                         {formatCurrency(quote.extrasCost)}
                       </dd>
                     </div>
@@ -541,13 +570,13 @@ export function SmartLocationDetailsSection({
               )}
 
               {hasInvalidTimeOrder && (
-                <p className="rounded-lg border border-white/10 bg-paper px-3 py-2 text-[11px] font-semibold text-ink-inverse">
+                <p className="rounded-lg border border-ink-inverse/10 bg-ink-inverse/[0.03] px-3 py-2 text-[11px] font-semibold text-ink-inverse">
                   L&apos;orario di fine deve essere successivo a quello di
                   inizio (fino alle 03:00 di notte).
                 </p>
               )}
               {hasTimeIssue && (
-                <p className="rounded-lg border border-white/10 bg-paper px-3 py-2 text-[11px] font-semibold text-ink-inverse">
+                <p className="rounded-lg border border-ink-inverse/10 bg-ink-inverse/[0.03] px-3 py-2 text-[11px] font-semibold text-ink-inverse">
                   Durata minima richiesta: {minHours} ore.
                 </p>
               )}
@@ -556,12 +585,12 @@ export function SmartLocationDetailsSection({
             <>
           <div className="mb-3 flex items-start justify-between gap-3">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-teal">
-              Data, orario e invitati
+              Dettagli evento
             </p>
             <button
               type="button"
               onClick={closeScheduleEditor}
-              className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-black text-foreground"
+              className="shrink-0 rounded-full bg-ink-inverse/8 px-3 py-1.5 text-[11px] font-black text-ink-inverse"
             >
               Fatto
             </button>
@@ -571,7 +600,7 @@ export function SmartLocationDetailsSection({
               type="button"
               onClick={() => togglePicker("date")}
               disabled={isLocked}
-              className="w-full rounded-xl border border-white/10 bg-paper px-3 py-2.5 text-left shadow-sm disabled:opacity-60"
+              className="w-full rounded-xl border border-ink-inverse/10 bg-paper px-3 py-2.5 text-left shadow-sm disabled:opacity-60"
             >
               <span className="flex items-center gap-1 text-[10px] font-semibold text-ink-inverse/50">
                 <Calendar className="h-3 w-3" aria-hidden />
@@ -600,7 +629,7 @@ export function SmartLocationDetailsSection({
                   onSelectDate={selectPreferredDate}
                 />
                 {calendarDates.length >= MAX_PARTY_DATES ? (
-                  <p className="text-center text-[11px] font-semibold text-foreground/55">
+                  <p className="text-center text-[11px] font-semibold text-ink-inverse/55">
                     Massimo {MAX_PARTY_DATES} date. Tocca una data già scelta
                     per toglierla.
                   </p>
@@ -613,7 +642,7 @@ export function SmartLocationDetailsSection({
                 type="button"
                 onClick={() => togglePicker("start")}
                 disabled={isLocked}
-                className="rounded-xl border border-white/10 bg-paper px-3 py-2.5 text-left shadow-sm disabled:opacity-60"
+                className="rounded-xl border border-ink-inverse/10 bg-paper px-3 py-2.5 text-left shadow-sm disabled:opacity-60"
               >
                 <span className="flex items-center gap-1 text-[10px] font-semibold text-ink-inverse/50">
                   <Clock className="h-3 w-3" aria-hidden />
@@ -627,7 +656,7 @@ export function SmartLocationDetailsSection({
                 type="button"
                 onClick={() => togglePicker("end")}
                 disabled={isLocked}
-                className="rounded-xl border border-white/10 bg-paper px-3 py-2.5 text-left shadow-sm disabled:opacity-60"
+                className="rounded-xl border border-ink-inverse/10 bg-paper px-3 py-2.5 text-left shadow-sm disabled:opacity-60"
               >
                 <span className="flex items-center gap-1 text-[10px] font-semibold text-ink-inverse/50">
                   <Clock className="h-3 w-3" aria-hidden />
@@ -639,7 +668,7 @@ export function SmartLocationDetailsSection({
               </button>
             </div>
 
-            <div className="vibeup-guest-stepper rounded-xl border border-white/10 bg-paper px-3 py-2.5 shadow-sm">
+            <div className="vibeup-guest-stepper rounded-xl border border-ink-inverse/10 bg-paper px-3 py-2.5 shadow-sm">
               <span className="flex items-center gap-1 text-[10px] font-semibold text-ink-inverse/50">
                 <Users className="h-3 w-3" aria-hidden />
                 Invitati
@@ -743,11 +772,11 @@ export function SmartLocationDetailsSection({
           </div>
 
           {candidateDatePrices.length > 1 ? (
-            <div className="mt-3 space-y-2 rounded-xl border border-white/8 bg-background/40 p-3">
-              <p className="text-xs font-bold text-foreground">
+            <div className="mt-3 space-y-2 rounded-xl border border-ink-inverse/10 bg-ink-inverse/[0.03] p-3">
+              <p className="text-xs font-bold text-ink-inverse">
                 Prezzo per data
               </p>
-              <p className="text-[11px] leading-relaxed text-foreground/55">
+              <p className="text-[11px] leading-relaxed text-ink-inverse/55">
                 La richiesta al gestore parte con la data evidenziata. Weekend e
                 feriali possono avere tariffe diverse.
                 {pricesDiffer ? "" : " In questo caso le date hanno lo stesso totale."}
@@ -765,19 +794,19 @@ export function SmartLocationDetailsSection({
                           "flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left transition-colors",
                           selected
                             ? "border-brand-teal bg-brand-teal/15"
-                            : "border-white/8 bg-surface",
+                            : "border-ink-inverse/10 bg-white",
                           isLocked && "opacity-60",
                         )}
                       >
                         <span>
-                          <span className="block text-xs font-bold text-foreground">
+                          <span className="block text-xs font-bold text-ink-inverse">
                             {formatDate(item.date)}
                           </span>
-                          <span className="text-[11px] font-semibold text-foreground/50">
+                          <span className="text-[11px] font-semibold text-ink-inverse/50">
                             {item.band}
                           </span>
                         </span>
-                        <span className="shrink-0 text-sm font-black text-foreground">
+                        <span className="shrink-0 text-sm font-black text-ink-inverse">
                           {formatCurrency(item.total)}
                         </span>
                       </button>
@@ -789,8 +818,8 @@ export function SmartLocationDetailsSection({
           ) : null}
 
           {(quote.hours > 0 || locationPriceLabel) && (
-            <dl className="mt-3 space-y-1.5 rounded-xl border border-white/8 bg-background/40 px-3 py-2.5 text-xs">
-              <div className="flex justify-between gap-3 text-foreground/70">
+            <dl className="mt-3 space-y-1.5 rounded-xl border border-ink-inverse/10 bg-ink-inverse/[0.03] px-3 py-2.5 text-xs">
+              <div className="flex justify-between gap-3 text-ink-inverse/70">
                 <dt className="min-w-0">
                   Location ({locationLine}
                   {(quote.drinksCost ?? 0) > 0 ? " + bevande" : ""}
@@ -799,14 +828,14 @@ export function SmartLocationDetailsSection({
                     : ""}
                   )
                 </dt>
-                <dd className="shrink-0 font-bold text-foreground">
+                <dd className="shrink-0 font-bold text-ink-inverse">
                   {formatCurrency(quote.locationCost)}
                 </dd>
               </div>
               {(quote.extrasCost ?? 0) > 0 && (
-                <div className="flex justify-between gap-3 text-foreground/70">
+                <div className="flex justify-between gap-3 text-ink-inverse/70">
                   <dt className="min-w-0">Servizi extra</dt>
-                  <dd className="shrink-0 font-bold text-foreground">
+                  <dd className="shrink-0 font-bold text-ink-inverse">
                     {formatCurrency(quote.extrasCost)}
                   </dd>
                 </div>
@@ -817,7 +846,7 @@ export function SmartLocationDetailsSection({
           {ONLINE_PAYMENTS_ENABLED ? (
           <dl className="mt-3 space-y-1.5 rounded-xl bg-brand-pink/12 px-3 py-2.5">
             <div className="flex justify-between gap-3 text-sm">
-              <dt className="min-w-0 font-medium text-foreground">
+              <dt className="min-w-0 font-medium text-ink-inverse">
                 Caparra (30% location)
               </dt>
               <dd className="shrink-0 font-bold text-brand-pink">
@@ -825,15 +854,15 @@ export function SmartLocationDetailsSection({
               </dd>
             </div>
             <div className="flex justify-between gap-3 text-xs">
-              <dt className="min-w-0 text-foreground/65">
+              <dt className="min-w-0 text-ink-inverse/65">
                 + Commissioni VibeUp (5%)
               </dt>
-              <dd className="shrink-0 font-semibold text-foreground/80">
+              <dd className="shrink-0 font-semibold text-ink-inverse/80">
                 {showLiveTotal ? formatCurrency(depositCheckout.fee) : "—"}
               </dd>
             </div>
             <div className="flex justify-between gap-3 border-t border-brand-pink/25 pt-1.5 text-sm">
-              <dt className="min-w-0 font-semibold text-foreground">
+              <dt className="min-w-0 font-semibold text-ink-inverse">
                 Totale caparra (pagamento online)
               </dt>
               <dd className="shrink-0 font-bold text-brand-pink">
@@ -844,32 +873,28 @@ export function SmartLocationDetailsSection({
           ) : null}
 
           {hasInvalidTimeOrder && (
-            <p className="mt-2 rounded-lg border border-white/10 bg-paper px-3 py-2 text-[11px] font-semibold text-ink-inverse">
+            <p className="mt-2 rounded-lg border border-ink-inverse/10 bg-paper px-3 py-2 text-[11px] font-semibold text-ink-inverse">
               L&apos;orario di fine deve essere successivo a quello di inizio
               (fino alle 03:00 di notte).
             </p>
           )}
           {hasTimeIssue && (
-            <p className="mt-2 rounded-lg border border-white/10 bg-paper px-3 py-2 text-[11px] font-semibold text-ink-inverse">
+            <p className="mt-2 rounded-lg border border-ink-inverse/10 bg-paper px-3 py-2 text-[11px] font-semibold text-ink-inverse">
               Durata minima richiesta: {minHours} ore.
             </p>
           )}
-            </>
-          )}
-        </div>
-
-        <div ref={extrasSectionRef} className="grid gap-3">
-
+            <div className="mt-4 grid gap-3">
         <details
           ref={venueDetailsRef}
-          className="group rounded-[1.15rem] border border-white/8 bg-background/55 px-3 py-2.5"
+          open
+          className="group rounded-[0.85rem] border border-ink-inverse/10 bg-ink-inverse/[0.03] px-3 py-2.5"
         >
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
             <div>
-              <h3 className="text-sm font-black leading-tight text-foreground">
+              <h3 className="text-sm font-black leading-tight text-ink-inverse">
                 Servizi del locale
               </h3>
-              <p className="mt-0.5 text-[11px] font-medium leading-snug text-foreground/50">
+              <p className="mt-0.5 text-[11px] font-medium leading-snug text-ink-inverse/50">
                 Menu, DJ, bar, audio e allestimenti.
               </p>
             </div>
@@ -878,7 +903,7 @@ export function SmartLocationDetailsSection({
                 {selectedInternalServices.length}/{internalServices.length}
               </span>
               <ChevronDown
-                className="h-3.5 w-3.5 text-foreground/40 transition-transform group-open:rotate-180"
+                className="h-3.5 w-3.5 text-ink-inverse/40 transition-transform group-open:rotate-180"
                 aria-hidden
               />
             </span>
@@ -905,7 +930,7 @@ export function SmartLocationDetailsSection({
                       "flex w-full items-start gap-3 rounded-2xl border p-3 text-left transition-all duration-150",
                       isSelected
                         ? "border-brand-teal/55 bg-brand-teal/12 shadow-[0_8px_24px_-18px_rgba(62,207,207,0.9)]"
-                        : "border-white/8 bg-surface hover:border-white/18",
+                        : "border-ink-inverse/10 bg-white hover:border-ink-inverse/20",
                       (!service.available || isIncluded) &&
                         "cursor-not-allowed",
                       !service.available && "opacity-50",
@@ -916,21 +941,21 @@ export function SmartLocationDetailsSection({
                         "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
                         isSelected
                           ? "bg-brand-teal text-ink-inverse"
-                          : "bg-background/80 text-foreground/50",
+                          : "bg-ink-inverse/[0.06] text-ink-inverse/50",
                       )}
                     >
                       <Icon className="h-5 w-5" aria-hidden />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-start justify-between gap-2">
-                        <span className="font-semibold text-foreground">
+                        <span className="font-semibold text-ink-inverse">
                           {service.name}
                         </span>
                         <span className="shrink-0 text-sm font-bold text-brand-teal">
                           {formatInternalServicePrice(service, guestCount)}
                         </span>
                       </span>
-                      <span className="mt-0.5 block text-xs leading-relaxed text-foreground/48">
+                      <span className="mt-0.5 block text-xs leading-relaxed text-ink-inverse/48">
                         {service.description}
                       </span>
                       {isIncluded ? (
@@ -939,7 +964,7 @@ export function SmartLocationDetailsSection({
                         </span>
                       ) : null}
                       {drinksReplaceBar ? (
-                        <span className="mt-1 block text-[11px] font-semibold text-foreground/55">
+                        <span className="mt-1 block text-[11px] font-semibold text-ink-inverse/55">
                           Non viene aggiunto al totale: vale il pacchetto
                           bevande.
                         </span>
@@ -950,7 +975,7 @@ export function SmartLocationDetailsSection({
                         "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2",
                         isSelected
                           ? "border-brand-teal bg-brand-teal text-ink-inverse"
-                          : "border-white/20",
+                          : "border-ink-inverse/20",
                       )}
                     >
                       {isSelected && <Check className="h-3 w-3" aria-hidden />}
@@ -964,7 +989,8 @@ export function SmartLocationDetailsSection({
 
         <details
           ref={drinksDetailsRef}
-          className="group rounded-[1.15rem] border border-white/8 bg-background/55 px-3 py-2.5"
+          open
+          className="group rounded-[0.85rem] border border-ink-inverse/10 bg-ink-inverse/[0.03] px-3 py-2.5"
         >
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
             <div className="flex min-w-0 items-center gap-2.5">
@@ -972,10 +998,10 @@ export function SmartLocationDetailsSection({
                 <GlassWater className="h-4 w-4" aria-hidden />
               </span>
               <span className="min-w-0">
-                <h3 className="text-sm font-black leading-tight text-foreground">
+                <h3 className="text-sm font-black leading-tight text-ink-inverse">
                   Bevande
                 </h3>
-                <p className="text-[11px] font-medium leading-snug text-foreground/50">
+                <p className="text-[11px] font-medium leading-snug text-ink-inverse/50">
                   Drink a partecipante oppure open bar.
                 </p>
               </span>
@@ -989,13 +1015,13 @@ export function SmartLocationDetailsSection({
                     : "Drink"}
               </span>
               <ChevronDown
-                className="h-3.5 w-3.5 text-foreground/40 transition-transform group-open:rotate-180"
+                className="h-3.5 w-3.5 text-ink-inverse/40 transition-transform group-open:rotate-180"
                 aria-hidden
               />
             </span>
           </summary>
 
-          <div className="mt-3 grid grid-cols-3 gap-1.5 rounded-2xl bg-surface p-1 ring-1 ring-white/8">
+          <div className="mt-3 grid grid-cols-3 gap-1.5 rounded-2xl bg-ink-inverse/[0.04] p-1 ring-1 ring-ink-inverse/10">
             {(
               [
                 { id: "none", label: "Nessuna" },
@@ -1012,7 +1038,7 @@ export function SmartLocationDetailsSection({
                   "rounded-xl px-2 py-2.5 text-center text-[11px] font-bold transition-colors sm:text-xs",
                   drinkMode === option.id
                     ? "bg-brand-teal text-ink-inverse shadow-sm"
-                    : "bg-transparent text-foreground/55 hover:bg-white/6 hover:text-foreground",
+                    : "bg-transparent text-ink-inverse/55 hover:bg-ink-inverse/[0.04] hover:text-ink-inverse",
                 )}
               >
                 {option.label}
@@ -1021,12 +1047,12 @@ export function SmartLocationDetailsSection({
           </div>
 
           {drinkMode === "per_invitee" && (
-            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-surface px-3 py-2.5">
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-ink-inverse/10 bg-white px-3 py-2.5">
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">
+                <p className="text-sm font-semibold text-ink-inverse">
                   Drink per partecipante
                 </p>
-                <p className="text-[11px] text-foreground/48">
+                <p className="text-[11px] text-ink-inverse/48">
                   {formatCurrency(drinkUnitPrice ?? DRINK_UNIT_PRICE)} ciascuno
                 </p>
               </div>
@@ -1042,7 +1068,7 @@ export function SmartLocationDetailsSection({
                 >
                   <Minus className="h-3.5 w-3.5" aria-hidden />
                 </button>
-                <span className="min-w-[2rem] text-center text-lg font-black tabular-nums text-foreground">
+                <span className="min-w-[2rem] text-center text-lg font-black tabular-nums text-ink-inverse">
                   {drinksPerInvitee}
                 </span>
                 <button
@@ -1061,16 +1087,16 @@ export function SmartLocationDetailsSection({
           )}
 
           {drinkMode === "open_bar" && (
-            <p className="mt-3 rounded-xl border border-white/8 bg-surface px-3 py-2 text-xs font-semibold text-foreground/70">
+            <p className="mt-3 rounded-xl border border-ink-inverse/10 bg-ink-inverse/[0.03] px-3 py-2 text-xs font-semibold text-ink-inverse/70">
               Open bar stimato a {formatCurrency(openBarPerInvitee ?? OPEN_BAR_PER_INVITEE)}
               /partecipante per tutta la serata.
             </p>
           )}
 
           {drinkMode !== "none" && (
-            <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/8 pt-3 text-sm">
-              <span className="text-foreground/55">Incluso nel costo locale</span>
-              <span className="font-bold text-foreground">
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-ink-inverse/8 pt-3 text-sm">
+              <span className="text-ink-inverse/55">Incluso nel costo locale</span>
+              <span className="font-bold text-ink-inverse">
                 {formatCurrency(
                   quote.drinksCost ??
                     calculateDrinksCost({
@@ -1085,14 +1111,17 @@ export function SmartLocationDetailsSection({
             </div>
           )}
         </details>
+            </div>
+            </>
+          )}
         </div>
 
-        <div className="rounded-[1.35rem] border border-brand-teal/25 bg-gradient-to-b from-brand-teal/12 to-background/40 p-4">
+        <div className="border-t border-black/10 pt-4">
           <div className="flex items-end justify-between gap-3">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-teal">
               Totale
             </p>
-            <p className="text-[1.45rem] font-black leading-none tracking-tight text-foreground">
+            <p className="text-[1.45rem] font-black leading-none tracking-tight text-ink-inverse">
               {showLiveTotal ? formatCurrency(quote.total) : "—"}
             </p>
           </div>
@@ -1104,7 +1133,7 @@ export function SmartLocationDetailsSection({
               className={cn(
                 "mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-black transition-colors",
                 quoteSaved
-                  ? "bg-brand-pink/25 text-foreground ring-1 ring-white/15"
+                  ? "bg-brand-pink/25 text-ink-inverse ring-1 ring-ink-inverse/10"
                   : "bg-brand-pink text-ink-inverse hover:bg-brand-pink/90",
               )}
               aria-pressed={quoteSaved}
@@ -1118,7 +1147,7 @@ export function SmartLocationDetailsSection({
             </button>
           ) : null}
 
-          <label className="mt-3 block rounded-xl border border-white/10 bg-paper px-3 py-1.5">
+          <label className="mt-3 block rounded-xl border border-ink-inverse/10 bg-paper px-3 py-1.5">
             <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-ink-inverse/45">
               Nome evento
             </span>
@@ -1147,11 +1176,17 @@ export function SmartLocationDetailsSection({
               className={cn(
                 "w-full rounded-2xl py-4 text-base font-semibold",
                 (isPendingManager || isPendingAdmin) &&
-                  "bg-primary-black/70 hover:bg-primary-black/70 disabled:opacity-100",
+                  "bg-[#1c2430]/70 text-white hover:bg-[#1c2430]/70 disabled:opacity-100",
                 (isPendingUserConfirm ||
                   isPendingProposal ||
                   isPendingDeposit) &&
-                  "bg-brand-teal hover:bg-brand-teal disabled:opacity-100",
+                  "bg-brand-teal text-ink-inverse hover:bg-brand-teal disabled:opacity-100",
+                !isPendingManager &&
+                  !isPendingAdmin &&
+                  !isPendingUserConfirm &&
+                  !isPendingProposal &&
+                  !isPendingDeposit &&
+                  "!bg-[#1c2430] !text-white hover:!bg-[#11151c]",
               )}
               disabled={isPendingManager || isPendingAdmin}
               onClick={handleSend}
@@ -1205,7 +1240,7 @@ export function SmartLocationDetailsSection({
               </p>
             )}
             {isPendingDeposit && ONLINE_PAYMENTS_ENABLED && (
-              <p className="text-center text-xs text-foreground/50">
+              <p className="text-center text-xs text-ink-inverse/50">
                 Completa il pagamento della caparra per confermare l&apos;evento.
               </p>
             )}
@@ -1215,7 +1250,7 @@ export function SmartLocationDetailsSection({
               </p>
             )}
             {isPendingManager && (
-              <p className="text-center text-xs text-foreground/50">
+              <p className="text-center text-xs text-ink-inverse/50">
                 Il gestore riceverà data e dettagli. Ti avviseremo se accetta.
               </p>
             )}
@@ -1270,7 +1305,7 @@ export function SmartLocationDetailsSection({
             <button
               type="button"
               onClick={() => setBareQuoteConfirmOpen(false)}
-              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary-black/5 text-primary-black/50"
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-foreground/50"
               aria-label="Chiudi"
             >
               <X className="h-4 w-4" aria-hidden />

@@ -6,7 +6,9 @@ import {
   ImageCarousel,
   uniqueImages,
 } from "@/components/ui/image-carousel";
-import { cn, getLocationPricePresentation } from "@/lib/utils";
+import { usePartyCriteria } from "@/context/party-criteria-context";
+import { getFilteredLocationPricePresentation } from "@/lib/location-preview-price";
+import { cn } from "@/lib/utils";
 import type { ContactPreview, Location } from "@/types/location";
 import { GitCompareArrows, Heart, MapPin } from "lucide-react";
 import { memo, useMemo, useState } from "react";
@@ -34,9 +36,10 @@ export const LocationCard = memo(function LocationCard({
   showCompare = true,
   priority = false,
 }: LocationCardProps) {
+  const { criteria } = usePartyCriteria();
   const { contactsBeenHere } = location;
   const hasContacts = contactsBeenHere.count > 0;
-  const price = getLocationPricePresentation(location);
+  const price = getFilteredLocationPricePresentation(location, criteria);
   const [contactsOpen, setContactsOpen] = useState(false);
   const photos = useMemo(
     () => uniqueImages([location.imageUrl, ...(location.gallery ?? [])]),
@@ -143,13 +146,10 @@ export const LocationCard = memo(function LocationCard({
           </div>
           <p className="shrink-0 self-start sm:text-right">
             <span className="rounded-full bg-paper px-3 py-1 text-xs font-bold text-ink-inverse">
-              {price.eyebrow} {price.price}
+              {price.price}
             </span>
-            <span className="mt-1 block text-[10px] font-bold text-primary-black/50">
-              {price.unit}
-            </span>
-            <span className="mt-1 block text-[10px] text-brand-teal">
-              {price.badge}
+            <span className="mt-1 block text-[10px] font-bold text-brand-teal">
+              {price.detail}
             </span>
           </p>
         </div>
