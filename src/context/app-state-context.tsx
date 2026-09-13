@@ -31,6 +31,7 @@ import {
   isAdminManagerViewEnabled,
   setAdminManagerViewEnabled,
 } from "@/lib/admin-access";
+import { isDemoMode } from "@/lib/demo/mode";
 import {
   buildAdminPreviewEvent,
   getAdminPreviewDepositPaymentKey,
@@ -1066,6 +1067,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydratedFromStorage) return;
+    if (isDemoMode()) return;
     if (!canAccessAdminCatalog(currentUser.email, currentUser.role)) return;
 
     updateCurrentUserState((state) => {

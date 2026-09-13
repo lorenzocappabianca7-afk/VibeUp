@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { SafeImage } from "@/components/ui/safe-image";
 import { useAppState } from "@/context/app-state-context";
+import { useDemoMode } from "@/context/demo-mode-context";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import type {
@@ -105,6 +106,7 @@ export function ProtectedCatalogManager() {
     removeManagedListing,
     toggleManagedListingPublication,
   } = useAppState();
+  const { isDemoMode } = useDemoMode();
   const [activeCategory, setActiveCategory] = useState<ExploreCategory>("locali");
   const [adminSection, setAdminSection] = useState<"catalog" | "proposals">(
     "catalog",
@@ -387,6 +389,14 @@ export function ProtectedCatalogManager() {
           <ClipboardCheck className="h-4 w-4" aria-hidden />
           Proposte da validare
         </button>
+        {isDemoMode ? (
+          <Link
+            href="/admin/demo"
+            className="inline-flex items-center rounded-2xl bg-primary-black/[0.04] px-4 py-2.5 text-sm font-bold text-primary-black/65 transition-colors hover:text-primary-black"
+          >
+            Risposte demo
+          </Link>
+        ) : null}
       </div>
 
       {adminSection === "proposals" ? (

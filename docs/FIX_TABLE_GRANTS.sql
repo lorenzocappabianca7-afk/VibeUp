@@ -27,6 +27,13 @@ grant select, insert, update on table public.bookings to authenticated;
 grant select, insert, update, delete on table public.booking_payments to service_role;
 grant select, insert, update on table public.booking_payments to authenticated;
 
+-- Demo (isolated from profiles / bookings; service_role only)
+do $$ begin
+  if to_regclass('public.demo_submissions') is not null then
+    execute 'grant select, insert, update, delete on table public.demo_submissions to service_role';
+  end if;
+end $$;
+
 -- Sequences (if any future serials); safe no-op when none exist
 do $$ begin
   execute 'grant usage, select on all sequences in schema public to service_role';

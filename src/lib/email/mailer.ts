@@ -20,6 +20,7 @@ export async function sendTransactionalEmail(input: {
   subject: string;
   html: string;
   text: string;
+  fromName?: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) {
@@ -30,9 +31,10 @@ export async function sendTransactionalEmail(input: {
     };
   }
 
+  const fromName = input.fromName?.trim() || VIBEUP_FROM_NAME;
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send({
-    from: `${VIBEUP_FROM_NAME} <${VIBEUP_FROM_EMAIL}>`,
+    from: `${fromName} <${VIBEUP_FROM_EMAIL}>`,
     to: input.to,
     replyTo: VIBEUP_FROM_EMAIL,
     subject: input.subject,

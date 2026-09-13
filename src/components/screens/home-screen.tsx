@@ -2,6 +2,7 @@
 
 import { DjCard } from "@/components/explore/dj-card";
 import { LocationCard } from "@/components/explore/location-card";
+import { DemoHomeCreateWrap } from "@/components/demo/demo-home-tip";
 import { PartyWizard } from "@/components/home/party-wizard";
 import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
 import { Button } from "@/components/ui/button";
@@ -241,9 +242,11 @@ export function HomeScreen() {
         <h2 className="mt-2 text-2xl font-bold tracking-tight text-primary-black sm:text-[1.75rem]">
           {homeBannerText}
         </h2>
-        <Button className="mt-4 w-full sm:w-auto" onClick={() => setWizardOpen(true)}>
-          Crea la tua festa
-        </Button>
+        <DemoHomeCreateWrap>
+          <Button className="mt-4 w-full sm:w-auto" onClick={() => setWizardOpen(true)}>
+            Crea la tua festa
+          </Button>
+        </DemoHomeCreateWrap>
       </section>
 
       <section className="space-y-3">

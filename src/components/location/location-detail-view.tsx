@@ -7,6 +7,7 @@ import { useAccountGate } from "@/context/account-gate-context";
 import { useAppState } from "@/context/app-state-context";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
 import { useChat } from "@/context/chat-context";
+import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { pushHomeHref } from "@/lib/home-navigation";
@@ -130,6 +131,8 @@ export function LocationDetailView({
   const { requireAccount } = useAccountGate();
   const { startVendorConversation } = useChat();
   const { setTab } = useTabNavigation();
+  const { isDemoMode, setDemoBookedLocation, markDemoBookingConfirmed } =
+    useDemoMode();
   const { criteria, hasAppliedCriteria } = usePartyCriteria();
   const router = useRouter();
   const [chatError, setChatError] = useState<string | null>(null);
@@ -644,8 +647,7 @@ export function LocationDetailView({
 
     if (!isQuoteReady) return;
 
-    requireAccount(
-      () => {
+    const sendNow = () => {
         const includedVenueParts = [
           ...internalServices
             .filter(
@@ -713,8 +715,33 @@ export function LocationDetailView({
             return;
           }
           setRequestError(null);
+          if (!isDemoMode) return;
+          void (async () => {
+            try {
+              await setDemoBookedLocation({
+                id: location.id,
+                name: location.name,
+              });
+            } catch {
+              // Local session still has the pick.
+            }
+            try {
+              await markDemoBookingConfirmed();
+            } catch {
+              // Event already exists locally; Continua still needs this flag.
+            }
+            window.location.assign("/?tab=events");
+          })();
         });
-      },
+    };
+
+    if (isDemoMode) {
+      sendNow();
+      return;
+    }
+
+    requireAccount(
+      sendNow,
       "Per inviare una richiesta di disponibilità crea un account.",
     );
   }

@@ -1,11 +1,13 @@
 "use client";
 
+import { DemoExplorePickerBar } from "@/components/demo/demo-explore-picker";
 import { CompareFavorites } from "@/components/explore/compare-favorites";
 import { DiscountInviteBanner } from "@/components/discount-invite-banner";
 import { ExploreSearchBar } from "@/components/explore/explore-search-bar";
 import { LocationCard } from "@/components/explore/location-card";
 import { useAccountGate } from "@/context/account-gate-context";
 import { useAppState } from "@/context/app-state-context";
+import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { buildLocationHrefFromCriteria } from "@/lib/location-href";
@@ -47,6 +49,7 @@ import {
   useDeferredValue,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useTransition,
 } from "react";
@@ -294,8 +297,21 @@ export function ExploreScreen({
   const { requireAccount } = useAccountGate();
   const { activeTab } = useTabNavigation();
   const { criteria, hasAppliedCriteria, clearCriteria } = usePartyCriteria();
+  const { isDemoMode, selectedLocations, toggleDemoLocation } = useDemoMode();
+  const demoPicking = isDemoMode && hasAppliedCriteria;
+  const demoSelectedIdSet = useMemo(
+    () => new Set(selectedLocations.map((item) => item.id)),
+    [selectedLocations],
+  );
+  const locationNameByIdRef = useRef(new Map<string, string>());
 
   function handleToggleFavoriteLocation(id: string) {
+    if (demoPicking) {
+      const name = locationNameByIdRef.current.get(id);
+      if (name) toggleDemoLocation({ id, name });
+      return;
+    }
+
     if (favoriteLocationIds.includes(id)) {
       toggleFavoriteLocation(id);
       return;
@@ -403,6 +419,9 @@ export function ExploreScreen({
         ).values(),
       ),
     [catalogLocations, publishedManagedLocations],
+  );
+  locationNameByIdRef.current = new Map(
+    allLocations.map((location) => [location.id, location.name]),
   );
   const allServices = useMemo(
     () => [...publishedManagedServices, ...SERVICE_PROVIDERS],
@@ -847,7 +866,11 @@ export function ExploreScreen({
                 <li key={location.id} className="min-w-0 h-full">
                   <LocationCard
                     location={location}
-                    isFavorite={favoriteLocationIdSet.has(location.id)}
+                    isFavorite={
+                      demoPicking
+                        ? demoSelectedIdSet.has(location.id)
+                        : favoriteLocationIdSet.has(location.id)
+                    }
                     isCompareSelected={compareLocationIdSet.has(location.id)}
                     onToggleFavorite={handleToggleFavoriteLocation}
                     onToggleCompare={handleToggleCompareLocation}
@@ -856,7 +879,9 @@ export function ExploreScreen({
                 </li>
               ))}
             </ul>
-            {compareLocationIds.length > 0 ? (
+            {demoPicking ? (
+              <DemoExplorePickerBar availableCount={filteredLocations.length} />
+            ) : compareLocationIds.length > 0 ? (
               <div className="sticky bottom-24 z-20 sm:bottom-28">
                 <button
                   type="button"

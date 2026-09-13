@@ -2,6 +2,7 @@
 
 import { useAppState } from "@/context/app-state-context";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
+import { isDemoAvailabilityRequestId, isDemoMode } from "@/lib/demo/mode";
 import { useInboxBadge } from "@/context/inbox-badge-context";
 import {
   createAvailabilityRequestRemote,
@@ -159,9 +160,11 @@ function readStoredRequests(): AvailabilityRequest[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return pruneAvailabilityRequests(
+    const stored = pruneAvailabilityRequests(
       parsed.filter(isAvailabilityRequest).map(normalizeAvailabilityRequest),
     );
+    if (isDemoMode()) return stored;
+    return stored.filter((item) => !isDemoAvailabilityRequestId(item.id));
   } catch {
     return [];
   }
@@ -169,7 +172,11 @@ function readStoredRequests(): AvailabilityRequest[] {
 
 function writeStoredRequests(requests: AvailabilityRequest[]) {
   if (typeof window === "undefined") return;
-  const pruned = pruneAvailabilityRequests(requests);
+  const pruned = pruneAvailabilityRequests(
+    isDemoMode()
+      ? requests
+      : requests.filter((item) => !isDemoAvailabilityRequestId(item.id)),
+  );
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned));
   } catch {
@@ -467,6 +474,82 @@ export function AvailabilityRequestProvider({
       locationName: string;
       eventPayload: AvailabilityEventPayload;
     }) => {
+      if (isDemoMode()) {
+        const now = new Date().toISOString();
+        const request = normalizeAvailabilityRequest({
+          id: `ar-demo-${Date.now()}`,
+          status: "confirmed",
+          requesterUserId: currentUser.id,
+          requesterName: currentUser.name,
+          requesterEmail: currentUser.email,
+          locationId: input.locationId,
+          locationName: input.locationName,
+          createdAt: now,
+          updatedAt: now,
+          eventPayload: input.eventPayload,
+          managerDecision: "accept",
+          managerNote: null,
+          managerProposedDates: null,
+          managerProposedPrice: null,
+          managerRespondedAt: now,
+          responseToken: `demo-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
+          responseTokenExpiresAt: new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+          responseTokenUsedAt: now,
+          adminReviewedBy: null,
+          adminReviewedAt: null,
+          adminNote: null,
+          userSelectedDate: null,
+          userSelectedPrice: null,
+          confirmationDeadline: null,
+          confirmationReminderSentAt: null,
+        });
+
+        requestsRef.current = [request, ...requestsRef.current];
+        setRequests((prev) => [request, ...prev]);
+
+        const payload = input.eventPayload;
+        if (
+          payload.requestKind === "service" &&
+          payload.targetEventId &&
+          payload.pendingService
+        ) {
+          addServiceToEvent(payload.targetEventId, {
+            ...payload.pendingService,
+            status: "confirmed",
+          });
+          return { ok: true as const, requestId: request.id };
+        }
+
+        const eventId = `evt-demo-${Date.now()}`;
+        const event: UserEvent = {
+          id: eventId,
+          title: payload.title,
+          description: payload.description,
+          date: payload.date,
+          time: payload.time,
+          endTime: payload.endTime,
+          locationId: payload.locationId,
+          locationName: payload.locationName,
+          city: payload.city,
+          status: "organizing",
+          guestCount: payload.guestCount,
+          services: payload.services.map((service) => ({
+            ...service,
+            id: service.id.startsWith("draft-")
+              ? service.id.replace(/^draft-/, `${eventId}-`)
+              : `${eventId}-${service.id}`,
+          })),
+          totalCost: payload.totalCost,
+          depositAmount: payload.depositAmount,
+          createdAt: now,
+        };
+
+        addEvent(event);
+        return { ok: true as const, requestId: request.id };
+      }
+
       if (isGuest) {
         return {
           ok: false as const,
@@ -556,6 +639,8 @@ export function AvailabilityRequestProvider({
       return { ok: true as const, requestId: request.id };
     },
     [
+      addEvent,
+      addServiceToEvent,
       cloudSyncEnabled,
       currentUser.email,
       currentUser.id,

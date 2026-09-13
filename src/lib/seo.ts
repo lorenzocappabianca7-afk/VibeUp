@@ -152,6 +152,13 @@ export const STATIC_PAGE_METADATA = {
     path: "/admin/catalog",
     index: false,
   },
+  adminDemo: {
+    title: "Risposte demo",
+    description:
+      "Area riservata per consultare le risposte raccolte dalla modalità demo di VibeUp.",
+    path: "/admin/demo",
+    index: false,
+  },
   activate: {
     title: "Attiva l'account",
     description:

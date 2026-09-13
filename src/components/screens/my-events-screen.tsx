@@ -1,5 +1,6 @@
 "use client";
 
+import { DemoEventsContinueBar } from "@/components/demo/demo-events-continue";
 import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import { DiscountInviteBanner } from "@/components/discount-invite-banner";
 import { EventCountdown } from "@/components/events/event-countdown";
@@ -15,6 +16,7 @@ import {
   EVENT_TIPS_TITLE,
 } from "@/lib/event-organizer-guides";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
+import { isDemoEventId } from "@/lib/demo/mode";
 import {
   buildAdminPreviewEvent,
   getAdminPreviewDepositPaymentKey,
@@ -22,6 +24,7 @@ import {
 } from "@/lib/admin-preview-event";
 import { useAppState } from "@/context/app-state-context";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
+import { useDemoMode } from "@/context/demo-mode-context";
 import { useProfileCommunications } from "@/context/profile-communications-context";
 import { getCountdown, isEventPast } from "@/lib/event";
 import { formatSiaePrice, SIAE_VIBEUP_TOTAL_EUR, type SiaeChoice, type SiaeStatus } from "@/lib/siae";
@@ -244,6 +247,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
     updateEventSiae,
     toggleEventChecklistItem,
   } = useAppState();
+  const { isDemoMode } = useDemoMode();
   const isAdminCatalog = canAccessAdminCatalog(
     currentUser.email,
     currentUser.role,
@@ -288,8 +292,15 @@ export const MyEventsScreen = memo(function MyEventsScreen({
 
   const activeEvents = useMemo(() => {
     const upcoming = events.filter((event) => !isEventPast(event));
+    const withoutPreview = upcoming.filter(
+      (event) => !isAdminPreviewEventId(event.id),
+    );
+    if (isDemoMode) return withoutPreview;
+    const withoutDemo = withoutPreview.filter(
+      (event) => !isDemoEventId(event.id),
+    );
     if (!isAdminCatalog) {
-      return upcoming.filter((event) => !isAdminPreviewEventId(event.id));
+      return withoutDemo;
     }
     const storedPreview = events.find((event) =>
       isAdminPreviewEventId(event.id),
@@ -304,10 +315,10 @@ export const MyEventsScreen = memo(function MyEventsScreen({
         }
       : buildAdminPreviewEvent();
     return [preview];
-  }, [events, isAdminCatalog]);
+  }, [events, isAdminCatalog, isDemoMode]);
 
   const eventPaymentStates = useMemo(() => {
-    if (!isAdminCatalog) return paymentStates;
+    if (isDemoMode || !isAdminCatalog) return paymentStates;
     return {
       ...paymentStates,
       [getAdminPreviewDepositPaymentKey()]: {
@@ -315,7 +326,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
         method: "card",
       },
     };
-  }, [isAdminCatalog, paymentStates]);
+  }, [isAdminCatalog, isDemoMode, paymentStates]);
 
   const markServicePaid = useCallback((
     eventId: string,
@@ -539,6 +550,8 @@ export const MyEventsScreen = memo(function MyEventsScreen({
         onClose={closePaymentModal}
         onMarkPaid={markServicePaid}
       />
+
+      {isActive ? <DemoEventsContinueBar /> : null}
     </div>
   );
 });

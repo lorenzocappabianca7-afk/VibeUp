@@ -13,6 +13,7 @@ function shouldHideBottomNav(pathname: string) {
   return (
     pathname.startsWith("/business") ||
     pathname.startsWith("/admin") ||
+    pathname.startsWith("/demo") ||
     pathname.startsWith("/r/")
   );
 }
