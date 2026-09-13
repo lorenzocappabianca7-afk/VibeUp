@@ -220,8 +220,8 @@ export function HomeScreen() {
   }, [events, favoriteServiceIds, managedListings]);
 
   return (
-    <div className="box-border min-w-0 w-full max-w-full space-y-5 overflow-x-clip lg:space-y-6">
-      <h1 className="flex min-w-0 max-w-full items-baseline justify-center gap-[0.35em] overflow-x-clip font-[family-name:var(--font-brand)] text-[1.75rem] font-bold tracking-tight text-white">
+    <div className="min-w-0 w-full max-w-full space-y-5 lg:space-y-6">
+      <h1 className="flex min-w-0 max-w-full items-baseline justify-center gap-[0.35em] font-[family-name:var(--font-brand)] text-[1.75rem] font-bold tracking-tight text-white">
         <span className="shrink-0">
           <span className="text-brand-teal">V</span>ibe
           <span className="text-brand-pink">U</span>p
@@ -231,7 +231,7 @@ export function HomeScreen() {
         </span>
       </h1>
 
-      <section className="min-w-0 max-w-full overflow-x-clip rounded-2xl border border-brand-teal/25 bg-brand-teal/10 p-5">
+      <section className="min-w-0 max-w-full rounded-2xl border border-brand-teal/25 bg-brand-teal/10 p-5">
         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-teal">
           Home
         </p>
@@ -248,8 +248,8 @@ export function HomeScreen() {
       <div
         className={
           isDemoHomeLocked
-            ? "min-w-0 max-w-full overflow-x-clip pointer-events-none select-none"
-            : "min-w-0 max-w-full overflow-x-clip"
+            ? "min-w-0 max-w-full pointer-events-none select-none"
+            : "min-w-0 max-w-full"
         }
         inert={isDemoHomeLocked || undefined}
       >
@@ -301,11 +301,12 @@ export function HomeScreen() {
         <h2 className="text-lg font-bold text-primary-black">
           Location suggerite per te
         </h2>
-        <HorizontalTouchScroll className="flex min-w-0 w-full max-w-full gap-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <HorizontalTouchScroll className="pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-max gap-3">
           {suggestedLocations.map((location) => (
             <div
               key={location.id}
-              className="w-[min(16.5rem,85%)] max-w-full shrink-0 sm:w-72"
+              className="w-[16.5rem] shrink-0"
             >
               <LocationCard
                 location={location}
@@ -318,6 +319,7 @@ export function HomeScreen() {
               />
             </div>
           ))}
+          </div>
         </HorizontalTouchScroll>
       </section>
 
@@ -326,11 +328,12 @@ export function HomeScreen() {
           <h2 className="text-lg font-bold text-primary-black">
             DJ suggeriti per te
           </h2>
-          <HorizontalTouchScroll className="flex min-w-0 w-full max-w-full gap-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <HorizontalTouchScroll className="pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex w-max gap-3">
             {suggestedDjs.map((dj) => (
               <div
                 key={dj.id}
-                className="w-[min(16.5rem,85%)] max-w-full shrink-0 sm:w-72"
+                className="w-[16.5rem] shrink-0"
               >
                 <DjCard
                   dj={dj}
@@ -340,6 +343,7 @@ export function HomeScreen() {
                 />
               </div>
             ))}
+            </div>
           </HorizontalTouchScroll>
         </section>
       ) : null}
