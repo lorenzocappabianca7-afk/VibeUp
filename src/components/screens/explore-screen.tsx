@@ -1,6 +1,9 @@
 "use client";
 
-import { DemoExplorePickerBar } from "@/components/demo/demo-explore-picker";
+import {
+  DemoExploreGuide,
+  DemoExplorePickerBar,
+} from "@/components/demo/demo-explore-picker";
 import { CompareFavorites } from "@/components/explore/compare-favorites";
 import { DiscountInviteBanner } from "@/components/discount-invite-banner";
 import { ExploreSearchBar } from "@/components/explore/explore-search-bar";
@@ -297,8 +300,13 @@ export function ExploreScreen({
   const { requireAccount } = useAccountGate();
   const { activeTab } = useTabNavigation();
   const { criteria, hasAppliedCriteria, clearCriteria } = usePartyCriteria();
-  const { isDemoMode, selectedLocations, toggleDemoLocation } = useDemoMode();
-  const demoPicking = isDemoMode && hasAppliedCriteria;
+  const { isDemoMode, selectedLocations, session, toggleDemoLocation } =
+    useDemoMode();
+  const demoPicking =
+    isDemoMode &&
+    hasAppliedCriteria &&
+    !!session &&
+    !session.completed;
   const demoSelectedIdSet = useMemo(
     () => new Set(selectedLocations.map((item) => item.id)),
     [selectedLocations],
@@ -336,7 +344,7 @@ export function ExploreScreen({
   }
 
   function handleToggleCompareLocation(id: string) {
-    if (compareLocationIds.includes(id)) {
+    if (isDemoMode || compareLocationIds.includes(id)) {
       toggleCompareLocation(id);
       return;
     }
@@ -374,6 +382,11 @@ export function ExploreScreen({
       cancelled = true;
     };
   }, [categoryParam, initialCategory, viewParam]);
+
+  useEffect(() => {
+    if (!demoPicking) return;
+    setActiveCategory("locali");
+  }, [demoPicking]);
 
   const [catalogLocations, setCatalogLocations] = useState<Location[]>([]);
 
@@ -620,9 +633,12 @@ export function ExploreScreen({
             Esplora
           </h1>
           <p className="mt-1 text-sm text-primary-black/60">
-            Location e servizi per la tua festa
+            {demoPicking
+              ? "Scegli i locali per la tua festa"
+              : "Location e servizi per la tua festa"}
           </p>
         </div>
+        {demoPicking ? null : (
         <div className="rounded-3xl border border-primary-black/10 bg-primary-black/[0.03] p-1.5">
           <div className="-mx-0.5 flex min-w-0 flex-nowrap items-stretch gap-1.5 overflow-x-auto px-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {EXPLORE_CATEGORIES.map((category) => {
@@ -655,8 +671,10 @@ export function ExploreScreen({
             })}
           </div>
         </div>
+        )}
       </header>
 
+      {demoPicking ? <DemoExploreGuide /> : (
       <ExploreSearchBar
         key={activeCategory}
         query={query}
@@ -666,8 +684,9 @@ export function ExploreScreen({
         storageKey={`vibeup-explore-recent-${activeCategory}`}
         forceClosed={activeTab !== "explore"}
       />
+      )}
 
-      {activeCategory === "locali" && criteriaSummary ? (
+      {activeCategory === "locali" && criteriaSummary && !demoPicking ? (
         <div className="flex min-w-0 items-start justify-between gap-3 rounded-2xl border border-brand-teal/20 bg-brand-teal/10 p-3">
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-teal">

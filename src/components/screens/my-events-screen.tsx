@@ -40,6 +40,7 @@ import {
 } from "@/types/event";
 import {
   DISCOUNT_POPOVER_CLASS,
+  cn,
   formatCurrency,
   formatDate,
   MODAL_SAFE_BOTTOM_STYLE,
@@ -523,6 +524,12 @@ export const MyEventsScreen = memo(function MyEventsScreen({
 
       {activeEvents.length > 0 && (
         <section className="min-w-0 space-y-4">
+          {isDemoMode ? (
+            <p className="text-base font-semibold leading-snug text-primary-black">
+              Qui visualizzerai il tuo evento una volta che il gestore avrà
+              confermato la disponibilità.
+            </p>
+          ) : null}
           <h2 className="text-base font-semibold text-primary-black">
             In programma
           </h2>
@@ -587,6 +594,9 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [tipsOpen, setTipsOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
+  const { isDemoMode, session } = useDemoMode();
+  const demoLockMissingBanner =
+    isDemoMode && !!session && !session.completed;
 
   if (!isActive && (tipsOpen || checklistOpen)) {
     setTipsOpen(false);
@@ -874,6 +884,21 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
               <div className="scrollbar-hidden mt-3 flex max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1">
                 {missingSuggestions.map((suggestion) => {
                   const Icon = suggestion.icon;
+                  const chipClassName =
+                    "inline-flex shrink-0 items-center gap-2 rounded-full bg-brand-pink px-3.5 py-2 text-sm font-bold text-ink-inverse";
+
+                  if (demoLockMissingBanner) {
+                    return (
+                      <span
+                        key={suggestion.id}
+                        className={cn(chipClassName, "cursor-default opacity-70")}
+                        aria-disabled="true"
+                      >
+                        <Icon className="h-4 w-4 text-ink-inverse" aria-hidden />
+                        {suggestion.label}
+                      </span>
+                    );
+                  }
 
                   return (
                     <HardNavLink
@@ -882,7 +907,10 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
                         event,
                         suggestion.exploreCategory,
                       )}
-                      className="inline-flex shrink-0 items-center gap-2 rounded-full bg-brand-pink px-3.5 py-2 text-sm font-bold text-ink-inverse transition-colors hover:bg-brand-pink/90"
+                      className={cn(
+                        chipClassName,
+                        "transition-colors hover:bg-brand-pink/90",
+                      )}
                     >
                       <Icon className="h-4 w-4 text-ink-inverse" aria-hidden />
                       {suggestion.label}

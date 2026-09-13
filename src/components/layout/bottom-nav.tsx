@@ -36,12 +36,14 @@ interface BottomNavProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
   variant?: "consumer" | "business";
+  tabsLocked?: boolean;
 }
 
 export function BottomNav({
   activeTab,
   onTabChange,
   variant = "consumer",
+  tabsLocked = false,
 }: BottomNavProps) {
   const {
     hasUnreadMessages,
@@ -85,6 +87,7 @@ export function BottomNav({
               <button
                 type="button"
                 onClick={() => onTabChange(tab.id)}
+                disabled={tabsLocked && !isActive}
                 aria-current={isActive ? "page" : undefined}
                 aria-label={
                   showBadge
@@ -94,6 +97,7 @@ export function BottomNav({
                 className={cn(
                   "touch-feedback flex w-full min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 py-1.5 text-white transition-colors duration-100 sm:gap-1 sm:px-1 sm:py-2",
                   isActive ? "bg-white/12" : "hover:bg-white/[0.04]",
+                  tabsLocked && !isActive && "pointer-events-none opacity-40",
                 )}
               >
                 <span className="relative inline-flex">

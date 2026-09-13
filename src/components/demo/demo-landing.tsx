@@ -44,7 +44,7 @@ export function DemoLanding() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const blocking = landingState !== "ready";
+  const blocking = landingState === "form" || landingState === "completed";
   useBodyScrollLock(blocking);
 
   const canSubmit = useMemo(() => {
@@ -93,11 +93,7 @@ export function DemoLanding() {
           "mx-auto flex min-h-dvh flex-col justify-center px-6 py-12",
         )}
       >
-        {landingState === "loading" ? (
-          <p className="text-center text-sm text-primary-black/50">
-            Un attimo…
-          </p>
-        ) : landingState === "completed" ? (
+        {landingState === "completed" ? (
           <CompletedMessage
             canRestart={canRestartDemo}
             onRestart={() => {

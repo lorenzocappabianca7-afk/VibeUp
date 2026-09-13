@@ -8,6 +8,7 @@ import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { calculateLocationDeposit } from "@/lib/booking-money";
 import { demoFallbackEventDate, resolveDemoCatalogLocation } from "@/lib/demo/book";
+import { pushHomeHref } from "@/lib/home-navigation";
 import { calculateBookingQuote, calculateHours } from "@/lib/location";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import type { AvailabilityEventPayload } from "@/types/availability-request";
@@ -15,6 +16,7 @@ import type { DemoChosenLocation } from "@/types/demo";
 import type { BookingQuote, Location } from "@/types/location";
 import { EXPLORE_GUEST_MIN } from "@/types/location";
 import { Check } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const START_TIME = "18:00";
@@ -83,6 +85,7 @@ export function DemoBookPage() {
   const { managedListings } = useAppState();
   const { criteria } = usePartyCriteria();
   const { sendAvailabilityRequest } = useAvailabilityRequests();
+  const router = useRouter();
   const [pickedId, setPickedId] = useState(bookedLocation?.id ?? "");
   const [eventTitle, setEventTitle] = useState("");
   const [requestError, setRequestError] = useState<string | null>(null);
@@ -169,7 +172,7 @@ export function DemoBookPage() {
       // Event is already created locally; rating can still proceed.
     }
 
-    window.location.assign("/?tab=events");
+    pushHomeHref(router, "/?tab=events");
   }
 
   return (
@@ -178,7 +181,7 @@ export function DemoBookPage() {
     >
       <button
         type="button"
-        onClick={() => window.location.assign("/?tab=explore")}
+        onClick={() => pushHomeHref(router, "/?tab=explore")}
         className="text-xs font-bold text-primary-black/45"
       >
         ← Torna a Esplora
@@ -248,7 +251,7 @@ export function DemoBookPage() {
       {bookingConfirmed ? (
         <Button
           className="mt-6 w-full rounded-2xl py-4 text-base font-semibold"
-          onClick={() => window.location.assign("/?tab=events")}
+          onClick={() => pushHomeHref(router, "/?tab=events")}
         >
           Vai ai miei eventi
         </Button>

@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/footer";
 import { EmailActivationBanner } from "@/components/auth/email-activation-banner";
 import { AppWakeRecovery } from "@/components/pwa/app-wake-recovery";
 import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner";
+import { useDemoLockedTab } from "@/lib/demo/chrome-lock";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
@@ -20,12 +21,14 @@ function shouldHideBottomNav(pathname: string) {
 
 function AppChromeNav() {
   const { activeTab, setTab, isBusinessUser } = useTabNavigation();
+  const demoLockedTab = useDemoLockedTab();
 
   return (
     <BottomNav
       activeTab={activeTab}
       onTabChange={setTab}
       variant={isBusinessUser ? "business" : "consumer"}
+      tabsLocked={demoLockedTab !== null}
     />
   );
 }
@@ -33,6 +36,7 @@ function AppChromeNav() {
 export function AppChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname() || "/";
   const hideNav = shouldHideBottomNav(pathname);
+  const chromeLocked = useDemoLockedTab() !== null;
 
   return (
     <>
@@ -43,12 +47,22 @@ export function AppChrome({ children }: { children: ReactNode }) {
           paddingTop: "env(safe-area-inset-top, 0px)",
         }}
       >
-        {!hideNav && <PwaInstallBanner />}
-        {!hideNav && <EmailActivationBanner />}
+        <div
+          className={chromeLocked ? "pointer-events-none" : undefined}
+          inert={chromeLocked || undefined}
+        >
+          {!hideNav && <PwaInstallBanner />}
+          {!hideNav && <EmailActivationBanner />}
+        </div>
         <div className="min-w-0 max-w-full flex-1 overflow-x-clip">
           {children}
         </div>
-        <Footer withNavOffset={!hideNav} />
+        <div
+          className={chromeLocked ? "pointer-events-none" : undefined}
+          inert={chromeLocked || undefined}
+        >
+          <Footer withNavOffset={!hideNav} />
+        </div>
       </div>
       {!hideNav && <AppChromeNav />}
     </>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useAppState } from "@/context/app-state-context";
+import { useDemoMode } from "@/context/demo-mode-context";
+import { useDemoLockedTab } from "@/lib/demo/chrome-lock";
 import { isBodyScrollLocked } from "@/lib/body-scroll-lock";
 import { pushHomeHref, replaceHomeHref } from "@/lib/home-navigation";
 import { recoverInteractiveSession } from "@/lib/session-health";
@@ -143,6 +145,8 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname() || "/";
   const router = useRouter();
   const { isBusinessUser } = useAppState();
+  const { isDemoMode } = useDemoMode();
+  const demoLockedTab = useDemoLockedTab();
   const [tabParam, setTabParam] = useState<string | null>(null);
 
   const urlTab = useMemo(
@@ -169,8 +173,10 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
   }
   const fallback: TabId = isBusinessUser ? "notifications" : "home";
   const candidate = optimisticTab ?? urlTab;
-  const activeTab = allowed.has(candidate) ? candidate : fallback;
+  const resolvedTab = allowed.has(candidate) ? candidate : fallback;
   const onHome = pathname === "/" || pathname === "";
+  const activeTab =
+    demoLockedTab && onHome && !isBusinessUser ? demoLockedTab : resolvedTab;
 
   useEffect(() => {
     router.prefetch("/");
@@ -178,7 +184,11 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
     router.prefetch("/?tab=events");
     router.prefetch("/?tab=profile");
     router.prefetch("/?tab=messages");
-  }, [router]);
+    if (isDemoMode) {
+      router.prefetch("/demo/book");
+      router.prefetch("/demo/rating");
+    }
+  }, [isDemoMode, router]);
 
   // Keep the address bar aligned if mode switch invalidates the current tab.
   useEffect(() => {
@@ -217,6 +227,7 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
 
   const setTab = useCallback(
     (tab: TabId) => {
+      if (demoLockedTab && tab !== demoLockedTab) return;
       if (tab === activeTab && onHome) {
         window.scrollTo({ top: 0, left: 0, behavior: "auto" });
         return;
@@ -239,7 +250,7 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
       setTabParam(tabParamFromHref(href));
       pushHomeHref(router, href);
     },
-    [activeTab, isBusinessUser, onHome, router],
+    [activeTab, demoLockedTab, isBusinessUser, onHome, router],
   );
 
   const value = useMemo(

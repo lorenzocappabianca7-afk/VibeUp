@@ -10,6 +10,7 @@ import {
 } from "@/components/explore/price-range-inputs";
 import { Button } from "@/components/ui/button";
 import { VibeUpCalendar } from "@/components/ui/vibeup-calendar";
+import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
@@ -36,7 +37,7 @@ import {
   EXPLORE_GUEST_MIN,
   EXPLORE_PRICE_MIN,
 } from "@/types/location";
-import { Calendar, ChevronDown, Minus, Plus, X } from "lucide-react";
+import { Calendar, Check, ChevronDown, Minus, Plus, X } from "lucide-react";
 import { useRef, useState, type Ref } from "react";
 import { createPortal } from "react-dom";
 
@@ -409,6 +410,8 @@ function ExtrasStep({
   criteria: PartyCriteria;
   onChange: (partial: Partial<PartyCriteria>) => void;
 }) {
+  const { isDemoMode } = useDemoMode();
+
   function toggleService(id: (typeof PARTY_EXTRA_SERVICE_OPTIONS)[number]["id"]) {
     const selected = criteria.wantedServices.includes(id);
     onChange({
@@ -438,12 +441,22 @@ function ExtrasStep({
               onClick={() => toggleService(service.id)}
               aria-pressed={selected}
               className={cn(
-                "rounded-2xl border px-3 py-3 text-left transition-colors",
+                "relative rounded-2xl border px-3 py-3 text-left transition-colors",
                 selected
-                  ? "border-brand-teal bg-paper ring-2 ring-brand-teal/40"
+                  ? isDemoMode
+                    ? "border-brand-teal bg-brand-teal/15 pr-9 ring-2 ring-brand-teal/55"
+                    : "border-brand-teal bg-paper ring-2 ring-brand-teal/40"
                   : "border-primary-black/10 bg-paper hover:border-brand-teal/40",
               )}
             >
+              {isDemoMode && selected ? (
+                <span
+                  className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-brand-teal text-white"
+                  aria-hidden
+                >
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                </span>
+              ) : null}
               <span className="block text-sm font-bold text-ink-inverse">
                 {service.label}
               </span>

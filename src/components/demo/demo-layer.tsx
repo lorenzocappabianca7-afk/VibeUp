@@ -22,7 +22,8 @@ export function DemoLayer({ children }: { children: ReactNode }) {
 
   if (!isDemoMode) return children;
 
-  const appUnlocked = landingState === "ready";
+  const appUnlocked =
+    landingState === "ready" || landingState === "loading";
 
   return (
     <>

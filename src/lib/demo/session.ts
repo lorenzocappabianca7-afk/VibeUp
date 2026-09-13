@@ -1,10 +1,54 @@
 import type { DemoChosenLocation, DemoSession } from "@/types/demo";
+import {
+  normalizePartyCriteria,
+  type PartyCriteria,
+} from "@/types/party-criteria";
 
 export const DEMO_SESSION_STORAGE_KEY = "vibeup-demo-session-v1";
 export const DEMO_VISIT_STORAGE_KEY = "vibeup-demo-visit-v1";
 export const DEMO_HOME_TIP_KEY = "vibeup-demo-home-tip-v1";
+export const DEMO_CRITERIA_STORAGE_KEY = "vibeup-demo-party-criteria-v1";
 export const DEMO_SESSION_COOKIE = "vibeup-demo-session";
 export const DEMO_PICK_LIMIT = 3;
+
+function readDurable(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return (
+      window.sessionStorage.getItem(key) ?? window.localStorage.getItem(key)
+    );
+  } catch {
+    return null;
+  }
+}
+
+function writeDurable(key: string, value: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(key, value);
+  } catch {
+    /* private mode / quota */
+  }
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+function clearDurable(key: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(key);
+  } catch {
+    /* private mode / quota */
+  }
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    /* private mode / quota */
+  }
+}
 
 const COOKIE_MAX_AGE_SECONDS = 90 * 24 * 60 * 60;
 
@@ -100,21 +144,21 @@ export function clearDemoSession() {
 }
 
 export function readDemoVisitId(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.sessionStorage.getItem(DEMO_VISIT_STORAGE_KEY);
+  return readDurable(DEMO_VISIT_STORAGE_KEY);
 }
 
 export function writeDemoVisitId(sessionId: string) {
-  if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(DEMO_VISIT_STORAGE_KEY, sessionId);
+  writeDurable(DEMO_VISIT_STORAGE_KEY, sessionId);
 }
 
 export function clearDemoVisit() {
-  if (typeof window === "undefined") return;
-  window.sessionStorage.removeItem(DEMO_VISIT_STORAGE_KEY);
+  clearDurable(DEMO_VISIT_STORAGE_KEY);
 }
 
-/** Same browser visit (refresh) vs a later reopen of the demo link. */
+/**
+ * Keep an incomplete demo in place. iOS/PWA can drop sessionStorage after a
+ * brief pause; wiping the session then feels like the app froze or restarted.
+ */
 export function resolveDemoLanding(session: DemoSession | null): {
   session: DemoSession | null;
   state: "form" | "completed" | "ready";
@@ -123,28 +167,63 @@ export function resolveDemoLanding(session: DemoSession | null): {
     return { session, state: "completed" };
   }
 
-  const visitId = readDemoVisitId();
-  if (session && visitId === session.id) {
+  if (session) {
+    writeDemoVisitId(session.id);
     return { session, state: "ready" };
   }
 
-  if (session) clearDemoSession();
   clearDemoVisit();
   clearDemoHomeTip();
   return { session: null, state: "form" };
 }
 
 export function isDemoHomeTipDismissed(sessionId: string): boolean {
-  if (typeof window === "undefined") return true;
-  return window.sessionStorage.getItem(DEMO_HOME_TIP_KEY) === sessionId;
+  return readDurable(DEMO_HOME_TIP_KEY) === sessionId;
 }
 
 export function dismissDemoHomeTip(sessionId: string) {
-  if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(DEMO_HOME_TIP_KEY, sessionId);
+  writeDurable(DEMO_HOME_TIP_KEY, sessionId);
 }
 
 export function clearDemoHomeTip() {
+  clearDurable(DEMO_HOME_TIP_KEY);
+}
+
+export function readDemoPartyCriteria(sessionId: string): PartyCriteria | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(DEMO_CRITERIA_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    const row = parsed as { sessionId?: unknown; criteria?: unknown };
+    if (row.sessionId !== sessionId || !row.criteria) return null;
+    return normalizePartyCriteria(row.criteria as PartyCriteria);
+  } catch {
+    return null;
+  }
+}
+
+export function writeDemoPartyCriteria(
+  sessionId: string,
+  criteria: PartyCriteria,
+) {
   if (typeof window === "undefined") return;
-  window.sessionStorage.removeItem(DEMO_HOME_TIP_KEY);
+  try {
+    window.localStorage.setItem(
+      DEMO_CRITERIA_STORAGE_KEY,
+      JSON.stringify({ sessionId, criteria }),
+    );
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+export function clearDemoPartyCriteria() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(DEMO_CRITERIA_STORAGE_KEY);
+  } catch {
+    /* private mode / quota */
+  }
 }

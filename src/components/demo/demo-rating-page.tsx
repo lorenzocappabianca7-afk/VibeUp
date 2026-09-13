@@ -2,7 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { useDemoMode } from "@/context/demo-mode-context";
+import { pushHomeHref } from "@/lib/home-navigation";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
+import { Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -16,11 +18,13 @@ export function DemoRatingPage() {
   } = useDemoMode();
   const router = useRouter();
   const [rating, setRating] = useState<number | null>(null);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [wouldUse, setWouldUse] = useState<boolean | null>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const canSubmit = rating !== null && wouldUse !== null && !submitting;
+  const previewRating = hoverRating ?? rating;
 
   const locationNames = useMemo(
     () => selectedLocations.map((item) => item.name).join(", "),
@@ -58,7 +62,7 @@ export function DemoRatingPage() {
     >
       <button
         type="button"
-        onClick={() => router.push("/?tab=explore")}
+        onClick={() => pushHomeHref(router, "/?tab=explore")}
         className="text-xs font-bold text-primary-black/45"
       >
         ← Torna a Esplora
@@ -78,26 +82,36 @@ export function DemoRatingPage() {
       ) : null}
 
       <fieldset className="mt-8">
-        <legend className="text-sm font-semibold text-primary-black">
-          Quanto ti è piaciuta l’app?
+        <legend className="text-base font-bold leading-snug text-primary-black">
+          Valuta la tua esperienza demo di VibeUp da 1 a 5 stelle
         </legend>
-        <div className="mt-3 flex gap-2">
-          {[1, 2, 3, 4, 5].map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setRating(value)}
-              className={cn(
-                "flex h-12 flex-1 items-center justify-center rounded-2xl text-sm font-bold transition-colors",
-                rating === value
-                  ? "bg-brand-teal text-ink-inverse"
-                  : "bg-surface text-primary-black/70 ring-1 ring-primary-black/10",
-              )}
-              aria-pressed={rating === value}
-            >
-              {value}
-            </button>
-          ))}
+        <div
+          className="mt-4 flex items-center justify-center gap-1.5 sm:gap-2"
+          onPointerLeave={() => setHoverRating(null)}
+        >
+          {[1, 2, 3, 4, 5].map((value) => {
+            const filled = previewRating !== null && value <= previewRating;
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setRating(value)}
+                onPointerEnter={() => setHoverRating(value)}
+                className="flex h-12 w-12 items-center justify-center rounded-full touch-feedback"
+                style={{ color: filled ? "#f091b2" : "rgba(245, 245, 247, 0.28)" }}
+                aria-label={`${value} ${value === 1 ? "stella" : "stelle"}`}
+                aria-pressed={rating !== null && value <= rating}
+              >
+                <Star
+                  className="h-9 w-9"
+                  fill={filled ? "#f091b2" : "none"}
+                  stroke={filled ? "#f091b2" : "currentColor"}
+                  strokeWidth={1.6}
+                  aria-hidden
+                />
+              </button>
+            );
+          })}
         </div>
       </fieldset>
 

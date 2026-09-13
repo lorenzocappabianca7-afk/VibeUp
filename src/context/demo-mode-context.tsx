@@ -4,6 +4,7 @@ import { isDemoMode as readDemoModeFlag } from "@/lib/demo/mode";
 import {
   DEMO_PICK_LIMIT,
   clearDemoHomeTip,
+  clearDemoPartyCriteria,
   clearDemoSession,
   clearDemoVisit,
   dismissDemoHomeTip,
@@ -28,7 +29,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -49,6 +50,7 @@ interface DemoModeContextValue {
   bookedLocation: DemoChosenLocation | null;
   bookingConfirmed: boolean;
   homeTipDismissed: boolean;
+  isDemoHomeLocked: boolean;
   startDemoSession: (input: StartDemoSessionInput) => Promise<DemoSession>;
   toggleDemoLocation: (location: DemoChosenLocation) => void;
   persistDemoSelections: () => Promise<void>;
@@ -75,7 +77,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
   );
   const [homeTipDismissed, setHomeTipDismissed] = useState(true);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isDemoMode) {
       setSession(null);
       setLandingState("ready");
@@ -133,6 +135,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
 
       writeDemoSession(next);
       writeDemoVisitId(next.id);
+      clearDemoPartyCriteria();
       setSession(next);
       setHomeTipDismissed(false);
       setLandingState("ready");
@@ -240,6 +243,13 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     [isDemoMode, session],
   );
 
+  const isDemoHomeLocked =
+    isDemoMode &&
+    landingState === "ready" &&
+    !!session &&
+    !session.completed &&
+    !homeTipDismissed;
+
   const canRestartDemo = isUnlimitedDemoTesterEmail(session?.email);
 
   const restartDemoSession = useCallback(() => {
@@ -250,6 +260,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     clearDemoSession();
     clearDemoVisit();
     clearDemoHomeTip();
+    clearDemoPartyCriteria();
     dispatchDemoLocalReset();
     setSession(null);
     setHomeTipDismissed(false);
@@ -265,6 +276,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       bookedLocation: session?.bookedLocation ?? null,
       bookingConfirmed: session?.bookingConfirmed === true,
       homeTipDismissed,
+      isDemoHomeLocked,
       startDemoSession,
       toggleDemoLocation,
       persistDemoSelections,
@@ -280,6 +292,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       completeDemoSession,
       dismissHomeTip,
       homeTipDismissed,
+      isDemoHomeLocked,
       isDemoMode,
       landingState,
       markDemoBookingConfirmed,
@@ -305,6 +318,7 @@ const DEMO_MODE_FALLBACK: DemoModeContextValue = {
   bookedLocation: null,
   bookingConfirmed: false,
   homeTipDismissed: true,
+  isDemoHomeLocked: false,
   startDemoSession: async () => {
     throw new Error("La modalità demo non è attiva.");
   },

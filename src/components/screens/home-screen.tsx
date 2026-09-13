@@ -3,6 +3,7 @@
 import { DjCard } from "@/components/explore/dj-card";
 import { LocationCard } from "@/components/explore/location-card";
 import { DemoHomeCreateWrap } from "@/components/demo/demo-home-tip";
+import { useDemoMode } from "@/context/demo-mode-context";
 import { PartyWizard } from "@/components/home/party-wizard";
 import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
 import { Button } from "@/components/ui/button";
@@ -78,6 +79,7 @@ function buildDjHrefFromCriteria(djId: string, criteria: PartyCriteria): string 
 export function HomeScreen() {
   const { criteria, homeBannerText } = usePartyCriteria();
   const { setTab } = useTabNavigation();
+  const { isDemoHomeLocked } = useDemoMode();
   const {
     currentUser,
     events,
@@ -249,6 +251,12 @@ export function HomeScreen() {
         </DemoHomeCreateWrap>
       </section>
 
+      <div
+        className={
+          isDemoHomeLocked ? "pointer-events-none select-none" : undefined
+        }
+        inert={isDemoHomeLocked || undefined}
+      >
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 text-lg font-bold text-primary-black">
@@ -339,6 +347,7 @@ export function HomeScreen() {
           </HorizontalTouchScroll>
         </section>
       ) : null}
+      </div>
 
       <PartyWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
     </div>

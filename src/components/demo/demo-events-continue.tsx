@@ -1,10 +1,17 @@
 "use client";
 
-import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { useDemoMode } from "@/context/demo-mode-context";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export function DemoEventsContinueBar() {
   const { isDemoMode, session, bookingConfirmed } = useDemoMode();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isDemoMode || !bookingConfirmed) return;
+    router.prefetch("/demo/rating");
+  }, [bookingConfirmed, isDemoMode, router]);
 
   if (!isDemoMode || !session || session.completed || !bookingConfirmed) {
     return null;
@@ -19,12 +26,13 @@ export function DemoEventsContinueBar() {
         <p className="mt-1 text-center text-xs text-primary-black/55">
           Dai un&apos;occhiata al riepilogo, poi continua.
         </p>
-        <HardNavLink
-          href="/demo/rating"
+        <button
+          type="button"
+          onClick={() => router.push("/demo/rating")}
           className="mt-3 flex w-full items-center justify-center rounded-full bg-paper px-6 py-3 text-sm font-medium text-ink-inverse"
         >
           Continua
-        </HardNavLink>
+        </button>
       </div>
     </div>
   );

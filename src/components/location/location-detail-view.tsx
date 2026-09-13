@@ -582,18 +582,21 @@ export function LocationDetailView({
   }
 
   function toggleCompare() {
-    if (isCompareSelected) {
+    const add = () => {
+      if (compareLocationIds.length >= MAX_COMPARE_LOCATIONS) {
+        removeCompareLocation(compareLocationIds[0]);
+      }
       toggleCompareLocation(location.id);
+    };
+
+    if (isCompareSelected || isDemoMode) {
+      if (isCompareSelected) toggleCompareLocation(location.id);
+      else add();
       return;
     }
 
     requireAccount(
-      () => {
-        if (compareLocationIds.length >= MAX_COMPARE_LOCATIONS) {
-          removeCompareLocation(compareLocationIds[0]);
-        }
-        toggleCompareLocation(location.id);
-      },
+      add,
       "Per aggiungere un locale al confronto crea un account.",
     );
   }
@@ -612,7 +615,7 @@ export function LocationDetailView({
       pushHomeHref(router, "/?tab=explore&view=compare");
     };
 
-    if (isCompareSelected) {
+    if (isCompareSelected || isDemoMode) {
       openCompare();
       return;
     }
@@ -730,7 +733,7 @@ export function LocationDetailView({
             } catch {
               // Event already exists locally; Continua still needs this flag.
             }
-            window.location.assign("/?tab=events");
+            pushHomeHref(router, "/?tab=events");
           })();
         });
     };
