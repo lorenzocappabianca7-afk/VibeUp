@@ -35,8 +35,30 @@ export function DemoHomeCreateWrap({ children }: { children: ReactNode }) {
           font-weight: 700;
           line-height: 1;
         }
+        .demo-home-create-label {
+          text-decoration-line: underline;
+          text-decoration-color: #f091b2;
+          text-decoration-thickness: 0.12em;
+          text-underline-offset: 0.18em;
+        }
+        .demo-home-create-label__c {
+          color: #3ecfcf;
+        }
       `}</style>
       {children}
     </div>
+  );
+}
+
+/** Demo-only: pink underline and a teal first letter. */
+export function DemoCreateCtaLabel({ text }: { text: string }) {
+  const { isDemoMode } = useDemoMode();
+  if (!isDemoMode) return text;
+
+  return (
+    <span className="demo-home-create-label">
+      <span className="demo-home-create-label__c">{text.charAt(0)}</span>
+      {text.slice(1)}
+    </span>
   );
 }

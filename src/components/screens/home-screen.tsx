@@ -2,7 +2,10 @@
 
 import { DjCard } from "@/components/explore/dj-card";
 import { LocationCard } from "@/components/explore/location-card";
-import { DemoHomeCreateWrap } from "@/components/demo/demo-home-tip";
+import {
+  DemoCreateCtaLabel,
+  DemoHomeCreateWrap,
+} from "@/components/demo/demo-home-tip";
 import { useDemoLockedTab } from "@/lib/demo/chrome-lock";
 import { PartyWizard } from "@/components/home/party-wizard";
 import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
@@ -221,12 +224,12 @@ export function HomeScreen() {
 
   return (
     <div className="min-w-0 w-full max-w-full space-y-5 lg:space-y-6">
-      <h1 className="flex min-w-0 max-w-full items-baseline justify-center gap-[0.35em] font-[family-name:var(--font-brand)] text-[1.75rem] font-bold tracking-tight text-white">
+      <h1 className="flex min-w-0 max-w-full items-baseline justify-center gap-[0.16em] font-[family-name:var(--font-brand)] text-[1.75rem] font-bold tracking-tight text-white">
         <span className="shrink-0">
           <span className="text-brand-teal">V</span>ibe
           <span className="text-brand-pink">U</span>p
         </span>
-        <span className="inline-block shrink-0 font-[family-name:var(--font-events-script)] text-[0.92rem] font-medium leading-none text-white">
+        <span className="inline-block shrink-0 font-[family-name:var(--font-events-script)] text-[1.15rem] font-medium leading-none text-white">
           events
         </span>
       </h1>
@@ -240,7 +243,7 @@ export function HomeScreen() {
         </h2>
         <DemoHomeCreateWrap>
           <Button className="mt-4 w-full sm:w-auto" onClick={() => setWizardOpen(true)}>
-            Crea la tua festa
+            <DemoCreateCtaLabel text="Crea la tua festa" />
           </Button>
         </DemoHomeCreateWrap>
       </section>
