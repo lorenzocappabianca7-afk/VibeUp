@@ -31,7 +31,8 @@ import {
   isAdminManagerViewEnabled,
   setAdminManagerViewEnabled,
 } from "@/lib/admin-access";
-import { isDemoMode } from "@/lib/demo/mode";
+import { isDemoEventId, isDemoMode } from "@/lib/demo/mode";
+import { DEMO_LOCAL_RESET_EVENT } from "@/lib/demo/testers";
 import {
   buildAdminPreviewEvent,
   getAdminPreviewDepositPaymentKey,
@@ -1064,6 +1065,29 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [hydratedFromStorage]);
+
+  useEffect(() => {
+    if (!hydratedFromStorage) return;
+
+    const stripDemoEvents = () => {
+      updateCurrentUserState((state) => {
+        const events = state.events.filter((event) => !isDemoEventId(event.id));
+        if (events.length === state.events.length) return state;
+        const paymentStates = Object.fromEntries(
+          Object.entries(state.paymentStates ?? {}).filter(([key]) => {
+            const eventId = key.split(":")[0] ?? "";
+            return !isDemoEventId(eventId);
+          }),
+        );
+        return { ...state, events, paymentStates };
+      });
+    };
+
+    window.addEventListener(DEMO_LOCAL_RESET_EVENT, stripDemoEvents);
+    return () => {
+      window.removeEventListener(DEMO_LOCAL_RESET_EVENT, stripDemoEvents);
+    };
+  }, [hydratedFromStorage, updateCurrentUserState]);
 
   useEffect(() => {
     if (!hydratedFromStorage) return;

@@ -3,6 +3,7 @@
 import { useAppState } from "@/context/app-state-context";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
 import { isDemoAvailabilityRequestId, isDemoMode } from "@/lib/demo/mode";
+import { DEMO_LOCAL_RESET_EVENT } from "@/lib/demo/testers";
 import { useInboxBadge } from "@/context/inbox-badge-context";
 import {
   createAvailabilityRequestRemote,
@@ -258,6 +259,20 @@ export function AvailabilityRequestProvider({
       setRequests(stored);
       setHydrated(true);
     });
+  }, []);
+
+  useEffect(() => {
+    const stripDemoRequests = () => {
+      setRequests((prev) => {
+        const next = prev.filter((item) => !isDemoAvailabilityRequestId(item.id));
+        return next.length === prev.length ? prev : next;
+      });
+    };
+
+    window.addEventListener(DEMO_LOCAL_RESET_EVENT, stripDemoRequests);
+    return () => {
+      window.removeEventListener(DEMO_LOCAL_RESET_EVENT, stripDemoRequests);
+    };
   }, []);
 
   useEffect(() => {

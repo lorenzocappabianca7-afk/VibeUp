@@ -30,7 +30,8 @@ function goToHome(
 }
 
 export function DemoLanding() {
-  const { landingState, startDemoSession } = useDemoMode();
+  const { landingState, startDemoSession, canRestartDemo, restartDemoSession } =
+    useDemoMode();
   const { setTab } = useTabNavigation();
   const pathname = usePathname() || "/";
   const router = useRouter();
@@ -97,7 +98,15 @@ export function DemoLanding() {
             Un attimo…
           </p>
         ) : landingState === "completed" ? (
-          <CompletedMessage />
+          <CompletedMessage
+            canRestart={canRestartDemo}
+            onRestart={() => {
+              restartDemoSession();
+              if (pathname !== "/" && pathname !== "") {
+                replaceHomeHref("/");
+              }
+            }}
+          />
         ) : (
           <>
             <header className="mb-8 text-center">
@@ -205,7 +214,13 @@ export function DemoLanding() {
   );
 }
 
-function CompletedMessage() {
+function CompletedMessage({
+  canRestart,
+  onRestart,
+}: {
+  canRestart: boolean;
+  onRestart: () => void;
+}) {
   return (
     <div className="rounded-3xl border border-primary-black/10 bg-surface p-8 text-center shadow-xl">
       <p className="font-[family-name:var(--font-brand)] text-sm font-semibold tracking-[0.2em] text-brand-teal uppercase">
@@ -225,6 +240,11 @@ function CompletedMessage() {
         </a>
         .
       </p>
+      {canRestart ? (
+        <Button type="button" className="mt-6 w-full" onClick={onRestart}>
+          Ricomincia la demo
+        </Button>
+      ) : null}
     </div>
   );
 }

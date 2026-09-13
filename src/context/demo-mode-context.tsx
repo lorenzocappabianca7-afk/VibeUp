@@ -3,6 +3,9 @@
 import { isDemoMode as readDemoModeFlag } from "@/lib/demo/mode";
 import {
   DEMO_PICK_LIMIT,
+  clearDemoHomeTip,
+  clearDemoSession,
+  clearDemoVisit,
   dismissDemoHomeTip,
   isDemoHomeTipDismissed,
   readDemoSession,
@@ -10,6 +13,10 @@ import {
   writeDemoSession,
   writeDemoVisitId,
 } from "@/lib/demo/session";
+import {
+  dispatchDemoLocalReset,
+  isUnlimitedDemoTesterEmail,
+} from "@/lib/demo/testers";
 import { saveDemoSubmission } from "@/lib/demo/submissions";
 import type {
   DemoChosenLocation,
@@ -49,6 +56,8 @@ interface DemoModeContextValue {
   markDemoBookingConfirmed: () => Promise<void>;
   dismissHomeTip: () => void;
   completeDemoSession: (feedback: DemoFeedback) => Promise<void>;
+  canRestartDemo: boolean;
+  restartDemoSession: () => void;
 }
 
 const DemoModeContext = createContext<DemoModeContextValue | null>(null);
@@ -231,6 +240,22 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     [isDemoMode, session],
   );
 
+  const canRestartDemo = isUnlimitedDemoTesterEmail(session?.email);
+
+  const restartDemoSession = useCallback(() => {
+    if (!isDemoMode) return;
+    const current = readDemoSession();
+    if (!isUnlimitedDemoTesterEmail(current?.email ?? session?.email)) return;
+
+    clearDemoSession();
+    clearDemoVisit();
+    clearDemoHomeTip();
+    dispatchDemoLocalReset();
+    setSession(null);
+    setHomeTipDismissed(false);
+    setLandingState("form");
+  }, [isDemoMode, session?.email]);
+
   const value = useMemo<DemoModeContextValue>(
     () => ({
       isDemoMode,
@@ -247,8 +272,11 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       markDemoBookingConfirmed,
       dismissHomeTip,
       completeDemoSession,
+      canRestartDemo,
+      restartDemoSession,
     }),
     [
+      canRestartDemo,
       completeDemoSession,
       dismissHomeTip,
       homeTipDismissed,
@@ -256,6 +284,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       landingState,
       markDemoBookingConfirmed,
       persistDemoSelections,
+      restartDemoSession,
       session,
       setDemoBookedLocation,
       startDemoSession,
@@ -285,6 +314,8 @@ const DEMO_MODE_FALLBACK: DemoModeContextValue = {
   markDemoBookingConfirmed: async () => undefined,
   dismissHomeTip: () => undefined,
   completeDemoSession: async () => undefined,
+  canRestartDemo: false,
+  restartDemoSession: () => undefined,
 };
 
 export function useDemoMode(): DemoModeContextValue {
