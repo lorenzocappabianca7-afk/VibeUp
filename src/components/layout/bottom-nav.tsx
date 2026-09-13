@@ -60,7 +60,7 @@ export function BottomNav({
   return (
     <nav
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 mx-auto px-2 pb-2 pt-1 sm:px-3",
+        "fixed inset-x-0 bottom-0 z-50 mx-auto box-border w-full max-w-full px-2 pb-2 pt-1 sm:px-3",
         APP_SHELL_WIDTH_CLASS,
       )}
       style={{

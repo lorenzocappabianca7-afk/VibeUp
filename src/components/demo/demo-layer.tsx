@@ -27,7 +27,7 @@ export function DemoLayer({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <style>{`html[data-demo-mode]{-webkit-text-size-adjust:100%;text-size-adjust:100%}`}</style>
+      <style>{`html[data-demo-mode],html[data-demo-mode] body{-webkit-text-size-adjust:100%;text-size-adjust:100%;max-width:100%;overflow-x:clip}`}</style>
       <div aria-hidden={!appUnlocked}>{children}</div>
       <DemoLanding />
     </>

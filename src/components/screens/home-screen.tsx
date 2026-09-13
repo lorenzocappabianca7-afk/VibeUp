@@ -220,8 +220,8 @@ export function HomeScreen() {
   }, [events, favoriteServiceIds, managedListings]);
 
   return (
-    <div className="min-w-0 space-y-5 lg:space-y-6">
-      <h1 className="flex items-baseline justify-center gap-[0.35em] overflow-visible font-[family-name:var(--font-brand)] text-[1.75rem] font-bold tracking-tight text-white">
+    <div className="box-border min-w-0 w-full max-w-full space-y-5 overflow-x-clip lg:space-y-6">
+      <h1 className="flex min-w-0 max-w-full items-baseline justify-center gap-[0.35em] overflow-x-clip font-[family-name:var(--font-brand)] text-[1.75rem] font-bold tracking-tight text-white">
         <span className="shrink-0">
           <span className="text-brand-teal">V</span>ibe
           <span className="text-brand-pink">U</span>p
@@ -231,11 +231,11 @@ export function HomeScreen() {
         </span>
       </h1>
 
-      <section className="overflow-visible rounded-2xl border border-brand-teal/25 bg-brand-teal/10 p-5">
+      <section className="min-w-0 max-w-full overflow-x-clip rounded-2xl border border-brand-teal/25 bg-brand-teal/10 p-5">
         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-teal">
           Home
         </p>
-        <h2 className="mt-2 text-pretty text-2xl font-bold tracking-tight text-primary-black sm:text-[1.75rem]">
+        <h2 className="mt-2 max-w-full text-pretty text-2xl font-bold tracking-tight text-primary-black sm:text-[1.75rem]">
           {homeBannerText}
         </h2>
         <DemoHomeCreateWrap>
@@ -247,14 +247,16 @@ export function HomeScreen() {
 
       <div
         className={
-          isDemoHomeLocked ? "pointer-events-none select-none" : undefined
+          isDemoHomeLocked
+            ? "min-w-0 max-w-full overflow-x-clip pointer-events-none select-none"
+            : "min-w-0 max-w-full overflow-x-clip"
         }
         inert={isDemoHomeLocked || undefined}
       >
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="flex items-center gap-2 text-lg font-bold text-primary-black">
-            <Bell className="h-4 w-4 text-brand-teal" aria-hidden />
+      <section className="min-w-0 max-w-full space-y-3">
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <h2 className="flex min-w-0 items-center gap-2 text-lg font-bold text-primary-black">
+            <Bell className="h-4 w-4 shrink-0 text-brand-teal" aria-hidden />
             Notifiche
           </h2>
           <button
@@ -295,15 +297,15 @@ export function HomeScreen() {
         )}
       </section>
 
-      <section className="space-y-3">
+      <section className="min-w-0 max-w-full space-y-3">
         <h2 className="text-lg font-bold text-primary-black">
           Location suggerite per te
         </h2>
-        <HorizontalTouchScroll className="flex gap-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <HorizontalTouchScroll className="flex min-w-0 w-full max-w-full gap-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {suggestedLocations.map((location) => (
             <div
               key={location.id}
-              className="w-[min(72vw,16.5rem)] shrink-0 sm:w-72"
+              className="w-[min(16.5rem,85%)] max-w-full shrink-0 sm:w-72"
             >
               <LocationCard
                 location={location}
@@ -320,15 +322,15 @@ export function HomeScreen() {
       </section>
 
       {suggestedDjs.length > 0 ? (
-        <section className="space-y-3">
+        <section className="min-w-0 max-w-full space-y-3">
           <h2 className="text-lg font-bold text-primary-black">
             DJ suggeriti per te
           </h2>
-          <HorizontalTouchScroll className="flex gap-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <HorizontalTouchScroll className="flex min-w-0 w-full max-w-full gap-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {suggestedDjs.map((dj) => (
               <div
                 key={dj.id}
-                className="w-[min(72vw,16.5rem)] shrink-0 sm:w-72"
+                className="w-[min(16.5rem,85%)] max-w-full shrink-0 sm:w-72"
               >
                 <DjCard
                   dj={dj}
