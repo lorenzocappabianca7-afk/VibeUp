@@ -1,6 +1,7 @@
 "use client";
 
 import { useDemoMode } from "@/context/demo-mode-context";
+import { scrollDemoPageToTop } from "@/lib/demo/scroll-top";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -28,7 +29,10 @@ export function DemoEventsContinueBar() {
         </p>
         <button
           type="button"
-          onClick={() => router.push("/demo/rating")}
+          onClick={() => {
+            scrollDemoPageToTop();
+            router.push("/demo/rating", { scroll: true });
+          }}
           className="mt-3 flex w-full items-center justify-center rounded-full bg-paper px-6 py-3 text-sm font-medium text-ink-inverse"
         >
           Continua

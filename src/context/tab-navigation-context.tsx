@@ -227,7 +227,12 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
 
   const setTab = useCallback(
     (tab: TabId) => {
-      if (demoLockedTab && tab !== demoLockedTab) return;
+      if (demoLockedTab && tab !== demoLockedTab) {
+        const demoForward =
+          (demoLockedTab === "home" && tab === "explore") ||
+          (demoLockedTab === "explore" && tab === "events");
+        if (!demoForward) return;
+      }
       if (tab === activeTab && onHome) {
         window.scrollTo({ top: 0, left: 0, behavior: "auto" });
         return;

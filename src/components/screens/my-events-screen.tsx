@@ -525,7 +525,7 @@ export const MyEventsScreen = memo(function MyEventsScreen({
       {activeEvents.length > 0 && (
         <section className="min-w-0 space-y-4">
           {isDemoMode ? (
-            <p className="text-base font-semibold leading-snug text-primary-black">
+            <p className="text-lg font-semibold leading-snug text-primary-black">
               Qui visualizzerai il tuo evento una volta che il gestore avrà
               confermato la disponibilità.
             </p>

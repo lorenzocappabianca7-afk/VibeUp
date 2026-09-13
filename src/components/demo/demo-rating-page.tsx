@@ -2,11 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { useDemoMode } from "@/context/demo-mode-context";
+import { scrollDemoPageToTop } from "@/lib/demo/scroll-top";
 import { pushHomeHref } from "@/lib/home-navigation";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import { Star } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useState } from "react";
 
 export function DemoRatingPage() {
   const {
@@ -22,6 +23,10 @@ export function DemoRatingPage() {
   const [wouldUse, setWouldUse] = useState<boolean | null>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useLayoutEffect(() => {
+    scrollDemoPageToTop();
+  }, []);
 
   const canSubmit = rating !== null && wouldUse !== null && !submitting;
   const previewRating = hoverRating ?? rating;

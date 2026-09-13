@@ -13,35 +13,39 @@ export function DemoExploreGuide() {
   return (
     <div className="space-y-3">
       <section className="rounded-2xl border border-brand-teal/25 bg-brand-teal/10 p-4">
-        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-teal">
-          Scegli 3 location
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-primary-black/75">
-          Tocca il{" "}
-          <Heart
-            className="inline-block h-3.5 w-3.5 align-[-2px] text-brand-pink"
-            strokeWidth={2.75}
+        <div className="flex items-center gap-2.5">
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-pink text-white shadow-md"
             aria-hidden
-          />{" "}
-          cuore in alto a destra su ogni card. Devi selezionarne tre per
-          continuare.
+          >
+            <Heart className="h-4 w-4" strokeWidth={2.75} fill="currentColor" />
+          </span>
+          <p className="text-xl font-bold tracking-tight text-primary-black">
+            Scegli 3 location
+          </p>
+        </div>
+        <p className="mt-2 text-sm leading-relaxed text-primary-black/75">
+          Tocca il cuore in alto a destra su ogni card. Devi selezionarne tre
+          per continuare.
         </p>
       </section>
       <section className="rounded-2xl border border-primary-black/10 bg-surface p-4">
-        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-teal">
-          Confronta
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-primary-black/75">
-          Puoi anche usare{" "}
-          <GitCompareArrows
-            className="inline-block h-3.5 w-3.5 align-[-2px] text-brand-teal"
-            strokeWidth={2.75}
+        <div className="flex items-center gap-2.5">
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-teal-strong text-ink-inverse shadow-md"
             aria-hidden
-          />{" "}
-          Confronta in alto a destra (o il tasto sotto la card). Aggiungi due o
-          tre locali, poi apri la tab <span className="font-semibold">Confronta</span>{" "}
-          sopra l’elenco: vedi prezzi e servizi uno accanto all’altro, senza
-          entrare in ogni pagina.
+          >
+            <GitCompareArrows className="h-4 w-4" strokeWidth={2.75} />
+          </span>
+          <p className="text-xl font-bold tracking-tight text-primary-black">
+            Confronta
+          </p>
+        </div>
+        <p className="mt-2 text-sm leading-relaxed text-primary-black/75">
+          Puoi anche usare Confronta in alto a destra (o il tasto sotto la
+          card). Aggiungi due o tre locali, poi apri la tab{" "}
+          <span className="font-semibold">Confronta</span> sopra l’elenco: vedi
+          prezzi e servizi uno accanto all’altro, senza entrare in ogni pagina.
         </p>
       </section>
     </div>

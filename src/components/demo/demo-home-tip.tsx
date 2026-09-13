@@ -12,8 +12,8 @@ export function DemoHomeCreateWrap({ children }: { children: ReactNode }) {
   return (
     <div
       className={cn(
-        isDemoHomeLocked &&
-          "relative z-10 mt-4 [&>button]:mt-0 [&>button]:h-[8.25rem] [&>button]:w-full [&>button]:text-base",
+        "[&>button]:h-auto [&>button]:w-full [&>button]:whitespace-normal [&>button]:rounded-2xl [&>button]:px-4 [&>button]:py-5 [&>button]:text-center [&>button]:text-[3rem] [&>button]:font-bold [&>button]:leading-tight",
+        isDemoHomeLocked && "relative z-10 mt-4 [&>button]:mt-0",
       )}
       onClick={isDemoHomeLocked ? dismissHomeTip : undefined}
     >

@@ -444,7 +444,7 @@ function ExtrasStep({
                 "relative rounded-2xl border px-3 py-3 text-left transition-colors",
                 selected
                   ? isDemoMode
-                    ? "border-brand-teal bg-brand-teal/15 pr-9 ring-2 ring-brand-teal/55"
+                    ? "border-brand-teal bg-paper pr-9 ring-2 ring-brand-teal/55"
                     : "border-brand-teal bg-paper ring-2 ring-brand-teal/40"
                   : "border-primary-black/10 bg-paper hover:border-brand-teal/40",
               )}

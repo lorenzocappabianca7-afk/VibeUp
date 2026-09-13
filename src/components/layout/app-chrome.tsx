@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/footer";
 import { EmailActivationBanner } from "@/components/auth/email-activation-banner";
 import { AppWakeRecovery } from "@/components/pwa/app-wake-recovery";
 import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner";
+import { useDemoMode } from "@/context/demo-mode-context";
 import { useDemoLockedTab } from "@/lib/demo/chrome-lock";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { usePathname } from "next/navigation";
@@ -37,6 +38,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname() || "/";
   const hideNav = shouldHideBottomNav(pathname);
   const chromeLocked = useDemoLockedTab() !== null;
+  const { isDemoMode } = useDemoMode();
 
   return (
     <>
@@ -51,7 +53,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
           className={chromeLocked ? "pointer-events-none" : undefined}
           inert={chromeLocked || undefined}
         >
-          {!hideNav && <PwaInstallBanner />}
+          {!hideNav && !isDemoMode && <PwaInstallBanner />}
           {!hideNav && <EmailActivationBanner />}
         </div>
         <div className="min-w-0 max-w-full flex-1 overflow-x-clip">

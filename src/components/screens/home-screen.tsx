@@ -3,7 +3,7 @@
 import { DjCard } from "@/components/explore/dj-card";
 import { LocationCard } from "@/components/explore/location-card";
 import { DemoHomeCreateWrap } from "@/components/demo/demo-home-tip";
-import { useDemoMode } from "@/context/demo-mode-context";
+import { useDemoLockedTab } from "@/lib/demo/chrome-lock";
 import { PartyWizard } from "@/components/home/party-wizard";
 import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
 import { Button } from "@/components/ui/button";
@@ -79,7 +79,7 @@ function buildDjHrefFromCriteria(djId: string, criteria: PartyCriteria): string 
 export function HomeScreen() {
   const { criteria, homeBannerText } = usePartyCriteria();
   const { setTab } = useTabNavigation();
-  const { isDemoHomeLocked } = useDemoMode();
+  const isDemoHomeLocked = useDemoLockedTab() === "home";
   const {
     currentUser,
     events,
@@ -221,27 +221,21 @@ export function HomeScreen() {
 
   return (
     <div className="min-w-0 space-y-5 lg:space-y-6">
-      <h1 className="flex items-baseline justify-center gap-[0.22em] font-[family-name:var(--font-brand)] text-[1.75rem] font-bold tracking-tight text-white">
-        <span>
+      <h1 className="flex items-baseline justify-center gap-[0.35em] overflow-visible font-[family-name:var(--font-brand)] text-[1.75rem] font-bold tracking-tight text-white">
+        <span className="shrink-0">
           <span className="text-brand-teal">V</span>ibe
           <span className="text-brand-pink">U</span>p
         </span>
-        <span
-          className="relative top-[-0.08em] inline-block origin-bottom-left font-[family-name:var(--font-events-script)] text-[0.92rem] font-medium leading-none text-white"
-          style={{
-            fontStyle: "italic",
-            transform: "skewX(-16deg) rotate(-8deg)",
-          }}
-        >
+        <span className="inline-block shrink-0 font-[family-name:var(--font-events-script)] text-[0.92rem] font-medium leading-none text-white">
           events
         </span>
       </h1>
 
-      <section className="overflow-hidden rounded-2xl border border-brand-teal/25 bg-brand-teal/10 p-5">
+      <section className="overflow-visible rounded-2xl border border-brand-teal/25 bg-brand-teal/10 p-5">
         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-teal">
           Home
         </p>
-        <h2 className="mt-2 text-2xl font-bold tracking-tight text-primary-black sm:text-[1.75rem]">
+        <h2 className="mt-2 text-pretty text-2xl font-bold tracking-tight text-primary-black sm:text-[1.75rem]">
           {homeBannerText}
         </h2>
         <DemoHomeCreateWrap>

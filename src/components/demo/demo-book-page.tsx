@@ -8,6 +8,7 @@ import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { calculateLocationDeposit } from "@/lib/booking-money";
 import { demoFallbackEventDate, resolveDemoCatalogLocation } from "@/lib/demo/book";
+import { scrollDemoPageToTop } from "@/lib/demo/scroll-top";
 import { pushHomeHref } from "@/lib/home-navigation";
 import { calculateBookingQuote, calculateHours } from "@/lib/location";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
@@ -172,6 +173,7 @@ export function DemoBookPage() {
       // Event is already created locally; rating can still proceed.
     }
 
+    scrollDemoPageToTop();
     pushHomeHref(router, "/?tab=events");
   }
 
@@ -251,9 +253,12 @@ export function DemoBookPage() {
       {bookingConfirmed ? (
         <Button
           className="mt-6 w-full rounded-2xl py-4 text-base font-semibold"
-          onClick={() => pushHomeHref(router, "/?tab=events")}
+          onClick={() => {
+            scrollDemoPageToTop();
+            pushHomeHref(router, "/?tab=events");
+          }}
         >
-          Vai ai miei eventi
+          Continua
         </Button>
       ) : null}
     </div>
