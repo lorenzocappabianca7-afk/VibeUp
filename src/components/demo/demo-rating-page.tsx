@@ -32,6 +32,7 @@ export function DemoRatingPage() {
   );
 
   if (!isDemoMode || landingState === "completed") return null;
+  if (!session?.bookingConfirmed) return null;
 
   async function handleSubmit() {
     if (rating === null || wouldUse === null || submitting) return;

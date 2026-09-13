@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
   const limited = rateLimit(request, {
     scope: "demo-submissions",
-    limit: 40,
+    limit: 200,
     windowMs: 60_000,
   });
   if (limited) return limited;

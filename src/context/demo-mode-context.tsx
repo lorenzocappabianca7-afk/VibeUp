@@ -15,8 +15,10 @@ import {
   writeDemoVisitId,
 } from "@/lib/demo/session";
 import {
+  canRestartDemoFromEmail,
   dispatchDemoLocalReset,
-  isUnlimitedDemoTesterEmail,
+  rememberDemoTesterEmail,
+  readRememberedDemoTesterEmail,
 } from "@/lib/demo/testers";
 import { saveDemoSubmission } from "@/lib/demo/submissions";
 import type {
@@ -86,6 +88,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     }
 
     const resolved = resolveDemoLanding(readDemoSession());
+    if (resolved.session) rememberDemoTesterEmail(resolved.session.email);
     setSession(resolved.session);
     setLandingState(resolved.state);
     setHomeTipDismissed(
@@ -135,6 +138,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
 
       writeDemoSession(next);
       writeDemoVisitId(next.id);
+      rememberDemoTesterEmail(next.email);
       clearDemoPartyCriteria();
       setSession(next);
       setHomeTipDismissed(false);
@@ -237,6 +241,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
         completedAt,
       };
       writeDemoSession(next);
+      rememberDemoTesterEmail(next.email);
       setSession(next);
       setLandingState("completed");
     },
@@ -250,12 +255,23 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     !session.completed &&
     !homeTipDismissed;
 
-  const canRestartDemo = isUnlimitedDemoTesterEmail(session?.email);
+  const canRestartDemo = canRestartDemoFromEmail(
+    session?.email,
+    readRememberedDemoTesterEmail(),
+  );
 
   const restartDemoSession = useCallback(() => {
     if (!isDemoMode) return;
     const current = readDemoSession();
-    if (!isUnlimitedDemoTesterEmail(current?.email ?? session?.email)) return;
+    if (
+      !canRestartDemoFromEmail(
+        current?.email,
+        session?.email,
+        readRememberedDemoTesterEmail(),
+      )
+    ) {
+      return;
+    }
 
     clearDemoSession();
     clearDemoVisit();

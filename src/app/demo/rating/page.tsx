@@ -6,12 +6,27 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function DemoRatingRoutePage() {
-  const { isDemoMode } = useDemoMode();
+  const { isDemoMode, bookingConfirmed, landingState, session } = useDemoMode();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isDemoMode) router.replace("/");
-  }, [isDemoMode, router]);
+    if (!isDemoMode) {
+      router.replace("/");
+      return;
+    }
+    if (landingState === "form") {
+      router.replace("/");
+      return;
+    }
+    if (
+      landingState === "ready" &&
+      session &&
+      !session.completed &&
+      !bookingConfirmed
+    ) {
+      router.replace("/");
+    }
+  }, [bookingConfirmed, isDemoMode, landingState, router, session]);
 
   if (!isDemoMode) return null;
   return <DemoRatingPage />;

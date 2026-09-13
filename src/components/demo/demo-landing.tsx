@@ -6,9 +6,8 @@ import { useDemoMode } from "@/context/demo-mode-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { DEMO_PRIVACY_NOTICE } from "@/lib/demo/privacy";
-import { pushHomeHref, replaceHomeHref } from "@/lib/home-navigation";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -17,23 +16,20 @@ const inputClassName =
   "w-full rounded-xl border border-primary-black/10 bg-background px-4 py-3 text-sm text-primary-black placeholder:text-primary-black/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20";
 
 function goToHome(
-  pathname: string,
   setTab: (tab: "home") => void,
-  router: { push: (href: string, options?: { scroll?: boolean }) => void },
+  router: {
+    push: (href: string, options?: { scroll?: boolean }) => void;
+    replace: (href: string) => void;
+  },
 ) {
-  if (pathname !== "/" && pathname !== "") {
-    pushHomeHref(router, "/");
-    return;
-  }
   setTab("home");
-  replaceHomeHref("/");
+  router.replace("/");
 }
 
 export function DemoLanding() {
   const { landingState, startDemoSession, canRestartDemo, restartDemoSession } =
     useDemoMode();
   const { setTab } = useTabNavigation();
-  const pathname = usePathname() || "/";
   const router = useRouter();
 
   const [firstName, setFirstName] = useState("");
@@ -69,7 +65,7 @@ export function DemoLanding() {
         email: email.trim().toLowerCase(),
         privacyConsentAt: new Date().toISOString(),
       });
-      goToHome(pathname, setTab, router);
+      goToHome(setTab, router);
     } catch (err) {
       setError(
         err instanceof Error
@@ -98,9 +94,7 @@ export function DemoLanding() {
             canRestart={canRestartDemo}
             onRestart={() => {
               restartDemoSession();
-              if (pathname !== "/" && pathname !== "") {
-                replaceHomeHref("/");
-              }
+              router.replace("/");
             }}
           />
         ) : (
