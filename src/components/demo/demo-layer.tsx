@@ -27,7 +27,7 @@ export function DemoLayer({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <style>{`html[data-demo-mode],html[data-demo-mode] body{-webkit-text-size-adjust:100%;text-size-adjust:100%}`}</style>
+      <style>{`html[data-demo-mode],html[data-demo-mode] body{-webkit-text-size-adjust:100%;text-size-adjust:100%}html[data-demo-mode] input:not([type=checkbox]):not([type=radio]):not([type=range]),html[data-demo-mode] textarea,html[data-demo-mode] select{font-size:16px}`}</style>
       <div aria-hidden={!appUnlocked}>{children}</div>
       <DemoLanding />
     </>

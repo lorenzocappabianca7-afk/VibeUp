@@ -140,6 +140,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
+  userScalable: true,
   /* Media-less so iOS applies it before prefers-color-scheme is evaluated.
      `only dark` forces a black WKWebView canvas in iOS Light Mode. */
   themeColor: "#000000",
@@ -166,6 +167,11 @@ export default function RootLayout({
         dangerouslySetInnerHTML={{ __html: UNBLOCK_APP_CSS_SCRIPT }}
       />
       <head>
+        {/* First tag so iOS reads scale before splash CSS/scripts. */}
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
         {/* Render-blocking black paint — must stay before Next CSS chunks.
             next/no-css-tags is intentional: preinit was too late for Safari FOUC. */}
         {/* eslint-disable-next-line @next/next/no-css-tags -- boot FOUC shield */}

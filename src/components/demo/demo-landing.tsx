@@ -13,7 +13,7 @@ import { useMemo, useState, type FormEvent } from "react";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const inputClassName =
-  "w-full rounded-xl border border-primary-black/10 bg-background px-4 py-3 text-sm text-primary-black placeholder:text-primary-black/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20";
+  "w-full rounded-xl border border-primary-black/10 bg-background px-4 py-3 text-base text-primary-black placeholder:text-primary-black/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20";
 
 function goToHome(
   setTab: (tab: "home") => void,
