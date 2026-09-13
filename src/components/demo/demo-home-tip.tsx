@@ -41,24 +41,16 @@ export function DemoHomeCreateWrap({ children }: { children: ReactNode }) {
           text-decoration-thickness: 0.12em;
           text-underline-offset: 0.18em;
         }
-        .demo-home-create-label__c {
-          color: #3ecfcf;
-        }
       `}</style>
       {children}
     </div>
   );
 }
 
-/** Demo-only: pink underline and a teal first letter. */
+/** Demo-only: pink underline on the create CTA. */
 export function DemoCreateCtaLabel({ text }: { text: string }) {
   const { isDemoMode } = useDemoMode();
   if (!isDemoMode) return text;
 
-  return (
-    <span className="demo-home-create-label">
-      <span className="demo-home-create-label__c">{text.charAt(0)}</span>
-      {text.slice(1)}
-    </span>
-  );
+  return <span className="demo-home-create-label">{text}</span>;
 }
