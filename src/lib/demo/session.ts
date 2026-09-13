@@ -1,4 +1,5 @@
 import type { DemoChosenLocation, DemoSession } from "@/types/demo";
+import { rememberDemoTesterEmail } from "@/lib/demo/testers";
 import {
   normalizePartyCriteria,
   type PartyCriteria,
@@ -147,6 +148,15 @@ export function readDemoVisitId(): string | null {
   return readDurable(DEMO_VISIT_STORAGE_KEY);
 }
 
+function readLiveVisitId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.sessionStorage.getItem(DEMO_VISIT_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export function writeDemoVisitId(sessionId: string) {
   writeDurable(DEMO_VISIT_STORAGE_KEY, sessionId);
 }
@@ -164,6 +174,16 @@ export function resolveDemoLanding(session: DemoSession | null): {
   state: "form" | "completed" | "ready";
 } {
   if (session?.completed) {
+    rememberDemoTesterEmail(session.email);
+    // Bookmark / new PWA launch: sessionStorage is empty. Start over so the
+    // thank-you screen cannot lock the icon on the Home Screen.
+    if (readLiveVisitId() !== session.id) {
+      clearDemoSession();
+      clearDemoVisit();
+      clearDemoHomeTip();
+      clearDemoPartyCriteria();
+      return { session: null, state: "form" };
+    }
     return { session, state: "completed" };
   }
 

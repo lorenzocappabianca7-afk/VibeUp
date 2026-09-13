@@ -27,8 +27,7 @@ function goToHome(
 }
 
 export function DemoLanding() {
-  const { landingState, startDemoSession, canRestartDemo, restartDemoSession } =
-    useDemoMode();
+  const { landingState, startDemoSession, restartDemoSession } = useDemoMode();
   const { setTab } = useTabNavigation();
   const router = useRouter();
 
@@ -91,7 +90,6 @@ export function DemoLanding() {
       >
         {landingState === "completed" ? (
           <CompletedMessage
-            canRestart={canRestartDemo}
             onRestart={() => {
               restartDemoSession();
               router.replace("/");
@@ -204,13 +202,7 @@ export function DemoLanding() {
   );
 }
 
-function CompletedMessage({
-  canRestart,
-  onRestart,
-}: {
-  canRestart: boolean;
-  onRestart: () => void;
-}) {
+function CompletedMessage({ onRestart }: { onRestart: () => void }) {
   return (
     <div className="rounded-3xl border border-primary-black/10 bg-surface p-8 text-center shadow-xl">
       <p className="font-[family-name:var(--font-brand)] text-sm font-semibold tracking-[0.2em] text-brand-teal uppercase">
@@ -220,8 +212,7 @@ function CompletedMessage({
         Hai già completato la demo, grazie per il tuo feedback!
       </h1>
       <p className="mt-3 text-sm text-primary-black/60">
-        Non serve ripetere la prova. Se vuoi aggiornare il tuo parere,
-        scrivici a{" "}
+        Se vuoi aggiornare il tuo parere, scrivici a{" "}
         <a
           href="mailto:info@vibeupevents.com"
           className="font-semibold text-brand-teal"
@@ -230,11 +221,9 @@ function CompletedMessage({
         </a>
         .
       </p>
-      {canRestart ? (
-        <Button type="button" className="mt-6 w-full" onClick={onRestart}>
-          Ricomincia la demo
-        </Button>
-      ) : null}
+      <Button type="button" className="mt-6 w-full" onClick={onRestart}>
+        Ricomincia la demo
+      </Button>
     </div>
   );
 }

@@ -241,6 +241,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
         completedAt,
       };
       writeDemoSession(next);
+      writeDemoVisitId(next.id);
       rememberDemoTesterEmail(next.email);
       setSession(next);
       setLandingState("completed");
@@ -262,16 +263,6 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
 
   const restartDemoSession = useCallback(() => {
     if (!isDemoMode) return;
-    const current = readDemoSession();
-    if (
-      !canRestartDemoFromEmail(
-        current?.email,
-        session?.email,
-        readRememberedDemoTesterEmail(),
-      )
-    ) {
-      return;
-    }
 
     clearDemoSession();
     clearDemoVisit();
@@ -281,7 +272,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setHomeTipDismissed(false);
     setLandingState("form");
-  }, [isDemoMode, session?.email]);
+  }, [isDemoMode]);
 
   const value = useMemo<DemoModeContextValue>(
     () => ({
