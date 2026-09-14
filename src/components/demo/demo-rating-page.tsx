@@ -8,7 +8,7 @@ import { pushHomeHref } from "@/lib/home-navigation";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import { Star } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useLayoutEffect, useMemo, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 
 export function DemoRatingPage() {
   const {
@@ -31,11 +31,6 @@ export function DemoRatingPage() {
 
   const canSubmit = rating !== null && wouldUse !== null && !submitting;
   const previewRating = hoverRating ?? rating;
-
-  const locationNames = useMemo(
-    () => selectedLocations.map((item) => item.name).join(", "),
-    [selectedLocations],
-  );
 
   if (!isDemoMode || landingState === "completed") return null;
   if (!session?.bookingConfirmed) return null;
@@ -87,12 +82,6 @@ export function DemoRatingPage() {
         startedAt={session.sessionCreatedAt}
         endedAt={session.bookingConfirmedAt}
       />
-
-      {locationNames ? (
-        <p className="mt-4 rounded-2xl border border-primary-black/10 bg-surface px-4 py-3 text-sm text-primary-black/70">
-          Location scelte: {locationNames}
-        </p>
-      ) : null}
 
       <fieldset className="mt-8">
         <legend className="text-base font-bold leading-snug text-primary-black">

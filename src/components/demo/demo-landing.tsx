@@ -2,10 +2,19 @@
 
 import { Button } from "@/components/ui/button";
 import { FieldLabel } from "@/components/ui/form-fields";
+import {
+  DemoPhonePrefixButton,
+  DemoPhonePrefixSheet,
+} from "@/components/demo/demo-phone-prefix";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
-import { isValidDemoPhone, normalizeDemoPhone } from "@/lib/demo/phone";
+import {
+  composeDemoPhone,
+  DEMO_DEFAULT_DIAL_ISO,
+  getDemoDialCountry,
+  isValidDemoPhoneParts,
+} from "@/lib/demo/phone";
 import { DEMO_PRIVACY_NOTICE } from "@/lib/demo/privacy";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -36,6 +45,8 @@ export function DemoLanding() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [phoneIso2, setPhoneIso2] = useState(DEMO_DEFAULT_DIAL_ISO);
+  const [prefixOpen, setPrefixOpen] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [error, setError] = useState("");
@@ -44,15 +55,17 @@ export function DemoLanding() {
   const blocking = landingState === "form" || landingState === "completed";
   useBodyScrollLock(blocking);
 
+  const phoneDial = getDemoDialCountry(phoneIso2).dial;
+
   const canSubmit = useMemo(() => {
     return (
       firstName.trim().length > 0 &&
       lastName.trim().length > 0 &&
       EMAIL_RE.test(email.trim().toLowerCase()) &&
-      isValidDemoPhone(phone) &&
+      isValidDemoPhoneParts(phoneDial, phone) &&
       privacyAccepted
     );
-  }, [email, firstName, lastName, phone, privacyAccepted]);
+  }, [email, firstName, lastName, phone, phoneDial, privacyAccepted]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -65,7 +78,7 @@ export function DemoLanding() {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim().toLowerCase(),
-        phone: normalizeDemoPhone(phone),
+        phone: composeDemoPhone(phoneDial, phone),
         privacyConsentAt: new Date().toISOString(),
       });
       goToHome(setTab, router);
@@ -164,18 +177,24 @@ export function DemoLanding() {
                 </div>
                 <div>
                   <FieldLabel htmlFor="demo-phone">Telefono</FieldLabel>
-                  <input
-                    id="demo-phone"
-                    name="tel"
-                    type="tel"
-                    autoComplete="tel"
-                    inputMode="tel"
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
-                    placeholder="Es. 333 123 4567"
-                    required
-                    className={inputClassName}
-                  />
+                  <div className="flex min-w-0 items-stretch gap-2">
+                    <DemoPhonePrefixButton
+                      iso2={phoneIso2}
+                      onOpen={() => setPrefixOpen(true)}
+                    />
+                    <input
+                      id="demo-phone"
+                      name="tel"
+                      type="tel"
+                      autoComplete="tel-national"
+                      inputMode="tel"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                      placeholder="333 123 4567"
+                      required
+                      className={cn(inputClassName, "min-w-0 flex-1")}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -213,6 +232,15 @@ export function DemoLanding() {
           </>
         )}
       </div>
+
+      {prefixOpen ? (
+        <DemoPhonePrefixSheet
+          open={prefixOpen}
+          iso2={phoneIso2}
+          onSelect={setPhoneIso2}
+          onClose={() => setPrefixOpen(false)}
+        />
+      ) : null}
 
       {privacyOpen ? (
         <PrivacyNotice onClose={() => setPrivacyOpen(false)} />
