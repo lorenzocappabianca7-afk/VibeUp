@@ -19,12 +19,15 @@ export interface DemoSession {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
   privacyConsentAt: string;
   sessionCreatedAt: string;
   selectedLocations: DemoChosenLocation[];
   /** Which of the saved favorites the visitor tries to book. */
   bookedLocation: DemoChosenLocation | null;
   bookingConfirmed: boolean;
+  /** When they tapped confirm on the demo booking — timer stop. */
+  bookingConfirmedAt: string | null;
   completed: boolean;
   completedAt: string | null;
 }
@@ -41,6 +44,7 @@ export interface DemoResponseRow {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
   selectedLocations: DemoChosenLocation[];
   bookedLocation: DemoChosenLocation | null;
   rating: number | null;

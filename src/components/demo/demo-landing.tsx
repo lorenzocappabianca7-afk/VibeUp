@@ -5,6 +5,7 @@ import { FieldLabel } from "@/components/ui/form-fields";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
+import { isValidDemoPhone, normalizeDemoPhone } from "@/lib/demo/phone";
 import { DEMO_PRIVACY_NOTICE } from "@/lib/demo/privacy";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -34,6 +35,7 @@ export function DemoLanding() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [error, setError] = useState("");
@@ -47,9 +49,10 @@ export function DemoLanding() {
       firstName.trim().length > 0 &&
       lastName.trim().length > 0 &&
       EMAIL_RE.test(email.trim().toLowerCase()) &&
+      isValidDemoPhone(phone) &&
       privacyAccepted
     );
-  }, [email, firstName, lastName, privacyAccepted]);
+  }, [email, firstName, lastName, phone, privacyAccepted]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -62,6 +65,7 @@ export function DemoLanding() {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim().toLowerCase(),
+        phone: normalizeDemoPhone(phone),
         privacyConsentAt: new Date().toISOString(),
       });
       goToHome(setTab, router);
@@ -154,6 +158,21 @@ export function DemoLanding() {
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     placeholder="es. giulia@email.com"
+                    required
+                    className={inputClassName}
+                  />
+                </div>
+                <div>
+                  <FieldLabel htmlFor="demo-phone">Telefono</FieldLabel>
+                  <input
+                    id="demo-phone"
+                    name="tel"
+                    type="tel"
+                    autoComplete="tel"
+                    inputMode="tel"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    placeholder="Es. 333 123 4567"
                     required
                     className={inputClassName}
                   />

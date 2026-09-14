@@ -36,6 +36,7 @@ export function parseDemoResponse(submission: DemoSubmission): DemoResponseRow {
     firstName: asString(payload.firstName) ?? "",
     lastName: asString(payload.lastName) ?? "",
     email: asString(payload.email) ?? "",
+    phone: asString(payload.phone) ?? "",
     selectedLocations: asLocations(payload.selectedLocations),
     bookedLocation: asLocations([payload.bookedLocation])[0] ?? null,
     rating: asRating(payload.rating),

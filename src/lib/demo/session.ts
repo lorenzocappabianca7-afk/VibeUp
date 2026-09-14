@@ -75,9 +75,14 @@ function parseSession(raw: string | null | undefined): DemoSession | null {
     if (!isDemoSession(parsed)) return null;
     return {
       ...parsed,
+      phone: typeof parsed.phone === "string" ? parsed.phone : "",
       selectedLocations: parseChosenLocations(parsed.selectedLocations),
       bookedLocation: parseChosenLocation(parsed.bookedLocation),
       bookingConfirmed: parsed.bookingConfirmed === true,
+      bookingConfirmedAt:
+        typeof parsed.bookingConfirmedAt === "string"
+          ? parsed.bookingConfirmedAt
+          : null,
       completedAt:
         typeof parsed.completedAt === "string" ? parsed.completedAt : null,
     };

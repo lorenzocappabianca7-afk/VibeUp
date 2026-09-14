@@ -41,6 +41,7 @@ export interface StartDemoSessionInput {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
   privacyConsentAt: string;
 }
 
@@ -108,11 +109,13 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
           firstName: input.firstName,
           lastName: input.lastName,
           email: input.email,
+          phone: input.phone,
           privacyConsentAt: input.privacyConsentAt,
           sessionCreatedAt,
           selectedLocations: [],
           bookedLocation: null,
           bookingConfirmed: false,
+          bookingConfirmedAt: null,
           completed: false,
           completedAt: null,
         },
@@ -127,11 +130,13 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
         firstName: input.firstName,
         lastName: input.lastName,
         email: input.email,
+        phone: input.phone,
         privacyConsentAt: input.privacyConsentAt,
         sessionCreatedAt,
         selectedLocations: [],
         bookedLocation: null,
         bookingConfirmed: false,
+        bookingConfirmedAt: null,
         completed: false,
         completedAt: null,
       };
@@ -197,12 +202,19 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     if (!isDemoMode) return;
     const current = readDemoSession();
     if (!current || current.completed) return;
-    const next = persist({ ...current, bookingConfirmed: true });
+    const bookingConfirmedAt =
+      current.bookingConfirmedAt ?? new Date().toISOString();
+    const next = persist({
+      ...current,
+      bookingConfirmed: true,
+      bookingConfirmedAt,
+    });
     setSession(next);
     await saveDemoSubmission({
       id: next.id,
       payload: {
         bookingConfirmed: true,
+        bookingConfirmedAt,
         bookedLocation: next.bookedLocation,
         selectedLocations: next.selectedLocations,
       },
@@ -227,6 +239,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
           selectedLocations: feedback.selectedLocations,
           bookedLocation: session.bookedLocation,
           bookingConfirmed: session.bookingConfirmed,
+          bookingConfirmedAt: session.bookingConfirmedAt,
           rating: feedback.rating,
           wouldUseForEighteenth: feedback.wouldUseForEighteenth,
           completed: true,

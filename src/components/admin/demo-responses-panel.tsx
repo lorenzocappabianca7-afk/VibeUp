@@ -163,6 +163,7 @@ export function DemoResponsesPanel() {
                 <th className="px-3 py-2 font-semibold">Data</th>
                 <th className="px-3 py-2 font-semibold">Nome</th>
                 <th className="px-3 py-2 font-semibold">Email</th>
+                <th className="px-3 py-2 font-semibold">Telefono</th>
                 <th className="px-3 py-2 font-semibold">Location</th>
                 <th className="px-3 py-2 font-semibold">Prenotata</th>
                 <th className="px-3 py-2 font-semibold">Voto</th>
@@ -180,6 +181,9 @@ export function DemoResponsesPanel() {
                     {row.firstName} {row.lastName}
                   </td>
                   <td className="px-3 py-2 text-primary-black/70">{row.email}</td>
+                  <td className="whitespace-nowrap px-3 py-2 text-primary-black/70">
+                    {row.phone || "—"}
+                  </td>
                   <td className="px-3 py-2 text-primary-black/70">
                     {row.selectedLocations.length > 0
                       ? row.selectedLocations.map((item) => item.name).join(", ")

@@ -3,7 +3,6 @@
 import type { Location } from "@/types/location";
 import { Check, X } from "lucide-react";
 import { memo, useMemo } from "react";
-import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
 import { SafeImage } from "@/components/ui/safe-image";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { getFilteredLocationPricePresentation } from "@/lib/location-preview-price";
@@ -25,11 +24,6 @@ export const CompareFavorites = memo(function CompareFavorites({
       ).sort((a, b) => a.localeCompare(b, "it")),
     [locations],
   );
-  const tableMinWidth = useMemo(
-    () => 128 + locations.length * 184,
-    [locations.length],
-  );
-
   if (locations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-primary-black/15 bg-primary-black/[0.02] px-6 py-12 text-center">
@@ -52,30 +46,22 @@ export const CompareFavorites = memo(function CompareFavorites({
         <p className="mt-1 text-xs text-primary-black/55">
           Ogni colonna rappresenta un locale; ogni riga mostra una caratteristica o un servizio incluso.
         </p>
-        {locations.length > 1 && (
-          <p className="mt-2 text-[11px] font-medium text-brand-teal sm:hidden">
-            Scorri orizzontalmente per vedere tutte le colonne
-          </p>
-        )}
       </div>
 
-      <HorizontalTouchScroll className="max-w-full">
-        <table
-          className="w-full border-separate border-spacing-0 text-sm"
-          style={{ minWidth: `${tableMinWidth}px` }}
-        >
+      <div className="min-w-0 w-full max-w-full overflow-x-clip">
+        <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
           <thead>
             <tr>
               <th
-                className="sticky left-0 z-20 w-[1%] whitespace-nowrap border-b border-r border-primary-black/10 bg-background px-2 py-3"
+                className="w-[22%] min-w-0 border-b border-r border-primary-black/10 bg-background px-1 py-2 sm:px-2 sm:py-3"
                 aria-label="Spazio vuoto"
               />
               {locations.map((location) => (
                 <th
                   key={location.id}
-                  className="w-[11.5rem] border-b border-r border-primary-black/10 bg-primary-black/[0.03] p-3 align-top last:border-r-0"
+                  className="min-w-0 border-b border-r border-primary-black/10 bg-primary-black/[0.03] p-1 align-top last:border-r-0 sm:p-2"
                 >
-                  <div className="relative overflow-clip rounded-2xl border border-primary-black/10 bg-background text-left">
+                  <div className="relative overflow-clip rounded-xl border border-primary-black/10 bg-background text-left sm:rounded-2xl">
                     <div className="relative aspect-[16/10] overflow-clip">
                       <SafeImage
                         src={location.imageUrl}
@@ -83,22 +69,22 @@ export const CompareFavorites = memo(function CompareFavorites({
                         fill
                         draggable={false}
                         className="pointer-events-none select-none object-cover"
-                        sizes="184px"
+                        sizes="(max-width: 640px) 30vw, 184px"
                       />
                       <button
                         type="button"
                         onClick={() => onRemove(location.id)}
-                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-background text-primary-black/50 shadow-sm transition-colors hover:text-brand-pink"
+                        className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-background text-primary-black/50 shadow-sm transition-colors hover:text-brand-pink sm:right-2 sm:top-2 sm:h-7 sm:w-7"
                         aria-label={`Rimuovi ${location.name} dal confronto`}
                       >
-                        <X className="h-3.5 w-3.5" aria-hidden />
+                        <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden />
                       </button>
                     </div>
-                    <div className="p-3">
-                      <p className="truncate text-sm font-black text-primary-black">
+                    <div className="px-1 py-1.5 sm:p-3">
+                      <p className="break-words text-[10px] font-black leading-tight text-primary-black sm:text-sm">
                         {location.name}
                       </p>
-                      <p className="mt-0.5 truncate text-[11px] font-medium text-primary-black/50">
+                      <p className="mt-0.5 break-words text-[9px] font-medium leading-tight text-primary-black/50 sm:text-[11px]">
                         {location.city}
                       </p>
                     </div>
@@ -111,7 +97,7 @@ export const CompareFavorites = memo(function CompareFavorites({
             <tr>
               <th
                 colSpan={locations.length + 1}
-                className="bg-brand-teal/8 px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.18em] text-brand-teal"
+                className="bg-brand-teal/8 px-1.5 py-1.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-brand-teal sm:px-3 sm:py-2 sm:text-[11px] sm:tracking-[0.18em]"
               >
                 Dettagli principali
               </th>
@@ -125,9 +111,9 @@ export const CompareFavorites = memo(function CompareFavorites({
                   criteria,
                 );
                 return (
-                  <span className="block font-bold text-brand-teal">
+                  <span className="block font-bold leading-tight text-brand-teal">
                     {price.price}
-                    <span className="mt-0.5 block text-[10px] font-semibold text-primary-black/50">
+                    <span className="mt-0.5 block text-[9px] font-semibold leading-tight text-primary-black/50 sm:text-[10px]">
                       {price.detail}
                     </span>
                   </span>
@@ -147,22 +133,26 @@ export const CompareFavorites = memo(function CompareFavorites({
               label="Capacità"
               locations={locations}
               renderValue={(loc) => (
-                <span className="text-primary-black/80">
-                  {loc.capacity} ospiti
+                <span className="block leading-tight text-primary-black/80">
+                  {loc.capacity}
+                  <span className="mt-0.5 block text-[9px] font-medium text-primary-black/50 sm:mt-0 sm:inline sm:text-[inherit] sm:font-inherit sm:text-primary-black/80">
+                    {" "}
+                    ospiti
+                  </span>
                 </span>
               )}
             />
             <tr>
               <th
                 colSpan={locations.length + 1}
-                className="bg-brand-pink/10 px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.18em] text-primary-black"
+                className="bg-brand-pink/10 px-1.5 py-1.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-primary-black sm:px-3 sm:py-2 sm:text-[11px] sm:tracking-[0.18em]"
               >
                 Servizi inclusi nel prezzo
               </th>
             </tr>
             {allServices.map((service) => (
               <tr key={service} className="group">
-                <th className="sticky left-0 z-10 w-[1%] whitespace-nowrap border-b border-r border-primary-black/8 bg-background px-2 py-3 text-left text-[11px] font-bold text-primary-black/70 group-hover:bg-primary-black/[0.02]">
+                <th className="min-w-0 break-words border-b border-r border-primary-black/8 bg-background px-1 py-2 text-left text-[10px] font-bold leading-tight text-primary-black/70 group-hover:bg-primary-black/[0.02] sm:px-2 sm:py-3 sm:text-[11px]">
                   {service}
                 </th>
                 {locations.map((loc) => {
@@ -171,16 +161,19 @@ export const CompareFavorites = memo(function CompareFavorites({
                   return (
                     <td
                       key={loc.id}
-                      className="border-b border-r border-primary-black/8 px-3 py-3 text-center last:border-r-0 group-hover:bg-primary-black/[0.02]"
+                      className="min-w-0 border-b border-r border-primary-black/8 px-1 py-2 text-center last:border-r-0 group-hover:bg-primary-black/[0.02] sm:px-3 sm:py-3"
                     >
                       {isIncluded ? (
-                        <span className="inline-flex items-center justify-center gap-1.5 rounded-full bg-brand-teal/12 px-2.5 py-1 text-[11px] font-black text-brand-teal">
-                          <Check className="h-3.5 w-3.5" aria-hidden />
-                          Incluso
+                        <span className="inline-flex items-center justify-center gap-1 rounded-full bg-brand-teal/12 px-1.5 py-0.5 text-[10px] font-black text-brand-teal sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-[11px]">
+                          <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden />
+                          <span className="sr-only sm:not-sr-only">Incluso</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center justify-center rounded-full bg-primary-black/[0.04] px-2.5 py-1 text-[11px] font-bold text-primary-black/30">
-                          Non incluso
+                        <span className="inline-flex items-center justify-center rounded-full bg-primary-black/[0.04] px-1.5 py-0.5 text-[10px] font-bold text-primary-black/30 sm:px-2.5 sm:py-1 sm:text-[11px]">
+                          <span className="sm:hidden" aria-hidden>
+                            —
+                          </span>
+                          <span className="sr-only sm:not-sr-only">Non incluso</span>
                         </span>
                       )}
                     </td>
@@ -190,7 +183,7 @@ export const CompareFavorites = memo(function CompareFavorites({
             ))}
           </tbody>
         </table>
-      </HorizontalTouchScroll>
+      </div>
     </div>
   );
 });
@@ -208,13 +201,13 @@ const CompareRow = memo(function CompareRow({
 }: CompareRowProps) {
   return (
     <tr className="group">
-      <th className="sticky left-0 z-10 w-[1%] whitespace-nowrap border-b border-r border-primary-black/8 bg-background px-2 py-3 text-left text-[11px] font-bold text-primary-black/70 group-hover:bg-primary-black/[0.02]">
+      <th className="min-w-0 break-words border-b border-r border-primary-black/8 bg-background px-1 py-2 text-left text-[10px] font-bold leading-tight text-primary-black/70 group-hover:bg-primary-black/[0.02] sm:px-2 sm:py-3 sm:text-[11px]">
         {label}
       </th>
       {locations.map((loc) => (
         <td
           key={loc.id}
-          className="border-b border-r border-primary-black/8 px-3 py-3 text-center text-xs last:border-r-0 group-hover:bg-primary-black/[0.02]"
+          className="min-w-0 break-words border-b border-r border-primary-black/8 px-1 py-2 text-center text-[11px] last:border-r-0 group-hover:bg-primary-black/[0.02] sm:px-3 sm:py-3 sm:text-xs"
         >
           {renderValue(loc)}
         </td>

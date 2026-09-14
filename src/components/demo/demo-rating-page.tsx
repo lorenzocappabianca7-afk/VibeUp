@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { DemoBookingSpeedCard } from "@/components/demo/demo-booking-speed-card";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { scrollDemoPageToTop } from "@/lib/demo/scroll-top";
 import { pushHomeHref } from "@/lib/home-navigation";
@@ -80,6 +81,12 @@ export function DemoRatingPage() {
       <p className="mt-2 text-sm text-primary-black/60">
         Un attimo per dirci cosa ne pensi. Poi la demo è conclusa.
       </p>
+
+      <DemoBookingSpeedCard
+        firstName={session.firstName}
+        startedAt={session.sessionCreatedAt}
+        endedAt={session.bookingConfirmedAt}
+      />
 
       {locationNames ? (
         <p className="mt-4 rounded-2xl border border-primary-black/10 bg-surface px-4 py-3 text-sm text-primary-black/70">
