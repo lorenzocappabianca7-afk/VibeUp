@@ -3,12 +3,8 @@
 import { isDemoMode as readDemoModeFlag } from "@/lib/demo/mode";
 import {
   DEMO_PICK_LIMIT,
-  clearDemoHomeTip,
-  clearDemoPartyCriteria,
-  clearDemoSession,
-  clearDemoVisit,
+  clearDemoAttemptLocalState,
   dismissDemoHomeTip,
-  isDemoHomeTipDismissed,
   readDemoSession,
   resolveDemoLanding,
   writeDemoSession,
@@ -88,13 +84,11 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const resolved = resolveDemoLanding(readDemoSession());
-    if (resolved.session) rememberDemoTesterEmail(resolved.session.email);
+    const resolved = resolveDemoLanding();
+    dispatchDemoLocalReset();
     setSession(resolved.session);
     setLandingState(resolved.state);
-    setHomeTipDismissed(
-      !resolved.session || isDemoHomeTipDismissed(resolved.session.id),
-    );
+    setHomeTipDismissed(true);
   }, [isDemoMode]);
 
   const startDemoSession = useCallback(
@@ -277,10 +271,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
   const restartDemoSession = useCallback(() => {
     if (!isDemoMode) return;
 
-    clearDemoSession();
-    clearDemoVisit();
-    clearDemoHomeTip();
-    clearDemoPartyCriteria();
+    clearDemoAttemptLocalState();
     dispatchDemoLocalReset();
     setSession(null);
     setHomeTipDismissed(false);

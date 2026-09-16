@@ -18,7 +18,7 @@ import {
 import { DEMO_PRIVACY_NOTICE } from "@/lib/demo/privacy";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -51,6 +51,18 @@ export function DemoLanding() {
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (landingState !== "form") return;
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setPhone("");
+    setPhoneIso2(DEMO_DEFAULT_DIAL_ISO);
+    setPrivacyAccepted(false);
+    setError("");
+    setSubmitting(false);
+  }, [landingState]);
 
   const blocking = landingState === "form" || landingState === "completed";
   useBodyScrollLock(blocking);

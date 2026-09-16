@@ -674,6 +674,30 @@ function hydrateUserStates(stored: StoredAppState): Record<string, UserScopedSta
   return map;
 }
 
+function stripDemoProgressFromUserStates(
+  map: Record<string, UserScopedState>,
+): Record<string, UserScopedState> {
+  return Object.fromEntries(
+    Object.entries(map).map(([userId, state]) => {
+      const events = state.events.filter((event) => !isDemoEventId(event.id));
+      const paymentStates = Object.fromEntries(
+        Object.entries(state.paymentStates ?? {}).filter(([key]) => {
+          const eventId = key.split(":")[0] ?? "";
+          return !isDemoEventId(eventId);
+        }),
+      );
+      if (
+        events.length === state.events.length &&
+        Object.keys(paymentStates).length ===
+          Object.keys(state.paymentStates ?? {}).length
+      ) {
+        return [userId, state];
+      }
+      return [userId, { ...state, events, paymentStates }];
+    }),
+  );
+}
+
 function readStoredAppState(): StoredAppState {
   if (typeof window === "undefined") return {};
 
@@ -856,7 +880,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
       setAccounts(migratedAccounts);
       setCurrentUserId(resolvedUserId);
-      setUserStatesMap(hydrateUserStates(storedState));
+      const userStates = hydrateUserStates(storedState);
+      setUserStatesMap(
+        isDemoMode() ? stripDemoProgressFromUserStates(userStates) : userStates,
+      );
       if (storedState.managedListings) {
         setManagedListings(storedState.managedListings);
       }

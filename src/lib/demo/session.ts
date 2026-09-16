@@ -1,5 +1,4 @@
 import type { DemoChosenLocation, DemoSession } from "@/types/demo";
-import { rememberDemoTesterEmail } from "@/lib/demo/testers";
 import {
   normalizePartyCriteria,
   type PartyCriteria,
@@ -124,7 +123,8 @@ function writeCookie(session: DemoSession) {
 
 function clearCookie() {
   if (typeof document === "undefined") return;
-  document.cookie = `${DEMO_SESSION_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${DEMO_SESSION_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
 }
 
 export function readDemoSession(): DemoSession | null {
@@ -153,15 +153,6 @@ export function readDemoVisitId(): string | null {
   return readDurable(DEMO_VISIT_STORAGE_KEY);
 }
 
-function readLiveVisitId(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return window.sessionStorage.getItem(DEMO_VISIT_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
 export function writeDemoVisitId(sessionId: string) {
   writeDurable(DEMO_VISIT_STORAGE_KEY, sessionId);
 }
@@ -170,35 +161,23 @@ export function clearDemoVisit() {
   clearDurable(DEMO_VISIT_STORAGE_KEY);
 }
 
+/** Drop every client key that could resume or prefill a previous attempt. */
+export function clearDemoAttemptLocalState() {
+  clearDemoSession();
+  clearDemoVisit();
+  clearDemoHomeTip();
+  clearDemoPartyCriteria();
+}
+
 /**
- * Keep an incomplete demo in place. iOS/PWA can drop sessionStorage after a
- * brief pause; wiping the session then feels like the app froze or restarted.
+ * Every full entry (TikTok link, refresh, PWA relaunch) is a new attempt.
+ * Previous rows stay in `demo_submissions`; this only forgets the local resume.
  */
-export function resolveDemoLanding(session: DemoSession | null): {
+export function resolveDemoLanding(_session?: DemoSession | null): {
   session: DemoSession | null;
   state: "form" | "completed" | "ready";
 } {
-  if (session?.completed) {
-    rememberDemoTesterEmail(session.email);
-    // Bookmark / new PWA launch: sessionStorage is empty. Start over so the
-    // thank-you screen cannot lock the icon on the Home Screen.
-    if (readLiveVisitId() !== session.id) {
-      clearDemoSession();
-      clearDemoVisit();
-      clearDemoHomeTip();
-      clearDemoPartyCriteria();
-      return { session: null, state: "form" };
-    }
-    return { session, state: "completed" };
-  }
-
-  if (session) {
-    writeDemoVisitId(session.id);
-    return { session, state: "ready" };
-  }
-
-  clearDemoVisit();
-  clearDemoHomeTip();
+  clearDemoAttemptLocalState();
   return { session: null, state: "form" };
 }
 

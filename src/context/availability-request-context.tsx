@@ -164,7 +164,6 @@ function readStoredRequests(): AvailabilityRequest[] {
     const stored = pruneAvailabilityRequests(
       parsed.filter(isAvailabilityRequest).map(normalizeAvailabilityRequest),
     );
-    if (isDemoMode()) return stored;
     return stored.filter((item) => !isDemoAvailabilityRequestId(item.id));
   } catch {
     return [];
