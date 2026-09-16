@@ -1,6 +1,6 @@
+import { formatQuoteDisplayPriceSpan } from "@/lib/demo/price";
 import { calculateDrinksCost, DEFAULT_DRINKS_PER_INVITEE } from "@/lib/drinks-quote";
 import { calculateBookingQuote } from "@/lib/location";
-import { formatCurrency } from "@/lib/utils";
 import { EXPLORE_GUEST_MIN, type Location } from "@/types/location";
 import type { PartyCriteria } from "@/types/party-criteria";
 
@@ -102,10 +102,7 @@ export function getFilteredLocationPricePresentation(
   }
 
   return {
-    price:
-      hasDateRange
-        ? `${formatCurrency(min)}–${formatCurrency(max)}`
-        : formatCurrency(min),
+    price: formatQuoteDisplayPriceSpan(min, max),
     detail: parts.join(" · "),
   };
 }

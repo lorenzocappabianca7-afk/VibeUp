@@ -25,7 +25,6 @@ import { AvatarCropModal } from "@/components/profile/avatar-crop-modal";
 import { ProfileSettingsView } from "@/components/profile/settings/profile-settings-view";
 import { HardNavLink } from "@/components/navigation/hard-nav-link";
 import { useAccountGate } from "@/context/account-gate-context";
-import { useDemoMode } from "@/context/demo-mode-context";
 import { GUEST_USER, isProAccount, useAppState } from "@/context/app-state-context";
 import { useProfileCommunications } from "@/context/profile-communications-context";
 import { canAccessAdminCatalog } from "@/lib/admin-access";
@@ -101,7 +100,6 @@ export function ProfileScreen({
     isStorageHydrated,
   } = useAppState();
   const { openAuth } = useAccountGate();
-  const { isDemoMode } = useDemoMode();
   const {
     communications,
     hasUnread: hasUnreadProfileComms,
@@ -1112,14 +1110,6 @@ export function ProfileScreen({
           Area gestione pubblicazioni
         </HardNavLink>
       )}
-      {canManagePublications && isDemoMode ? (
-        <HardNavLink
-          href="/admin/demo"
-          className="block text-center text-xs font-medium text-primary-black/35 underline-offset-4 transition-colors hover:text-primary-black/55 hover:underline"
-        >
-          Risposte demo
-        </HardNavLink>
-      ) : null}
 
       {avatarCropFile && (
         <AvatarCropModal

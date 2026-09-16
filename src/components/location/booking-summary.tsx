@@ -4,6 +4,7 @@ import { RequestStatusBadge } from "@/components/availability/request-status-bad
 import { Button } from "@/components/ui/button";
 import { getDepositCheckoutAmounts } from "@/lib/booking-money";
 import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
+import { formatQuoteDisplayPrice } from "@/lib/demo/price";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import type { AvailabilityRequestStatus } from "@/types/availability-request";
 import type { BookingQuote } from "@/types/location";
@@ -173,7 +174,7 @@ export function BookingSummary({
                       </span>
                     </span>
                     <span className="shrink-0 text-sm font-black text-primary-black">
-                      {formatCurrency(item.total)}
+                      {formatQuoteDisplayPrice(item.total)}
                     </span>
                   </button>
                 </li>
@@ -192,7 +193,7 @@ export function BookingSummary({
               {(quote.venueServicesCost ?? 0) > 0 ? " + servizi locale" : ""})
             </dt>
             <dd className="shrink-0 font-medium text-primary-black">
-              {formatCurrency(quote.locationCost)}
+              {formatQuoteDisplayPrice(quote.locationCost)}
             </dd>
           </div>
         )}
@@ -207,7 +208,7 @@ export function BookingSummary({
         <div className="flex justify-between border-t border-primary-black/10 pt-2">
           <dt className="font-semibold text-primary-black">Totale</dt>
           <dd className="text-lg font-bold text-primary-black">
-            {quote.total > 0 && quoteGenerated ? formatCurrency(quote.total) : "—"}
+            {quote.total > 0 && quoteGenerated ? formatQuoteDisplayPrice(quote.total) : "—"}
           </dd>
         </div>
         {ONLINE_PAYMENTS_ENABLED ? (

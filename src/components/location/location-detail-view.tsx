@@ -41,8 +41,8 @@ import {
   readQuoteSessionDraft,
   writeQuoteSessionDraft,
 } from "@/lib/quote-session-draft";
+import { formatQuoteDisplayPrice } from "@/lib/demo/price";
 import { getFilteredLocationPricePresentation } from "@/lib/location-preview-price";
-import { formatCurrency } from "@/lib/utils";
 import type { ManagedLocationListing } from "@/types/admin";
 import { isManagedListingLive } from "@/types/admin";
 import {
@@ -840,7 +840,7 @@ export function LocationDetailView({
             location={location}
             quotePrice={
               quoteSessionReady && draftQuote.total > 0
-                ? formatCurrency(draftQuote.total)
+                ? formatQuoteDisplayPrice(draftQuote.total)
                 : undefined
             }
             quoteDetail={

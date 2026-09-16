@@ -24,6 +24,7 @@ import { QuoteShareButton } from "@/components/ui/quote-share-sheet";
 import type { QuoteShareContent } from "@/lib/quote-share";
 import { VibeUpCalendar } from "@/components/ui/vibeup-calendar";
 import { getDepositCheckoutAmounts } from "@/lib/booking-money";
+import { formatQuoteDisplayPrice } from "@/lib/demo/price";
 import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { MAX_PARTY_DATES, normalizePartyDates, PARTY_EXTRA_SERVICE_OPTIONS } from "@/types/party-criteria";
@@ -460,7 +461,7 @@ export function SmartLocationDetailsSection({
         : "",
       `Bevande: ${drinksRecap}`,
       extrasRecap ? `Cerchi nel locale: ${extrasRecap}` : "",
-      showLiveTotal ? `Totale: ${formatCurrency(quote.total)}` : "",
+      showLiveTotal ? `Totale: ${formatQuoteDisplayPrice(quote.total)}` : "",
     ].filter(Boolean);
     return {
       href: shareHref,
@@ -529,7 +530,7 @@ export function SmartLocationDetailsSection({
               Totale
             </p>
             <p className="mt-0.5 text-[1.65rem] font-black leading-none tracking-tight text-[#1c2430]">
-              {showLiveTotal ? formatCurrency(quote.total) : "—"}
+              {showLiveTotal ? formatQuoteDisplayPrice(quote.total) : "—"}
             </p>
           </div>
         </div>
@@ -638,7 +639,7 @@ export function SmartLocationDetailsSection({
                       )
                     </dt>
                     <dd className="shrink-0 font-bold text-ink-inverse">
-                      {formatCurrency(quote.locationCost)}
+                      {formatQuoteDisplayPrice(quote.locationCost)}
                     </dd>
                   </div>
                   {(quote.extrasCost ?? 0) > 0 && (
@@ -890,7 +891,7 @@ export function SmartLocationDetailsSection({
                           </span>
                         </span>
                         <span className="shrink-0 text-sm font-black text-ink-inverse">
-                          {formatCurrency(item.total)}
+                          {formatQuoteDisplayPrice(item.total)}
                         </span>
                       </button>
                     </li>
@@ -912,7 +913,7 @@ export function SmartLocationDetailsSection({
                   )
                 </dt>
                 <dd className="shrink-0 font-bold text-ink-inverse">
-                  {formatCurrency(quote.locationCost)}
+                  {formatQuoteDisplayPrice(quote.locationCost)}
                 </dd>
               </div>
               {(quote.extrasCost ?? 0) > 0 && (
@@ -1224,7 +1225,7 @@ export function SmartLocationDetailsSection({
               Totale
             </p>
             <p className="text-[1.45rem] font-black leading-none tracking-tight text-ink-inverse">
-              {showLiveTotal ? formatCurrency(quote.total) : "—"}
+              {showLiveTotal ? formatQuoteDisplayPrice(quote.total) : "—"}
             </p>
           </div>
 
