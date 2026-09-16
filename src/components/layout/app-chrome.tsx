@@ -20,6 +20,10 @@ function shouldHideBottomNav(pathname: string) {
   );
 }
 
+function shouldHideFooter(pathname: string) {
+  return pathname.startsWith("/admin/demo");
+}
+
 function AppChromeNav() {
   const { activeTab, setTab, isBusinessUser } = useTabNavigation();
   const demoLockedTab = useDemoLockedTab();
@@ -37,6 +41,7 @@ function AppChromeNav() {
 export function AppChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname() || "/";
   const hideNav = shouldHideBottomNav(pathname);
+  const hideFooter = shouldHideFooter(pathname);
   const chromeLocked = useDemoLockedTab() !== null;
   const { isDemoMode } = useDemoMode();
 
@@ -59,12 +64,14 @@ export function AppChrome({ children }: { children: ReactNode }) {
         <div className="min-w-0 max-w-full flex-1 overflow-x-clip">
           {children}
         </div>
-        <div
-          className={chromeLocked ? "pointer-events-none" : undefined}
-          inert={chromeLocked || undefined}
-        >
-          <Footer withNavOffset={!hideNav} />
-        </div>
+        {hideFooter ? null : (
+          <div
+            className={chromeLocked ? "pointer-events-none" : undefined}
+            inert={chromeLocked || undefined}
+          >
+            <Footer withNavOffset={!hideNav} />
+          </div>
+        )}
       </div>
       {!hideNav && <AppChromeNav />}
     </>

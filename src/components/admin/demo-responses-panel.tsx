@@ -1,8 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useAppState } from "@/context/app-state-context";
-import { canAccessAdminCatalog } from "@/lib/admin-access";
+import { FieldLabel } from "@/components/ui/form-fields";
+import {
+  GUEST_USER,
+  useAppState,
+} from "@/context/app-state-context";
+import { ADMIN_CATALOG_EMAIL, canAccessAdminCatalog } from "@/lib/admin-access";
 import { fetchDemoResponses } from "@/lib/demo/admin";
 import {
   computeDemoStats,
@@ -13,11 +17,13 @@ import {
 } from "@/lib/demo/stats";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import type { DemoResponseRow } from "@/types/demo";
-import { ArrowLeft, Lock } from "lucide-react";
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Lock } from "lucide-react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 type SortDir = "asc" | "desc";
+
+const inputClassName =
+  "w-full rounded-xl border border-primary-black/10 bg-background px-4 py-3 text-base text-primary-black placeholder:text-primary-black/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20";
 
 function formatDateTime(value: string | null): string {
   if (!value) return "—";
@@ -48,7 +54,13 @@ function compareByDate(a: DemoResponseRow, b: DemoResponseRow, dir: SortDir) {
 }
 
 export function DemoResponsesPanel() {
-  const { currentUser } = useAppState();
+  const {
+    createAccount,
+    currentUser,
+    isGuest,
+    isStorageHydrated,
+    switchAccount,
+  } = useAppState();
   const allowed = canAccessAdminCatalog(currentUser.email, currentUser.role);
   const [rows, setRows] = useState<DemoResponseRow[]>([]);
   const [error, setError] = useState("");
@@ -56,10 +68,15 @@ export function DemoResponsesPanel() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [email, setEmail] = useState(ADMIN_CATALOG_EMAIL);
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!allowed) {
       setLoading(false);
+      setRows([]);
       return;
     }
 
@@ -97,31 +114,103 @@ export function DemoResponsesPanel() {
   const stats = useMemo(() => computeDemoStats(filtered), [filtered]);
   const dateFilterActive = Boolean(fromDate || toDate);
 
+  async function handleLogin(event: FormEvent) {
+    event.preventDefault();
+    if (submitting) return;
+
+    setSubmitting(true);
+    setLoginError("");
+    const result = await createAccount({
+      name: "Admin",
+      email: email.trim().toLowerCase(),
+      password,
+      mode: "login",
+    });
+    setSubmitting(false);
+
+    if (!result.ok) {
+      setLoginError(result.error);
+      return;
+    }
+
+    setPassword("");
+  }
+
+  if (!isStorageHydrated) {
+    return (
+      <div
+        className={cn(
+          "mx-auto box-border min-h-dvh min-w-0 bg-background px-4 py-10",
+          APP_SHELL_WIDTH_CLASS,
+        )}
+      >
+        <p className="text-sm text-primary-black/50">Caricamento…</p>
+      </div>
+    );
+  }
+
   if (!allowed) {
     return (
       <div
         className={cn(
-          "mx-auto box-border min-h-dvh min-w-0 bg-background px-4 pt-8",
+          "mx-auto box-border flex min-h-dvh min-w-0 items-center bg-background px-4 py-10",
           APP_SHELL_WIDTH_CLASS,
         )}
       >
-        <div className="rounded-[2rem] border border-primary-black/10 bg-primary-black/[0.02] p-6">
-          <Link
-            href="/"
-            className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-background px-3 py-2 text-xs font-bold text-primary-black/55"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-            Torna alla home
-          </Link>
+        <div className="w-full rounded-[2rem] border border-primary-black/10 bg-primary-black/[0.02] p-6">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/12 text-primary-black">
             <Lock className="h-5 w-5" aria-hidden />
           </span>
           <h1 className="mt-4 text-2xl font-black text-primary-black">
-            Accesso non autorizzato
+            Controllo demo
           </h1>
           <p className="mt-2 text-sm text-primary-black/60">
-            Accedi con l&apos;account admin ufficiale per continuare.
+            Pagina riservata, fuori dalla demo TikTok e dall’app. Accedi con
+            l’account admin per vedere ingressi, voti e statistiche.
           </p>
+
+          {!isGuest ? (
+            <p className="mt-4 rounded-2xl bg-brand-pink/12 px-3 py-2 text-sm text-brand-pink">
+              L’account con cui sei connesso non può aprire questo pannello.
+            </p>
+          ) : null}
+
+          <form className="mt-6 space-y-4" onSubmit={(event) => void handleLogin(event)}>
+            <div>
+              <FieldLabel htmlFor="demo-control-email">Email</FieldLabel>
+              <input
+                id="demo-control-email"
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className={inputClassName}
+                required
+              />
+            </div>
+            <div>
+              <FieldLabel htmlFor="demo-control-password">Password</FieldLabel>
+              <input
+                id="demo-control-password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className={inputClassName}
+                required
+              />
+            </div>
+            {loginError ? (
+              <p className="text-sm font-medium text-brand-pink">{loginError}</p>
+            ) : null}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={submitting || !password}
+            >
+              {submitting ? "Accesso…" : "Entra"}
+            </Button>
+          </form>
         </div>
       </div>
     );
@@ -134,15 +223,28 @@ export function DemoResponsesPanel() {
         APP_SHELL_WIDTH_CLASS,
       )}
     >
-      <h1 className="text-2xl font-black text-primary-black">
-        Statistiche demo
-      </h1>
-      <p className="mt-1 text-sm text-primary-black/60">
-        Ingressi dalla tabella demo, isolati dalla piattaforma reale.
-        {dateFilterActive
-          ? " I numeri si riferiscono all'intervallo selezionato."
-          : null}
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-black text-primary-black">
+            Controllo demo
+          </h1>
+          <p className="mt-1 text-sm text-primary-black/60">
+            Ingressi, voti e risposte della demo, isolati dalla piattaforma
+            reale.
+            {dateFilterActive
+              ? " I numeri si riferiscono all'intervallo selezionato."
+              : null}
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="px-3 py-2 text-xs"
+          onClick={() => switchAccount(GUEST_USER.id)}
+        >
+          Esci
+        </Button>
+      </div>
 
       <div className="mt-5 flex flex-wrap items-end gap-3">
         <label className="block space-y-1">
