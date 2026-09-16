@@ -4,6 +4,7 @@ import { isDemoMode as readDemoModeFlag } from "@/lib/demo/mode";
 import {
   DEMO_PICK_LIMIT,
   clearDemoAttemptLocalState,
+  clearDemoPartyCriteria,
   dismissDemoHomeTip,
   readDemoSession,
   resolveDemoLanding,
