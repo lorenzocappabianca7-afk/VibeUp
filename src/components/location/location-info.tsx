@@ -82,26 +82,40 @@ export function LocationInfo({
   const averageRating = getLocationAverageRating(location);
 
   const specs = [
-    { icon: Ruler, label: "Superficie", value: `${tech.surfaceSqm} m²` },
-    { icon: Users, label: "Capacità max", value: `${tech.maxGuests} ospiti` },
-    { icon: Clock, label: "Durata minima", value: `${tech.minHours} ore` },
-    { icon: Car, label: "Parcheggio", value: `${tech.parkingSpots} posti` },
-    {
-      icon: Accessibility,
-      label: "Accessibilità",
-      value: tech.accessibility ? "Sì" : "No",
-    },
-    {
-      icon: AirVent,
-      label: "Aria condizionata",
-      value: tech.airConditioning ? "Sì" : "No",
-    },
-    {
-      icon: Sun,
-      label: "Area esterna",
-      value: tech.outdoorArea ? "Sì" : "No",
-    },
-  ];
+    tech.surfaceSqm > 0
+      ? { icon: Ruler, label: "Superficie", value: `${tech.surfaceSqm} m²` }
+      : null,
+    tech.maxGuests > 0
+      ? { icon: Users, label: "Capacità max", value: `${tech.maxGuests} ospiti` }
+      : null,
+    tech.minHours > 0
+      ? { icon: Clock, label: "Durata minima", value: `${tech.minHours} ore` }
+      : null,
+    tech.parkingSpots > 0
+      ? { icon: Car, label: "Parcheggio", value: `${tech.parkingSpots} posti` }
+      : null,
+    tech.accessibility !== undefined
+      ? {
+          icon: Accessibility,
+          label: "Accessibilità",
+          value: tech.accessibility ? "Sì" : "No",
+        }
+      : null,
+    tech.airConditioning !== undefined
+      ? {
+          icon: AirVent,
+          label: "Aria condizionata",
+          value: tech.airConditioning ? "Sì" : "No",
+        }
+      : null,
+    tech.outdoorArea !== undefined
+      ? {
+          icon: Sun,
+          label: "Area esterna",
+          value: tech.outdoorArea ? "Sì" : "No",
+        }
+      : null,
+  ].filter((spec) => spec !== null);
 
   return (
     <div className="space-y-6">
@@ -165,6 +179,7 @@ export function LocationInfo({
         </p>
       </section>
 
+      {specs.length > 0 ? (
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-primary-black/50">
           Dettagli tecnici
@@ -191,6 +206,7 @@ export function LocationInfo({
           ))}
         </ul>
       </section>
+      ) : null}
 
       <section>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary-black/50">

@@ -183,7 +183,8 @@ export async function generateInstantQuote(
     locationPriceKnown: location.hourlyPrice > 0,
     selectedInternalServices: selectedInternalServices.length,
     missingRequiredServices: missingRequiredTypes.length,
-    guestCountFitsCapacity: guestCount <= location.capacity,
+    guestCountFitsCapacity:
+      location.capacity <= 0 || guestCount <= location.capacity,
   });
   const estimatedErrorPct = roundCurrency((1 - confidence) * 100);
   const errorMultiplier = 1 - confidence;
@@ -197,7 +198,7 @@ export async function generateInstantQuote(
       : null,
   ].filter((assumption): assumption is string => Boolean(assumption));
   const riskFactors = [
-    guestCount > location.capacity
+    location.capacity > 0 && guestCount > location.capacity
       ? "Numero ospiti superiore alla capienza dichiarata del locale."
       : null,
     missingRequiredTypes.length > 0

@@ -51,9 +51,10 @@ export interface TechnicalDetails {
   parkingSpots: number;
   minHours: number;
   maxGuests: number;
-  accessibility: boolean;
-  airConditioning: boolean;
-  outdoorArea: boolean;
+  /** Omitted when the venue has not confirmed the detail. */
+  accessibility?: boolean;
+  airConditioning?: boolean;
+  outdoorArea?: boolean;
 }
 
 export type AvailableLocationServicePricing =

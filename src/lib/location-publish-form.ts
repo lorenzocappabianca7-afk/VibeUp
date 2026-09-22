@@ -343,9 +343,9 @@ export function locationToPublishForm(location: Location): LocationPublishFormDa
     surfaceSqm: String(location.technicalDetails.surfaceSqm || ""),
     parkingSpots: String(location.technicalDetails.parkingSpots || ""),
     minHours: String(location.technicalDetails.minHours || 3),
-    accessibility: location.technicalDetails.accessibility,
-    airConditioning: location.technicalDetails.airConditioning,
-    outdoorArea: location.technicalDetails.outdoorArea,
+    accessibility: location.technicalDetails.accessibility ?? false,
+    airConditioning: location.technicalDetails.airConditioning ?? false,
+    outdoorArea: location.technicalDetails.outdoorArea ?? false,
     includedServices: location.includedServices.join(", "),
     availableServices:
       location.availableServices?.map((service) => ({

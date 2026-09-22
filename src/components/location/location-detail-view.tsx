@@ -1027,8 +1027,10 @@ function SimilarLocationsCarousel({
                   <p className="flex items-center gap-1 text-xs text-primary-black/50">
                     <MapPin className="h-3 w-3 shrink-0" aria-hidden />
                     <span className="truncate">
-                      {similarLocation.zoneLabel} · fino a{" "}
-                      {similarLocation.capacity} ospiti
+                      {similarLocation.zoneLabel}
+                      {similarLocation.capacity > 0
+                        ? ` · fino a ${similarLocation.capacity} ospiti`
+                        : ""}
                     </span>
                   </p>
                   <p className="text-sm font-black text-brand-teal">

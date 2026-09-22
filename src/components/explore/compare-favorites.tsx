@@ -134,11 +134,13 @@ export const CompareFavorites = memo(function CompareFavorites({
               locations={locations}
               renderValue={(loc) => (
                 <span className="block leading-tight text-primary-black/80">
-                  {loc.capacity}
+                  {loc.capacity > 0 ? loc.capacity : "—"}
+                  {loc.capacity > 0 ? (
                   <span className="mt-0.5 block text-[9px] font-medium text-primary-black/50 sm:mt-0 sm:inline sm:text-[inherit] sm:font-inherit sm:text-primary-black/80">
                     {" "}
                     ospiti
                   </span>
+                  ) : null}
                 </span>
               )}
             />

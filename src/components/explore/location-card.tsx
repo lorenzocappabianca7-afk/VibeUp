@@ -139,8 +139,10 @@ export const LocationCard = memo(function LocationCard({
             <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-primary-black/50">
               <MapPin className="h-3 w-3 shrink-0" aria-hidden />
               <span className="truncate">
-                {location.zoneLabel} · {location.comune} · fino a{" "}
-                {location.capacity} ospiti
+                {location.zoneLabel} · {location.comune}
+                {location.capacity > 0
+                  ? ` · fino a ${location.capacity} ospiti`
+                  : ""}
               </span>
             </p>
           </div>

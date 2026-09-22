@@ -42,6 +42,7 @@ export function matchesNearMeFilter(
   userPosition: UserPosition | null,
 ): boolean {
   if (!nearMe || !userPosition) return true;
+  if (location.latitude === 0 && location.longitude === 0) return true;
   return distanceToLocation(userPosition, location) <= NEAR_ME_RADIUS_METERS;
 }
 

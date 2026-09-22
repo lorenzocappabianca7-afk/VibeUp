@@ -201,7 +201,9 @@ function filterLocationsByPartyCriteria(
       location.zoneLabel.toLowerCase().includes(normalizedQuery);
 
     const matchesCapacity =
-      guestCount == null || location.capacity >= guestCount;
+      guestCount == null ||
+      location.capacity <= 0 ||
+      location.capacity >= guestCount;
 
     const estimatedCost = estimateLocationFilteredCostRange(
       location,
