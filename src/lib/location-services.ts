@@ -1,5 +1,6 @@
 import type {
   AvailableLocationService,
+  ExtraServiceId,
   Location,
 } from "@/types/location";
 
@@ -179,6 +180,61 @@ export function getInternalLocationServices(
   }
 
   return buildFallbackInternalServices(location);
+}
+
+function matchesWantedVenueService(
+  service: InternalLocationService,
+  wanted: ExtraServiceId,
+): boolean {
+  const name = service.name.toLowerCase();
+  switch (wanted) {
+    case "catering":
+    case "menu":
+      if (/cocktail/.test(name)) return false;
+      return (
+        service.type === "menu" ||
+        /catering|buffet|menu|(^|\s)cena\b/.test(name)
+      );
+    case "dj":
+      return service.type === "dj" || /\bdj\b/.test(name);
+    case "photographer":
+      return service.type === "photographer" || /foto/.test(name);
+    case "decorations":
+      return service.type === "decorations" || /decor|allest/.test(name);
+    case "bakery":
+      return /torta|pasticcer/.test(name);
+    case "audio_lights":
+      return service.type === "audio_lights";
+    default:
+      return false;
+  }
+}
+
+/** Venue services that correspond to filters the guest actually selected. */
+export function listVenueServicesForWanted(
+  location: Pick<Location, "availableServices">,
+  wanted: readonly ExtraServiceId[],
+): InternalLocationService[] {
+  if (wanted.length === 0 || !location.availableServices?.length) return [];
+
+  return location.availableServices
+    .map((service, index) => mapAvailableService(service, index))
+    .filter(
+      (service) =>
+        service.name.length > 0 &&
+        service.pricing.type !== "included" &&
+        wanted.some((id) => matchesWantedVenueService(service, id)),
+    );
+}
+
+export function pricedWantedServiceIds(
+  location: Pick<Location, "availableServices">,
+  wanted: readonly ExtraServiceId[],
+): ExtraServiceId[] {
+  const services = listVenueServicesForWanted(location, wanted);
+  return wanted.filter((id) =>
+    services.some((service) => matchesWantedVenueService(service, id)),
+  );
 }
 
 export function getInternalLocationServicePrice(

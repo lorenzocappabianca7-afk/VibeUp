@@ -44,9 +44,9 @@ import { createPortal } from "react-dom";
 const STEPS = [
   "date",
   "guests",
+  "budget",
   "extras",
   "drinks",
-  "budget",
   "description",
 ] as const;
 
@@ -230,18 +230,18 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
                 stepperRef={guestsRef}
               />
             ) : null}
-            {step === "extras" ? (
-              <ExtrasStep criteria={criteria} onChange={patch} />
-            ) : null}
-            {step === "drinks" ? (
-              <DrinksStep criteria={criteria} onChange={patch} />
-            ) : null}
             {step === "budget" ? (
               <BudgetStep
                 criteria={criteria}
                 onChange={patch}
                 rangeRef={budgetRef}
               />
+            ) : null}
+            {step === "extras" ? (
+              <ExtrasStep criteria={criteria} onChange={patch} />
+            ) : null}
+            {step === "drinks" ? (
+              <DrinksStep criteria={criteria} onChange={patch} />
             ) : null}
             {step === "description" ? (
               <DescriptionStep criteria={criteria} onChange={patch} />
@@ -424,12 +424,11 @@ function ExtrasStep({
   return (
     <fieldset>
       <legend className="mb-1 text-sm font-semibold text-primary-black">
-        Cosa deve offrire il locale
+        Servizi forniti dal locale
       </legend>
       <p className="mb-3 text-xs leading-relaxed text-primary-black/50">
-        Segna i servizi che vuoi trovare già nel locale: DJ, fotografo,
-        decorazioni, catering o torta. Servono a cercare le location che li
-        mettono a disposizione.
+        Scegli DJ, fotografo, decorazioni, catering o torta. Li mette il
+        locale, e il loro costo entra nel prezzo che vedi sulle location.
       </p>
       <div className="grid grid-cols-2 gap-2">
         {PARTY_EXTRA_SERVICE_OPTIONS.map((service) => {
@@ -463,6 +462,9 @@ function ExtrasStep({
               <span className="mt-0.5 block text-[11px] font-medium text-ink-inverse/50">
                 {service.hint}
               </span>
+              <span className="mt-1.5 block text-[10px] font-semibold leading-snug text-brand-teal">
+                Fornito dal locale, incluso nel prezzo
+              </span>
             </button>
           );
         })}
@@ -495,8 +497,8 @@ function DrinksStep({
         Bevande della serata
       </legend>
       <p className="mb-3 text-xs leading-relaxed text-primary-black/50">
-        Quanti drink vuoi prevedere per ogni ospite. Lo useremo sulla scheda
-        della location.
+        I drink li fornisce il locale. Il costo entra nel prezzo della
+        location, insieme alla sala e ai servizi scelti prima.
       </p>
       <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-paper p-1 ring-1 ring-primary-black/8">
         {(
@@ -573,8 +575,8 @@ function DrinksStep({
 
       {criteria.drinkMode === "open_bar" ? (
         <p className="mt-3 rounded-xl border border-primary-black/10 bg-paper px-3 py-2 text-xs font-semibold text-ink-inverse/70">
-          Open bar per tutta la serata, a partecipante. Il prezzo lo vedi
-          sulla scheda della location.
+          Open bar per tutta la serata, a partecipante. Lo fornisce il locale
+          ed è incluso nel prezzo.
         </p>
       ) : null}
     </fieldset>
@@ -605,6 +607,10 @@ function BudgetStep({
           onChange({ budgetMin, budgetMax })
         }
       />
+      <p className="mt-3 text-xs leading-relaxed text-primary-black/50">
+        Questo budget vale per il totale. Nei passi dopo aggiungi i servizi e
+        i drink: li fornisce il locale e il costo entra nello stesso prezzo.
+      </p>
     </fieldset>
   );
 }

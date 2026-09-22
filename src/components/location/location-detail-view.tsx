@@ -34,6 +34,7 @@ import {
 import {
   getInternalLocationServicePrice,
   getInternalLocationServices,
+  listVenueServicesForWanted,
 } from "@/lib/location-services";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
 import { SERVICE_PROVIDERS } from "@/lib/mock/service-providers";
@@ -212,13 +213,24 @@ export function LocationDetailView({
     const sharedIds = sharedServiceIds.filter((id) =>
       internalServices.some((service) => service.id === id),
     );
-    const extraIds = [...new Set([...includedIds, ...sharedIds])];
+    const wantedIds = hasAppliedCriteria
+      ? listVenueServicesForWanted(location, criteria.wantedServices).map(
+          (service) => service.id,
+        )
+      : [];
+    const extraIds = [...new Set([...includedIds, ...sharedIds, ...wantedIds])];
     if (extraIds.length === 0) return;
     setSelectedInternalServices((current) => {
       const missing = extraIds.filter((id) => !current.includes(id));
       return missing.length === 0 ? current : [...current, ...missing];
     });
-  }, [internalServices, sharedServiceIds]);
+  }, [
+    criteria.wantedServices,
+    hasAppliedCriteria,
+    internalServices,
+    location,
+    sharedServiceIds,
+  ]);
   const comingFromExploreQuote = Boolean(
     initialQuoteContext?.guestCount ||
       initialQuoteContext?.dateFrom ||

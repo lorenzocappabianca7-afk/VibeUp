@@ -222,12 +222,9 @@ export function PriceRangeInputs({
       </div>
 
       <p className="text-xs leading-relaxed text-primary-black/50">
-        Inserisci la fascia di budget che preferisci per evento o pacchetto
-        location. Il costo indicato si riferisce alla base della sala e{" "}
-        <span className="underline decoration-primary-black/30 underline-offset-2">
-          non include eventuali servizi aggiuntivi per la festa
-        </span>{" "}
-        (DJ, catering, decorazioni, ecc.).
+        Fascia di budget per la festa. Il prezzo sulle location include la
+        sala e i servizi del locale che scegli, e cambia tra feriale e
+        weekend.
       </p>
       {validationError && (
         <p className="text-xs font-semibold text-red-500">{validationError}</p>

@@ -1,8 +1,16 @@
 import { formatQuoteDisplayPriceSpan } from "@/lib/demo/price";
 import { calculateDrinksCost, DEFAULT_DRINKS_PER_INVITEE } from "@/lib/drinks-quote";
 import { calculateBookingQuote } from "@/lib/location";
+import {
+  getInternalLocationServicePrice,
+  listVenueServicesForWanted,
+  pricedWantedServiceIds,
+} from "@/lib/location-services";
 import { EXPLORE_GUEST_MIN, type Location } from "@/types/location";
-import type { PartyCriteria } from "@/types/party-criteria";
+import {
+  PARTY_EXTRA_SERVICE_OPTIONS,
+  type PartyCriteria,
+} from "@/types/party-criteria";
 
 /** Same default window as the location quote sheet. */
 export const PREVIEW_QUOTE_START_TIME = "18:00";
@@ -16,11 +24,17 @@ export type PreviewPriceLocation = Pick<
   | "personPrice"
   | "capacity"
   | "drinksPricing"
+  | "availableServices"
 >;
 
 export type PreviewPriceCriteria = Pick<
   PartyCriteria,
-  "guestCount" | "dates" | "dateFrom" | "drinkMode" | "drinksPerInvitee"
+  | "guestCount"
+  | "dates"
+  | "dateFrom"
+  | "drinkMode"
+  | "drinksPerInvitee"
+  | "wantedServices"
 >;
 
 export function resolvePreviewGuestCount(
@@ -61,7 +75,15 @@ export function estimateLocationFilteredCost(
     drinkUnitPrice: location.drinksPricing?.drinkUnitPrice,
     openBarPerInvitee: location.drinksPricing?.openBarPerInvitee,
   });
-  return quote.locationCost + drinksCost;
+  const venueServicesCost = listVenueServicesForWanted(
+    location,
+    criteria?.wantedServices ?? [],
+  ).reduce(
+    (sum, service) =>
+      sum + getInternalLocationServicePrice(service, guestCount),
+    0,
+  );
+  return quote.locationCost + drinksCost + venueServicesCost;
 }
 
 export function estimateLocationFilteredCostRange(
@@ -87,9 +109,15 @@ export function getFilteredLocationPricePresentation(
   const { min, max } = estimateLocationFilteredCostRange(location, criteria);
   const hasDateRange = min !== max;
   const guestCount = resolvePreviewGuestCount(criteria);
+  const wanted = criteria?.wantedServices ?? [];
+  const pricedIds = new Set(pricedWantedServiceIds(location, wanted));
   const parts = [
     `${guestCount} ${guestCount === 1 ? "ospite" : "ospiti"}`,
   ];
+
+  for (const option of PARTY_EXTRA_SERVICE_OPTIONS) {
+    if (pricedIds.has(option.id)) parts.push(option.label);
+  }
 
   if (criteria?.drinkMode === "open_bar") {
     parts.push("open bar");
