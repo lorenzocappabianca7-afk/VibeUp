@@ -90,8 +90,6 @@ export const PARTNER_LOCATIONS: Location[] = [
     geoArea: "dintorni",
     zone: "moncalieri",
     zoneLabel: "Moncalieri",
-    latitude: 0,
-    longitude: 0,
     imageUrl: VITTORINA_GALLERY[0],
     gallery: [...VITTORINA_GALLERY],
     description: `Location sul Colle della Maddalena, a Moncalieri. ${QUOTE_DESCRIPTION_TAIL}`,
