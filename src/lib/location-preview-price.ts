@@ -25,6 +25,7 @@ export type PreviewPriceLocation = Pick<
   | "capacity"
   | "drinksPricing"
   | "availableServices"
+  | "guestPriceTiers"
 >;
 
 export type PreviewPriceCriteria = Pick<
@@ -119,9 +120,15 @@ export function getFilteredLocationPricePresentation(
     if (pricedIds.has(option.id)) parts.push(option.label);
   }
 
-  if (criteria?.drinkMode === "open_bar") {
+  if (
+    criteria?.drinkMode === "open_bar" &&
+    location.drinksPricing?.openBarPerInvitee != null
+  ) {
     parts.push("open bar");
-  } else if (criteria?.drinkMode === "per_invitee") {
+  } else if (
+    criteria?.drinkMode === "per_invitee" &&
+    location.drinksPricing?.drinkUnitPrice != null
+  ) {
     parts.push(`${Math.max(1, Math.round(criteria.drinksPerInvitee))} drink`);
   }
 

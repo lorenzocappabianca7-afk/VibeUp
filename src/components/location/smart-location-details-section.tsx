@@ -7,11 +7,9 @@ import {
 } from "@/lib/location-services";
 import {
   calculateDrinksCost,
-  DRINK_UNIT_PRICE,
   getDrinkPackageLabel,
   MAX_DRINKS_PER_INVITEE,
   MIN_DRINKS_PER_INVITEE,
-  OPEN_BAR_PER_INVITEE,
   type DrinkPackageMode,
 } from "@/lib/drinks-quote";
 import {
@@ -1149,7 +1147,9 @@ export function SmartLocationDetailsSection({
                   Drink per partecipante
                 </p>
                 <p className="text-[11px] text-ink-inverse/48">
-                  {formatCurrency(drinkUnitPrice ?? DRINK_UNIT_PRICE)} ciascuno
+                  {drinkUnitPrice != null
+                    ? `${formatCurrency(drinkUnitPrice)} ciascuno`
+                    : "Questa location non ha indicato il prezzo dei drink"}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -1184,8 +1184,10 @@ export function SmartLocationDetailsSection({
 
           {drinkMode === "open_bar" && (
             <p className="mt-3 rounded-xl border border-ink-inverse/10 bg-ink-inverse/[0.03] px-3 py-2 text-xs font-semibold text-ink-inverse/70">
-              Open bar stimato a {formatCurrency(openBarPerInvitee ?? OPEN_BAR_PER_INVITEE)}
-              /partecipante per tutta la serata.
+              Open bar
+              {openBarPerInvitee != null
+                ? ` stimato a ${formatCurrency(openBarPerInvitee)}/partecipante per tutta la serata.`
+                : ": questa location non ha indicato un prezzo."}
             </p>
           )}
 

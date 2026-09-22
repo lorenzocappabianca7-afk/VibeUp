@@ -45,6 +45,16 @@ export const LocationCard = memo(function LocationCard({
     () => uniqueImages([location.imageUrl, ...(location.gallery ?? [])]),
     [location.gallery, location.imageUrl],
   );
+  const placeLabel = [location.zoneLabel, location.comune]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(" · ");
+  const subtitle = [
+    placeLabel,
+    location.capacity > 0 ? `fino a ${location.capacity} ospiti` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <article className="render-contained h-full overflow-clip rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-[border-color,box-shadow] duration-150 hover:border-primary-black">
@@ -136,15 +146,12 @@ export const LocationCard = memo(function LocationCard({
             <h3 className="truncate font-semibold text-primary-black">
               {location.name}
             </h3>
-            <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-primary-black/50">
-              <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-              <span className="truncate">
-                {location.zoneLabel} · {location.comune}
-                {location.capacity > 0
-                  ? ` · fino a ${location.capacity} ospiti`
-                  : ""}
-              </span>
-            </p>
+            {subtitle ? (
+              <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-primary-black/50">
+                <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+                <span className="truncate">{subtitle}</span>
+              </p>
+            ) : null}
           </div>
           <p className="shrink-0 self-start sm:text-right">
             <span className="rounded-full bg-paper px-3 py-1 text-xs font-bold text-ink-inverse">

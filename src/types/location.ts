@@ -60,7 +60,7 @@ export interface TechnicalDetails {
 export type AvailableLocationServicePricing =
   | { type: "included" }
   | { type: "fixed"; price: number }
-  | { type: "per_person"; pricePerPerson: number };
+  | { type: "per_person"; pricePerPerson: number; minGuests?: number };
 
 /** Bookable services offered by the venue (shown as "Servizi disponibili"). */
 export interface AvailableLocationService {
@@ -97,6 +97,8 @@ export interface Location {
   priceModel?: "event" | "person";
   eventPrice?: number;
   personPrice?: number;
+  /** Hall price by guest count. The first tier that covers the group is used. */
+  guestPriceTiers?: { maxGuests: number; price: number }[];
   priceBadge?: string;
   capacity: number;
   partyTypes: PartyType[];

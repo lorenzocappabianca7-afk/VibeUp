@@ -16,7 +16,7 @@ export type InternalLocationServiceType =
 export type InternalLocationServicePricing =
   | { type: "included" }
   | { type: "fixed"; price: number }
-  | { type: "per_person"; pricePerPerson: number };
+  | { type: "per_person"; pricePerPerson: number; minGuests?: number };
 
 export interface InternalLocationService {
   id: string;
@@ -243,7 +243,8 @@ export function getInternalLocationServicePrice(
 ): number {
   if (service.pricing.type === "included") return 0;
   if (service.pricing.type === "per_person") {
-    return service.pricing.pricePerPerson * guestCount;
+    const billedGuests = Math.max(guestCount, service.pricing.minGuests ?? 0);
+    return service.pricing.pricePerPerson * billedGuests;
   }
   return service.pricing.price;
 }

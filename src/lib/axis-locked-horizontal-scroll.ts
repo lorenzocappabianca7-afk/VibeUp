@@ -16,6 +16,38 @@ const MIN_MOMENTUM_PX_PER_MS = 0.045;
 const MAX_MOMENTUM_PX_PER_MS = 2.8;
 /** Exponential decay — similar coast length to iOS vertical scroll. */
 const MOMENTUM_DECEL = 0.0024;
+/**
+ * Photo pages commit before the halfway mark. A short drag past this
+ * fraction of the slide, or a flick, moves to the next photo.
+ */
+const PAGE_COMMIT_FRACTION = 0.2;
+const PAGE_FLICK_PX_PER_MS = 0.28;
+
+export function nextCarouselPage(params: {
+  scrollLeft: number;
+  startScrollLeft: number;
+  width: number;
+  velocity: number;
+  maxScrollLeft: number;
+}): number {
+  const width = params.width || 1;
+  const maxPage = Math.max(0, Math.round(params.maxScrollLeft / width));
+  const origin = Math.max(
+    0,
+    Math.min(maxPage, Math.round(params.startScrollLeft / width)),
+  );
+  const fraction = (params.scrollLeft - origin * width) / width;
+  let page = origin;
+  if (fraction >= PAGE_COMMIT_FRACTION || params.velocity > PAGE_FLICK_PX_PER_MS) {
+    page = origin + 1;
+  } else if (
+    fraction <= -PAGE_COMMIT_FRACTION ||
+    params.velocity < -PAGE_FLICK_PX_PER_MS
+  ) {
+    page = origin - 1;
+  }
+  return Math.max(0, Math.min(maxPage, page));
+}
 
 export type HorizontalScrollAxisOptions = {
   /** Snap to the scroller viewport width on touchend (photo carousels). */
@@ -34,6 +66,7 @@ export function attachAxisLockedHorizontalScroll(
   let snapTypeBeforeDrag = "";
   let samples: { t: number; x: number }[] = [];
   let momentumRaf = 0;
+  let snapRestoreTimer = 0;
 
   function maxScrollLeft() {
     return element.scrollWidth - element.clientWidth;
@@ -108,6 +141,7 @@ export function attachAxisLockedHorizontalScroll(
   function onTouchStart(event: TouchEvent) {
     if (event.touches.length !== 1) return;
     stopMomentum();
+    window.clearTimeout(snapRestoreTimer);
     startX = event.touches[0].clientX;
     startY = event.touches[0].clientY;
     startScrollLeft = element.scrollLeft;
@@ -144,14 +178,30 @@ export function attachAxisLockedHorizontalScroll(
     element.scrollLeft = Math.max(0, Math.min(max, startScrollLeft - dx));
   }
 
+  function restoreSnap() {
+    element.style.scrollSnapType = snapTypeBeforeDrag;
+  }
+
   function onTouchEnd() {
     if (axis === "x") {
-      element.style.scrollSnapType = snapTypeBeforeDrag;
       if (options.snapToPage) {
         const width = element.clientWidth || 1;
-        const next = Math.round(element.scrollLeft / width);
-        element.scrollTo({ left: next * width, behavior: "smooth" });
+        const page = nextCarouselPage({
+          scrollLeft: element.scrollLeft,
+          startScrollLeft,
+          width,
+          velocity: releaseVelocity(),
+          maxScrollLeft: maxScrollLeft(),
+        });
+        element.scrollTo({ left: page * width, behavior: "smooth" });
+        const finish = () => {
+          element.removeEventListener("scrollend", finish);
+          restoreSnap();
+        };
+        element.addEventListener("scrollend", finish);
+        snapRestoreTimer = window.setTimeout(finish, 480);
       } else {
+        restoreSnap();
         startMomentum(releaseVelocity());
       }
     }
@@ -174,6 +224,7 @@ export function attachAxisLockedHorizontalScroll(
 
   return () => {
     stopMomentum();
+    window.clearTimeout(snapRestoreTimer);
     element.removeEventListener("touchstart", onTouchStart);
     element.removeEventListener("touchmove", onTouchMove);
     element.removeEventListener("touchend", onTouchEnd);

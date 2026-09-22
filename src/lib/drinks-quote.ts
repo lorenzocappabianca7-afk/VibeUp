@@ -26,15 +26,16 @@ export function calculateDrinksCost(params: {
   const { mode, guestCount } = params;
   if (mode === "none" || guestCount <= 0) return 0;
 
-  const openBarRate = params.openBarPerInvitee ?? OPEN_BAR_PER_INVITEE;
-  const drinkUnit = params.drinkUnitPrice ?? DRINK_UNIT_PRICE;
-
   if (mode === "open_bar") {
-    return openBarRate * guestCount;
+    if (params.openBarPerInvitee == null) return 0;
+    return params.openBarPerInvitee * guestCount;
   }
 
+  if (params.drinkUnitPrice == null) return 0;
   return (
-    clampDrinksPerInvitee(params.drinksPerInvitee) * drinkUnit * guestCount
+    clampDrinksPerInvitee(params.drinksPerInvitee) *
+    params.drinkUnitPrice *
+    guestCount
   );
 }
 

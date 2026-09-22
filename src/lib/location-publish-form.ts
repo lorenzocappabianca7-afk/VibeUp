@@ -219,7 +219,7 @@ function resolveCoords(form: LocationPublishFormData) {
 export function getLocationListBaseCost(
   location: Pick<
     Location,
-    "priceModel" | "eventPrice" | "personPrice" | "hourlyPrice" | "capacity"
+    "priceModel" | "eventPrice" | "personPrice" | "hourlyPrice" | "capacity" | "guestPriceTiers"
   >,
   params: { hours: number; guestCount: number },
 ): number {
@@ -236,6 +236,15 @@ export function getLocationListBaseCost(
         ),
       );
     return person * guestCount;
+  }
+
+  const tiers = location.guestPriceTiers;
+  if (tiers && tiers.length > 0) {
+    const sorted = [...tiers].sort((a, b) => a.maxGuests - b.maxGuests);
+    const tier =
+      sorted.find((item) => guestCount <= item.maxGuests) ??
+      sorted[sorted.length - 1];
+    return tier.price;
   }
 
   return location.eventPrice ?? location.hourlyPrice * Math.max(params.hours, 1);

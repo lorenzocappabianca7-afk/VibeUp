@@ -144,12 +144,18 @@ export function FavoritesSettingsPanel({ onBack }: FavoritesSettingsPanelProps) 
                       <p className="truncate text-sm font-semibold text-primary-black">
                         {location.name}
                       </p>
-                      <p className="mt-1 flex items-center gap-1 text-xs text-primary-black/50">
-                        <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-                        <span className="truncate">
-                          {location.zoneLabel} · {location.comune}
-                        </span>
-                      </p>
+                      {[location.zoneLabel, location.comune].some(
+                        (part) => part.trim().length > 0,
+                      ) ? (
+                        <p className="mt-1 flex items-center gap-1 text-xs text-primary-black/50">
+                          <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+                          <span className="truncate">
+                            {[location.zoneLabel, location.comune]
+                              .filter((part) => part.trim().length > 0)
+                              .join(" · ")}
+                          </span>
+                        </p>
+                      ) : null}
                       <p className="mt-2 text-xs font-bold text-brand-teal">
                         {price.price}
                       </p>

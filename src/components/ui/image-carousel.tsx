@@ -87,10 +87,37 @@ export function ImageCarousel({
     const scroller = scrollerRef.current;
     if (!scroller || images.length < 2) return;
 
+    let wheelAccum = 0;
+    let wheelLock = false;
+    let wheelTimer = 0;
+
     const onWheel = (event: WheelEvent) => {
-      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+      const absX = Math.abs(event.deltaX);
+      const absY = Math.abs(event.deltaY);
+      if (absY > absX) {
+        event.preventDefault();
+        window.scrollBy({ top: event.deltaY, left: 0, behavior: "auto" });
+        return;
+      }
+      if (absX < 0.5) return;
       event.preventDefault();
-      window.scrollBy({ top: event.deltaY, left: 0, behavior: "auto" });
+      window.clearTimeout(wheelTimer);
+      wheelTimer = window.setTimeout(() => {
+        wheelAccum = 0;
+        wheelLock = false;
+      }, 180);
+      if (wheelLock) return;
+      wheelAccum += event.deltaX;
+      if (Math.abs(wheelAccum) < 28) return;
+      wheelLock = true;
+      const width = scroller.clientWidth || 1;
+      const current = Math.round(scroller.scrollLeft / width);
+      const direction = wheelAccum > 0 ? 1 : -1;
+      const next = Math.max(
+        0,
+        Math.min(images.length - 1, current + direction),
+      );
+      scroller.scrollTo({ left: next * width, behavior: "smooth" });
     };
 
     scroller.addEventListener("wheel", onWheel, { passive: false });
@@ -98,6 +125,7 @@ export function ImageCarousel({
       snapToPage: true,
     });
     return () => {
+      window.clearTimeout(wheelTimer);
       scroller.removeEventListener("wheel", onWheel);
       detachTouch();
     };

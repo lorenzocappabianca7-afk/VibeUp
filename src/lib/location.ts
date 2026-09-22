@@ -102,7 +102,7 @@ export function calculateBookingQuote(params: {
   /** When set, uses event/person list price instead of hours × hourly. */
   location?: Pick<
     Location,
-    "priceModel" | "eventPrice" | "personPrice" | "hourlyPrice" | "capacity"
+    "priceModel" | "eventPrice" | "personPrice" | "hourlyPrice" | "capacity" | "guestPriceTiers"
   >;
   /** ISO date — weekend nights use a higher venue rate than weekdays. */
   date?: string;

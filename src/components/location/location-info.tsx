@@ -140,14 +140,18 @@ export function LocationInfo({
             <PinkStarRating rating={averageRating} showValue />
           ) : null}
         </div>
-        <p className="mt-1 flex min-w-0 items-start gap-1 text-sm text-primary-black/60">
-          <MapPin className="h-4 w-4 shrink-0" aria-hidden />
-          <span className="min-w-0 break-words">{location.address}</span>
-        </p>
+        {location.address.trim() ? (
+          <p className="mt-1 flex min-w-0 items-start gap-1 text-sm text-primary-black/60">
+            <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="min-w-0 break-words">{location.address}</span>
+          </p>
+        ) : null}
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-primary-black/5 px-3 py-1 text-xs font-medium text-primary-black/70">
-            {location.zoneLabel}
-          </span>
+          {location.zoneLabel.trim() ? (
+            <span className="rounded-full bg-primary-black/5 px-3 py-1 text-xs font-medium text-primary-black/70">
+              {location.zoneLabel}
+            </span>
+          ) : null}
           {location.distanceBadge && (
             <DistanceBadge label={location.distanceBadge} />
           )}
@@ -208,21 +212,23 @@ export function LocationInfo({
       </section>
       ) : null}
 
-      <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary-black/50">
-          Servizi inclusi nel prezzo
-        </h2>
-        <ul className="flex flex-wrap gap-2">
-          {location.includedServices.map((service) => (
-            <li
-              key={service}
-              className="rounded-full bg-brand-teal/10 px-3 py-1.5 text-xs font-medium text-brand-teal"
-            >
-              {service}
-            </li>
-          ))}
-        </ul>
-      </section>
+      {location.includedServices.length > 0 ? (
+        <section>
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary-black/50">
+            Servizi inclusi nel prezzo
+          </h2>
+          <ul className="flex flex-wrap gap-2">
+            {location.includedServices.map((service) => (
+              <li
+                key={service}
+                className="rounded-full bg-brand-teal/10 px-3 py-1.5 text-xs font-medium text-brand-teal"
+              >
+                {service}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }
