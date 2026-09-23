@@ -21,6 +21,7 @@ import {
   SPLASH_STAGE_LIFT_VH,
   SPLASH_TAGLINE,
 } from "@/lib/splash";
+import { BROWSER_TRANSLATE_GUARD_SCRIPT } from "@/lib/browser-translate-guard";
 import { getSiteUrl } from "@/lib/site";
 /* App CSS is loaded by AppCssLoader after first paint. Do not import
    globals.css here — Next hoists it as a render-blocking <link> and iOS
@@ -157,6 +158,7 @@ export default function RootLayout({
   return (
     <html
       lang="it"
+      translate="yes"
       className={`${geistSans.variable} ${geistMono.variable} ${brandDisplay.variable} ${eventsScript.variable} h-full antialiased`}
       style={{ backgroundColor: "#000000", colorScheme: "only dark" }}
       suppressHydrationWarning
@@ -284,6 +286,9 @@ export default function RootLayout({
             </div>
           </div>
         </div>
+        {/* After splash markup so first paint is not blocked. Lets Safari and
+            Chrome translate the Italian UI without React wiping it. */}
+        <script dangerouslySetInnerHTML={{ __html: BROWSER_TRANSLATE_GUARD_SCRIPT }} />
         <SplashScreen />
         <AppCssLoaderGate />
         <AppProviders>
