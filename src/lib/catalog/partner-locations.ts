@@ -109,6 +109,21 @@ const CERIANA_GALLERY = [
   "/locations/palazzo-ceriana/05-scalone.jpg",
 ] as const;
 
+const CHEERS_GALLERY = [
+  "/locations/cheers-superga/01-esterno.jpg",
+  "/locations/cheers-superga/02-terrazza.jpg",
+  "/locations/cheers-superga/03-terrazza-sera.jpg",
+  "/locations/cheers-superga/04-sala.jpg",
+] as const;
+
+const MONTALDO_GALLERY = [
+  "/locations/castello-di-montaldo/01-aerea.jpg",
+  "/locations/castello-di-montaldo/02-corte.jpg",
+  "/locations/castello-di-montaldo/03-sala.jpg",
+  "/locations/castello-di-montaldo/04-sala-lampadari.jpg",
+  "/locations/castello-di-montaldo/05-notte.jpg",
+] as const;
+
 /**
  * Real venues supplied by the team. Prices are the net amounts from the
  * Popup Location quote (3 August 2026); VAT is stated in the copy.
@@ -235,7 +250,7 @@ export const PARTNER_LOCATIONS: Location[] = [
     imageUrl: NUVOLA_GALLERY[0],
     gallery: [...NUVOLA_GALLERY],
     description:
-      "Spazio Nuvola 9, in Corso Moncalieri, è una location in esclusiva per feste private, anche i diciottesimi. Il listino 2025 per la serata 18:30–02:00, oppure 14:00–20:00, è 700 € fino a 30 invitati, 800 € fino a 50 e 900 € fino a 80. Nel prezzo ci sono lo spazio, l’esterno in base alla stagione, la cucina per cibi freddi e finger food, la pulizia durante la festa, l’impianto audio Bose e le luci della zona dance. La musica dance va fino a mezzanotte; dall’1:30 solo musica soft. Non fanno ristorazione: la torta si porta dalla pasticceria, oppure ci si affida a un catering esterno. La cucina per cibi caldi è un extra da 100 €. I DJ con cui sono in contatto costano da 150 a 300 €; in alternativa ci si collega all’impianto con una playlist. Altri extra: guardaroba 100 €, pagoda 3×3 30 €, stufa esterna 30 €, pulizia extra 50 €, ora extra 100 €. Pulizie finali da 30 a 90 €.",
+      "Spazio Nuvola 9, in Corso Moncalieri, è una location in esclusiva per feste private, anche i diciottesimi. Il listino 2025 per la serata 18:30–02:00, oppure 14:00–20:00, è 700 € fino a 30 invitati, 800 € fino a 50 e 900 € fino a 80. Nel prezzo ci sono lo spazio, l’esterno in base alla stagione, la cucina per cibi freddi e finger food, la pulizia durante la festa, l’impianto audio Bose e le luci della zona dance. La musica dance va fino a mezzanotte; dall’1:30 solo musica soft. Non fanno ristorazione: la torta si porta dalla pasticceria, oppure ci si affida a un catering esterno. La cucina per cibi caldi è un extra da 100 €. Se si chiede il DJ, il prezzo è 200 €; in alternativa ci si collega all’impianto con una playlist. Altri extra: guardaroba 100 €, pagoda 3×3 30 €, stufa esterna 30 €, pulizia extra 50 €, ora extra 100 €. Pulizie finali da 30 a 90 €.",
     characteristics: ["Open space", "Esterno", "Esclusiva"],
     technicalDetails: {
       surfaceSqm: 0,
@@ -263,6 +278,13 @@ export const PARTNER_LOCATIONS: Location[] = [
       "Pulizia durante l’evento",
       "Impianto audio Bose",
       "Luci per la zona dance e il bar",
+    ],
+    availableServices: [
+      {
+        name: "DJ",
+        description: "200 € se si chiede un DJ. In alternativa si usa una playlist sull’impianto Bose.",
+        pricing: { type: "fixed", price: 200 },
+      },
     ],
     contactsBeenHere: { count: 0, contacts: [] },
     latitude: 0,
@@ -332,7 +354,7 @@ export const PARTNER_LOCATIONS: Location[] = [
     imageUrl: CERIANA_GALLERY[0],
     gallery: [...CERIANA_GALLERY],
     description:
-      "Palazzo Ceriana. Nei file non c’è il prezzo di affitto di questo palazzo: i 2.000 € + IVA 22% sono scritti per il Circolo della Stampa. La cena a buffet è 40 € + IVA 10% a persona, minimo 40: una decina di finger, un primo caldo, dolci al cucchiaio e buvette dei vini (prosecco, spritz, analcolici) aperta per tutta la cena. È obbligatorio 1 addetto alla sicurezza ogni 25/30 invitati, 120 € + IVA 22% ciascuno. Cocktail dopo cena 6 € + IVA 10% a persona. DJ esterno: cachet 200 € + IVA 22%, luci e consolle 150 € + IVA 22%. Diritti SIAE 150 € + IVA 22%, a carico vostro; la location può fare la richiesta.",
+      "Palazzo Ceriana. L’affitto è 2.000 € + IVA 22%. La cena a buffet è 40 € + IVA 10% a persona, minimo 40: una decina di finger, un primo caldo, dolci al cucchiaio e buvette dei vini (prosecco, spritz, analcolici) aperta per tutta la cena. È obbligatorio 1 addetto alla sicurezza ogni 25/30 invitati, 120 € + IVA 22% ciascuno. Cocktail dopo cena 6 € + IVA 10% a persona. DJ esterno: cachet 200 € + IVA 22%, luci e consolle 150 € + IVA 22%. Diritti SIAE 150 € + IVA 22%, a carico vostro; la location può fare la richiesta.",
     characteristics: ["Palazzo", "Specchi", "Sale"],
     technicalDetails: {
       surfaceSqm: 0,
@@ -341,12 +363,12 @@ export const PARTNER_LOCATIONS: Location[] = [
       maxGuests: 0,
     },
     priceModel: "event",
-    eventPrice: 0,
-    hourlyPrice: 0,
-    priceBadge: "Affitto non indicato nei file",
+    eventPrice: 2000,
+    hourlyPrice: 2000,
+    priceBadge: "IVA 22% esclusa",
     capacity: 0,
     partyTypes: ["festa"],
-    deposit: 0,
+    deposit: 600,
     includedServices: [],
     availableServices: [
       {
@@ -374,6 +396,102 @@ export const PARTNER_LOCATIONS: Location[] = [
         name: "Diritti SIAE",
         description: "150 € + IVA 22%. La location può occuparsi della richiesta.",
         pricing: { type: "fixed", price: 150 },
+      },
+    ],
+    contactsBeenHere: { count: 0, contacts: [] },
+    latitude: 0,
+    longitude: 0,
+  },
+  {
+    id: "loc-cheers-superga",
+    name: "Cheers Bistrot Superga",
+    city: "Torino",
+    comune: "Torino",
+    regione: "Piemonte",
+    address: "Str. Basilica di Superga 45, Torino",
+    geoArea: "torino_citta",
+    zoneLabel: "Superga",
+    imageUrl: CHEERS_GALLERY[0],
+    gallery: [...CHEERS_GALLERY],
+    description:
+      "Cheers Bistrot Superga, in Str. Basilica di Superga 45 a Torino, ospita i diciottesimi. La saletta privata è al massimo per 30 persone, solo il vostro gruppo: oltre le 30 non ci state. Il prezzo in scheda è l’Opzione Soft, 35 € a persona: focacce miste, taglieri di salumi e formaggi con chiacchiere, vitello tonnato, chicche di patate con salsa di datterino, crema di pecorino e coulis al basilico, acqua e caffè. Opzione Silver, 40 € a persona: taglieri, battuta di fassona con stracciatella agli agrumi e pomodorini confit, plin al sugo d’arrosto, guancia di manzo con patate arrosto, acqua e caffè. Opzione Gold, 45 € a persona: battuta di fassona, vitello tonnato, plin, chicche di patate, guancia di manzo, acqua e caffè. Nei tre menù il vino è compreso, una bottiglia ogni 4 persone: Barbera d’Asti, Dolcetto d’Alba o Langhe Arneis. Si può sostituire con altri vini in bottiglia, sempre una ogni 4: Ruchè +3 €, Erbaluce +3 €, Valdobbiadene Brut +3 €, Barbera d’Asti superiore +5 €, Gewurztraminer +5 €. Le modifiche valgono per tutto il tavolo. Sostituzioni allo stesso prezzo: vitello tonnato, battuta con stracciatella, plin al sugo d’arrosto, rigatoni con crema di zucchine, menta, Castelmagno e guanciale. Orecchiette con crema di patate allo zafferano, pecorino, cozze e prezzemolo +3 €. Filetto di maialino con fondo bruno +2 €. Aggiunte a persona: vitello tonnato o battuta +5 €, plin, rigatoni o filetto di maialino +6 €, orecchiette +7 €. Torta o dolce monoporzione 3 € a persona, minimo 10: pan di Spagna al cioccolato o alla crema, tiramisù o cheesecake ai frutti di bosco. Non fanno il fotografo e non mettono il DJ. Il catering non è un servizio a parte: sono un ristorante e il menù è il prezzo. L’aperitivo è senza prenotazione dalle 15:00 alle 20:00; i tavoli si liberano alle 19:30 dentro e alle 20:00 fuori. Si prenota per telefono, non su WhatsApp, oppure su https://octotable.com/book/restaurant/319470/welcome. Non si può chiedere un posto attaccato alla ringhiera: i tavoli seguono l’ordine di prenotazione. Se la terrazza non compare come sala, per quella data è al completo.",
+    characteristics: ["Superga", "Terrazza", "Sala"],
+    technicalDetails: {
+      surfaceSqm: 0,
+      parkingSpots: 0,
+      minHours: 0,
+      maxGuests: 30,
+      outdoorArea: true,
+    },
+    priceModel: "person",
+    personPrice: 35,
+    hourlyPrice: 35,
+    priceBadge: "Menù di partenza, a persona",
+    capacity: 30,
+    partyTypes: ["compleanno", "festa", "aziendale"],
+    deposit: 0,
+    includedServices: [
+      "Opzione Soft",
+      "Acqua e caffè",
+      "Vino: 1 bottiglia ogni 4 persone",
+    ],
+    availableServices: [
+      {
+        name: "Torta o dolce",
+        description:
+          "3 € a persona, minimo 10. Pan di Spagna al cioccolato o alla crema, tiramisù o cheesecake ai frutti di bosco.",
+        pricing: { type: "per_person", pricePerPerson: 3, minGuests: 10 },
+      },
+    ],
+    contactsBeenHere: { count: 0, contacts: [] },
+    latitude: 0,
+    longitude: 0,
+  },
+  {
+    id: "loc-castello-di-montaldo",
+    name: "Castello di Montaldo",
+    city: "Montaldo Torinese",
+    comune: "Montaldo Torinese",
+    regione: "Piemonte",
+    address: "Piazza Superga, 1, 10020 Montaldo Torinese (TO)",
+    geoArea: "dintorni",
+    zoneLabel: "",
+    imageUrl: MONTALDO_GALLERY[0],
+    gallery: [...MONTALDO_GALLERY],
+    description:
+      "Castello di Montaldo, in Piazza Superga 1 a Montaldo Torinese. Per i diciottesimi la mail del 7 agosto 2026 propone due formule a persona, IVA 10% esclusa. Il prezzo in scheda è la Proposta 1, 75 € a persona: aperitivo reale, un primo a passaggio, torta e bevande illimitate. L’aperitivo è un’isola di formaggi DOP con composte di frutta, miele e crostini al nero di segale; un’isola di salumi nostrani e grissini al rosmarino; quiche alle verdure e tartellata al burro di Normandia con gambero al lime; pizze rosse con pomodoro del Gargano e focaccia all’olio EVO; omelette alle erbette di campo e Parmigiano al taglio pietra; crudité di verdurine e bocconcini di bufala campana DOP; crock and soft di patate con fontina d’alpeggio; tapas di terra e di mare. Le bevande illimitate sono vino bianco, bollicine, miscelati alcolici, cocktail analcolici, acqua naturale e gasata e bevande gasate. La Proposta 2 è 85 € a persona, IVA 10% esclusa: lo stesso aperitivo, un primo, un secondo, la torta e le stesse bevande. Nella mail non ci sono prezzi per DJ, fotografo o per un affitto della sala separato dal menù. Contatto: +39 011 0620566, eventi@castellodimontaldo.it, www.castellodimontaldo.it.",
+    characteristics: ["Castello", "Corte", "Sale"],
+    technicalDetails: {
+      surfaceSqm: 0,
+      parkingSpots: 0,
+      minHours: 0,
+      maxGuests: 0,
+      outdoorArea: true,
+    },
+    priceModel: "person",
+    personPrice: 75,
+    hourlyPrice: 75,
+    priceBadge: "Proposta di partenza, IVA 10% esclusa",
+    capacity: 0,
+    partyTypes: ["compleanno", "festa"],
+    deposit: 0,
+    includedServices: [
+      "Aperitivo reale",
+      "1 primo a passaggio",
+      "Torta",
+      "Bevande illimitate",
+    ],
+    availableServices: [
+      {
+        name: "Aperitivo reale",
+        description: "Incluso nella proposta, insieme al primo e alla torta.",
+        pricing: { type: "included" },
+      },
+      {
+        name: "Bevande illimitate",
+        description:
+          "Vino bianco, bollicine, miscelati alcolici, cocktail analcolici, acqua e bevande gasate.",
+        pricing: { type: "included" },
       },
     ],
     contactsBeenHere: { count: 0, contacts: [] },
