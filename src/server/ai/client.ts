@@ -146,6 +146,7 @@ export async function extractLocationWithVisionModel(
         "Estrai dettagli strutturati di una location per feste in Piemonte.",
         "Usa foto, listini, email e testi per ricavare dati del locale, servizi disponibili, menu e prezzi.",
         "Normalizza i prezzi in euro. Se un dato non e' presente, omettilo e aggiungilo a suggestedReviewFields.",
+        "Il campo description deve essere di 2 o 3 frasi: com'è l'ambiente e perché farci una festa. Non mettere prezzi, IVA, affitti, listini o minimi: quelli vanno solo in hourlyPrice e services.",
         "Rispondi solo con JSON valido conforme allo schema.",
         "",
         sources.map(sourceToPrompt).join("\n\n---\n\n"),

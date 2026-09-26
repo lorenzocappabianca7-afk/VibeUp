@@ -31,9 +31,6 @@ const QUOTE_SERVICES: AvailableLocationService[] = [
   },
 ];
 
-const QUOTE_DESCRIPTION_TAIL =
-  "L’affitto delle sale è 1.200 € + IVA 22% a serata, con chiusura alle 01:30. La cena a buffet (finger, primo caldo, dolci e buffet vini per tutta la cena) è 40 € + IVA 10% a persona, con un minimo di 40 partecipanti. È obbligatoria la presenza di un addetto alla sicurezza ogni 25/30 invitati, a 120 € + IVA 22% cadauno.";
-
 const QUOTE_TERMS = {
   technicalDetails: {
     surfaceSqm: 0,
@@ -125,8 +122,9 @@ const MONTALDO_GALLERY = [
 ] as const;
 
 /**
- * Real venues supplied by the team. Prices are the net amounts from the
- * Popup Location quote (3 August 2026); VAT is stated in the copy.
+ * Real venues supplied by the team. The public description is atmosphere only:
+ * two or three lines on the space and why to celebrate there. Prices stay in
+ * the pricing fields, not in `description`.
  */
 export const PARTNER_LOCATIONS: Location[] = [
   {
@@ -142,9 +140,19 @@ export const PARTNER_LOCATIONS: Location[] = [
     zoneLabel: "Moncalieri",
     imageUrl: VITTORINA_GALLERY[0],
     gallery: [...VITTORINA_GALLERY],
-    description: `Location sul Colle della Maddalena, a Moncalieri. ${QUOTE_DESCRIPTION_TAIL}`,
+    description:
+      "La Vittorina sta sul Colle della Maddalena, tra corte, portico e giardino. Le sale si aprono sul verde e la festa resta raccolta, lontana dal centro. È il posto per un ricevimento che vuole aria di collina e tavoli all’aperto.",
     characteristics: ["Collina", "Giardino", "Ricevimenti"],
     ...QUOTE_TERMS,
+    includedServices: [
+      "Utilizzo delle sale",
+      "Chiusura alle 01:30",
+      "Wi-Fi",
+      "Aria condizionata",
+      "Parcheggio privato",
+      "Cucina per il catering",
+      "Area esterna",
+    ],
   },
   {
     id: "loc-castello-della-rovere",
@@ -157,9 +165,15 @@ export const PARTNER_LOCATIONS: Location[] = [
     zoneLabel: "Vinovo",
     imageUrl: ROVERE_GALLERY[0],
     gallery: [...ROVERE_GALLERY],
-    description: `Castello a Vinovo. ${QUOTE_DESCRIPTION_TAIL}`,
+    description:
+      "Il Castello della Rovere a Vinovo tiene le feste tra mura storiche e sale che di sera si illuminano. L’ingresso e le volte danno subito il tono di un evento. È la scelta per un compleanno o un ricevimento che vuole il carattere di un castello.",
     characteristics: ["Castello", "Sale", "Ricevimenti"],
     ...QUOTE_TERMS,
+    includedServices: [
+      "Utilizzo delle sale",
+      "Chiusura alle 01:30",
+      "Parco",
+    ],
   },
   {
     id: "loc-villa-sassi",
@@ -173,7 +187,7 @@ export const PARTNER_LOCATIONS: Location[] = [
     imageUrl: SASSI_GALLERY[0],
     gallery: [...SASSI_GALLERY],
     description:
-      "Villa Sassi ospita anche i diciottesimi. L’affitto parte da 2.500 €, IVA esclusa. Il catering è interno e il prezzo del menù si valuta insieme. Il DJ costa circa 600 €, IVA esclusa. Per il fotografo la location mette in contatto con i propri partner.",
+      "Villa Sassi è una villa con giardino e sale da sera. Fuori c’è il verde, dentro le luci di una festa già pronta. Ci si festeggia un diciottesimo o un compleanno con il gruppo insieme, tra giardino e saloni.",
     characteristics: ["Villa", "Giardino", "Sale"],
     technicalDetails: {
       surfaceSqm: 0,
@@ -188,7 +202,7 @@ export const PARTNER_LOCATIONS: Location[] = [
     capacity: 0,
     partyTypes: ["compleanno", "festa"],
     deposit: 750,
-    includedServices: [],
+    includedServices: ["Parcheggio privato"],
     availableServices: [
       {
         name: "DJ",
@@ -212,7 +226,7 @@ export const PARTNER_LOCATIONS: Location[] = [
     imageUrl: BEACH_GALLERY[0],
     gallery: [...BEACH_GALLERY],
     description:
-      "The Beach ai Murazzi. Per i compleanni le formule di partenza includono catering e DJ. Il prezzo in scheda è la formula Solo aperitivo: 22 € a persona, dalle 20:30 alle 23:30, con aperitivo (6 antipastini e primo caldo), 1 consumazione a scelta e tavolo riservato fino alle 23:30. Aperitivo + serata, dalle 20:30 fino all’alba: 30 € a persona, con aperitivo e 2 consumazioni, tavolo fino alle 23:30 e ingresso alla serata. Aperitivo + tavolo, dalle 20:30 fino all’alba: 40 € a persona, con aperitivo e 1 consumazione, tavolo per tutta la serata e 1 bottiglia base ogni 5 persone oppure 2 consumazioni. Ci sono proposte vegetariane, vegane, gluten free e senza lattosio.",
+      "The Beach sta ai Murazzi, con sala, tavoli e consolle sul Po. Di sera la location diventa una festa: luci, musica e il fiume fuori. È il compleanno per chi vuole l’energia di una serata in città.",
     characteristics: ["Murazzi", "Sala", "Serata"],
     technicalDetails: {
       surfaceSqm: 0,
@@ -250,7 +264,7 @@ export const PARTNER_LOCATIONS: Location[] = [
     imageUrl: NUVOLA_GALLERY[0],
     gallery: [...NUVOLA_GALLERY],
     description:
-      "Spazio Nuvola 9, in Corso Moncalieri, è una location in esclusiva per feste private, anche i diciottesimi. Il listino 2025 per la serata 18:30–02:00, oppure 14:00–20:00, è 700 € fino a 30 invitati, 800 € fino a 50 e 900 € fino a 80. Nel prezzo ci sono lo spazio, l’esterno in base alla stagione, la cucina per cibi freddi e finger food, la pulizia durante la festa, l’impianto audio Bose e le luci della zona dance. La musica dance va fino a mezzanotte; dall’1:30 solo musica soft. Non fanno ristorazione: la torta si porta dalla pasticceria, oppure ci si affida a un catering esterno. La cucina per cibi caldi è un extra da 100 €. Se si chiede il DJ, il prezzo è 200 €; in alternativa ci si collega all’impianto con una playlist. Altri extra: guardaroba 100 €, pagoda 3×3 30 €, stufa esterna 30 €, pulizia extra 50 €, ora extra 100 €. Pulizie finali da 30 a 90 €.",
+      "Spazio Nuvola 9, in Corso Moncalieri, si prende in esclusiva per il vostro gruppo. Open space, esterno quando la stagione lo permette, e una zona dance già pronta. Funziona per un diciottesimo in cui lo spazio è solo vostro, dalla cena al ballo.",
     characteristics: ["Open space", "Esterno", "Esclusiva"],
     technicalDetails: {
       surfaceSqm: 0,
@@ -273,11 +287,15 @@ export const PARTNER_LOCATIONS: Location[] = [
     deposit: 210,
     includedServices: [
       "Location 18:30–02:00 oppure 14:00–20:00",
+      "Uso esclusivo della location",
       "Spazio all’aperto, in base alla stagione",
       "Cucina per cibi freddi e finger food",
       "Pulizia durante l’evento",
       "Impianto audio Bose",
       "Luci per la zona dance e il bar",
+      "Frigorifero con congelatore",
+      "Tavoli per il buffet",
+      "Sedie e tavolini",
     ],
     availableServices: [
       {
@@ -302,7 +320,7 @@ export const PARTNER_LOCATIONS: Location[] = [
     imageUrl: DOCKS_GALLERY[0],
     gallery: [...DOCKS_GALLERY],
     description:
-      "Spazio Docks, ai Docks Dora in Via Valprato 68, è in esclusiva fino alle 02:00. Proposta dell’8 agosto 2026 per un 18° a ottobre. L’affitto della location è 500 € e l’addetto alla sicurezza è obbligatorio a 100 €. Il prezzo in scheda somma queste due voci. Apericena, dalle 20:00/20:30: 38 € + IVA 10% a persona, minimo 30, con analcolico libero, 2 drink e sbicchierata. Dopo cena, dalle 21:00/21:30: 28 € + IVA 10% a persona, stesso minimo e stesse bevande. I menù si adattano a intolleranze e allergie. Extra: torta 40 € al chilo oppure portata da voi, DJ con attrezzatura 300 € oppure di vostra competenza, SIAE a vostro carico. Il fotografo è indicato senza un prezzo. Caparra 50% prima dell’evento e saldo a fine servizio. Ingresso pedonale. Contatto BBEvents: info@bbevents.it, 334 8765508.",
+      "Spazio Docks è ai Docks Dora, in un ambiente industriale con sala e veranda. La location resta in esclusiva per la vostra festa, fino a tardi. È il diciottesimo per chi vuole un posto urbano, non una sala da pranzo classica.",
     characteristics: ["Docks", "Esclusiva", "Veranda"],
     technicalDetails: {
       surfaceSqm: 0,
@@ -354,7 +372,7 @@ export const PARTNER_LOCATIONS: Location[] = [
     imageUrl: CERIANA_GALLERY[0],
     gallery: [...CERIANA_GALLERY],
     description:
-      "Palazzo Ceriana. L’affitto è 2.000 € + IVA 22%. La cena a buffet è 40 € + IVA 10% a persona, minimo 40: una decina di finger, un primo caldo, dolci al cucchiaio e buvette dei vini (prosecco, spritz, analcolici) aperta per tutta la cena. È obbligatorio 1 addetto alla sicurezza ogni 25/30 invitati, 120 € + IVA 22% ciascuno. Cocktail dopo cena 6 € + IVA 10% a persona. DJ esterno: cachet 200 € + IVA 22%, luci e consolle 150 € + IVA 22%. Diritti SIAE 150 € + IVA 22%, a carico vostro; la location può fare la richiesta.",
+      "Palazzo Ceriana accoglie le feste in un palazzo con scalone, sala degli specchi e sale da pranzo. Gli spazi sono già scenografici: si entra e la serata ha l’aria di un ricevimento. Ideale per chi vuole eleganza e sale grandi.",
     characteristics: ["Palazzo", "Specchi", "Sale"],
     technicalDetails: {
       surfaceSqm: 0,
@@ -414,7 +432,7 @@ export const PARTNER_LOCATIONS: Location[] = [
     imageUrl: CHEERS_GALLERY[0],
     gallery: [...CHEERS_GALLERY],
     description:
-      "Cheers Bistrot Superga, in Str. Basilica di Superga 45 a Torino, ospita i diciottesimi. La saletta privata è al massimo per 30 persone, solo il vostro gruppo: oltre le 30 non ci state. Il prezzo in scheda è l’Opzione Soft, 35 € a persona: focacce miste, taglieri di salumi e formaggi con chiacchiere, vitello tonnato, chicche di patate con salsa di datterino, crema di pecorino e coulis al basilico, acqua e caffè. Opzione Silver, 40 € a persona: taglieri, battuta di fassona con stracciatella agli agrumi e pomodorini confit, plin al sugo d’arrosto, guancia di manzo con patate arrosto, acqua e caffè. Opzione Gold, 45 € a persona: battuta di fassona, vitello tonnato, plin, chicche di patate, guancia di manzo, acqua e caffè. Nei tre menù il vino è compreso, una bottiglia ogni 4 persone: Barbera d’Asti, Dolcetto d’Alba o Langhe Arneis. Si può sostituire con altri vini in bottiglia, sempre una ogni 4: Ruchè +3 €, Erbaluce +3 €, Valdobbiadene Brut +3 €, Barbera d’Asti superiore +5 €, Gewurztraminer +5 €. Le modifiche valgono per tutto il tavolo. Sostituzioni allo stesso prezzo: vitello tonnato, battuta con stracciatella, plin al sugo d’arrosto, rigatoni con crema di zucchine, menta, Castelmagno e guanciale. Orecchiette con crema di patate allo zafferano, pecorino, cozze e prezzemolo +3 €. Filetto di maialino con fondo bruno +2 €. Aggiunte a persona: vitello tonnato o battuta +5 €, plin, rigatoni o filetto di maialino +6 €, orecchiette +7 €. Torta o dolce monoporzione 3 € a persona, minimo 10: pan di Spagna al cioccolato o alla crema, tiramisù o cheesecake ai frutti di bosco. Non fanno il fotografo e non mettono il DJ. Il catering non è un servizio a parte: sono un ristorante e il menù è il prezzo. L’aperitivo è senza prenotazione dalle 15:00 alle 20:00; i tavoli si liberano alle 19:30 dentro e alle 20:00 fuori. Si prenota per telefono, non su WhatsApp, oppure su https://octotable.com/book/restaurant/319470/welcome. Non si può chiedere un posto attaccato alla ringhiera: i tavoli seguono l’ordine di prenotazione. Se la terrazza non compare come sala, per quella data è al completo.",
+      "Cheers Bistrot Superga è sul colle, accanto alla basilica, con terrazza e sala. Si cena con Torino sotto e, per i gruppi più piccoli, una saletta solo vostra. È la festa che vuole panorama e l’aria di un bistrot di collina.",
     characteristics: ["Superga", "Terrazza", "Sala"],
     technicalDetails: {
       surfaceSqm: 0,
@@ -459,7 +477,7 @@ export const PARTNER_LOCATIONS: Location[] = [
     imageUrl: MONTALDO_GALLERY[0],
     gallery: [...MONTALDO_GALLERY],
     description:
-      "Castello di Montaldo, in Piazza Superga 1 a Montaldo Torinese. Per i diciottesimi la mail del 7 agosto 2026 propone due formule a persona, IVA 10% esclusa. Il prezzo in scheda è la Proposta 1, 75 € a persona: aperitivo reale, un primo a passaggio, torta e bevande illimitate. L’aperitivo è un’isola di formaggi DOP con composte di frutta, miele e crostini al nero di segale; un’isola di salumi nostrani e grissini al rosmarino; quiche alle verdure e tartellata al burro di Normandia con gambero al lime; pizze rosse con pomodoro del Gargano e focaccia all’olio EVO; omelette alle erbette di campo e Parmigiano al taglio pietra; crudité di verdurine e bocconcini di bufala campana DOP; crock and soft di patate con fontina d’alpeggio; tapas di terra e di mare. Le bevande illimitate sono vino bianco, bollicine, miscelati alcolici, cocktail analcolici, acqua naturale e gasata e bevande gasate. La Proposta 2 è 85 € a persona, IVA 10% esclusa: lo stesso aperitivo, un primo, un secondo, la torta e le stesse bevande. Nella mail non ci sono prezzi per DJ, fotografo o per un affitto della sala separato dal menù. Contatto: +39 011 0620566, eventi@castellodimontaldo.it, www.castellodimontaldo.it.",
+      "Il Castello di Montaldo sta a Montaldo Torinese, con corte, sale e lampadari. Di sera il castello si accende e la festa prende le sale e il cortile. È la scelta per un diciottesimo che vuole un posto memorabile.",
     characteristics: ["Castello", "Corte", "Sale"],
     technicalDetails: {
       surfaceSqm: 0,
@@ -480,6 +498,7 @@ export const PARTNER_LOCATIONS: Location[] = [
       "1 primo a passaggio",
       "Torta",
       "Bevande illimitate",
+      "Location inclusa nel prezzo",
     ],
     availableServices: [
       {

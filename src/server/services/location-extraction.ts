@@ -11,6 +11,7 @@ import type {
   LocationExtractionResult,
   SmartLocationInputSource,
 } from "@/server/services/smart-location-types";
+import { venueAtmosphereDescription } from "@/lib/location-description";
 import type {
   GeoArea,
   Location,
@@ -106,7 +107,9 @@ function heuristicExtraction(
     city: /torino/i.test(text) ? "Torino" : undefined,
     comune: /torino/i.test(text) ? "Torino" : undefined,
     address: addressLine,
-    description: lines.slice(0, 3).join(" "),
+    description: venueAtmosphereDescription(
+      lines.filter((line) => !/€|\beuro\b|\biva\b/i.test(line)).slice(0, 3).join(" "),
+    ),
     capacity: capacity ? Number(capacity) : undefined,
     hourlyPrice,
     includedServices: lines
@@ -200,10 +203,10 @@ function toLocation(
     gallery: sources
       .filter((source) => source.dataUrl)
       .map((source) => source.dataUrl as string),
-    description:
-      payload.description ??
-      payload.rawSummary ??
+    description: venueAtmosphereDescription(
+      payload.description ?? payload.rawSummary ?? "",
       "Location importata tramite gestione smart VibeUp.",
+    ),
     technicalDetails: {
       surfaceSqm: Math.max(0, payload.surfaceSqm ?? 0),
       parkingSpots: Math.max(0, payload.parkingSpots ?? 0),

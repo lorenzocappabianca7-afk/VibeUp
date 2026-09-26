@@ -258,12 +258,14 @@ export function LocationPublishForm({
         </div>
 
         <label className="block min-w-0">
-          <FieldLabel>Descrizione</FieldLabel>
+          <FieldLabel hint="Due o tre righe su com’è l’ambiente e perché farci una festa. Niente prezzi, IVA o listini.">
+            Descrizione
+          </FieldLabel>
           <textarea
             value={value.description}
             onChange={(event) => patch({ description: event.target.value })}
             rows={4}
-            placeholder="Descrivi atmosfera, spazi e cosa rende speciale il locale..."
+            placeholder="Com’è lo spazio, e perché è il posto giusto per la festa..."
             className="w-full min-w-0 rounded-2xl border border-primary-black/10 bg-background px-4 py-3 text-sm outline-none focus:border-brand-teal"
           />
         </label>

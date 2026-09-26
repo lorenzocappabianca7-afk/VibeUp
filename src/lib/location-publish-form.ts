@@ -1,4 +1,5 @@
 import type { ManagedLocationListing } from "@/types/admin";
+import { venueAtmosphereDescription } from "@/lib/location-description";
 import { normalizeCharacteristics } from "@/lib/location-characteristics";
 import type {
   AvailableLocationService,
@@ -292,9 +293,10 @@ export function buildLocationFromPublishForm(
     longitude: coords.lng,
     imageUrl: gallery[0],
     gallery,
-    description:
-      form.description.trim() ||
+    description: venueAtmosphereDescription(
+      form.description,
       "Location gestita dal catalogo privato VibeUp.",
+    ),
     characteristics: normalizeCharacteristics(form.characteristics),
     technicalDetails: {
       surfaceSqm: Number(form.surfaceSqm) || 0,
