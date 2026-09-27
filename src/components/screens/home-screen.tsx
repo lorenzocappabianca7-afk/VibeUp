@@ -29,7 +29,7 @@ import {
 } from "@/types/admin";
 import type { Location } from "@/types/location";
 import type { PartyCriteria } from "@/types/party-criteria";
-import { Bell, ChevronRight } from "lucide-react";
+import { ArrowUp, Bell, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
 type HomeNotification = {
@@ -245,6 +245,13 @@ export function HomeScreen() {
           <Button className="mt-4 w-full sm:w-auto" onClick={() => setWizardOpen(true)}>
             <DemoCreateCtaLabel text="Crea la tua festa" />
           </Button>
+          <p
+            className="mt-2 flex flex-col items-center gap-0.5 text-sm font-bold text-primary-black"
+            aria-hidden
+          >
+            <ArrowUp className="h-5 w-5 text-brand-pink" strokeWidth={2.5} />
+            <span>Clicca qui</span>
+          </p>
         </DemoHomeCreateWrap>
       </section>
 

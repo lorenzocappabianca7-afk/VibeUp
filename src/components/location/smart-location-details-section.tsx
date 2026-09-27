@@ -16,6 +16,7 @@ import {
   isEndTimeAfterStart,
   suggestEndTimeAfterStart,
 } from "@/lib/location";
+import { applyVat } from "@/lib/vat";
 import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import { Button } from "@/components/ui/button";
 import { QuoteShareButton } from "@/components/ui/quote-share-sheet";
@@ -151,7 +152,7 @@ function formatInternalServicePrice(
 ): string {
   if (service.pricing.type === "included") return "Incluso";
   if (service.pricing.type === "per_person") {
-    return `${formatCurrency(service.pricing.pricePerPerson)}/partecipante`;
+    return `${formatCurrency(applyVat(service.pricing.pricePerPerson, service.pricing.vatRate))}/partecipante`;
   }
   return formatCurrency(getInternalLocationServicePrice(service, guestCount));
 }

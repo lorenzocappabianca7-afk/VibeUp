@@ -1,3 +1,4 @@
+import { applyVat } from "@/lib/vat";
 import type {
   AvailableLocationService,
   ExtraServiceId,
@@ -15,8 +16,8 @@ export type InternalLocationServiceType =
 
 export type InternalLocationServicePricing =
   | { type: "included" }
-  | { type: "fixed"; price: number }
-  | { type: "per_person"; pricePerPerson: number; minGuests?: number };
+  | { type: "fixed"; price: number; vatRate?: number }
+  | { type: "per_person"; pricePerPerson: number; minGuests?: number; vatRate?: number };
 
 export interface InternalLocationService {
   id: string;
@@ -244,7 +245,10 @@ export function getInternalLocationServicePrice(
   if (service.pricing.type === "included") return 0;
   if (service.pricing.type === "per_person") {
     const billedGuests = Math.max(guestCount, service.pricing.minGuests ?? 0);
-    return service.pricing.pricePerPerson * billedGuests;
+    return applyVat(
+      service.pricing.pricePerPerson * billedGuests,
+      service.pricing.vatRate,
+    );
   }
-  return service.pricing.price;
+  return applyVat(service.pricing.price, service.pricing.vatRate);
 }

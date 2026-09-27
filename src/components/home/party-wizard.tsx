@@ -470,17 +470,11 @@ function ExtrasStep({
         })}
         <div
           role="note"
-          className="rounded-2xl border border-primary-black/10 bg-paper px-3 py-3 text-left"
+          className="rounded-2xl bg-brand-teal px-3 py-3 text-left"
         >
-          <span className="block text-sm font-bold text-ink-inverse">
-            Altri servizi
-          </span>
-          <span className="mt-0.5 block text-[11px] font-medium text-ink-inverse/50">
-            Se ti servono ancora
-          </span>
-          <span className="mt-1.5 block text-[10px] font-semibold leading-snug text-brand-teal">
-            Si aggiungono dopo, separatamente
-          </span>
+          <p className="text-[11px] font-semibold leading-snug text-ink-inverse">
+            Nota: i servizi aggiuntivi possono essere richiesti anche in seguito, esternamente alla location.
+          </p>
         </div>
       </div>
     </fieldset>

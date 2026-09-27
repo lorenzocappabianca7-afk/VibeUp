@@ -1,3 +1,5 @@
+import { applyVat } from "@/lib/vat";
+
 /** Drink package options for location instant quotes. */
 
 export type DrinkPackageMode = "none" | "per_invitee" | "open_bar";
@@ -22,20 +24,22 @@ export function calculateDrinksCost(params: {
   guestCount: number;
   drinkUnitPrice?: number;
   openBarPerInvitee?: number;
+  vatRate?: number;
 }): number {
   const { mode, guestCount } = params;
   if (mode === "none" || guestCount <= 0) return 0;
 
   if (mode === "open_bar") {
     if (params.openBarPerInvitee == null) return 0;
-    return params.openBarPerInvitee * guestCount;
+    return applyVat(params.openBarPerInvitee * guestCount, params.vatRate);
   }
 
   if (params.drinkUnitPrice == null) return 0;
-  return (
+  return applyVat(
     clampDrinksPerInvitee(params.drinksPerInvitee) *
-    params.drinkUnitPrice *
-    guestCount
+      params.drinkUnitPrice *
+      guestCount,
+    params.vatRate,
   );
 }
 

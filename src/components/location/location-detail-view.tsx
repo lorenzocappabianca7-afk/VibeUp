@@ -25,6 +25,7 @@ import { datePriceBandLabel } from "@/lib/location-date-price";
 import type { AvailabilityEventPayload } from "@/types/availability-request";
 import { calculateBookingQuote, calculateHours } from "@/lib/location";
 import { calculateLocationDeposit } from "@/lib/booking-money";
+import { applyVat } from "@/lib/vat";
 import {
   calculateDrinksCost,
   clampDrinksPerInvitee,
@@ -427,6 +428,7 @@ export function LocationDetailView({
       guestCount,
       drinkUnitPrice: location.drinksPricing?.drinkUnitPrice,
       openBarPerInvitee: location.drinksPricing?.openBarPerInvitee,
+      vatRate: location.drinksPricing?.vatRate,
     });
     const venueServicesCost = selectedInternalServices.reduce((sum, id) => {
       const service = internalServices.find((item) => item.id === id);
@@ -945,8 +947,22 @@ export function LocationDetailView({
             onSendRequest={sendRequestFromBooking}
             onAddToCompare={goToCompareLocations}
             isCompareSelected={isCompareSelected}
-            drinkUnitPrice={location.drinksPricing?.drinkUnitPrice}
-            openBarPerInvitee={location.drinksPricing?.openBarPerInvitee}
+            drinkUnitPrice={
+              location.drinksPricing
+                ? applyVat(
+                    location.drinksPricing.drinkUnitPrice,
+                    location.drinksPricing.vatRate,
+                  )
+                : undefined
+            }
+            openBarPerInvitee={
+              location.drinksPricing
+                ? applyVat(
+                    location.drinksPricing.openBarPerInvitee,
+                    location.drinksPricing.vatRate,
+                  )
+                : undefined
+            }
           />
         </aside>
       </div>

@@ -1,5 +1,6 @@
 import type { ManagedLocationListing } from "@/types/admin";
 import { venueAtmosphereDescription } from "@/lib/location-description";
+import { applyVat } from "@/lib/vat";
 import { normalizeCharacteristics } from "@/lib/location-characteristics";
 import type {
   AvailableLocationService,
@@ -216,11 +217,17 @@ function resolveCoords(form: LocationPublishFormData) {
   return TORINO_COORDS.centro;
 }
 
-/** Base location cost for quotes from published price model. */
+/** Base location cost for quotes from published price model. VAT is added when the list price is net. */
 export function getLocationListBaseCost(
   location: Pick<
     Location,
-    "priceModel" | "eventPrice" | "personPrice" | "hourlyPrice" | "capacity" | "guestPriceTiers"
+    | "priceModel"
+    | "eventPrice"
+    | "personPrice"
+    | "hourlyPrice"
+    | "capacity"
+    | "guestPriceTiers"
+    | "vatRate"
   >,
   params: { hours: number; guestCount: number },
 ): number {
@@ -236,7 +243,7 @@ export function getLocationListBaseCost(
           (location.hourlyPrice * 4) / Math.max(20, location.capacity || 20),
         ),
       );
-    return person * guestCount;
+    return applyVat(person * guestCount, location.vatRate);
   }
 
   const tiers = location.guestPriceTiers;
@@ -245,10 +252,13 @@ export function getLocationListBaseCost(
     const tier =
       sorted.find((item) => guestCount <= item.maxGuests) ??
       sorted[sorted.length - 1];
-    return tier.price;
+    return applyVat(tier.price, location.vatRate);
   }
 
-  return location.eventPrice ?? location.hourlyPrice * Math.max(params.hours, 1);
+  return applyVat(
+    location.eventPrice ?? location.hourlyPrice * Math.max(params.hours, 1),
+    location.vatRate,
+  );
 }
 
 export function buildLocationFromPublishForm(

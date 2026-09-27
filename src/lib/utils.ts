@@ -1,3 +1,4 @@
+import { applyVat } from "@/lib/vat";
 import type { Location } from "@/types/location";
 
 export function cn(...classes: (string | undefined | false | null)[]): string {
@@ -28,11 +29,14 @@ export function formatDate(date: string | Date, locale = "it-IT"): string {
 
 export function formatCurrency(amount: number, locale = "it-IT"): string {
   const safeAmount = Number.isFinite(amount) ? amount : 0;
+  const rounded = Math.round(safeAmount * 100) / 100;
+  const hasCents = Math.abs(rounded - Math.round(rounded)) > 0.001;
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "EUR",
-    maximumFractionDigits: 0,
-  }).format(safeAmount);
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: hasCents ? 2 : 0,
+  }).format(rounded);
 }
 
 export function getLocationPricePresentation(
@@ -45,6 +49,7 @@ export function getLocationPricePresentation(
     | "eventPrice"
     | "personPrice"
     | "priceBadge"
+    | "vatRate"
   >,
 ) {
   const hasAllInclusiveServices = location.includedServices.some((service) =>
@@ -62,7 +67,7 @@ export function getLocationPricePresentation(
 
     return {
       eyebrow: "Da",
-      price: formatCurrency(estimatedPersonPrice),
+      price: formatCurrency(applyVat(estimatedPersonPrice, location.vatRate)),
       unit: "/ Invitato",
       badge: location.priceBadge ?? "Prezzo stimato a invitato",
     };
@@ -70,7 +75,9 @@ export function getLocationPricePresentation(
 
   return {
     eyebrow: "A partire da",
-    price: formatCurrency(location.eventPrice ?? location.hourlyPrice * 4),
+    price: formatCurrency(
+      applyVat(location.eventPrice ?? location.hourlyPrice * 4, location.vatRate),
+    ),
     unit: "/ Evento",
     badge: location.priceBadge ?? "Tariffa a serata",
   };

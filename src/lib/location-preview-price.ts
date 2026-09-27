@@ -26,6 +26,7 @@ export type PreviewPriceLocation = Pick<
   | "drinksPricing"
   | "availableServices"
   | "guestPriceTiers"
+  | "vatRate"
 >;
 
 export type PreviewPriceCriteria = Pick<
@@ -75,6 +76,7 @@ export function estimateLocationFilteredCost(
     guestCount,
     drinkUnitPrice: location.drinksPricing?.drinkUnitPrice,
     openBarPerInvitee: location.drinksPricing?.openBarPerInvitee,
+    vatRate: location.drinksPricing?.vatRate,
   });
   const venueServicesCost = listVenueServicesForWanted(
     location,

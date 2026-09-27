@@ -1,33 +1,33 @@
 import type { AvailableLocationService, Location } from "@/types/location";
 
-/** Net amounts from the Popup Location quote (3 August 2026). VAT is in the copy. */
+/** Net amounts from the Popup Location quote (3 August 2026). Quotes add `vatRate`. */
 const QUOTE_SERVICES: AvailableLocationService[] = [
   {
     name: "Cena a buffet",
     description:
-      "40 € + IVA 10% a persona. Minimo 40 partecipanti. Una decina di finger, un primo caldo, dolci al cucchiaio e buffet vini (prosecco, spritz, analcolici) per tutta la durata della cena.",
-    pricing: { type: "per_person", pricePerPerson: 40 },
+      "44 € a persona, IVA 10% inclusa. Minimo 40 partecipanti. Una decina di finger, un primo caldo, dolci al cucchiaio e buffet vini (prosecco, spritz, analcolici) per tutta la durata della cena.",
+    pricing: { type: "per_person", pricePerPerson: 40, vatRate: 0.1 },
   },
   {
     name: "Cocktail dopo cena",
-    description: "6 € + IVA 10% a persona. Opzionale.",
-    pricing: { type: "per_person", pricePerPerson: 6 },
+    description: "6,60 € a persona, IVA 10% inclusa. Opzionale.",
+    pricing: { type: "per_person", pricePerPerson: 6, vatRate: 0.1 },
   },
   {
     name: "Cachet DJ esterno",
-    description: "200 € + IVA 22% se portate un artista esterno. Opzionale.",
-    pricing: { type: "fixed", price: 200 },
+    description: "244 €, IVA 22% inclusa, se portate un artista esterno. Opzionale.",
+    pricing: { type: "fixed", price: 200, vatRate: 0.22 },
   },
   {
     name: "Attrezzatura tecnica luci e console",
-    description: "150 € + IVA 22%. Opzionale, insieme al DJ esterno.",
-    pricing: { type: "fixed", price: 150 },
+    description: "183 €, IVA 22% inclusa. Opzionale, insieme al DJ esterno.",
+    pricing: { type: "fixed", price: 150, vatRate: 0.22 },
   },
   {
     name: "Diritti SIAE",
     description:
-      "150 € + IVA 22% se la richiesta agli uffici di competenza la gestisce la location.",
-    pricing: { type: "fixed", price: 150 },
+      "183 €, IVA 22% inclusa, se la richiesta agli uffici di competenza la gestisce la location.",
+    pricing: { type: "fixed", price: 150, vatRate: 0.22 },
   },
 ];
 
@@ -41,15 +41,17 @@ const QUOTE_TERMS = {
   priceModel: "event" as const,
   eventPrice: 1200,
   hourlyPrice: 1200,
-  priceBadge: "IVA 22% esclusa",
+  vatRate: 0.22,
+  priceBadge: "IVA 22% inclusa",
   capacity: 0,
   partyTypes: ["compleanno", "festa", "matrimonio"] as Location["partyTypes"],
-  deposit: 360,
+  deposit: 439.2,
   includedServices: ["Utilizzo delle sale", "Chiusura alle 01:30"],
   availableServices: QUOTE_SERVICES,
   drinksPricing: {
     drinkUnitPrice: 6,
     openBarPerInvitee: 6,
+    vatRate: 0.1,
   },
   contactsBeenHere: { count: 0, contacts: [] },
   latitude: 0,
@@ -198,16 +200,17 @@ export const PARTNER_LOCATIONS: Location[] = [
     priceModel: "event",
     eventPrice: 2500,
     hourlyPrice: 2500,
-    priceBadge: "IVA esclusa",
+    vatRate: 0.22,
+    priceBadge: "IVA 22% inclusa",
     capacity: 0,
     partyTypes: ["compleanno", "festa"],
-    deposit: 750,
+    deposit: 915,
     includedServices: ["Parcheggio privato"],
     availableServices: [
       {
         name: "DJ",
-        description: "Circa 600 €, IVA esclusa.",
-        pricing: { type: "fixed", price: 600 },
+        description: "Circa 732 €, IVA 22% inclusa.",
+        pricing: { type: "fixed", price: 600, vatRate: 0.22 },
       },
     ],
     contactsBeenHere: { count: 0, contacts: [] },
@@ -276,7 +279,8 @@ export const PARTNER_LOCATIONS: Location[] = [
     priceModel: "event",
     eventPrice: 700,
     hourlyPrice: 700,
-    priceBadge: "Listino 2025, in base agli invitati",
+    vatRate: 0.22,
+    priceBadge: "IVA 22% inclusa, in base agli invitati",
     guestPriceTiers: [
       { maxGuests: 30, price: 700 },
       { maxGuests: 50, price: 800 },
@@ -284,7 +288,7 @@ export const PARTNER_LOCATIONS: Location[] = [
     ],
     capacity: 80,
     partyTypes: ["compleanno", "festa"],
-    deposit: 210,
+    deposit: 256.2,
     includedServices: [
       "Location 18:30–02:00 oppure 14:00–20:00",
       "Uso esclusivo della location",
@@ -347,8 +351,8 @@ export const PARTNER_LOCATIONS: Location[] = [
       {
         name: "Catering apericena",
         description:
-          "38 € + IVA 10% a persona. Minimo 30 persone. Analcolico libero, 2 drink e sbicchierata. Dalle 20:00/20:30.",
-        pricing: { type: "per_person", pricePerPerson: 38, minGuests: 30 },
+          "41,80 € a persona, IVA 10% inclusa. Minimo 30 persone. Analcolico libero, 2 drink e sbicchierata. Dalle 20:00/20:30.",
+        pricing: { type: "per_person", pricePerPerson: 38, minGuests: 30, vatRate: 0.1 },
       },
       {
         name: "DJ",
@@ -383,37 +387,38 @@ export const PARTNER_LOCATIONS: Location[] = [
     priceModel: "event",
     eventPrice: 2000,
     hourlyPrice: 2000,
-    priceBadge: "IVA 22% esclusa",
+    vatRate: 0.22,
+    priceBadge: "IVA 22% inclusa",
     capacity: 0,
     partyTypes: ["festa"],
-    deposit: 600,
+    deposit: 732,
     includedServices: [],
     availableServices: [
       {
         name: "Catering cena a buffet",
         description:
-          "40 € + IVA 10% a persona. Minimo 40. Finger, primo caldo, dolci al cucchiaio e buvette dei vini aperta per tutta la cena.",
-        pricing: { type: "per_person", pricePerPerson: 40, minGuests: 40 },
+          "44 € a persona, IVA 10% inclusa. Minimo 40. Finger, primo caldo, dolci al cucchiaio e buvette dei vini aperta per tutta la cena.",
+        pricing: { type: "per_person", pricePerPerson: 40, minGuests: 40, vatRate: 0.1 },
       },
       {
         name: "Cocktail dopo cena",
-        description: "6 € + IVA 10% a persona.",
-        pricing: { type: "per_person", pricePerPerson: 6 },
+        description: "6,60 € a persona, IVA 10% inclusa.",
+        pricing: { type: "per_person", pricePerPerson: 6, vatRate: 0.1 },
       },
       {
         name: "DJ",
-        description: "Cachet di un DJ esterno: 200 € + IVA 22%.",
-        pricing: { type: "fixed", price: 200 },
+        description: "Cachet di un DJ esterno: 244 €, IVA 22% inclusa.",
+        pricing: { type: "fixed", price: 200, vatRate: 0.22 },
       },
       {
         name: "Luci e consolle",
-        description: "Attrezzatura luci ballo e consolle: 150 € + IVA 22%.",
-        pricing: { type: "fixed", price: 150 },
+        description: "Attrezzatura luci ballo e consolle: 183 €, IVA 22% inclusa.",
+        pricing: { type: "fixed", price: 150, vatRate: 0.22 },
       },
       {
         name: "Diritti SIAE",
-        description: "150 € + IVA 22%. La location può occuparsi della richiesta.",
-        pricing: { type: "fixed", price: 150 },
+        description: "183 €, IVA 22% inclusa. La location può occuparsi della richiesta.",
+        pricing: { type: "fixed", price: 150, vatRate: 0.22 },
       },
     ],
     contactsBeenHere: { count: 0, contacts: [] },
@@ -489,7 +494,8 @@ export const PARTNER_LOCATIONS: Location[] = [
     priceModel: "person",
     personPrice: 75,
     hourlyPrice: 75,
-    priceBadge: "Proposta di partenza, IVA 10% esclusa",
+    vatRate: 0.1,
+    priceBadge: "Proposta di partenza, IVA 10% inclusa",
     capacity: 0,
     partyTypes: ["compleanno", "festa"],
     deposit: 0,

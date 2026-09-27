@@ -59,8 +59,8 @@ export interface TechnicalDetails {
 
 export type AvailableLocationServicePricing =
   | { type: "included" }
-  | { type: "fixed"; price: number }
-  | { type: "per_person"; pricePerPerson: number; minGuests?: number };
+  | { type: "fixed"; price: number; vatRate?: number }
+  | { type: "per_person"; pricePerPerson: number; minGuests?: number; vatRate?: number };
 
 /** Bookable services offered by the venue (shown as "Servizi disponibili"). */
 export interface AvailableLocationService {
@@ -73,6 +73,8 @@ export interface AvailableLocationService {
 export interface LocationDrinksPricing {
   drinkUnitPrice: number;
   openBarPerInvitee: number;
+  /** Fraction applied to drink lines, for example 0.1. Omitted when the rate is already included. */
+  vatRate?: number;
 }
 
 export interface Location {
@@ -97,8 +99,10 @@ export interface Location {
   priceModel?: "event" | "person";
   eventPrice?: number;
   personPrice?: number;
-  /** Hall price by guest count. The first tier that covers the group is used. */
+  /** Hall price by guest count. The first tier that covers the group is used. Amounts are net when `vatRate` is set. */
   guestPriceTiers?: { maxGuests: number; price: number }[];
+  /** Fraction added to the hall or per-person list price. Example: 0.22. Omitted when the list price already includes VAT. */
+  vatRate?: number;
   priceBadge?: string;
   capacity: number;
   partyTypes: PartyType[];
