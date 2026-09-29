@@ -5,6 +5,7 @@ import { AccountGateProvider } from "@/context/account-gate-context";
 import { AppStateProvider } from "@/context/app-state-context";
 import { AvailabilityRequestProvider } from "@/context/availability-request-context";
 import { ChatProvider } from "@/context/chat-context";
+import { DemoLanguageProvider } from "@/context/demo-language-context";
 import { DemoModeProvider } from "@/context/demo-mode-context";
 import { InboxBadgeProvider } from "@/context/inbox-badge-context";
 import { PartyCriteriaProvider } from "@/context/party-criteria-context";
@@ -18,6 +19,7 @@ import type { ReactNode } from "react";
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <DemoModeProvider>
+      <DemoLanguageProvider>
       <AppStateProvider>
         <AccountGateProvider>
           <InboxBadgeProvider>
@@ -38,6 +40,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
           </InboxBadgeProvider>
         </AccountGateProvider>
       </AppStateProvider>
+      </DemoLanguageProvider>
     </DemoModeProvider>
   );
 }

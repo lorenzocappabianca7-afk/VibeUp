@@ -1,5 +1,6 @@
 "use client";
 
+import { useDemoLanguage } from "@/context/demo-language-context";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -14,7 +15,10 @@ interface VibeUpCalendarProps {
   className?: string;
 }
 
-const WEEKDAYS = ["L", "M", "M", "G", "V", "S", "D"];
+const WEEKDAYS = {
+  it: ["L", "M", "M", "G", "V", "S", "D"],
+  en: ["M", "T", "W", "T", "F", "S", "S"],
+} as const;
 
 function toIsoDate(date: Date): string {
   const year = date.getFullYear();
@@ -27,8 +31,8 @@ function startOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
-function monthLabel(date: Date): string {
-  return new Intl.DateTimeFormat("it-IT", {
+function monthLabel(date: Date, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
     month: "long",
     year: "numeric",
   }).format(date);
@@ -60,6 +64,9 @@ export function VibeUpCalendar({
   onSelectDate,
   className,
 }: VibeUpCalendarProps) {
+  const { lang } = useDemoLanguage();
+  const locale = lang === "en" ? "en-GB" : "it-IT";
+  const weekdays = WEEKDAYS[lang];
   const isMulti = selectedDates !== undefined;
   const [visibleMonth, setVisibleMonth] = useState(() => {
     const seed = isMulti ? selectedDates?.[0] : selectedStart;
@@ -88,7 +95,7 @@ export function VibeUpCalendar({
     >
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-xs font-black capitalize text-ink-inverse">
-          {monthLabel(visibleMonth)}
+          {monthLabel(visibleMonth, locale)}
         </p>
         <div className="flex gap-2">
           <button
@@ -111,7 +118,7 @@ export function VibeUpCalendar({
       </div>
 
       <div className="mb-1.5 grid grid-cols-7 gap-0.5 text-center text-[11px] font-bold text-ink-inverse/45">
-        {WEEKDAYS.map((day, index) => (
+        {weekdays.map((day, index) => (
           <span key={`${day}-${index}`}>{day}</span>
         ))}
       </div>

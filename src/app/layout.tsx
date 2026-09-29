@@ -22,6 +22,7 @@ import {
   SPLASH_TAGLINE,
 } from "@/lib/splash";
 import { BROWSER_TRANSLATE_GUARD_SCRIPT } from "@/lib/browser-translate-guard";
+import { demoEnUiBootstrapScript } from "@/lib/demo/en-ui";
 import { getSiteUrl } from "@/lib/site";
 /* App CSS is loaded by AppCssLoader after first paint. Do not import
    globals.css here — Next hoists it as a render-blocking <link> and iOS
@@ -288,6 +289,7 @@ export default function RootLayout({
         </div>
         {/* After splash markup so first paint is not blocked. Lets Safari and
             Chrome translate the Italian UI without React wiping it. */}
+        <script dangerouslySetInnerHTML={{ __html: demoEnUiBootstrapScript() }} />
         <script dangerouslySetInnerHTML={{ __html: BROWSER_TRANSLATE_GUARD_SCRIPT }} />
         <SplashScreen />
         <AppCssLoaderGate />

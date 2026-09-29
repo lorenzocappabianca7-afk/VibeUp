@@ -10,6 +10,7 @@ import {
 } from "@/components/explore/price-range-inputs";
 import { Button } from "@/components/ui/button";
 import { VibeUpCalendar } from "@/components/ui/vibeup-calendar";
+import { useDemoLanguage } from "@/context/demo-language-context";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
@@ -59,15 +60,17 @@ const STEP_TITLES: Record<(typeof STEPS)[number], string> = {
   description: "Dettagli e preferenze",
 };
 
-const dateLabelFormatter = new Intl.DateTimeFormat("it-IT", {
-  day: "numeric",
-  month: "short",
-});
-
-function formatWizardDateLabel(dates: string[]) {
-  if (dates.length === 0) return "Scegli fino a 5 date";
+function formatWizardDateLabel(dates: string[], locale: string) {
+  const dateLabelFormatter = new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "short",
+  });
+  if (dates.length === 0) {
+    return locale.startsWith("en") ? "Pick up to 5 dates" : "Scegli fino a 5 date";
+  }
   if (dates.length === 1) return dateLabelFormatter.format(new Date(dates[0]));
-  return `${dates.length} date: ${dates
+  const prefix = locale.startsWith("en") ? "dates" : "date";
+  return `${dates.length} ${prefix}: ${dates
     .map((value) => dateLabelFormatter.format(new Date(value)))
     .join(", ")}`;
 }
@@ -286,6 +289,8 @@ function DateStep({
   criteria: PartyCriteria;
   onChange: (partial: Partial<PartyCriteria>) => void;
 }) {
+  const { lang } = useDemoLanguage();
+  const locale = lang === "en" ? "en-GB" : "it-IT";
   const [datePickerOpen, setDatePickerOpen] = useState(true);
   const dates = criteria.dates;
   const atMax = dates.length >= MAX_PARTY_DATES;
@@ -318,7 +323,7 @@ function DateStep({
               Date preferite
             </span>
             <span className="block truncate text-sm font-black text-ink-inverse">
-              {formatWizardDateLabel(dates)}
+              {formatWizardDateLabel(dates, locale)}
             </span>
           </span>
         </span>
@@ -358,7 +363,7 @@ function DateStep({
           <>
             {" "}
             Selezionate:{" "}
-            {dates.map((value) => formatDate(value)).join(" · ")}.
+            {dates.map((value) => formatDate(value, locale)).join(" · ")}.
           </>
         ) : null}
         {atMax ? ` Hai raggiunto il massimo di ${MAX_PARTY_DATES} date.` : null}

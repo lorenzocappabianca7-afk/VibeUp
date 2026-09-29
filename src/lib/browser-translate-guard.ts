@@ -100,22 +100,25 @@ if(el.getAttribute(name)===value)return;
 el.__vibeupSkipAttr=(el.__vibeupSkipAttr||0)+1;
 el.setAttribute(name,value);
 }
+function norm(s){return String(s==null?"":s).replace(/[’']/g,"'").replace(/\\s+/g," ").trim();}
 function restoreText(node){
 if(!node||node.nodeType!==3||skipText(node))return;
 var raw=node.data||"";
-var key=raw.trim();
+var key=norm(raw);
 var translated=dict.get(key);
 if(!translated||translated===key)return;
-writeData(node,applyWs(raw,key,translated));
+var lead=(raw.match(/^\\s*/)||[""])[0];
+var trail=(raw.match(/\\s*$/)||[""])[0];
+writeData(node,lead+translated+trail);
 }
 function restoreAttr(el,name){
 if(!el||!el.getAttribute||shell(el))return;
 var raw=el.getAttribute(name);
 if(!raw)return;
-var key=raw.trim();
+var key=norm(raw);
 var translated=dict.get(key);
 if(!translated||translated===key)return;
-writeAttr(el,name,applyWs(raw,key,translated));
+writeAttr(el,name,translated);
 }
 function applyDict(root){
 if(!root||!active)return;
@@ -166,8 +169,8 @@ if(node.__vibeupSkip){node.__vibeupSkip--;continue;}
 if(skipText(node))continue;
 var prev=m.oldValue==null?"":m.oldValue;
 var next=node.data||"";
-var known=dict.get((next||"").trim());
-if(active&&known&&known!==next.trim()){writeData(node,applyWs(next,next.trim(),known));continue;}
+var known=dict.get(norm(next));
+if(active&&known&&known!==norm(next)){writeData(node,applyWs(next,next.trim(),known));continue;}
 remember(prev,next);
 }else if(m.type==="attributes"){
 var el=m.target;
@@ -177,8 +180,8 @@ var attr=m.attributeName;
 if(!attr)continue;
 var before=m.oldValue==null?"":m.oldValue;
 var after=el.getAttribute(attr)||"";
-var knownAttr=dict.get(after.trim());
-if(active&&knownAttr&&knownAttr!==after.trim()){writeAttr(el,attr,applyWs(after,after.trim(),knownAttr));continue;}
+var knownAttr=dict.get(norm(after));
+if(active&&knownAttr&&knownAttr!==norm(after)){writeAttr(el,attr,knownAttr);continue;}
 remember(before,after);
 }else if(m.type==="childList"){
 if(shell(m.target))continue;
@@ -211,9 +214,10 @@ if(m.target!==document.documentElement)continue;
 if(m.attributeName==="class"){
 var prev=m.oldValue||"";
 var had=prev.indexOf("translated-ltr")!==-1||prev.indexOf("translated-rtl")!==-1;
-if(had&&!browserMarked()){active=false;dict=new Map();pending=new Map();}
+if(had&&!browserMarked()&&window.__vibeupDemoLang!=="en"){active=false;dict=new Map();pending=new Map();}
 else if(browserMarked()&&pending.size)schedule();
 }else if(m.attributeName==="lang"){
+if(window.__vibeupDemoLang==="en")continue;
 var lang=(document.documentElement.lang||"").toLowerCase();
 if(lang.indexOf("en")===0&&pending.size)schedule();
 if(lang.indexOf("it")===0&&active&&!browserMarked()){active=false;dict=new Map();pending=new Map();}
@@ -221,5 +225,22 @@ if(lang.indexOf("it")===0&&active&&!browserMarked()){active=false;dict=new Map()
 }
 }catch(e){}
 }).observe(document.documentElement,{attributes:true,attributeFilter:["class","lang"],attributeOldValue:true});
+function seedDemoDict(){
+var pack=window.__VIBEUP_EN_UI;
+if(!pack)return;
+for(var k in pack){
+if(Object.prototype.hasOwnProperty.call(pack,k)&&pack[k])dict.set(norm(k),pack[k]);
+}
+}
+window.__vibeupActivateDemoLang=function(){
+var lang="it";
+try{if(localStorage.getItem("vibeup-demo-lang")==="en")lang="en";}catch(e){}
+window.__vibeupDemoLang=lang;
+try{document.documentElement.dataset.vibeupLang=lang;}catch(e){}
+if(lang!=="en"){return;}
+active=true;
+seedDemoDict();
+if(document.body)applyDict(document.body);
+};
 }catch(e){}
 })();`;

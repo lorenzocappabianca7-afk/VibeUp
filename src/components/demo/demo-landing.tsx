@@ -1,5 +1,6 @@
 "use client";
 
+import { DemoLanguageSwitch } from "@/components/demo/demo-language-switch";
 import { Button } from "@/components/ui/button";
 import { FieldLabel } from "@/components/ui/form-fields";
 import {
@@ -114,9 +115,18 @@ export function DemoLanding() {
       <div
         className={cn(
           APP_SHELL_WIDTH_CLASS,
-          "mx-auto flex min-h-dvh flex-col justify-center px-6 py-12",
+          "relative mx-auto flex min-h-dvh flex-col justify-center px-6 py-12",
         )}
       >
+        <div
+          className="absolute z-[95]"
+          style={{
+            top: "max(0.75rem, env(safe-area-inset-top, 0px))",
+            right: "max(0.75rem, env(safe-area-inset-right, 0px))",
+          }}
+        >
+          <DemoLanguageSwitch />
+        </div>
         {landingState === "completed" ? (
           <CompletedMessage
             onRestart={() => {
