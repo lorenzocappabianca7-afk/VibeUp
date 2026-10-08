@@ -75,23 +75,12 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Tocca il numero e digita gli invitati (es. 45). Mostra location con capienza da":
     "Tap the number and type the guests (e.g. 45). Shows venues with room for",
   "ospiti.": "guests.",
-  "Servizi forniti dal locale": "Services provided by the venue",
-  "Scegli DJ, fotografo, decorazioni, catering o torta. Li mette il locale, e il loro costo entra nel prezzo che vedi sulle location.":
-    "Choose a DJ, photographer, decorations, catering or cake. The venue provides them, and their cost is included in the price you see.",
   Fotografo: "Photographer",
   Decorazioni: "Decorations",
   Torta: "Cake",
-  "Musica e console del locale": "Music and the venue's console",
-  "Foto e video del locale": "Photos and video from the venue",
-  "Allestimenti del locale": "Styling from the venue",
-  "Buffet e food del locale": "Buffet and food from the venue",
-  "Pasticceria del locale": "Cake from the venue",
-  "Fornito dal locale, incluso nel prezzo": "Provided by the venue, included in the price",
-  "Nota: i servizi aggiuntivi possono essere richiesti anche in seguito, esternamente alla location.":
-    "Note: extra services can also be requested later, outside the venue.",
   "Bevande della serata": "Drinks for the night",
-  "I drink li fornisce il locale. Il costo entra nel prezzo della location, insieme alla sala e ai servizi scelti prima.":
-    "The venue provides the drinks. The cost is included in the venue price, together with the room and the services you picked.",
+  "I drink li fornisce il locale. Il costo entra nel prezzo della location, insieme alla sala.":
+    "The venue provides the drinks. The cost is included in the venue price, together with the room.",
   Nessuno: "None",
   Drink: "Drinks",
   "Drink per ospite": "Drinks per guest",
@@ -99,12 +88,14 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Aumenta drink per persona": "More drinks per person",
   "Open bar per tutta la serata, a partecipante. Lo fornisce il locale ed è incluso nel prezzo.":
     "Open bar for the whole night, per guest. The venue provides it and it is included in the price.",
-  "Questo budget vale per il totale. Nei passi dopo aggiungi i servizi e i drink: li fornisce il locale e il costo entra nello stesso prezzo.":
-    "This budget is for the total. In the next steps you add services and drinks: the venue provides them and the cost goes into the same price.",
+  "Questo budget vale per il totale. Nel passo dopo puoi aggiungere i drink: li fornisce il locale e il costo entra nello stesso prezzo.":
+    "This budget is for the total. In the next step you can add drinks: the venue provides them and the cost goes into the same price.",
+  "Fascia di budget per la festa. Il prezzo sulle location include la sala e i drink che scegli, e cambia tra feriale e weekend.":
+    "Budget range for the party. The price on venues includes the room and the drinks you pick, and it changes between weekdays and weekends.",
   "Scrivi qui se cerchi dettagli particolari (es. area esterna, cena, stile)":
     "Write here if you want something specific (e.g. outdoor area, dinner, style)",
-  "Usiamo queste parole, insieme ai servizi del locale scelti, per ordinare le location più affini in cima — nessuna viene nascosta.":
-    "We use these words, together with the venue services you picked, to put the closest venues first — none are hidden.",
+  "Usiamo queste parole per ordinare le location più affini in cima — nessuna viene nascosta.":
+    "We use these words to put the closest venues first — none are hidden.",
   "Mese precedente": "Previous month",
   "Mese successivo": "Next month",
   "Cerca location...": "Search venues...",

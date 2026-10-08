@@ -35,7 +35,6 @@ import {
 import {
   getInternalLocationServicePrice,
   getInternalLocationServices,
-  listVenueServicesForWanted,
 } from "@/lib/location-services";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
 import { SERVICE_PROVIDERS } from "@/lib/mock/service-providers";
@@ -214,24 +213,13 @@ export function LocationDetailView({
     const sharedIds = sharedServiceIds.filter((id) =>
       internalServices.some((service) => service.id === id),
     );
-    const wantedIds = hasAppliedCriteria
-      ? listVenueServicesForWanted(location, criteria.wantedServices).map(
-          (service) => service.id,
-        )
-      : [];
-    const extraIds = [...new Set([...includedIds, ...sharedIds, ...wantedIds])];
+    const extraIds = [...new Set([...includedIds, ...sharedIds])];
     if (extraIds.length === 0) return;
     setSelectedInternalServices((current) => {
       const missing = extraIds.filter((id) => !current.includes(id));
       return missing.length === 0 ? current : [...current, ...missing];
     });
-  }, [
-    criteria.wantedServices,
-    hasAppliedCriteria,
-    internalServices,
-    location,
-    sharedServiceIds,
-  ]);
+  }, [internalServices, sharedServiceIds]);
   const comingFromExploreQuote = Boolean(
     initialQuoteContext?.guestCount ||
       initialQuoteContext?.dateFrom ||
@@ -904,9 +892,6 @@ export function LocationDetailView({
               drinksTouchedRef.current = true;
               setDrinksPerInvitee(clampDrinksPerInvitee(value));
             }}
-            wantedExtraServices={
-              hasAppliedCriteria ? criteria.wantedServices : []
-            }
             quoteReady={quoteSessionReady}
             shareHref={buildLocationQuoteShareHref(location.id, {
               guestCount,

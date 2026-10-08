@@ -19,25 +19,8 @@ export const PARTY_EXTRA_SERVICE_OPTIONS: {
   { id: "bakery", label: "Torta", hint: "Pasticceria del locale" },
 ];
 
-const EXTRA_SERVICE_IDS = new Set(
-  PARTY_EXTRA_SERVICE_OPTIONS.map((item) => item.id),
-);
-
 function isDrinkMode(value: unknown): value is DrinkPackageMode {
   return value === "none" || value === "per_invitee" || value === "open_bar";
-}
-
-function normalizeWantedServices(value: unknown): ExtraServiceId[] {
-  if (!Array.isArray(value)) return [];
-  const unique = new Set<ExtraServiceId>();
-  for (const item of value) {
-    if (typeof item === "string" && EXTRA_SERVICE_IDS.has(item as ExtraServiceId)) {
-      unique.add(item as ExtraServiceId);
-    }
-  }
-  return PARTY_EXTRA_SERVICE_OPTIONS.map((item) => item.id).filter((id) =>
-    unique.has(id),
-  );
 }
 
 /** Shown under venue date filters: more options help the manager approve one. */
@@ -127,7 +110,8 @@ export function normalizePartyCriteria(
     guestCount,
     budgetMin,
     budgetMax,
-    wantedServices: normalizeWantedServices(value?.wantedServices),
+    // Venue add-ons are incomplete across the catalog, so they never filter search.
+    wantedServices: [],
     drinkMode: isDrinkMode(value?.drinkMode) ? value.drinkMode : "none",
     drinksPerInvitee: clampDrinksPerInvitee(
       typeof value?.drinksPerInvitee === "number"
@@ -153,14 +137,10 @@ export function partyCriteriaHasAny(criteria: PartyCriteria): boolean {
   return (
     partyCriteriaHasHardFilters(criteria) ||
     criteria.freeText.trim().length > 0 ||
-    criteria.wantedServices.length > 0 ||
     criteria.drinkMode !== "none"
   );
 }
 
 export function partyCriteriaRankingText(criteria: PartyCriteria): string {
-  const serviceLabels = PARTY_EXTRA_SERVICE_OPTIONS.filter((item) =>
-    criteria.wantedServices.includes(item.id),
-  ).map((item) => `${item.label} ${item.hint}`);
-  return [criteria.freeText, ...serviceLabels].filter(Boolean).join(" ");
+  return criteria.freeText;
 }

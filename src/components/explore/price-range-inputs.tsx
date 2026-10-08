@@ -223,8 +223,7 @@ export function PriceRangeInputs({
 
       <p className="text-xs leading-relaxed text-primary-black/50">
         Fascia di budget per la festa. Il prezzo sulle location include la
-        sala e i servizi del locale che scegli, e cambia tra feriale e
-        weekend.
+        sala e i drink che scegli, e cambia tra feriale e weekend.
       </p>
       {validationError && (
         <p className="text-xs font-semibold text-red-500">{validationError}</p>

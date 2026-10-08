@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { VibeUpCalendar } from "@/components/ui/vibeup-calendar";
 import { useDemoLanguage } from "@/context/demo-language-context";
-import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
@@ -27,7 +26,6 @@ import {
   emptyPartyCriteria,
   MAX_PARTY_DATES,
   PARTY_DATES_MANAGER_HINT,
-  PARTY_EXTRA_SERVICE_OPTIONS,
   normalizePartyCriteria,
   syncPartyDateRange,
   type PartyCriteria,
@@ -38,7 +36,7 @@ import {
   EXPLORE_GUEST_MIN,
   EXPLORE_PRICE_MIN,
 } from "@/types/location";
-import { Calendar, Check, ChevronDown, Minus, Plus, X } from "lucide-react";
+import { Calendar, ChevronDown, Minus, Plus, X } from "lucide-react";
 import { useRef, useState, type Ref } from "react";
 import { createPortal } from "react-dom";
 
@@ -46,7 +44,6 @@ const STEPS = [
   "date",
   "guests",
   "budget",
-  "extras",
   "drinks",
   "description",
 ] as const;
@@ -54,7 +51,6 @@ const STEPS = [
 const STEP_TITLES: Record<(typeof STEPS)[number], string> = {
   date: "Quando festeggi",
   guests: "Quanti siete",
-  extras: "Servizi del locale",
   drinks: "Drink per persona",
   budget: "Budget location",
   description: "Dettagli e preferenze",
@@ -240,9 +236,6 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
                 rangeRef={budgetRef}
               />
             ) : null}
-            {step === "extras" ? (
-              <ExtrasStep criteria={criteria} onChange={patch} />
-            ) : null}
             {step === "drinks" ? (
               <DrinksStep criteria={criteria} onChange={patch} />
             ) : null}
@@ -408,84 +401,6 @@ function GuestsStep({
   );
 }
 
-function ExtrasStep({
-  criteria,
-  onChange,
-}: {
-  criteria: PartyCriteria;
-  onChange: (partial: Partial<PartyCriteria>) => void;
-}) {
-  const { isDemoMode } = useDemoMode();
-
-  function toggleService(id: (typeof PARTY_EXTRA_SERVICE_OPTIONS)[number]["id"]) {
-    const selected = criteria.wantedServices.includes(id);
-    onChange({
-      wantedServices: selected
-        ? criteria.wantedServices.filter((item) => item !== id)
-        : [...criteria.wantedServices, id],
-    });
-  }
-
-  return (
-    <fieldset>
-      <legend className="mb-1 text-sm font-semibold text-primary-black">
-        Servizi forniti dal locale
-      </legend>
-      <p className="mb-3 text-xs leading-relaxed text-primary-black/50">
-        Scegli DJ, fotografo, decorazioni, catering o torta. Li mette il
-        locale, e il loro costo entra nel prezzo che vedi sulle location.
-      </p>
-      <div className="grid grid-cols-2 gap-2">
-        {PARTY_EXTRA_SERVICE_OPTIONS.map((service) => {
-          const selected = criteria.wantedServices.includes(service.id);
-          return (
-            <button
-              key={service.id}
-              type="button"
-              onClick={() => toggleService(service.id)}
-              aria-pressed={selected}
-              className={cn(
-                "relative rounded-2xl border px-3 py-3 text-left transition-colors",
-                selected
-                  ? isDemoMode
-                    ? "border-brand-teal bg-paper pr-9 ring-2 ring-brand-teal/55"
-                    : "border-brand-teal bg-paper ring-2 ring-brand-teal/40"
-                  : "border-primary-black/10 bg-paper hover:border-brand-teal/40",
-              )}
-            >
-              {isDemoMode && selected ? (
-                <span
-                  className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-brand-teal text-white"
-                  aria-hidden
-                >
-                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                </span>
-              ) : null}
-              <span className="block text-sm font-bold text-ink-inverse">
-                {service.label}
-              </span>
-              <span className="mt-0.5 block text-[11px] font-medium text-ink-inverse/50">
-                {service.hint}
-              </span>
-              <span className="mt-1.5 block text-[10px] font-semibold leading-snug text-brand-teal">
-                Fornito dal locale, incluso nel prezzo
-              </span>
-            </button>
-          );
-        })}
-        <div
-          role="note"
-          className="rounded-2xl bg-brand-teal px-3 py-3 text-left"
-        >
-          <p className="text-[11px] font-semibold leading-snug text-ink-inverse">
-            Nota: i servizi aggiuntivi possono essere richiesti anche in seguito, esternamente alla location.
-          </p>
-        </div>
-      </div>
-    </fieldset>
-  );
-}
-
 function DrinksStep({
   criteria,
   onChange,
@@ -511,7 +426,7 @@ function DrinksStep({
       </legend>
       <p className="mb-3 text-xs leading-relaxed text-primary-black/50">
         I drink li fornisce il locale. Il costo entra nel prezzo della
-        location, insieme alla sala e ai servizi scelti prima.
+        location, insieme alla sala.
       </p>
       <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-paper p-1 ring-1 ring-primary-black/8">
         {(
@@ -621,8 +536,8 @@ function BudgetStep({
         }
       />
       <p className="mt-3 text-xs leading-relaxed text-primary-black/50">
-        Questo budget vale per il totale. Nei passi dopo aggiungi i servizi e
-        i drink: li fornisce il locale e il costo entra nello stesso prezzo.
+        Questo budget vale per il totale. Nel passo dopo puoi aggiungere i
+        drink: li fornisce il locale e il costo entra nello stesso prezzo.
       </p>
     </fieldset>
   );
@@ -648,8 +563,8 @@ function DescriptionStep({
         className="w-full resize-none rounded-2xl border border-primary-black/10 bg-paper px-4 py-3 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
       />
       <p className="mt-2 text-xs text-primary-black/50">
-        Usiamo queste parole, insieme ai servizi del locale scelti, per
-        ordinare le location più affini in cima — nessuna viene nascosta.
+        Usiamo queste parole per ordinare le location più affini in cima —
+        nessuna viene nascosta.
       </p>
     </fieldset>
   );
