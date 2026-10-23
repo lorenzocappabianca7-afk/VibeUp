@@ -23,6 +23,10 @@ export type SignupDraft = {
   codeSentAt: number;
 };
 
+export function readStoredSignupReferral() {
+  return storedReferral();
+}
+
 function storedReferral() {
   if (typeof window === "undefined") return "";
   try {

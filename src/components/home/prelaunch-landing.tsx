@@ -56,6 +56,15 @@ export function PrelaunchLanding({ startSignup = false }: { startSignup?: boolea
     return () => cancelAnimationFrame(again);
   }, []);
 
+  function openSignup() {
+    const root = document.querySelector("[data-prelaunch-landing]");
+    if (root instanceof HTMLElement && !root.hasAttribute("data-dialog-open")) {
+      const gap = root.offsetWidth - root.clientWidth;
+      root.style.setProperty("--vu-scrollbar", `${gap}px`);
+    }
+    setSignupOpen(true);
+  }
+
   function closeSignup() {
     setSignupOpen(false);
     if (startSignup) router.push("/");
@@ -72,14 +81,14 @@ export function PrelaunchLanding({ startSignup = false }: { startSignup?: boolea
         <div className="vu-page mx-auto flex w-full max-w-[480px] flex-col">
           <PrelaunchHero
             member={member}
-            onSignup={() => setSignupOpen(true)}
+            onSignup={openSignup}
             onDemo={() => scrollToLanding("demo")}
           />
           <PrelaunchMarquee />
           <PrelaunchCommunity
             member={member}
             contestOver={contestOver}
-            onSignup={() => setSignupOpen(true)}
+            onSignup={openSignup}
           />
           <PrelaunchDemoSection
             canEnterDemo={canEnterDemo}
