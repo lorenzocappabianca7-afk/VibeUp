@@ -172,13 +172,14 @@ export function clearDemoAttemptLocalState() {
 /**
  * Every full entry (TikTok link, refresh, PWA relaunch) is a new attempt.
  * Previous rows stay in `demo_submissions`; this only forgets the local resume.
+ * The signup gate replaces the old data form, so the shell opens ready.
  */
 export function resolveDemoLanding(_session?: DemoSession | null): {
   session: DemoSession | null;
-  state: "form" | "completed" | "ready";
+  state: "ready";
 } {
   clearDemoAttemptLocalState();
-  return { session: null, state: "form" };
+  return { session: null, state: "ready" };
 }
 
 export function isDemoHomeTipDismissed(sessionId: string): boolean {

@@ -5,6 +5,7 @@ import { DemoBookingSpeedCard } from "@/components/demo/demo-booking-speed-card"
 import { useDemoMode } from "@/context/demo-mode-context";
 import { scrollDemoPageToTop } from "@/lib/demo/scroll-top";
 import { pushHomeHref } from "@/lib/home-navigation";
+import { withDemoShell } from "@/lib/demo/shell";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import { Star } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -64,7 +65,7 @@ export function DemoRatingPage() {
     >
       <button
         type="button"
-        onClick={() => pushHomeHref(router, "/?tab=explore")}
+        onClick={() => pushHomeHref(router, withDemoShell("/?tab=explore", true))}
         className="text-xs font-bold text-primary-black/45"
       >
         ← Torna a Esplora

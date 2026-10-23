@@ -8,6 +8,7 @@ import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { useDemoLockedTab } from "@/lib/demo/chrome-lock";
 import { useTabNavigation } from "@/context/tab-navigation-context";
+import { prelaunchChromeHideCss } from "@/components/home/prelaunch-critical-css";
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
 
@@ -15,13 +16,14 @@ function shouldHideBottomNav(pathname: string) {
   return (
     pathname.startsWith("/business") ||
     pathname.startsWith("/admin") ||
-    pathname.startsWith("/demo") ||
+    pathname.startsWith("/demo/book") ||
+    pathname.startsWith("/demo/rating") ||
     pathname.startsWith("/r/")
   );
 }
 
 function shouldHideFooter(pathname: string) {
-  return pathname.startsWith("/admin/demo");
+  return pathname.startsWith("/admin/demo") || pathname.startsWith("/admin/iscrizioni");
 }
 
 function AppChromeNav() {
@@ -47,6 +49,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
 
   return (
     <>
+      <style>{prelaunchChromeHideCss}</style>
       <AppWakeRecovery />
       <div
         className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-clip"

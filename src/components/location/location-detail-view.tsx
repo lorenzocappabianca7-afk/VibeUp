@@ -11,6 +11,7 @@ import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { pushHomeHref } from "@/lib/home-navigation";
+import { withDemoShell } from "@/lib/demo/shell";
 import {
   buildLocationHref,
   buildLocationQuoteShareHref,
@@ -614,7 +615,10 @@ export function LocationDetailView({
       if (!compareLocationIds.includes(location.id)) {
         toggleCompareLocation(location.id);
       }
-      pushHomeHref(router, "/?tab=explore&view=compare");
+      pushHomeHref(
+        router,
+        withDemoShell("/?tab=explore&view=compare", isDemoMode),
+      );
     };
 
     if (isCompareSelected || isDemoMode) {
@@ -735,7 +739,7 @@ export function LocationDetailView({
             } catch {
               // Event already exists locally; Continua still needs this flag.
             }
-            pushHomeHref(router, "/?tab=events");
+            pushHomeHref(router, withDemoShell("/?tab=events", isDemoMode));
           })();
         });
     };

@@ -199,3 +199,27 @@ create table provider_calendar_reservations (
   ends_at timestamptz not null,
   created_at timestamptz not null default now()
 );
+
+alter table public.provider_calendars enable row level security;
+alter table public.provider_calendar_reservations enable row level security;
+
+revoke all on table public.provider_calendars from anon, authenticated, public;
+revoke all on table public.provider_calendar_reservations from anon, authenticated, public;
+
+revoke all on function public.upsert_provider_calendar(
+  text,
+  calendar_provider_role,
+  text,
+  provider_calendar_type,
+  text,
+  text,
+  text,
+  text,
+  text,
+  text,
+  text,
+  timestamptz,
+  text
+) from public, anon, authenticated;
+
+revoke all on function public.get_provider_calendar(text, text) from public, anon, authenticated;

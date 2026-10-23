@@ -1,4 +1,4 @@
-import { isDemoMode } from "@/lib/demo/mode";
+import { isDemoKillSwitchOn, isDemoModeServer } from "@/lib/demo/mode.server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { DemoSubmission, DemoSubmissionPayload } from "@/types/demo";
@@ -24,8 +24,12 @@ function mapRow(row: DemoSubmissionRow): DemoSubmission {
   };
 }
 
-function requireDemoWrite() {
-  if (!isDemoMode()) return null;
+async function requireDemoWrite(options?: { alreadyAuthorized?: boolean }) {
+  if (options?.alreadyAuthorized) {
+    if (isDemoKillSwitchOn()) return null;
+  } else if (!(await isDemoModeServer())) {
+    return null;
+  }
   if (!isSupabaseConfigured()) {
     throw new Error("Supabase non configurato.");
   }
@@ -36,7 +40,7 @@ function requireDemoWrite() {
 export async function createDemoSubmission(
   payload: DemoSubmissionPayload = {},
 ): Promise<DemoSubmission | null> {
-  const admin = requireDemoWrite();
+  const admin = await requireDemoWrite();
   if (!admin) return null;
 
   const { data, error } = await admin
@@ -54,12 +58,13 @@ export async function createDemoSubmission(
 export async function patchDemoSubmission(
   id: string,
   patch: DemoSubmissionPayload = {},
+  options?: { alreadyAuthorized?: boolean },
 ): Promise<DemoSubmission | null> {
   if (!UUID_RE.test(id)) {
     throw new Error("ID demo non valido.");
   }
 
-  const admin = requireDemoWrite();
+  const admin = await requireDemoWrite(options);
   if (!admin) return null;
 
   const { data: current, error: readError } = await admin

@@ -1,6 +1,6 @@
 -- Isolated demo-mode storage. Does not touch profiles, bookings, or listings.
 -- Run in Supabase SQL Editor. Safe to leave in place after launch: the app
--- never writes here unless NEXT_PUBLIC_DEMO_MODE is on.
+-- never writes here unless the demo session cookie is set.
 
 create table if not exists public.demo_submissions (
   id uuid primary key default gen_random_uuid(),

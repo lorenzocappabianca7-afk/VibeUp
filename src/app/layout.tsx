@@ -164,16 +164,17 @@ export default function RootLayout({
       style={{ backgroundColor: "#000000", colorScheme: "only dark" }}
       suppressHydrationWarning
     >
-      {/* Runs before <head> CSS links when React preserves this order — unblocks
-          Next's ~100KB stylesheet so the HTML splash can paint on Home Screen. */}
-      <script
-        dangerouslySetInnerHTML={{ __html: UNBLOCK_APP_CSS_SCRIPT }}
-      />
       <head>
         {/* First tag so iOS reads scale before splash CSS/scripts. */}
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+        {/* Inside <head>, before the CSS links. React 19 rejects a sync script
+            as a child of <html>; this still unblocks Next's stylesheet so the
+            HTML splash can paint on Home Screen. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: UNBLOCK_APP_CSS_SCRIPT }}
         />
         {/* Render-blocking black paint — must stay before Next CSS chunks.
             next/no-css-tags is intentional: preinit was too late for Safari FOUC. */}

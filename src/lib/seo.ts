@@ -159,6 +159,13 @@ export const STATIC_PAGE_METADATA = {
     path: "/admin/demo",
     index: false,
   },
+  adminSignups: {
+    title: "Iscrizioni",
+    description:
+      "Area riservata per consultare le iscrizioni alla community VibeUp e la gara inviti.",
+    path: "/admin/iscrizioni",
+    index: false,
+  },
   activate: {
     title: "Attiva l'account",
     description:

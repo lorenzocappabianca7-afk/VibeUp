@@ -3,7 +3,7 @@ import type { DemoSubmission, DemoSubmissionPayload } from "@/types/demo";
 
 /**
  * Client-safe write to the isolated demo table.
- * No-op when the flag is off — real booking/profile APIs are never called.
+ * No-op unless the demo session cookie is on — real booking/profile APIs are never called.
  */
 export async function saveDemoSubmission(input: {
   payload?: DemoSubmissionPayload;

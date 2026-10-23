@@ -1,7 +1,7 @@
 "use client";
 
 import { DemoRatingPage } from "@/components/demo/demo-rating-page";
-import { useDemoMode } from "@/context/demo-mode-context";
+import { isDemoExitToSite, useDemoMode } from "@/context/demo-mode-context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -10,21 +10,21 @@ export default function DemoRatingRoutePage() {
   const router = useRouter();
 
   useEffect(() => {
+    if (isDemoExitToSite()) return;
     if (!isDemoMode) {
-      router.replace("/");
+      router.replace("/demo");
       return;
     }
-    if (landingState === "form") {
-      router.replace("/");
+    if (landingState === "loading") return;
+    if (landingState === "error") {
+      router.replace("/demo");
       return;
     }
     if (
       landingState === "ready" &&
-      session &&
-      !session.completed &&
-      !bookingConfirmed
+      (!session || session.completed || !bookingConfirmed)
     ) {
-      router.replace("/");
+      router.replace("/demo");
     }
   }, [bookingConfirmed, isDemoMode, landingState, router, session]);
 

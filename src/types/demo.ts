@@ -55,4 +55,4 @@ export interface DemoResponseRow {
   sessionCreatedAt: string | null;
 }
 
-export type DemoLandingState = "loading" | "form" | "completed" | "ready";
+export type DemoLandingState = "loading" | "completed" | "ready" | "error";

@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminSectionLinks } from "@/components/admin/admin-section-links";
 import { Button } from "@/components/ui/button";
 import { SafeImage } from "@/components/ui/safe-image";
 import { useAppState } from "@/context/app-state-context";
@@ -348,7 +349,8 @@ export function ProtectedCatalogManager() {
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
             Torna alla home
           </Link>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-teal">
+          <AdminSectionLinks current="catalog" />
+          <p className="mt-3 text-xs font-bold uppercase tracking-[0.2em] text-brand-teal">
             Catalogo privato
           </p>
           <h1 className="mt-1 break-words text-2xl font-black text-primary-black sm:text-3xl">

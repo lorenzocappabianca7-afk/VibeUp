@@ -1,4 +1,8 @@
 import type { NextConfig } from "next";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const securityHeaders = [
   { key: "Content-Language", value: "it" },
@@ -17,6 +21,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: projectRoot,
+  },
+  outputFileTracingRoot: projectRoot,
   compress: true,
   poweredByHeader: false,
   /* Do NOT inline Tailwind into <head>. Production was shipping ~99KB of CSS

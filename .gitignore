@@ -38,4 +38,7 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# local email previews
+.tmp/
 next-env.d.ts

@@ -4,6 +4,7 @@ import { useAppState } from "@/context/app-state-context";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { useDemoLockedTab } from "@/lib/demo/chrome-lock";
 import { isBodyScrollLocked } from "@/lib/body-scroll-lock";
+import { buildShellTabHref, usesDemoShell } from "@/lib/demo/shell";
 import { pushHomeHref, replaceHomeHref } from "@/lib/home-navigation";
 import { recoverInteractiveSession } from "@/lib/session-health";
 import {
@@ -68,7 +69,7 @@ function resolveTabFromLocation(
     return isBusinessUser ? "profile" : "explore";
   }
 
-  if (pathname === "/" || pathname === "") {
+  if (pathname === "/" || pathname === "" || pathname === "/demo") {
     if (tabParam && ALL_TAB_IDS.has(tabParam as TabId)) {
       const tab = tabParam as TabId;
       if (isBusinessUser) {
@@ -92,11 +93,12 @@ function resolveTabFromLocation(
   return isBusinessUser ? "notifications" : "home";
 }
 
-function buildTabHref(tab: TabId, isBusinessUser: boolean) {
-  const isDefault =
-    (isBusinessUser && tab === "notifications") ||
-    (!isBusinessUser && tab === "home");
-  return isDefault ? "/" : `/?tab=${tab}`;
+function buildTabHref(
+  tab: TabId,
+  isBusinessUser: boolean,
+  demoShell: boolean,
+) {
+  return buildShellTabHref(tab, isBusinessUser, demoShell);
 }
 
 function getAllowedTabs(isBusinessUser: boolean): Set<TabId> {
@@ -106,8 +108,9 @@ function getAllowedTabs(isBusinessUser: boolean): Set<TabId> {
 }
 
 function tabParamFromHref(href: string): string | null {
-  if (!href.startsWith("/?")) return null;
-  return new URLSearchParams(href.slice(2)).get("tab");
+  const query = href.includes("?") ? href.slice(href.indexOf("?") + 1) : "";
+  if (!query) return null;
+  return new URLSearchParams(query).get("tab");
 }
 
 /**
@@ -174,9 +177,12 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
   const fallback: TabId = isBusinessUser ? "notifications" : "home";
   const candidate = optimisticTab ?? urlTab;
   const resolvedTab = allowed.has(candidate) ? candidate : fallback;
-  const onHome = pathname === "/" || pathname === "";
+  const onHome = pathname === "/" || pathname === "" || pathname === "/demo";
+  const demoShell = usesDemoShell(pathname, isDemoMode);
   const activeTab =
-    demoLockedTab && onHome && !isBusinessUser ? demoLockedTab : resolvedTab;
+    demoLockedTab && pathname === "/demo" && !isBusinessUser
+      ? demoLockedTab
+      : resolvedTab;
 
   useEffect(() => {
     router.prefetch("/");
@@ -185,6 +191,10 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
     router.prefetch("/?tab=profile");
     router.prefetch("/?tab=messages");
     if (isDemoMode) {
+      router.prefetch("/demo");
+      router.prefetch("/demo?tab=explore");
+      router.prefetch("/demo?tab=events");
+      router.prefetch("/demo?tab=profile");
       router.prefetch("/demo/book");
       router.prefetch("/demo/rating");
     }
@@ -195,13 +205,13 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
     if (!onHome) return;
     if (candidate === activeTab) return;
 
-    const href = buildTabHref(activeTab, isBusinessUser);
+    const href = buildTabHref(activeTab, isBusinessUser, demoShell);
     const nextParam = tabParamFromHref(href);
     replaceHomeHref(href);
     startTransition(() => {
       setTabParam(nextParam);
     });
-  }, [activeTab, candidate, isBusinessUser, onHome]);
+  }, [activeTab, candidate, demoShell, isBusinessUser, onHome]);
 
   // Restore scroll per tab after the panel is visible.
   useEffect(() => {
@@ -238,7 +248,7 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const href = buildTabHref(tab, isBusinessUser);
+      const href = buildTabHref(tab, isBusinessUser, demoShell);
 
       // Optimistic UI: swap panel immediately.
       setOptimisticTab(tab);
@@ -255,7 +265,7 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
       setTabParam(tabParamFromHref(href));
       pushHomeHref(router, href);
     },
-    [activeTab, demoLockedTab, isBusinessUser, onHome, router],
+    [activeTab, demoLockedTab, demoShell, isBusinessUser, onHome, router],
   );
 
   const value = useMemo(

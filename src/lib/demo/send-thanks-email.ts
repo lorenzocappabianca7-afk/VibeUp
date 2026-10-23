@@ -3,7 +3,9 @@ import {
   isTransactionalEmailConfigured,
   sendTransactionalEmail,
 } from "@/lib/email/mailer";
-import { isDemoMode } from "@/lib/demo/mode";
+import { isDemoKillSwitchOn } from "@/lib/demo/mode.server";
+import { lookupSignupEmail } from "@/lib/demo/signup-gate.server";
+import { marketingUnsubscribeUrl } from "@/server/launch/code-mail";
 import { patchDemoSubmission } from "@/server/repositories/demo";
 import type { DemoSubmission, DemoSubmissionPayload } from "@/types/demo";
 
@@ -99,13 +101,15 @@ ${from}`;
 export async function sendDemoThanksIfCompleted(
   submission: DemoSubmission,
 ): Promise<void> {
-  if (!isDemoMode()) return;
+  if (isDemoKillSwitchOn()) return;
 
   const payload = submission.payload;
   if (payload.completed !== true) return;
   if (typeof payload.thanksEmailSentAt === "string") return;
 
-  const to = asTrimmed(payload.email).toLowerCase();
+  const signupId = asTrimmed(payload.signup_id);
+  const signupEmail = signupId ? await lookupSignupEmail(signupId) : null;
+  const to = (signupEmail || asTrimmed(payload.email)).toLowerCase();
   if (!EMAIL_RE.test(to)) return;
   if (!isTransactionalEmailConfigured()) {
     console.error("[demo-thanks] RESEND_API_KEY non configurata.");
@@ -119,6 +123,7 @@ export async function sendDemoThanksIfCompleted(
     subject: "Grazie per aver provato VibeUp",
     text: buildText(name),
     html: buildHtml(name),
+    unsubscribeUrl: signupId ? marketingUnsubscribeUrl(signupId) : undefined,
   });
 
   if (!result.ok) {
@@ -127,9 +132,13 @@ export async function sendDemoThanksIfCompleted(
   }
 
   try {
-    await patchDemoSubmission(submission.id, {
-      thanksEmailSentAt: new Date().toISOString(),
-    });
+    await patchDemoSubmission(
+      submission.id,
+      {
+        thanksEmailSentAt: new Date().toISOString(),
+      },
+      { alreadyAuthorized: true },
+    );
   } catch (error) {
     console.error("[demo-thanks] mark sent", error);
   }

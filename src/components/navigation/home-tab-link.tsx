@@ -1,6 +1,8 @@
 "use client";
 
 import { useTabNavigation } from "@/context/tab-navigation-context";
+import { useDemoMode } from "@/context/demo-mode-context";
+import { buildShellTabHref, usesDemoShell } from "@/lib/demo/shell";
 import { isHomePath, pushHomeHref } from "@/lib/home-navigation";
 import type { TabId } from "@/types/navigation";
 import { usePathname, useRouter } from "next/navigation";
@@ -21,17 +23,25 @@ type HomeTabLinkProps = Omit<
   children: ReactNode;
 };
 
-function buildHref(tab: TabId | undefined, isBusinessUser: boolean, search?: string) {
+function buildHref(
+  tab: TabId | undefined,
+  isBusinessUser: boolean,
+  demoShell: boolean,
+  search?: string,
+) {
   const params = new URLSearchParams(search?.replace(/^\?/, "") ?? "");
   if (tab) {
-    const isDefault =
-      (isBusinessUser && tab === "notifications") ||
-      (!isBusinessUser && tab === "home");
-    if (!isDefault) params.set("tab", tab);
-    else params.delete("tab");
+    const base = buildShellTabHref(tab, isBusinessUser, demoShell);
+    const query = base.includes("?") ? base.slice(base.indexOf("?") + 1) : "";
+    if (query) {
+      new URLSearchParams(query).forEach((value, key) => {
+        params.set(key, value);
+      });
+    }
   }
   const qs = params.toString();
-  return qs ? `/?${qs}` : "/";
+  const path = demoShell ? "/demo" : "/";
+  return qs ? `${path}?${qs}` : path;
 }
 
 /**
@@ -47,8 +57,10 @@ export function HomeTabLink({
 }: HomeTabLinkProps) {
   const pathname = usePathname() || "/";
   const router = useRouter();
+  const { isDemoMode } = useDemoMode();
   const { setTab, isBusinessUser } = useTabNavigation();
-  const href = buildHref(tab, isBusinessUser, search);
+  const demoShell = usesDemoShell(pathname, isDemoMode);
+  const href = buildHref(tab, isBusinessUser, demoShell, search);
 
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     if (
@@ -65,7 +77,9 @@ export function HomeTabLink({
     event.preventDefault();
 
     const hasExtraQuery = Boolean(search && search.replace(/^\?/, "").length);
-    if (isHomePath(pathname) && !hasExtraQuery) {
+    const onShellHome =
+      pathname === "/demo" || isHomePath(pathname);
+    if (onShellHome && !hasExtraQuery) {
       setTab(tab ?? (isBusinessUser ? "notifications" : "home"));
       return;
     }

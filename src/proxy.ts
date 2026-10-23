@@ -1,5 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { DEMO_MODE_COOKIE, DEMO_MODE_COOKIE_VALUE } from "@/lib/demo/mode";
+import { isDemoKillSwitchOn } from "@/lib/demo/mode.server";
+import { isPlatformLive, isStaffRole } from "@/lib/platform";
 import {
   getAuthCookieOptions,
   withAuthCookieOptions,
@@ -64,6 +67,41 @@ function buildCsp(isDev: boolean): string {
   return directives.join("; ").replace(/\s{2,}/g, " ").trim();
 }
 
+function hasDemoCookie(request: NextRequest) {
+  return request.cookies.get(DEMO_MODE_COOKIE)?.value === DEMO_MODE_COOKIE_VALUE;
+}
+
+function clearDemoCookie(response: NextResponse) {
+  response.cookies.set(DEMO_MODE_COOKIE, "", {
+    path: "/",
+    maxAge: 0,
+    sameSite: "lax",
+  });
+}
+
+function isCatalogDetail(pathname: string) {
+  return /^\/(location|service|event)(\/|$)/.test(pathname);
+}
+
+/** Pre-launch legal pages stay open when the public app is still gated. */
+function isPublicLegalPage(pathname: string) {
+  return (
+    pathname === "/privacy" ||
+    pathname.startsWith("/privacy/") ||
+    pathname === "/regolamento" ||
+    pathname === "/iscriviti"
+  );
+}
+
+function isDemoBookOrRating(pathname: string) {
+  return (
+    pathname === "/demo/book" ||
+    pathname.startsWith("/demo/book/") ||
+    pathname === "/demo/rating" ||
+    pathname.startsWith("/demo/rating/")
+  );
+}
+
 function applySecurityHeaders(response: NextResponse, csp: string, isDev: boolean) {
   response.headers.set("Content-Security-Policy", csp);
   response.headers.set("X-Content-Type-Options", "nosniff");
@@ -110,36 +148,129 @@ export async function proxy(request: NextRequest) {
     },
   });
 
+  const refreshedCookies: {
+    name: string;
+    value: string;
+    options?: Parameters<typeof withAuthCookieOptions>[0];
+  }[] = [];
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-  if (supabaseUrl && supabaseAnon) {
-    const supabase = createServerClient(supabaseUrl, supabaseAnon, {
-      cookieOptions: getAuthCookieOptions(),
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => {
-            request.cookies.set(name, value);
-          });
-          response = NextResponse.next({
-            request: {
-              headers: requestHeaders,
+  const supabase =
+    supabaseUrl && supabaseAnon
+      ? createServerClient(supabaseUrl, supabaseAnon, {
+          cookieOptions: getAuthCookieOptions(),
+          cookies: {
+            getAll() {
+              return request.cookies.getAll();
             },
-          });
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, withAuthCookieOptions(options));
-          });
-        },
-      },
-    });
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value }) => {
+                request.cookies.set(name, value);
+              });
+              response = NextResponse.next({
+                request: {
+                  headers: requestHeaders,
+                },
+              });
+              cookiesToSet.forEach(({ name, value, options }) => {
+                response.cookies.set(name, value, withAuthCookieOptions(options));
+              });
+              refreshedCookies.push(...cookiesToSet);
+            },
+          },
+        })
+      : null;
+
+  if (supabase) {
     // Refresh session so Server Components see a valid user.
     await supabase.auth.getUser();
   }
 
-  applySecurityHeaders(response, csp, isDev);
-  return response;
+  const gated = await gateRequest(request, supabase);
+  if (!gated && shouldClearDemoCookie(request)) {
+    clearDemoCookie(response);
+  }
+  const finalResponse = gated ?? response;
+  if (gated) {
+    refreshedCookies.forEach(({ name, value, options }) => {
+      finalResponse.cookies.set(name, value, withAuthCookieOptions(options));
+    });
+  }
+
+  applySecurityHeaders(finalResponse, csp, isDev);
+  return finalResponse;
+}
+
+function shouldClearDemoCookie(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  if (
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/_next") ||
+    pathname === "/favicon.ico"
+  ) {
+    return false;
+  }
+  return isDemoKillSwitchOn() && hasDemoCookie(request);
+}
+
+async function gateRequest(
+  request: NextRequest,
+  supabase: ReturnType<typeof createServerClient> | null,
+) {
+  const { pathname } = request.nextUrl;
+  if (
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/_next") ||
+    pathname === "/favicon.ico" ||
+    isPublicLegalPage(pathname)
+  ) {
+    return null;
+  }
+
+  const killed = isDemoKillSwitchOn();
+  if (killed && (pathname === "/demo" || pathname.startsWith("/demo/"))) {
+    const redirect = NextResponse.redirect(new URL("/", request.url));
+    clearDemoCookie(redirect);
+    return redirect;
+  }
+
+  const demoOn = !killed && hasDemoCookie(request);
+
+  if (!demoOn && isDemoBookOrRating(pathname)) {
+    const redirect = NextResponse.redirect(new URL("/demo", request.url));
+    if (killed) clearDemoCookie(redirect);
+    return redirect;
+  }
+
+  if (!isPlatformLive() && isCatalogDetail(pathname) && !demoOn) {
+    const staff = await requestIsStaff(supabase);
+    if (!staff) {
+      const redirect = NextResponse.redirect(new URL("/", request.url));
+      if (killed) clearDemoCookie(redirect);
+      return redirect;
+    }
+  }
+
+  return null;
+}
+
+async function requestIsStaff(
+  supabase: ReturnType<typeof createServerClient> | null,
+) {
+  if (!supabase) return false;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  const role = data && typeof data.role === "string" ? data.role : null;
+  return isStaffRole(role);
 }
 
 export const config = {

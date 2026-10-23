@@ -15,7 +15,9 @@ import { calculateLocationDeposit, getDepositCheckoutAmounts, getEventDepositPay
 import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import type { BookedService, UserEvent } from "@/types/event";
 import { formatCurrency, formatDate, MODAL_SAFE_BOTTOM_STYLE } from "@/lib/utils";
+import { useDemoMode } from "@/context/demo-mode-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
+import { withDemoShell } from "@/lib/demo/shell";
 import {
   ArrowLeft,
   Camera,
@@ -280,6 +282,7 @@ function AddServicesModal({
   event: UserEvent;
   onClose: () => void;
 }) {
+  const { isDemoMode } = useDemoMode();
   useBodyScrollLock(open);
 
   if (!open) return null;
@@ -349,7 +352,10 @@ function AddServicesModal({
         <ul className="space-y-3">
           {serviceCategories.map((category) => {
             const Icon = category.icon;
-            const href = `/?tab=explore&category=${category.id}&eventId=${event.id}`;
+            const href = withDemoShell(
+              `/?tab=explore&category=${category.id}&eventId=${event.id}`,
+              isDemoMode,
+            );
 
             return (
               <li key={category.id}>

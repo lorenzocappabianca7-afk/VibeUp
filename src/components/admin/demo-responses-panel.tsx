@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminSectionLinks } from "@/components/admin/admin-section-links";
 import { Button } from "@/components/ui/button";
 import { FieldLabel } from "@/components/ui/form-fields";
 import {
@@ -74,30 +75,29 @@ export function DemoResponsesPanel() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!allowed) {
-      setLoading(false);
-      setRows([]);
-      return;
-    }
+    if (!allowed) return;
 
     let cancelled = false;
-    setLoading(true);
-    setError("");
-    void fetchDemoResponses()
-      .then((data) => {
-        if (!cancelled) setRows(data);
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Caricamento non riuscito.");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      setError("");
+      void fetchDemoResponses()
+        .then((data) => {
+          if (!cancelled) setRows(data);
+        })
+        .catch((err: unknown) => {
+          if (!cancelled) {
+            setError(err instanceof Error ? err.message : "Caricamento non riuscito.");
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }, 0);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [allowed]);
 
@@ -225,7 +225,8 @@ export function DemoResponsesPanel() {
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-primary-black">
+          <AdminSectionLinks current="demo" />
+          <h1 className="mt-3 text-2xl font-black text-primary-black">
             Controllo demo
           </h1>
           <p className="mt-1 text-sm text-primary-black/60">

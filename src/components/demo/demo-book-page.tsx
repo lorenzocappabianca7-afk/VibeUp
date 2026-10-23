@@ -10,6 +10,7 @@ import { calculateLocationDeposit } from "@/lib/booking-money";
 import { demoFallbackEventDate, resolveDemoCatalogLocation } from "@/lib/demo/book";
 import { scrollDemoPageToTop } from "@/lib/demo/scroll-top";
 import { pushHomeHref } from "@/lib/home-navigation";
+import { withDemoShell } from "@/lib/demo/shell";
 import { calculateBookingQuote, calculateHours } from "@/lib/location";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import type { AvailabilityEventPayload } from "@/types/availability-request";
@@ -174,7 +175,7 @@ export function DemoBookPage() {
     }
 
     scrollDemoPageToTop();
-    pushHomeHref(router, "/?tab=events");
+    pushHomeHref(router, withDemoShell("/?tab=events", true));
   }
 
   return (
@@ -183,7 +184,7 @@ export function DemoBookPage() {
     >
       <button
         type="button"
-        onClick={() => pushHomeHref(router, "/?tab=explore")}
+        onClick={() => pushHomeHref(router, withDemoShell("/?tab=explore", true))}
         className="text-xs font-bold text-primary-black/45"
       >
         ← Torna a Esplora
@@ -255,7 +256,7 @@ export function DemoBookPage() {
           className="mt-6 w-full rounded-2xl py-4 text-base font-semibold"
           onClick={() => {
             scrollDemoPageToTop();
-            pushHomeHref(router, "/?tab=events");
+            pushHomeHref(router, withDemoShell("/?tab=events", true));
           }}
         >
           Continua

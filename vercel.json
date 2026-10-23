@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/expire-availability-requests",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/purge-waitlist",
+      "schedule": "20 4 * * *"
     }
   ]
 }

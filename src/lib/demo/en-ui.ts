@@ -22,6 +22,12 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Se vuoi aggiornare il tuo parere, scrivici a":
     "If you want to update your feedback, write to",
   "Ricomincia la demo": "Start the demo again",
+  "Torna al sito": "Back to the site",
+  "Esci dalla demo": "Exit demo",
+  "Demo non avviata": "Demo didn't start",
+  Riprova: "Try again",
+  "VibeUp – in arrivo": "VibeUp – coming soon",
+  "Area gestori": "Manager area",
   "Informativa privacy — demo VibeUp": "Privacy notice — VibeUp demo",
   "I dati che inserisci (nome, cognome, email, telefono) e il feedback che lascerai alla fine della prova servono solo a far funzionare questa demo e a raccogliere impressioni sul prodotto.":
     "The details you enter (first name, last name, email, phone) and the feedback you leave at the end are used only to run this demo and collect impressions of the product.",

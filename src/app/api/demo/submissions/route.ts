@@ -1,5 +1,6 @@
 import { canAccessAdminCatalog } from "@/lib/admin-access";
-import { isDemoMode } from "@/lib/demo/mode";
+import { isDemoModeServer } from "@/lib/demo/mode.server";
+import { isVerifiedSignupAllowed } from "@/lib/demo/signup-gate.server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { sendDemoThanksIfCompleted } from "@/lib/demo/send-thanks-email";
@@ -70,7 +71,7 @@ function isPayload(value: unknown): value is DemoSubmissionPayload {
 }
 
 export async function POST(request: NextRequest) {
-  if (!isDemoMode()) {
+  if (!(await isDemoModeServer())) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
 
@@ -103,6 +104,18 @@ export async function POST(request: NextRequest) {
   const id = typeof record.id === "string" ? record.id.trim() : "";
   if (id && !UUID_RE.test(id)) {
     return NextResponse.json({ error: "ID demo non valido." }, { status: 422 });
+  }
+
+  if (!id) {
+    const signupId =
+      typeof payload.signup_id === "string" ? payload.signup_id : null;
+    const email = typeof payload.email === "string" ? payload.email : null;
+    if (!(await isVerifiedSignupAllowed(signupId, email))) {
+      return NextResponse.json(
+        { error: "Serve un'iscrizione per salvare la demo." },
+        { status: 422 },
+      );
+    }
   }
 
   try {

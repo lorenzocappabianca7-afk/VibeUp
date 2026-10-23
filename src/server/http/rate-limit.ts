@@ -49,13 +49,15 @@ function getClientKey(request: NextRequest, scope: string): string {
 
 export function rateLimit(
   request: NextRequest,
-  options: { scope: string; limit: number; windowMs: number },
+  options: { scope: string; limit: number; windowMs: number; bucket?: string },
 ): NextResponse | null {
   const now = Date.now();
   const buckets = getBuckets();
   cleanupBuckets(buckets, now);
 
-  const key = getClientKey(request, options.scope);
+  const key = options.bucket
+    ? `${options.scope}:${options.bucket}`
+    : getClientKey(request, options.scope);
   const bucket = buckets.get(key);
 
   if (!bucket || bucket.resetAt <= now) {
