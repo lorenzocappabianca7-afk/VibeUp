@@ -21,6 +21,11 @@ export type SignupDraft = {
   step: number;
   signupId: string;
   codeSentAt: number;
+  codeSentFor: string;
+  emailConfirmed: boolean;
+  confirmedEmail: string;
+  confirmedSignupId: string;
+  flow: number;
 };
 
 export function readStoredSignupReferral() {
@@ -83,6 +88,11 @@ export function emptySignupDraft(): SignupDraft {
     step: 0,
     signupId: "",
     codeSentAt: 0,
+    codeSentFor: "",
+    emailConfirmed: false,
+    confirmedEmail: "",
+    confirmedSignupId: "",
+    flow: 2,
   };
 }
 
@@ -93,7 +103,12 @@ export function loadSignupDraft(): SignupDraft {
     const raw = sessionStorage.getItem(SIGNUP_DRAFT_KEY);
     if (!raw) return base;
     const parsed = JSON.parse(raw) as Partial<SignupDraft>;
-    const step = typeof parsed.step === "number" ? parsed.step : 0;
+    const legacy = parsed.flow !== 2;
+    let step = typeof parsed.step === "number" ? parsed.step : 0;
+    if (legacy) {
+      if (step === 2) step = 1;
+      else if (step >= 9) step = 2;
+    }
     const fromUrl = urlReferral();
     const skipped = parsed.referralSkipped === true && !fromUrl;
     const savedCode = typeof parsed.referralCode === "string" ? parsed.referralCode : "";
@@ -103,9 +118,14 @@ export function loadSignupDraft(): SignupDraft {
       phonePrefix: parsed.phonePrefix || "+39",
       referralSkipped: skipped,
       referralCode: fromUrl || (skipped ? "" : savedCode || storedReferral()),
-      step: Math.min(9, Math.max(0, step)),
+      step: Math.min(8, Math.max(0, step)),
       signupId: typeof parsed.signupId === "string" ? parsed.signupId : "",
       codeSentAt: typeof parsed.codeSentAt === "number" ? parsed.codeSentAt : 0,
+      codeSentFor: !legacy && typeof parsed.codeSentFor === "string" ? parsed.codeSentFor : "",
+      emailConfirmed: !legacy && parsed.emailConfirmed === true,
+      confirmedEmail: !legacy && typeof parsed.confirmedEmail === "string" ? parsed.confirmedEmail : "",
+      confirmedSignupId: !legacy && typeof parsed.confirmedSignupId === "string" ? parsed.confirmedSignupId : "",
+      flow: 2,
     };
   } catch {
     return base;

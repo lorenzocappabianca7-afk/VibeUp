@@ -13,9 +13,9 @@ type SignupRow = {
   last_name: string;
   username: string;
   email: string;
-  phone: string;
-  birth_year: number;
-  high_school: string;
+  phone: string | null;
+  birth_year: number | null;
+  high_school: string | null;
   dream_venue: string | null;
   vibeup_code: string | null;
   referred_by_code: string | null;
@@ -249,9 +249,9 @@ export async function loadContestAdmin() {
         lastName: row.last_name,
         username: row.username,
         email: row.email,
-        phone: row.phone,
+        phone: row.phone ?? "",
         birthYear: row.birth_year,
-        highSchool: row.high_school,
+        highSchool: row.high_school ?? "",
         dreamVenue: row.dream_venue,
         vibeupCode: row.vibeup_code,
         referredByCode: row.referred_by_code,
@@ -321,7 +321,7 @@ export async function loadContestAdmin() {
       total: rows.length,
       verified: rows.filter((row) => row.email_verified_at).length,
       perDay: dayKeys.map((day) => ({ day, count: dayCounts.get(day) ?? 0 })),
-      schools: topNames(rows.map((row) => row.high_school)),
+      schools: topNames(rows.map((row) => row.high_school ?? "")),
       venues: topNames(rows.map((row) => row.dream_venue ?? "")),
       demoCompleted,
       demoAverageRating: demoRated > 0 ? Math.round((demoRatingSum / demoRated) * 10) / 10 : null,

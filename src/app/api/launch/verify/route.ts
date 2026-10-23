@@ -32,6 +32,9 @@ export async function POST(request: NextRequest) {
             : 500;
       return launchError(status, result.error);
     }
+    if (result.confirmed) {
+      return launchOk({ signupId, confirmed: true });
+    }
     if (result.welcomePending) {
       await deliverWelcomeEmail({
         signupId,

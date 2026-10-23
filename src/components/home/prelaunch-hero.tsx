@@ -1,3 +1,4 @@
+import { DemoLanguageSwitch } from "@/components/demo/demo-language-switch";
 import { SignupMemberCard } from "@/components/home/signup-share";
 import { landingCopy } from "@/content/landing";
 import { ArrowIcon, Wordmark } from "@/components/home/prelaunch-wordmark";
@@ -15,7 +16,11 @@ export function PrelaunchHero({
   return (
     <>
       <header className="vu-in vu-head">
+        <div className="vu-head-lang">
+          <DemoLanguageSwitch />
+        </div>
         <Wordmark size="header" />
+        <div className="vu-head-end">
         <a
           href="#demo"
           className="vu-btn vu-pill border-surface-2 bg-surface text-primary-black"
@@ -26,6 +31,7 @@ export function PrelaunchHero({
         >
           {landingCopy.headerDemo}
         </a>
+        </div>
       </header>
 
       <section className="vu-hero">

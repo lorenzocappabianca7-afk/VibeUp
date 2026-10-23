@@ -16,7 +16,7 @@ type SignupRow = {
   username: string;
   email: string;
   phone: string;
-  birthYear: number;
+  birthYear: number | null;
   highSchool: string;
   dreamVenue: string | null;
   vibeupCode: string | null;
@@ -104,7 +104,7 @@ function downloadCsv(rows: SignupRow[]) {
       row.username,
       row.email,
       row.phone,
-      String(row.birthYear),
+      String(row.birthYear ?? ""),
       row.highSchool,
       row.dreamVenue ?? "",
       row.vibeupCode ?? "",
@@ -192,7 +192,7 @@ export function SignupsPanel() {
       if (verified === "no" && row.verified) return false;
       if (marketing === "yes" && !row.marketing) return false;
       if (marketing === "no" && row.marketing) return false;
-      if (schoolNeedle && !row.highSchool.toLowerCase().includes(schoolNeedle)) return false;
+      if (schoolNeedle && !(row.highSchool ?? "").toLowerCase().includes(schoolNeedle)) return false;
       if (venueNeedle && !(row.dreamVenue ?? "").toLowerCase().includes(venueNeedle)) return false;
       if (!needle) return true;
       const haystack = [

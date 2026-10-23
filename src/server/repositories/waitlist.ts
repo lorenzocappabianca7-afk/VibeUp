@@ -151,7 +151,7 @@ function validateDraft(draft: WaitlistDraft): WaitlistError | null {
   if (!Number.isInteger(draft.birthYear)) return "invalid";
   if (!isAtLeast14(draft.birthYear)) return "too_young";
   if (!isHighSchool(draft.highSchool)) return "invalid";
-  if (draft.dreamVenue && draft.dreamVenue.length > 80) return "invalid";
+  if (!draft.dreamVenue || draft.dreamVenue.length < 2 || draft.dreamVenue.length > 80) return "invalid";
   return null;
 }
 
@@ -165,6 +165,54 @@ async function findByEmail(email: string) {
     .maybeSingle();
   if (error) throw new Error(error.message);
   return (data as SignupRow | null) ?? null;
+}
+
+/** Name, username and email only. The profile and consents come later. */
+export async function startEmailSignup(input: {
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  ipHash: string | null;
+}): Promise<{ ok: true; id: string; firstName: string } | { ok: false; error: WaitlistError }> {
+  const client = admin();
+  if (!client) return unavailable();
+  if (!isPersonName(input.firstName) || !isPersonName(input.lastName)) return { ok: false, error: "invalid" };
+  const username = input.username.trim();
+  if (!USERNAME_RE.test(username)) return { ok: false, error: "invalid" };
+  const email = normalizeEmail(input.email);
+  if (!isEmailAddress(email)) return { ok: false, error: "invalid" };
+
+  const existing = await findByEmail(email);
+  if (existing?.email_verified_at) return { ok: false, error: "email_taken" };
+  const usernameFree = await isUsernameAvailable(username, existing?.id);
+  if (usernameFree === null) return unavailable();
+  if (!usernameFree) return { ok: false, error: "username_taken" };
+
+  const payload = {
+    first_name: input.firstName.trim(),
+    last_name: input.lastName.trim(),
+    username,
+    email,
+    ip_hash: input.ipHash,
+    email_confirmed_at: null as string | null,
+  };
+
+  if (existing) {
+    const { error } = await client.from(SIGNUPS).update(payload).eq("id", existing.id);
+    if (error) {
+      if (isUniqueViolation(error)) return { ok: false, error: uniqueField(error) };
+      throw new Error(error.message);
+    }
+    return { ok: true, id: existing.id, firstName: payload.first_name };
+  }
+
+  const { data, error } = await client.from(SIGNUPS).insert(payload).select("id").single();
+  if (error) {
+    if (isUniqueViolation(error)) return { ok: false, error: uniqueField(error) };
+    throw new Error(error.message);
+  }
+  return { ok: true, id: (data as { id: string }).id, firstName: payload.first_name };
 }
 
 export async function savePendingSignup(
@@ -328,6 +376,11 @@ export async function issueEmailCode(
   const code = createVerificationCode();
   const sentAt = new Date().toISOString();
   const expiresAt = new Date(Date.now() + verificationTtlMs()).toISOString();
+  const { error: clearError } = await client
+    .from(SIGNUPS)
+    .update({ email_confirmed_at: null })
+    .eq("id", signupId);
+  if (clearError) throw new Error(clearError.message);
   const { error: upsertError } = await client.from(CODES).upsert(
     {
       signup_id: signupId,
@@ -350,46 +403,12 @@ function makeVibeUpCode() {
   return `VU-${body}`;
 }
 
-export async function verifyEmailCode(
-  signupId: string,
-  code: string,
-): Promise<
-  | {
-      ok: true;
-      vibeupCode: string;
-      email: string;
-      firstName: string;
-      welcomePending: boolean;
-    }
+async function assignVibeUpCode(signupId: string): Promise<
+  | { ok: true; vibeupCode: string; email: string; firstName: string; welcomePending: boolean }
   | { ok: false; error: WaitlistError }
 > {
   const client = admin();
   if (!client) return unavailable();
-  const digits = code.replace(/\D/g, "");
-  if (!/^\d{6}$/.test(digits)) return { ok: false, error: "mismatch" };
-
-  const { data, error } = await client
-    .from(CODES)
-    .select("signup_id, code_hash, expires_at, attempts, sent_at")
-    .eq("signup_id", signupId)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) return { ok: false, error: "not_found" };
-  const row = data as CodeRow;
-  if (row.attempts >= CODE_MAX_ATTEMPTS) return { ok: false, error: "locked" };
-  if (new Date(row.expires_at).getTime() <= Date.now()) {
-    await client.from(CODES).delete().eq("signup_id", signupId);
-    return { ok: false, error: "expired" };
-  }
-  if (!verificationCodesMatch(row.code_hash, digits)) {
-    await client
-      .from(CODES)
-      .update({ attempts: row.attempts + 1 })
-      .eq("signup_id", signupId);
-    if (row.attempts + 1 >= CODE_MAX_ATTEMPTS) return { ok: false, error: "locked" };
-    return { ok: false, error: "mismatch" };
-  }
-
   const { data: signup, error: signupError } = await client
     .from(SIGNUPS)
     .select("id, email, first_name, referred_by_code, email_verified_at, vibeup_code, welcome_email_sent_at")
@@ -407,10 +426,6 @@ export async function verifyEmailCode(
     welcome_email_sent_at: string | null;
   };
   if (current.email_verified_at && current.vibeup_code) {
-    await client.from(CODES).delete().eq("signup_id", signupId);
-    await ensureDemoAccessToken(signupId).catch((error: unknown) => {
-      console.error("[demo-access] token non creato", error instanceof Error ? error.message : error);
-    });
     return {
       ok: true,
       vibeupCode: current.vibeup_code,
@@ -453,11 +468,7 @@ export async function verifyEmailCode(
       continue;
     }
     if (!saved) {
-      const again = await client
-        .from(SIGNUPS)
-        .select("vibeup_code")
-        .eq("id", signupId)
-        .maybeSingle();
+      const again = await client.from(SIGNUPS).select("vibeup_code").eq("id", signupId).maybeSingle();
       const existing = (again.data as { vibeup_code: string | null } | null)?.vibeup_code;
       if (existing) vibeupCode = existing;
       break;
@@ -468,16 +479,183 @@ export async function verifyEmailCode(
     console.error(`[welcome] impossibile assegnare un VibeUpcode univoco a ${signupId} dopo 5 tentativi`);
     return unavailable();
   }
-  await client.from(CODES).delete().eq("signup_id", signupId);
-  await ensureDemoAccessToken(signupId).catch((error: unknown) => {
-    console.error("[demo-access] token non creato", error instanceof Error ? error.message : error);
-  });
   return {
     ok: true,
     vibeupCode,
     email: current.email,
     firstName: current.first_name,
     welcomePending: true,
+  };
+}
+
+export async function verifyEmailCode(
+  signupId: string,
+  code: string,
+): Promise<
+  | {
+      ok: true;
+      vibeupCode: string;
+      email: string;
+      firstName: string;
+      welcomePending: boolean;
+      confirmed: boolean;
+    }
+  | { ok: false; error: WaitlistError }
+> {
+  const client = admin();
+  if (!client) return unavailable();
+  const digits = code.replace(/\D/g, "");
+  if (!/^\d{6}$/.test(digits)) return { ok: false, error: "mismatch" };
+
+  const { data, error } = await client
+    .from(CODES)
+    .select("signup_id, code_hash, expires_at, attempts, sent_at")
+    .eq("signup_id", signupId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return { ok: false, error: "not_found" };
+  const row = data as CodeRow;
+  if (row.attempts >= CODE_MAX_ATTEMPTS) return { ok: false, error: "locked" };
+  if (new Date(row.expires_at).getTime() <= Date.now()) {
+    await client.from(CODES).delete().eq("signup_id", signupId);
+    return { ok: false, error: "expired" };
+  }
+  if (!verificationCodesMatch(row.code_hash, digits)) {
+    await client
+      .from(CODES)
+      .update({ attempts: row.attempts + 1 })
+      .eq("signup_id", signupId);
+    if (row.attempts + 1 >= CODE_MAX_ATTEMPTS) return { ok: false, error: "locked" };
+    return { ok: false, error: "mismatch" };
+  }
+
+  const { data: signup, error: signupError } = await client
+    .from(SIGNUPS)
+    .select(
+      "id, email, first_name, phone, birth_year, high_school, consent_privacy_at, consent_rules_at, email_verified_at, vibeup_code, welcome_email_sent_at",
+    )
+    .eq("id", signupId)
+    .maybeSingle();
+  if (signupError) throw new Error(signupError.message);
+  if (!signup) return { ok: false, error: "not_found" };
+  const current = signup as {
+    id: string;
+    email: string;
+    first_name: string;
+    phone: string | null;
+    birth_year: number | null;
+    high_school: string | null;
+    consent_privacy_at: string | null;
+    consent_rules_at: string | null;
+    email_verified_at: string | null;
+    vibeup_code: string | null;
+    welcome_email_sent_at: string | null;
+  };
+  if (current.email_verified_at && current.vibeup_code) {
+    await client.from(CODES).delete().eq("signup_id", signupId);
+    await ensureDemoAccessToken(signupId).catch((tokenError: unknown) => {
+      console.error("[demo-access] token non creato", tokenError instanceof Error ? tokenError.message : tokenError);
+    });
+    return {
+      ok: true,
+      vibeupCode: current.vibeup_code,
+      email: current.email,
+      firstName: current.first_name,
+      welcomePending: !current.welcome_email_sent_at,
+      confirmed: false,
+    };
+  }
+
+  const profileReady = Boolean(
+    current.phone && current.birth_year && current.high_school && current.consent_privacy_at && current.consent_rules_at,
+  );
+  if (!profileReady) {
+    const { error: confirmError } = await client
+      .from(SIGNUPS)
+      .update({ email_confirmed_at: new Date().toISOString() })
+      .eq("id", signupId);
+    if (confirmError) throw new Error(confirmError.message);
+    await client.from(CODES).delete().eq("signup_id", signupId);
+    return {
+      ok: true,
+      vibeupCode: "",
+      email: current.email,
+      firstName: current.first_name,
+      welcomePending: false,
+      confirmed: true,
+    };
+  }
+
+  const granted = await assignVibeUpCode(signupId);
+  if (!granted.ok) return granted;
+  await client.from(CODES).delete().eq("signup_id", signupId);
+  await ensureDemoAccessToken(signupId).catch((tokenError: unknown) => {
+    console.error("[demo-access] token non creato", tokenError instanceof Error ? tokenError.message : tokenError);
+  });
+  return { ...granted, confirmed: false };
+}
+
+/** Profile and consents for an email that was already confirmed. Assigns the VibeUpcode. */
+export async function finishConfirmedSignup(
+  signupId: string,
+  draft: WaitlistDraft,
+  consent: { ipHash: string | null; userAgent: string | null },
+): Promise<
+  | { ok: true; id: string; firstName: string; email: string; vibeupCode: string; welcomePending: boolean }
+  | { ok: false; error: WaitlistError }
+> {
+  const client = admin();
+  if (!client) return unavailable();
+  const problem = validateDraft(draft);
+  if (problem) return { ok: false, error: problem };
+
+  const { data, error } = await client
+    .from(SIGNUPS)
+    .select("id, email, first_name, email_confirmed_at, email_verified_at, vibeup_code, welcome_email_sent_at")
+    .eq("id", signupId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return { ok: false, error: "not_found" };
+  const row = data as {
+    id: string;
+    email: string;
+    first_name: string;
+    email_confirmed_at: string | null;
+    email_verified_at: string | null;
+    vibeup_code: string | null;
+    welcome_email_sent_at: string | null;
+  };
+  if (normalizeEmail(draft.email) !== row.email) return { ok: false, error: "invalid" };
+  if (row.email_verified_at && row.vibeup_code) {
+    return {
+      ok: true,
+      id: row.id,
+      firstName: row.first_name,
+      email: row.email,
+      vibeupCode: row.vibeup_code,
+      welcomePending: !row.welcome_email_sent_at,
+    };
+  }
+  if (!row.email_confirmed_at) return { ok: false, error: "invalid" };
+
+  const saved = await savePendingSignup(draft);
+  if (!saved.ok) return saved;
+  const logged = await recordConsents({
+    signupId: saved.id,
+    marketing: draft.consentMarketing,
+    ipHash: consent.ipHash,
+    userAgent: consent.userAgent,
+  });
+  if (!logged.ok) return unavailable();
+  const granted = await assignVibeUpCode(saved.id);
+  if (!granted.ok) return granted;
+  return {
+    ok: true,
+    id: saved.id,
+    firstName: granted.firstName,
+    email: granted.email,
+    vibeupCode: granted.vibeupCode,
+    welcomePending: granted.welcomePending,
   };
 }
 
@@ -510,7 +688,7 @@ export async function findVerifiedSignup(signupId: string) {
 
 const UNVERIFIED_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** Drop expired email codes and signups that never confirmed within 7 days. */
+/** Drop expired email codes and signups that never finished within 7 days. */
 export async function purgeWaitlistRetention() {
   const client = admin();
   if (!client) return null;

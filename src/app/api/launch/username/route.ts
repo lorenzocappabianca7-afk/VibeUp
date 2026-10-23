@@ -3,6 +3,7 @@ import { isUsernameAvailable } from "@/server/repositories/waitlist";
 import {
   asText,
   guardLaunchRequest,
+  isUuid,
   launchError,
   launchOk,
   readJsonObject,
@@ -22,7 +23,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const available = await isUsernameAvailable(username);
+    const exceptId = asText(body?.signupId).trim();
+    const available = await isUsernameAvailable(username, isUuid(exceptId) ? exceptId : undefined);
     if (available === null) {
       return launchError(503, "unavailable");
     }

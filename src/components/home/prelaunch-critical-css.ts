@@ -104,11 +104,20 @@ ${prelaunchChromeHideCss}
   font-weight: 800;
 }
 .vu-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  padding: 14px 20px 0;
+  gap: 8px;
+  padding: 14px 16px 0;
 }
+.vu-head-lang { justify-self: start; }
+.vu-head-lang > div {
+  gap: 2px;
+  padding: 2px;
+  background: ${surface};
+  box-shadow: none;
+}
+.vu-head-end { display: flex; justify-content: flex-end; }
 .vu-mark {
   display: flex;
   align-items: baseline;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useDemoLanguage } from "@/context/demo-language-context";
 import { consentText } from "@/content/legal";
 import { signupCopy } from "@/content/signup";
 import { SignupMemberCard } from "@/components/home/signup-share";
@@ -21,6 +22,7 @@ import {
   isVibeUpCode,
   joinPhone,
   normalizeCode,
+  normalizeEmail,
   USERNAME_RE,
 } from "@/lib/launch/fields";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
@@ -60,7 +62,7 @@ function stepForError(code: string) {
     case "username_taken":
       return 1;
     case "email_taken":
-      return 2;
+      return 1;
     case "phone_taken":
       return 3;
     case "too_young":
@@ -88,6 +90,7 @@ async function postJson(url: string, body: unknown) {
     signupId: typeof data.signupId === "string" ? data.signupId : "",
     sentAt: typeof data.sentAt === "string" ? data.sentAt : "",
     vibeupCode: typeof data.vibeupCode === "string" ? data.vibeupCode : "",
+    confirmed: data.confirmed === true,
     demoPath:
       typeof data.demoPath === "string" && data.demoPath.startsWith("/demo?t=") ? data.demoPath : "",
   };
@@ -141,6 +144,7 @@ export function SignupFlow({
   const closingRef = useRef(false);
   const dragRef = useRef<{ y: number; id: number } | null>(null);
 
+  const { lang } = useDemoLanguage();
   const storedReferral = readStoredSignupReferral();
   const linkedReferral =
     !draft.referralSkipped && storedReferral.length > 0 && normalizeCode(draft.referralCode) === storedReferral;
@@ -283,7 +287,7 @@ export function SignupFlow({
     if (!usernameActive) return;
     const username = usernameQuery;
     const timer = window.setTimeout(() => {
-      void postJson("/api/launch/username", { username }).then((result) => {
+      void postJson("/api/launch/username", { username, signupId: draftRef.current.signupId }).then((result) => {
         if (draftRef.current.username.trim() !== username) return;
         if (!result.ok) {
           setUsernameResult({ username, state: "error" });
@@ -301,7 +305,7 @@ export function SignupFlow({
       });
     }, 280);
     return () => window.clearTimeout(timer);
-  }, [usernameActive, usernameQuery]);
+  }, [usernameActive, usernameQuery, draft.signupId]);
 
   useEffect(() => {
     if (!suggestionActive) return;
@@ -334,11 +338,13 @@ export function SignupFlow({
   }
 
   function stepAfter(step: number) {
+    if (step === 1 && draft.emailConfirmed) return 3;
     if (step === 6 && linkedReferral) return 8;
-    return Math.min(9, step + 1);
+    return Math.min(8, step + 1);
   }
 
   function stepBefore(step: number) {
+    if (step === 3 && draft.emailConfirmed) return 1;
     if (step === 8 && linkedReferral) return 6;
     return Math.max(0, step - 1);
   }
@@ -347,15 +353,17 @@ export function SignupFlow({
   const phone = joinPhone(draft.phonePrefix, draft.phoneNational);
   const canContinue =
     (draft.step === 0 && isPersonName(draft.firstName) && isPersonName(draft.lastName)) ||
-    (draft.step === 1 && USERNAME_RE.test(draft.username.trim()) && usernameState === "free") ||
-    (draft.step === 2 && isEmailAddress(draft.email)) ||
+    (draft.step === 1 &&
+      USERNAME_RE.test(draft.username.trim()) &&
+      usernameState === "free" &&
+      isEmailAddress(draft.email)) ||
+    (draft.step === 2 && /^\d{6}$/.test(verifyCode)) ||
     (draft.step === 3 && isE164(phone)) ||
     (draft.step === 4 && Number.isInteger(year) && isAtLeast14(year)) ||
     (draft.step === 5 && isHighSchool(draft.highSchool)) ||
     (draft.step === 6 && draft.dreamVenue.trim().length > 1) ||
     (draft.step === 7 && isVibeUpCode(draft.referralCode)) ||
-    (draft.step === 8 && draft.consentPrivacy && draft.consentRules) ||
-    (draft.step === 9 && /^\d{6}$/.test(verifyCode));
+    (draft.step === 8 && draft.consentPrivacy && draft.consentRules);
 
   async function finishVerify(id: string, code: string, demoPath: string | null) {
     window.localStorage.setItem(DEMO_SIGNUP_ID_STORAGE_KEY, id);
@@ -373,10 +381,49 @@ export function SignupFlow({
     });
   }
 
+  function showError(code: string) {
+    const jump = stepForError(code);
+    if (jump !== null && jump !== draft.step) go(jump);
+    if (code === "username_taken") {
+      setUsernameResult({ username: draft.username.trim(), state: "taken" });
+    }
+    setError(errorText(code));
+  }
+
+  async function sendAccountCode() {
+    setBusy(true);
+    setError("");
+    const result = await postJson("/api/launch/signup", {
+      firstName: draft.firstName,
+      lastName: draft.lastName,
+      username: draft.username,
+      email: draft.email,
+      consentPrivacy: false,
+      consentRules: false,
+    });
+    setBusy(false);
+    if (!result.ok || !result.signupId) {
+      showError(result.error || "unavailable");
+      return;
+    }
+    const sentAt = result.sentAt ? new Date(result.sentAt).getTime() : Date.now();
+    setVerifyCode("");
+    setDir("next");
+    setDraft((current) => ({
+      ...current,
+      signupId: result.signupId,
+      codeSentAt: sentAt,
+      codeSentFor: normalizeEmail(current.email),
+      emailConfirmed: false,
+      step: 2,
+    }));
+  }
+
   async function submitSignup() {
     setBusy(true);
     setError("");
     const result = await postJson("/api/launch/signup", {
+      signupId: draft.signupId,
       firstName: draft.firstName,
       lastName: draft.lastName,
       username: draft.username,
@@ -392,21 +439,48 @@ export function SignupFlow({
       consentMarketing: draft.consentMarketing,
     });
     setBusy(false);
-    const signupId = result.signupId;
+    const signupId = result.signupId || draft.signupId;
     if (!result.ok || !signupId) {
-      const code = result.error || "unavailable";
-      const jump = stepForError(code);
-      setError(errorText(code));
-      if (jump !== null) go(jump);
+      showError(result.error || "unavailable");
+      return;
+    }
+    if (result.vibeupCode) {
+      await finishVerify(signupId, result.vibeupCode, result.demoPath || null);
       return;
     }
     const sentAt = result.sentAt ? new Date(result.sentAt).getTime() : Date.now();
+    setVerifyCode("");
     setDir("next");
-    setDraft((current) => ({ ...current, signupId, codeSentAt: sentAt, step: 9 }));
+    setDraft((current) => ({
+      ...current,
+      signupId,
+      codeSentAt: sentAt,
+      codeSentFor: normalizeEmail(current.email),
+      emailConfirmed: false,
+      step: 2,
+    }));
   }
 
   async function continueStep() {
     if (busy || !canContinue || done) return;
+    if (draft.step === 1) {
+      const emailKey = normalizeEmail(draft.email);
+      if (draft.emailConfirmed && draft.signupId && draft.confirmedSignupId === draft.signupId) {
+        go(3);
+        return;
+      }
+      if (
+        draft.signupId &&
+        draft.codeSentFor === emailKey &&
+        draft.codeSentAt > 0 &&
+        Date.now() - draft.codeSentAt < 30_000
+      ) {
+        go(2);
+        return;
+      }
+      await sendAccountCode();
+      return;
+    }
     if (draft.step === 7) {
       if (referralWarn) {
         patch({ referralCode: "", referralSkipped: true });
@@ -428,12 +502,12 @@ export function SignupFlow({
       go(8);
       return;
     }
-    if (draft.step === 8) {
-      await submitSignup();
+    if (draft.step === 2) {
+      await verifyNow(verifyCode);
       return;
     }
-    if (draft.step === 9) {
-      await verifyNow(verifyCode);
+    if (draft.step === 8) {
+      await submitSignup();
       return;
     }
     go(stepAfter(draft.step));
@@ -450,13 +524,25 @@ export function SignupFlow({
       code,
     });
     setBusy(false);
-    const vibeupCode = result.vibeupCode;
-    if (!result.ok || !vibeupCode) {
-      verifyInflight.delete(key);
-      setError(errorText(result.error || "mismatch"));
+    if (result.ok && result.vibeupCode) {
+      await finishVerify(draft.signupId, result.vibeupCode, result.demoPath || null);
       return;
     }
-    await finishVerify(draft.signupId, vibeupCode, result.demoPath || null);
+    if (result.ok && result.confirmed) {
+      const emailKey = normalizeEmail(draft.email);
+      setVerifyCode("");
+      setDir("next");
+      setDraft((current) => ({
+        ...current,
+        emailConfirmed: true,
+        confirmedEmail: emailKey,
+        confirmedSignupId: current.signupId,
+        step: 3,
+      }));
+      return;
+    }
+    verifyInflight.delete(key);
+    setError(errorText(result.error || "mismatch"));
   }
 
   async function resend() {
@@ -471,16 +557,13 @@ export function SignupFlow({
     setDraft((current) => ({
       ...current,
       codeSentAt: result.sentAt ? new Date(result.sentAt).getTime() : Date.now(),
+      codeSentFor: normalizeEmail(current.email),
+      emailConfirmed: false,
     }));
     setError("");
   }
 
   function skipOptional() {
-    if (draft.step === 6) {
-      patch({ dreamVenue: "" });
-      go(stepAfter(6));
-      return;
-    }
     if (draft.step === 7) {
       patch({ referralCode: "", referralSkipped: true });
       setReferralWarn("");
@@ -530,11 +613,8 @@ export function SignupFlow({
   requestCloseRef.current = requestClose;
 
   function chooseYear(value: string) {
-    const selected = Number(value);
-    const advance = Boolean(value) && isAtLeast14(selected);
     setError("");
-    if (advance) setDir("next");
-    setDraft((current) => ({ ...current, birthYear: value, step: advance ? 5 : current.step }));
+    setDraft((current) => ({ ...current, birthYear: value }));
   }
 
   function onDragStart(event: ReactPointerEvent<HTMLElement>) {
@@ -560,12 +640,14 @@ export function SignupFlow({
     if (travel > 80) requestClose();
   }
 
-  const visibleSteps = linkedReferral ? [0, 1, 2, 3, 4, 5, 6, 8, 9] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const visibleSteps = linkedReferral ? [0, 1, 2, 3, 4, 5, 6, 8] : [0, 1, 2, 3, 4, 5, 6, 7, 8];
   const stepNumber = Math.max(1, visibleSteps.indexOf(draft.step) + 1);
   const progress = (stepNumber / visibleSteps.length) * 100;
-  const stepLabel = signupCopy.stepProgress
-    .replaceAll("{n}", String(stepNumber))
-    .replaceAll("{total}", String(visibleSteps.length));
+  const stepLabel = lang === "en"
+    ? `Step ${stepNumber} of ${visibleSteps.length}`
+    : signupCopy.stepProgress
+        .replaceAll("{n}", String(stepNumber))
+        .replaceAll("{total}", String(visibleSteps.length));
   const keyboardLift = narrow && keyboardInset > 120 && viewportHeight > 0;
   const sheetStyle: CSSProperties = { ["--drag" as string]: `${dragY}px` };
   if (keyboardLift) {
@@ -578,7 +660,7 @@ export function SignupFlow({
     sheetStyle.maxHeight = height;
   }
   const lead =
-    draft.step === 9
+    draft.step === 2
       ? signupCopy.verifyBody
       : draft.step === 6
         ? signupCopy.venueOptional
@@ -696,12 +778,12 @@ export function SignupFlow({
               {error ? <p className="vu-signup-error">{error}</p> : null}
             </div>
             <div className="vu-sheet-foot">
-              {draft.step === 6 || draft.step === 7 ? (
+              {draft.step === 7 ? (
                 <button type="button" className="vu-sheet-skip" onClick={skipOptional}>
                   {signupCopy.skip}
                 </button>
               ) : null}
-              {draft.step === 9 ? (
+              {draft.step === 2 ? (
                 <button type="button" className="vu-sheet-skip" disabled={busy || resendIn > 0} onClick={() => void resend()}>
                   {resendIn > 0 ? `${signupCopy.resendIn} ${resendIn}s` : signupCopy.resend}
                 </button>
@@ -768,35 +850,66 @@ export function SignupFlow({
     }
     if (draft.step === 1) {
       return (
-        <Field valid={usernameState === "free"} invalid={usernameState === "taken"}>
-          <input
-            className="vu-input"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            enterKeyHint="next"
-            placeholder="nome_utente"
-            value={draft.username}
-            aria-invalid={usernameState === "taken"}
-            onChange={(event) => patch({ username: event.target.value.replace(/\s/g, "") })}
-          />
-        </Field>
+        <div className="vu-signup-fields">
+          <Field valid={usernameState === "free"} invalid={usernameState === "taken"}>
+            <input
+              className="vu-input"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="next"
+              placeholder="nome_utente"
+              value={draft.username}
+              aria-invalid={usernameState === "taken"}
+              onChange={(event) => patch({ username: event.target.value.replace(/\s/g, "") })}
+            />
+          </Field>
+          <Field valid={isEmailAddress(draft.email)} invalid={error === signupCopy.emailTaken}>
+            <input
+              className="vu-input"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              autoCapitalize="none"
+              enterKeyHint="go"
+              placeholder={signupCopy.emailPlaceholder}
+              value={draft.email}
+              aria-invalid={error === signupCopy.emailTaken}
+              onChange={(event) => {
+                const email = event.target.value;
+                const key = normalizeEmail(email);
+                patch({
+                  email,
+                  emailConfirmed:
+                    key.length > 0 &&
+                    key === draft.confirmedEmail &&
+                    draft.signupId.length > 0 &&
+                    draft.signupId === draft.confirmedSignupId,
+                });
+              }}
+            />
+          </Field>
+        </div>
       );
     }
     if (draft.step === 2) {
       return (
-        <Field valid={isEmailAddress(draft.email)} invalid={Boolean(error)}>
+        <Field valid={/^\d{6}$/.test(verifyCode)} invalid={Boolean(error)}>
           <input
-            className="vu-input"
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            autoCapitalize="none"
-            enterKeyHint="next"
-            placeholder={signupCopy.emailPlaceholder}
-            value={draft.email}
+            className="vu-input vu-code-input"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            enterKeyHint="go"
+            maxLength={6}
+            placeholder={signupCopy.verifyPlaceholder}
+            value={verifyCode}
             aria-invalid={Boolean(error)}
-            onChange={(event) => patch({ email: event.target.value })}
+            onChange={(event) => {
+              setError("");
+              const next = event.target.value.replace(/\D/g, "").slice(0, 6);
+              setVerifyCode(next);
+              if (/^\d{6}$/.test(next)) void verifyNow(next);
+            }}
           />
         </Field>
       );
@@ -934,26 +1047,7 @@ export function SignupFlow({
         </div>
       );
     }
-    return (
-      <Field valid={/^\d{6}$/.test(verifyCode)} invalid={Boolean(error)}>
-        <input
-          className="vu-input vu-code-input"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          enterKeyHint="go"
-          maxLength={6}
-          placeholder={signupCopy.verifyPlaceholder}
-          value={verifyCode}
-          aria-invalid={Boolean(error)}
-          onChange={(event) => {
-            setError("");
-            const next = event.target.value.replace(/\D/g, "").slice(0, 6);
-            setVerifyCode(next);
-            if (/^\d{6}$/.test(next)) void verifyNow(next);
-          }}
-        />
-      </Field>
-    );
+    return null;
   }
 }
 
@@ -1026,9 +1120,9 @@ function titleFor(step: number) {
     case 0:
       return signupCopy.nameTitle;
     case 1:
-      return signupCopy.usernameTitle;
+      return signupCopy.accountTitle;
     case 2:
-      return signupCopy.emailTitle;
+      return signupCopy.verifyTitle;
     case 3:
       return signupCopy.phoneTitle;
     case 4:

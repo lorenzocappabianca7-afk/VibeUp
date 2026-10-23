@@ -1,10 +1,14 @@
 "use client";
 
 import { signupCopy } from "@/content/signup";
+import { useDemoLanguage } from "@/context/demo-language-context";
 import { fillShareMessage, shareUrl } from "@/lib/launch/fields";
 import { useState } from "react";
 
-export function invitedLabel(count: number) {
+export function invitedLabel(count: number, lang: "it" | "en" = "it") {
+  if (lang === "en") {
+    return count === 1 ? "You invited 1 friend" : `You invited ${count} friends`;
+  }
   if (count === 1) return signupCopy.invitedOne;
   return signupCopy.invitedMany.replaceAll("N", String(count));
 }
@@ -20,12 +24,16 @@ export function SignupMemberCard({
   inviteCount: number | null;
   variant: "compact" | "full";
 }) {
+  const { lang } = useDemoLanguage();
   const name = firstName.trim();
+  const hello = lang === "en"
+    ? (name ? `Hi ${name}` : "Hi")
+    : (name ? signupCopy.hello.replaceAll("{nome}", name) : "Ciao");
   return (
     <div className={variant === "full" ? "vu-member vu-member-full" : "vu-member"}>
-      <p className="vu-hello">{name ? signupCopy.hello.replaceAll("{nome}", name) : "Ciao"}</p>
+      <p className="vu-hello">{hello}</p>
       <SignupShare code={code} variant={variant} />
-      {inviteCount === null ? null : <p className="vu-invites">{invitedLabel(inviteCount)}</p>}
+      {inviteCount === null ? null : <p className="vu-invites">{invitedLabel(inviteCount, lang)}</p>}
     </div>
   );
 }

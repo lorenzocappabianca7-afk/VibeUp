@@ -1,4 +1,3 @@
-import { SignupMemberCard } from "@/components/home/signup-share";
 import { contestConfig, topPrizeAmount } from "@/config/contest";
 import { landingCopy } from "@/content/landing";
 import { brandTokens } from "@/lib/brand-tokens";
@@ -105,14 +104,7 @@ export function PrelaunchCommunity({
         ))}
       </ol>
 
-      {member ? (
-        <SignupMemberCard
-          firstName={member.firstName}
-          code={member.code}
-          inviteCount={member.inviteCount}
-          variant="compact"
-        />
-      ) : (
+      {member ? null : (
         <button
           type="button"
           className="vu-btn vu-cta vu-cta-late bg-brand-pink font-[family-name:var(--font-brand)] text-[17px] text-ink-inverse"
