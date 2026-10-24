@@ -43,32 +43,32 @@ export function PrelaunchPreview() {
           frame="center"
           sizes="236px"
         />
-        <div className="vu-badge">
-          <svg width="112" height="112" viewBox="0 0 112 112" aria-hidden="true">
+        <div className="vu-sticker">
+          <svg width="88" height="88" viewBox="0 0 96 96" aria-hidden="true">
             <defs>
-              <path id="vuBadgeTop" d="M15 56 A41 41 0 0 1 97 56" />
-              <path id="vuBadgeBottom" d="M8 56 A48 48 0 0 0 104 56" />
+              <path id="vuBadgeTop" d="M13 48 A35 35 0 0 1 83 48" />
+              <path id="vuBadgeBottom" d="M7 48 A41 41 0 0 0 89 48" />
             </defs>
-            <circle cx="56" cy="56" r="54" fill="#F5F5F7" stroke="#F091B2" strokeWidth="2" />
-            <text fontWeight="800" fontSize="11" letterSpacing="1.2" fill="#0F1115">
+            <circle cx="48" cy="48" r="46" fill="#F5F5F7" stroke="#F091B2" strokeWidth="2" />
+            <text fontWeight="800" fontSize="8.5" letterSpacing="0.6" fill="#0F1115">
               <textPath href="#vuBadgeTop" startOffset="50%" textAnchor="middle">
                 {landingCopy.previewLaunch}
               </textPath>
             </text>
-            <text fontWeight="800" fontSize="9" letterSpacing="1.2" fill="#0F1115">
+            <text fontWeight="800" fontSize="7.5" letterSpacing="0.8" fill="#0F1115">
               <textPath href="#vuBadgeBottom" startOffset="50%" textAnchor="middle">
                 {landingCopy.previewSoon}
               </textPath>
             </text>
-            <circle cx="9" cy="56" r="2.5" fill="#F091B2" />
-            <circle cx="103" cy="56" r="2.5" fill="#3ECFCF" />
-            <circle cx="56" cy="56" r="27" fill="#0F1115" />
+            <circle cx="8" cy="48" r="2.2" fill="#F091B2" />
+            <circle cx="88" cy="48" r="2.2" fill="#3ECFCF" />
+            <circle cx="48" cy="48" r="30" fill="#0F1115" />
             <text
-              x="56"
-              y="67"
+              x="48"
+              y="58"
               textAnchor="middle"
               fontWeight="900"
-              fontSize="30"
+              fontSize="27"
               letterSpacing="-1"
               fill="#F091B2"
             >

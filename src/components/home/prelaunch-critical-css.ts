@@ -288,19 +288,14 @@ ${prelaunchChromeHideCss}
   top: 112px;
   width: 168px;
   height: 344px;
+  transform: rotate(9deg);
   opacity: 0.55;
   border: 1px solid ${surface2};
   border-radius: 30px;
   padding: 5px;
 }
-.vu-phone-left {
-  left: -34px;
-  transform: rotate(-9deg);
-}
-.vu-phone-right {
-  left: 256px;
-  transform: rotate(9deg);
-}
+.vu-phone-left { left: -34px; }
+.vu-phone-right { left: 256px; }
 .vu-phone-center {
   left: 77px;
   top: 48px;
@@ -325,19 +320,19 @@ ${prelaunchChromeHideCss}
   object-fit: cover;
   object-position: top center;
 }
-.vu-badge {
+.vu-sticker {
   position: absolute;
   top: 22px;
   right: 14px;
   z-index: 2;
-  width: 112px;
-  height: 112px;
+  width: 88px;
+  height: 88px;
 }
-.vu-badge svg {
-  width: 112px;
-  height: 112px;
+.vu-sticker svg {
+  width: 88px;
+  height: 88px;
 }
-.vu-badge text {
+.vu-sticker text {
   font-family: var(--font-brand), sans-serif;
   font-synthesis: weight;
 }
