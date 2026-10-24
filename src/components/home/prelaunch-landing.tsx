@@ -6,6 +6,7 @@ import { PrelaunchDemoSection } from "@/components/home/prelaunch-demo-section";
 import { PrelaunchFooter } from "@/components/home/prelaunch-footer";
 import { PrelaunchHero } from "@/components/home/prelaunch-hero";
 import { PrelaunchMarquee } from "@/components/home/prelaunch-marquee";
+import { PrelaunchPreview } from "@/components/home/prelaunch-preview";
 import { SignupFlow } from "@/components/home/signup-flow";
 import { landingCopy } from "@/content/landing";
 import { isContestOver } from "@/config/contest";
@@ -85,6 +86,7 @@ export function PrelaunchLanding({ startSignup = false }: { startSignup?: boolea
             onDemo={() => scrollToLanding("demo")}
           />
           <PrelaunchMarquee />
+          <PrelaunchPreview />
           <PrelaunchCommunity
             member={member}
             contestOver={contestOver}

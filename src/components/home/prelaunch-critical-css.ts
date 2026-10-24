@@ -265,6 +265,82 @@ ${prelaunchChromeHideCss}
   border-top: 1px solid ${surface2};
   border-bottom: 1px solid ${surface2};
 }
+.vu-preview {
+  position: relative;
+  height: 500px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+.vu-preview-stage {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 390px;
+  height: 500px;
+  transform: translateX(-50%);
+}
+.vu-phone {
+  position: absolute;
+  background: #0B0C0F;
+}
+.vu-phone-left,
+.vu-phone-right {
+  top: 112px;
+  width: 168px;
+  height: 344px;
+  opacity: 0.55;
+  border: 1px solid ${surface2};
+  border-radius: 30px;
+  padding: 5px;
+}
+.vu-phone-left {
+  left: -34px;
+  transform: rotate(-9deg);
+}
+.vu-phone-right {
+  left: 256px;
+  transform: rotate(9deg);
+}
+.vu-phone-center {
+  left: 77px;
+  top: 48px;
+  z-index: 1;
+  width: 236px;
+  height: 430px;
+  border: 1px solid #3A3C44;
+  border-radius: 36px;
+  padding: 6px;
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.9);
+}
+.vu-phone-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.vu-phone-left .vu-phone-screen,
+.vu-phone-right .vu-phone-screen { border-radius: 25px; }
+.vu-phone-center .vu-phone-screen { border-radius: 30px; }
+.vu-preview .vu-phone-screen img {
+  object-fit: cover;
+  object-position: top center;
+}
+.vu-badge {
+  position: absolute;
+  top: 22px;
+  right: 14px;
+  z-index: 2;
+  width: 112px;
+  height: 112px;
+}
+.vu-badge svg {
+  width: 112px;
+  height: 112px;
+}
+.vu-badge text {
+  font-family: var(--font-brand), sans-serif;
+  font-synthesis: weight;
+}
 .vu-track {
   display: flex;
   width: max-content;
