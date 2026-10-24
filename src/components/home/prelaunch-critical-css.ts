@@ -294,7 +294,7 @@ ${prelaunchChromeHideCss}
 }
 .vu-preview {
   position: relative;
-  height: 500px;
+  height: 470px;
   margin-top: 8px;
   overflow: hidden;
 }
@@ -304,7 +304,7 @@ ${prelaunchChromeHideCss}
   top: 0;
   left: 50%;
   width: 390px;
-  height: 500px;
+  height: 470px;
   transform: translateX(-50%);
 }
 .vu-preview .vu-phone {
@@ -317,23 +317,23 @@ ${prelaunchChromeHideCss}
 }
 .vu-phone-left,
 .vu-phone-right {
-  top: 112px;
-  width: 168px;
-  height: 344px;
-  transform: rotate(9deg);
+  top: 122px;
+  width: 150px;
+  height: 308px;
   opacity: 0.55;
   border: 1px solid ${surface2};
   border-radius: 30px;
   padding: 5px;
+  transform-origin: 50% 100%;
 }
-.vu-phone-left { left: -34px; }
-.vu-phone-right { left: 256px; }
+.vu-phone-left { left: 18px; transform: rotate(-10deg); }
+.vu-phone-right { left: 222px; transform: rotate(10deg); }
 .vu-phone-center {
-  left: 77px;
-  top: 48px;
+  left: 90px;
+  top: 52px;
   z-index: 1;
-  width: 236px;
-  height: 430px;
+  width: 210px;
+  height: 384px;
   transform: none;
   border: 1px solid #3A3C44;
   border-radius: 36px;
@@ -358,15 +358,15 @@ ${prelaunchChromeHideCss}
 }
 .vu-sticker {
   position: absolute;
-  top: 22px;
-  right: 14px;
+  top: 30px;
+  right: 30px;
   z-index: 2;
-  width: 88px;
-  height: 88px;
+  width: 84px;
+  height: 84px;
 }
 .vu-sticker svg {
-  width: 88px;
-  height: 88px;
+  width: 84px;
+  height: 84px;
 }
 .vu-sticker text {
   font-family: var(--font-brand), sans-serif;
@@ -1258,14 +1258,14 @@ ${prelaunchChromeHideCss}
     display: flex;
     align-items: center;
     justify-content: center;
-    height: calc(500px * min(1.271, 100cqw / 390px));
+    height: calc(470px * min(300 / 210, 100cqw / 390px));
     overflow: hidden;
   }
   .vu-preview-stage {
     position: relative;
     top: auto;
     left: auto;
-    transform: scale(min(1.271, 100cqw / 390px));
+    transform: scale(min(300 / 210, 100cqw / 390px));
     transform-origin: center center;
   }
   .vu-tagline {

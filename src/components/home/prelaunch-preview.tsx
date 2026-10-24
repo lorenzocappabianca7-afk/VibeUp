@@ -32,25 +32,25 @@ export function PrelaunchPreview() {
           src="/landing/vibeup-esplora.jpg"
           alt={landingCopy.previewExploreAlt}
           frame="left"
-          sizes="(min-width: 1024px) 214px, 168px"
+          sizes="(min-width: 1024px) 214px, 150px"
           loading="lazy"
         />
         <PhoneShot
           src="/landing/vibeup-eventi.jpg"
           alt={landingCopy.previewEventsAlt}
           frame="right"
-          sizes="(min-width: 1024px) 214px, 168px"
+          sizes="(min-width: 1024px) 214px, 150px"
           loading="lazy"
         />
         <PhoneShot
           src="/landing/vibeup-home.jpg"
           alt={landingCopy.previewHomeAlt}
           frame="center"
-          sizes="(min-width: 1024px) 300px, 236px"
+          sizes="(min-width: 1024px) 300px, 210px"
           loading="eager"
         />
         <div className="vu-sticker">
-          <svg width="88" height="88" viewBox="0 0 96 96" aria-hidden="true">
+          <svg width="84" height="84" viewBox="0 0 96 96" aria-hidden="true">
             <defs>
               <path id="vuBadgeTop" d="M13 48 A35 35 0 0 1 83 48" />
               <path id="vuBadgeBottom" d="M7 48 A41 41 0 0 0 89 48" />
