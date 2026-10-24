@@ -14,6 +14,7 @@ export const landingCopy = {
   heroPlan: "plan ",
   heroCool: "cool",
   heroParties: "parties.",
+  heroTagline: "La piattaforma per i 18 a Torino",
   heroBrand: "VibeUp",
   heroSubtitleRest:
     ", la soluzione per chi vuole creare il 18 perfetto senza stress.",

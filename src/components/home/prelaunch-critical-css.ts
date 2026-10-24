@@ -191,6 +191,30 @@ ${prelaunchChromeHideCss}
   line-height: 1.02;
   letter-spacing: -1.4px;
 }
+.vu-hero-tagline {
+  width: 100%;
+  margin: -4px 0 6px;
+  overflow: hidden;
+  color: ${text};
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+}
+.vu-hero-tagline span {
+  display: inline-block;
+  transform-origin: left center;
+  text-decoration: underline;
+  text-decoration-color: ${teal};
+  text-decoration-thickness: 3px;
+  text-underline-offset: 5px;
+}
+@media (max-width: 446px) {
+  .vu-hero-tagline span {
+    transform: scaleX(calc((100vw - 40px) / 420px));
+  }
+}
 .vu-cool {
   position: relative;
   display: inline-block;
@@ -279,9 +303,13 @@ ${prelaunchChromeHideCss}
   height: 500px;
   transform: translateX(-50%);
 }
-.vu-phone {
+.vu-preview .vu-phone {
   position: absolute;
+  display: block;
+  gap: 0;
   background: #0B0C0F;
+  box-shadow: none;
+  pointer-events: none;
 }
 .vu-phone-left,
 .vu-phone-right {
@@ -302,6 +330,7 @@ ${prelaunchChromeHideCss}
   z-index: 1;
   width: 236px;
   height: 430px;
+  transform: none;
   border: 1px solid #3A3C44;
   border-radius: 36px;
   padding: 6px;
@@ -317,6 +346,9 @@ ${prelaunchChromeHideCss}
 .vu-phone-right .vu-phone-screen { border-radius: 25px; }
 .vu-phone-center .vu-phone-screen { border-radius: 30px; }
 .vu-preview .vu-phone-screen img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
   object-fit: cover;
   object-position: top center;
 }
@@ -497,7 +529,7 @@ ${prelaunchChromeHideCss}
   justify-content: center;
   padding: 10px 0 4px;
 }
-.vu-phone {
+.vu-phone-wrap .vu-phone {
   display: flex;
   flex-direction: column;
   gap: 10px;

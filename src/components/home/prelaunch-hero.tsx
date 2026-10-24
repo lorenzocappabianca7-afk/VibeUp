@@ -92,6 +92,10 @@ export function PrelaunchHero({
           <span className="vu-parties text-brand-pink">{landingCopy.heroParties}</span>
         </h1>
 
+        <p className="vu-in vu-d2 vu-hero-tagline vu-brand font-[family-name:var(--font-brand)]">
+          <span>{landingCopy.heroTagline}</span>
+        </p>
+
         <p className="vu-in vu-d3 vu-lead text-[17px]">
           <span className="vu-em text-primary-black">{landingCopy.heroBrand}</span>
           {landingCopy.heroSubtitleRest}

@@ -1,6 +1,5 @@
 "use client";
 
-import { DemoLanguageSwitch } from "@/components/demo/demo-language-switch";
 import { Button } from "@/components/ui/button";
 import { leaveDemoForSite, useDemoMode } from "@/context/demo-mode-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
@@ -28,15 +27,6 @@ export function DemoLanding() {
           "relative mx-auto flex min-h-dvh flex-col justify-center px-6 py-12",
         )}
       >
-        <div
-          className="absolute z-[95]"
-          style={{
-            top: "max(0.75rem, env(safe-area-inset-top, 0px))",
-            right: "max(0.75rem, env(safe-area-inset-right, 0px))",
-          }}
-        >
-          <DemoLanguageSwitch />
-        </div>
         {landingState === "error" ? (
           <div className="rounded-3xl border border-primary-black/10 bg-surface p-8 text-center shadow-xl">
             <h1 className="text-2xl font-bold text-primary-black">

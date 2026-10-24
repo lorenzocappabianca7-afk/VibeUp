@@ -6,16 +6,18 @@ function PhoneShot({
   alt,
   frame,
   sizes,
+  loading,
 }: {
   src: string;
   alt: string;
   frame: "left" | "right" | "center";
   sizes: string;
+  loading: "lazy" | "eager";
 }) {
   return (
     <div className={`vu-phone vu-phone-${frame}`}>
       <div className="vu-phone-screen">
-        <Image src={src} alt={alt} fill sizes={sizes} loading="lazy" className="vu-phone-img" />
+        <Image src={src} alt={alt} fill sizes={sizes} loading={loading} className="vu-phone-img" />
       </div>
     </div>
   );
@@ -30,18 +32,21 @@ export function PrelaunchPreview() {
           alt={landingCopy.previewExploreAlt}
           frame="left"
           sizes="168px"
+          loading="lazy"
         />
         <PhoneShot
           src="/landing/vibeup-eventi.jpg"
           alt={landingCopy.previewEventsAlt}
           frame="right"
           sizes="168px"
+          loading="lazy"
         />
         <PhoneShot
           src="/landing/vibeup-home.jpg"
           alt={landingCopy.previewHomeAlt}
           frame="center"
           sizes="236px"
+          loading="eager"
         />
         <div className="vu-sticker">
           <svg width="88" height="88" viewBox="0 0 96 96" aria-hidden="true">

@@ -159,6 +159,7 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Hai già un account? Accedi. Altrimenti registrati in pochi secondi.":
     "Already have an account? Sign in. Otherwise register in a few seconds.",
   "Lancio il 1° gennaio 2027": "Launching 1 January 2027",
+  "La piattaforma per i 18 a Torino": "The platform for 18th birthdays in Turin",
   ", la soluzione per chi vuole creare il 18 perfetto senza stress.":
     ", the way to throw the perfect 18th without the stress.",
   "Iscriviti ora": "Sign up now",

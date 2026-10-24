@@ -1,7 +1,6 @@
 "use client";
 
 import { DemoLanding } from "@/components/demo/demo-landing";
-import { DemoLanguageSwitch } from "@/components/demo/demo-language-switch";
 import { leaveDemoForSite, useDemoMode } from "@/context/demo-mode-context";
 import { usePathname } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
@@ -49,7 +48,6 @@ function DemoExitControl() {
         right: "max(0.5rem, env(safe-area-inset-right, 0px))",
       }}
     >
-      <DemoLanguageSwitch />
       <button
         type="button"
         onClick={() => leaveDemoForSite()}
