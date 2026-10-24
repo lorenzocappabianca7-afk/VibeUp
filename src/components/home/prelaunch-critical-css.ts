@@ -118,6 +118,9 @@ ${prelaunchChromeHideCss}
   box-shadow: none;
 }
 .vu-head-end { display: flex; justify-content: flex-end; }
+.vu-head-join,
+.vu-pill-long { display: none; }
+.vu-pill-short { display: contents; }
 .vu-mark {
   display: flex;
   align-items: baseline;
@@ -223,9 +226,9 @@ ${prelaunchChromeHideCss}
 .vu-underline {
   position: absolute;
   left: 0;
-  bottom: -6px;
-  width: 86px;
-  height: 10px;
+  bottom: -0.15em;
+  width: 2.15em;
+  height: 0.25em;
   pointer-events: none;
 }
 .vu-parties { color: ${pink}; }
@@ -295,6 +298,7 @@ ${prelaunchChromeHideCss}
   margin-top: 8px;
   overflow: hidden;
 }
+.vu-preview-fit { display: contents; }
 .vu-preview-stage {
   position: absolute;
   top: 0;
@@ -390,6 +394,13 @@ ${prelaunchChromeHideCss}
   gap: 18px;
   padding: 36px 20px 32px;
 }
+.vu-join-main,
+.vu-join-aside { display: contents; }
+.vu-stack { order: 1; }
+.vu-podium { order: 2; }
+.vu-steps { order: 3; }
+.vu-join .vu-cta { order: 4; }
+.vu-fine { order: 5; }
 .vu-stack { display: flex; flex-direction: column; gap: 8px; }
 .vu-kicker {
   font-size: 12px;
@@ -613,7 +624,12 @@ ${prelaunchChromeHideCss}
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 14px;
 }
+.vu-foot-brand { display: contents; }
+.vu-socials { order: 2; }
+.vu-mail { order: 3; flex-basis: 100%; }
 .vu-socials { display: flex; gap: 8px; }
 .vu-social {
   display: flex;
@@ -1132,5 +1148,238 @@ ${prelaunchChromeHideCss}
   flex-direction: column;
   gap: 10px;
   margin-top: 18px;
+}
+@media (min-width: 768px) {
+  .vu-page { max-width: 640px; }
+  .vu-h1 { font-size: 48px; letter-spacing: -1.8px; }
+  .vu-h2 { font-size: 34px; letter-spacing: -1px; }
+  .vu-lead,
+  .vu-body { font-size: 17px; }
+  .vu-tagline { font-size: 24px; }
+  [data-prelaunch-landing] a,
+  [data-prelaunch-landing] button { cursor: pointer; }
+}
+@media (hover: hover) and (min-width: 768px) {
+  .vu-cta:hover,
+  .vu-cta-teal:hover { filter: brightness(1.08); }
+  .vu-ghost:hover,
+  .vu-pill:hover,
+  .vu-social:hover {
+    background: #32343c;
+    border-color: #3A3C44;
+  }
+  .vu-mail:hover,
+  .vu-legal a:hover,
+  .vu-fine a:hover { color: ${text}; }
+}
+@media (min-width: 1024px) {
+  .vu-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 64px;
+    align-items: start;
+    max-width: 1120px;
+    min-width: 0;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+  .vu-head {
+    display: flex;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 0 0;
+  }
+  .vu-head .vu-mark { margin-right: auto; }
+  .vu-head-lang { order: 2; }
+  .vu-head-end { order: 3; align-items: center; gap: 10px; }
+  .vu-pill-short { display: none; }
+  .vu-pill-long { display: inline; }
+  .vu-pill { white-space: nowrap; }
+  .vu-head .vu-head-join {
+    display: inline-flex;
+    width: auto;
+    height: 44px;
+    padding: 0 18px;
+    border-radius: 999px;
+    font-size: 15px;
+  }
+  .vu-hero {
+    container-type: inline-size;
+    grid-column: 1;
+    grid-row: 2;
+    align-self: stretch;
+    justify-content: center;
+    min-height: calc(100dvh - 96px);
+    gap: 20px;
+    padding: 28px 0 8px;
+  }
+  .vu-deco { display: none; }
+  .vu-h1 {
+    font-size: min(64px, calc(100cqw * 0.135));
+    letter-spacing: -2px;
+    max-width: 100%;
+  }
+  .vu-h2 { font-size: 40px; letter-spacing: -1.2px; }
+  .vu-lead,
+  .vu-body,
+  .vu-step-title { font-size: 18px; }
+  .vu-lead,
+  .vu-body,
+  .vu-stack,
+  .vu-steps,
+  .vu-demo-card > .vu-h2,
+  .vu-demo-card > .vu-body { max-width: 600px; }
+  .vu-step-note { font-size: 16px; }
+  .vu-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+  .vu-actions .vu-cta,
+  .vu-actions .vu-ghost {
+    width: auto;
+    flex: none;
+    padding: 0 22px;
+  }
+  .vu-actions .vu-member { flex: 1 1 100%; }
+  .vu-preview {
+    container-type: inline-size;
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+    height: auto;
+    margin-top: 0;
+    overflow: hidden;
+  }
+  .vu-preview-fit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(500px * min(1.271, 100cqw / 390px));
+    overflow: hidden;
+  }
+  .vu-preview-stage {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: scale(min(1.271, 100cqw / 390px));
+    transform-origin: center center;
+  }
+  .vu-tagline {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    max-width: none;
+    padding: 36px 0 16px;
+    font-size: 28px;
+  }
+  .vu-marquee {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    margin-left: -40px;
+    margin-right: -40px;
+  }
+  .vu-join {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-row: 5;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 64px;
+    align-items: center;
+    padding: 120px 0 0;
+  }
+  .vu-join-main,
+  .vu-join-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    min-width: 0;
+  }
+  .vu-join-aside { align-items: center; }
+  .vu-podium { gap: 16px; width: 100%; }
+  .vu-prize-2 { height: 160px; }
+  .vu-prize-1 { height: 210px; }
+  .vu-prize-3 { height: 130px; }
+  .vu-amount-2 { font-size: 32px; }
+  .vu-amount-1 { font-size: 40px; }
+  .vu-amount-3 { font-size: 24px; }
+  .vu-place { font-size: 14px; }
+  .vu-trophy { width: 28px; height: 28px; top: 18px; }
+  .vu-join-aside .vu-cta {
+    width: auto;
+    margin-top: 0;
+    padding: 0 28px;
+  }
+  .vu-fine { max-width: 420px; font-size: 14px; }
+  .vu-demo {
+    grid-column: 1 / -1;
+    grid-row: 6;
+    padding: 120px 0 0;
+  }
+  .vu-demo-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "kicker phone"
+      "title phone"
+      "body phone"
+      "cta phone"
+      "lock phone";
+    column-gap: 48px;
+    row-gap: 14px;
+    align-items: center;
+    overflow: visible;
+    padding: 36px 40px;
+  }
+  .vu-demo-card > .vu-kicker { grid-area: kicker; }
+  .vu-demo-card > .vu-h2 { grid-area: title; }
+  .vu-demo-card > .vu-body { grid-area: body; }
+  .vu-demo-card > .vu-phone-wrap { grid-area: phone; padding: 8px 12px; }
+  .vu-demo-card > .vu-cta-teal,
+  .vu-demo-card > a {
+    grid-area: cta;
+    width: auto;
+    justify-self: start;
+    padding: 0 22px;
+  }
+  .vu-demo-card > .vu-lock { grid-area: lock; justify-self: start; }
+  .vu-foot {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-row: 7;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 24px;
+    margin-top: 120px;
+    padding: 28px 0 calc(28px + env(safe-area-inset-bottom, 0px));
+  }
+  .vu-foot-row { display: contents; }
+  .vu-foot-brand {
+    display: flex;
+    grid-column: 1;
+    grid-row: 1;
+    align-items: baseline;
+    justify-self: start;
+    gap: 18px;
+  }
+  .vu-foot-brand .vu-mail {
+    order: 0;
+    flex-basis: auto;
+    width: auto;
+  }
+  .vu-legal {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    flex-wrap: nowrap;
+  }
+  .vu-socials {
+    order: 0;
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+  }
 }
 `.replace(/\n+/g, "\n").trim();

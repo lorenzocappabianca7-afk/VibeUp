@@ -29,8 +29,18 @@ export function PrelaunchHero({
             onDemo();
           }}
         >
-          {landingCopy.headerDemo}
+          <span className="vu-pill-short">{landingCopy.headerDemo}</span>
+          <span className="vu-pill-long">{landingCopy.headerTryDemo}</span>
         </a>
+        {member ? null : (
+          <button
+            type="button"
+            className="vu-btn vu-cta vu-head-join bg-brand-pink font-[family-name:var(--font-brand)] text-ink-inverse"
+            onClick={onSignup}
+          >
+            {landingCopy.joinCta}
+          </button>
+        )}
         </div>
       </header>
 

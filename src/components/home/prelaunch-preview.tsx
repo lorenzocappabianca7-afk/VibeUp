@@ -26,26 +26,27 @@ function PhoneShot({
 export function PrelaunchPreview() {
   return (
     <section className="vu-preview" aria-label={landingCopy.previewLabel}>
+      <div className="vu-preview-fit">
       <div className="vu-preview-stage">
         <PhoneShot
           src="/landing/vibeup-esplora.jpg"
           alt={landingCopy.previewExploreAlt}
           frame="left"
-          sizes="168px"
+          sizes="(min-width: 1024px) 214px, 168px"
           loading="lazy"
         />
         <PhoneShot
           src="/landing/vibeup-eventi.jpg"
           alt={landingCopy.previewEventsAlt}
           frame="right"
-          sizes="168px"
+          sizes="(min-width: 1024px) 214px, 168px"
           loading="lazy"
         />
         <PhoneShot
           src="/landing/vibeup-home.jpg"
           alt={landingCopy.previewHomeAlt}
           frame="center"
-          sizes="236px"
+          sizes="(min-width: 1024px) 300px, 236px"
           loading="eager"
         />
         <div className="vu-sticker">
@@ -81,6 +82,7 @@ export function PrelaunchPreview() {
             </text>
           </svg>
         </div>
+      </div>
       </div>
     </section>
   );

@@ -33,6 +33,7 @@ export function PrelaunchCommunity({
 }) {
   return (
     <section id="iscriviti" className="vu-join">
+      <div className="vu-join-main">
       <div className="vu-stack">
         <span className="vu-kicker text-brand-teal">{landingCopy.communityKicker}</span>
         <h2 className="vu-h2 vu-brand font-[family-name:var(--font-brand)] text-[28px] font-extrabold leading-[1.08] tracking-[-0.9px]">
@@ -52,6 +53,28 @@ export function PrelaunchCommunity({
         )}
       </div>
 
+      <ol className="vu-steps">
+        {landingCopy.steps.map((step, index) => (
+          <li key={step.n} className={index < landingCopy.steps.length - 1 ? "vu-step vu-step-pad" : "vu-step"}>
+            {index < landingCopy.steps.length - 1 ? <span className="vu-step-line bg-surface-2" aria-hidden /> : null}
+            <span className="vu-step-n vu-brand border-surface-2 bg-surface font-[family-name:var(--font-brand)] text-brand-teal">
+              {step.n}
+            </span>
+            <span className={step.code ? "vu-step-copy vu-step-copy-loose" : "vu-step-copy"}>
+              <span className="vu-step-title">{step.title}</span>
+              {step.detail ? <span className="vu-step-note">{step.detail}</span> : null}
+              {step.code ? (
+                <span className="vu-code vu-brand border-brand-pink font-[family-name:var(--font-brand)] text-brand-pink">
+                  {step.code}
+                </span>
+              ) : null}
+            </span>
+          </li>
+        ))}
+      </ol>
+      </div>
+
+      <div className="vu-join-aside">
       <div className="vu-podium">
         {podiumOrder.map((rank) => {
           const prize = contestConfig.prizes.find((item) => item.rank === rank);
@@ -84,26 +107,6 @@ export function PrelaunchCommunity({
         })}
       </div>
 
-      <ol className="vu-steps">
-        {landingCopy.steps.map((step, index) => (
-          <li key={step.n} className={index < landingCopy.steps.length - 1 ? "vu-step vu-step-pad" : "vu-step"}>
-            {index < landingCopy.steps.length - 1 ? <span className="vu-step-line bg-surface-2" aria-hidden /> : null}
-            <span className="vu-step-n vu-brand border-surface-2 bg-surface font-[family-name:var(--font-brand)] text-brand-teal">
-              {step.n}
-            </span>
-            <span className={step.code ? "vu-step-copy vu-step-copy-loose" : "vu-step-copy"}>
-              <span className="vu-step-title">{step.title}</span>
-              {step.detail ? <span className="vu-step-note">{step.detail}</span> : null}
-              {step.code ? (
-                <span className="vu-code vu-brand border-brand-pink font-[family-name:var(--font-brand)] text-brand-pink">
-                  {step.code}
-                </span>
-              ) : null}
-            </span>
-          </li>
-        ))}
-      </ol>
-
       {member ? null : (
         <button
           type="button"
@@ -117,6 +120,7 @@ export function PrelaunchCommunity({
         {contestConfig.redeemNote}{" "}
         <a href="/regolamento">{landingCopy.rulesLink}</a>
       </p>
+      </div>
     </section>
   );
 }

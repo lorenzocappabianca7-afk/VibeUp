@@ -9,6 +9,7 @@ export const landingCopy = {
   logoP: "p",
   logoScript: "events",
   headerDemo: "Demo",
+  headerTryDemo: "Prova la demo",
   launchBadge: "Lancio il 1° gennaio 2027",
   heroLine1: "Cool people",
   heroPlan: "plan ",

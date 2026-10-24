@@ -5,7 +5,12 @@ export function PrelaunchFooter() {
   return (
     <footer className="vu-foot border-surface-2" data-landing-footer>
       <div className="vu-foot-row">
-        <Wordmark size="footer" />
+        <div className="vu-foot-brand">
+          <Wordmark size="footer" />
+          <a className="vu-mail" href={`mailto:${landingCopy.email}`}>
+            {landingCopy.email}
+          </a>
+        </div>
         <div className="vu-socials">
           <a
             className="vu-btn vu-social border-surface-2 bg-surface text-primary-black"
@@ -34,9 +39,6 @@ export function PrelaunchFooter() {
           </a>
         </div>
       </div>
-      <a className="vu-mail" href={`mailto:${landingCopy.email}`}>
-        {landingCopy.email}
-      </a>
       <div className="vu-legal">
         <a href="/privacy">{landingCopy.privacyLink}</a>
         <a href="/regolamento">{landingCopy.rulesLink}</a>
