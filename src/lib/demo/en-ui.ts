@@ -204,6 +204,9 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Gestisci i tuoi dati": "Manage your data",
   "Instagram VibeUp": "VibeUp on Instagram",
   "TikTok VibeUp": "VibeUp on TikTok",
+  "Seguici sui social": "Follow us on social",
+  "E prova la nostra demo per scoprire come funzionerà VibeUp":
+    "And try our demo to see how VibeUp will work",
   "Premi in buoni VibeUp, riscattabili dal lancio dell'app, il 1° gennaio 2027.":
     "Prizes are VibeUp vouchers, redeemable from the app launch on 1 January 2027.",
   Salta: "Skip",

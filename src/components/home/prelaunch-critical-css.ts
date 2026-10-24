@@ -377,7 +377,7 @@ ${prelaunchChromeHideCss}
   padding: 4px 28px 8px;
   color: ${text};
   font-family: var(--font-brand), system-ui, sans-serif;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   line-height: 1.3;
   letter-spacing: -0.3px;
@@ -536,6 +536,50 @@ ${prelaunchChromeHideCss}
   color: ${text};
   text-decoration: underline;
   text-underline-offset: 0.15em;
+}
+.vu-follow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 20px 32px;
+  color: ${text};
+  text-align: center;
+}
+.vu-follow-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 12px;
+  max-width: 100%;
+}
+.vu-follow-socials {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+.vu-follow-title,
+.vu-follow-note {
+  margin: 0;
+  max-width: 100%;
+  color: ${text};
+  font-family: var(--font-brand), system-ui, sans-serif;
+  font-weight: 800;
+}
+.vu-follow-title {
+  font-size: 20px;
+  line-height: 1.15;
+  letter-spacing: -0.35px;
+}
+.vu-follow-note {
+  font-size: 18px;
+  line-height: 1.35;
+  letter-spacing: -0.25px;
+  overflow-wrap: break-word;
 }
 .vu-demo { padding: 4px 20px 40px; }
 .vu-demo-card {
@@ -1300,7 +1344,7 @@ ${prelaunchChromeHideCss}
     max-width: 720px;
     margin: 120px auto 0;
     padding: 0 0 120px;
-    font-size: 28px;
+    font-size: 24px;
   }
   .vu-join {
     display: grid;
@@ -1334,9 +1378,18 @@ ${prelaunchChromeHideCss}
     padding: 0 28px;
   }
   .vu-fine { max-width: 420px; font-size: 14px; }
-  .vu-demo {
+  .vu-follow {
     grid-column: 1 / -1;
     grid-row: 7;
+    gap: 16px;
+    margin: 120px 0 0;
+    padding: 0;
+  }
+  .vu-follow-title { font-size: 24px; }
+  .vu-follow-note { font-size: 20px; max-width: 720px; }
+  .vu-demo {
+    grid-column: 1 / -1;
+    grid-row: 8;
     padding: 120px 0 0;
   }
   .vu-demo-card {
@@ -1369,7 +1422,7 @@ ${prelaunchChromeHideCss}
   .vu-foot {
     display: grid;
     grid-column: 1 / -1;
-    grid-row: 8;
+    grid-row: 9;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 24px;

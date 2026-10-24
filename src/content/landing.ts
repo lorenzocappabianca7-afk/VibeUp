@@ -65,6 +65,8 @@ export const landingCopy = {
   signupSoon: "Iscrizione in arrivo",
   signupClose: "Chiudi",
   rulesLink: "Regolamento",
+  followSocial: "Seguici sui social",
+  followDemo: "E prova la nostra demo per scoprire come funzionerà VibeUp",
   demoKicker: "DEMO",
   demoTitle1: "Provala prima",
   demoTitle2: "di tutti.",
