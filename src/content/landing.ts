@@ -31,6 +31,9 @@ export const landingCopy = {
   previewLaunch: "LANCIO 01.01.2027",
   previewSoon: "COMING SOON · TORINO",
   previewMark: "18",
+  inviteBefore:
+    "Invita più amici possibile a iscriversi a VibeUp prima del lancio dell'app per provare a vincere fino a ",
+  invitePrize: "300 € in buoni VibeUp",
   communityKicker: "COMMUNITY PRE-LANCIO",
   communityTitle1: "Invita gli amici.",
   communityTitle2: "Vinci la ",

@@ -372,6 +372,18 @@ ${prelaunchChromeHideCss}
   font-family: var(--font-brand), sans-serif;
   font-synthesis: weight;
 }
+.vu-invite {
+  margin: 0;
+  padding: 4px 28px 8px;
+  color: ${text};
+  font-family: var(--font-brand), system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+  text-align: center;
+}
+.vu-invite-prize { color: ${pink}; }
 .vu-track {
   display: flex;
   width: max-content;
@@ -1281,14 +1293,23 @@ ${prelaunchChromeHideCss}
     margin-left: -40px;
     margin-right: -40px;
   }
+  .vu-invite {
+    grid-column: 1 / -1;
+    grid-row: 5;
+    width: 100%;
+    max-width: 720px;
+    margin: 120px auto 0;
+    padding: 0 0 120px;
+    font-size: 28px;
+  }
   .vu-join {
     display: grid;
     grid-column: 1 / -1;
-    grid-row: 5;
+    grid-row: 6;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: 64px;
     align-items: center;
-    padding: 120px 0 0;
+    padding: 0;
   }
   .vu-join-main,
   .vu-join-aside {
@@ -1315,7 +1336,7 @@ ${prelaunchChromeHideCss}
   .vu-fine { max-width: 420px; font-size: 14px; }
   .vu-demo {
     grid-column: 1 / -1;
-    grid-row: 6;
+    grid-row: 7;
     padding: 120px 0 0;
   }
   .vu-demo-card {
@@ -1348,7 +1369,7 @@ ${prelaunchChromeHideCss}
   .vu-foot {
     display: grid;
     grid-column: 1 / -1;
-    grid-row: 7;
+    grid-row: 8;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 24px;

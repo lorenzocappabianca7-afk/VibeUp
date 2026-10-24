@@ -87,6 +87,10 @@ export function PrelaunchLanding({ startSignup = false }: { startSignup?: boolea
           />
           <PrelaunchMarquee />
           <PrelaunchPreview />
+          <p className="vu-invite vu-brand font-[family-name:var(--font-brand)]">
+            {landingCopy.inviteBefore}
+            <span className="vu-invite-prize">{landingCopy.invitePrize}</span>
+          </p>
           <PrelaunchCommunity
             member={member}
             contestOver={contestOver}

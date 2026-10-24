@@ -172,6 +172,9 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Schermata I miei eventi di VibeUp": "VibeUp My events screen",
   "LANCIO 01.01.2027": "LAUNCH 01.01.2027",
   "COMING SOON · TORINO": "COMING SOON · TURIN",
+  "Invita più amici possibile a iscriversi a VibeUp prima del lancio dell'app per provare a vincere fino a":
+    "Invite as many friends as you can to join VibeUp before the app launches for a chance to win up to",
+  "300 € in buoni VibeUp": "€300 in VibeUp vouchers",
   FOTOGRAFO: "PHOTOGRAPHER",
   DECORAZIONI: "DECORATIONS",
   "COMMUNITY PRE-LANCIO": "PRE-LAUNCH COMMUNITY",
