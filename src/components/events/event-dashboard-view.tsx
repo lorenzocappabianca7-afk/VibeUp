@@ -131,7 +131,7 @@ export function EventDashboardView({
           <span>{formatDate(currentEvent.date)} · ore {currentEvent.time}</span>
           <span className="flex items-center gap-1">
             <MapPin className="h-3.5 w-3.5" aria-hidden />
-            {currentEvent.locationName}, {currentEvent.city}
+            {[currentEvent.locationName, currentEvent.city].filter(Boolean).join(", ")}
           </span>
           <span className="flex items-center gap-1">
             <Users className="h-3.5 w-3.5" aria-hidden />

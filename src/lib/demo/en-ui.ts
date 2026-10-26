@@ -281,6 +281,20 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Scegli una location": "Choose one venue",
   "Scegli la location che ti si addice di più cliccandoci sopra":
     "Pick the venue that suits you best by tapping on it",
+  "Aggiungi 2-3 locali con «Confronta» sotto la card, poi apri la tab Confronta per vederli affiancati.":
+    "Add 2-3 venues with «Compare» below the card, then open the Compare tab to see them side by side.",
+  "Non trovi il posto che cerchi?": "Can't find the place you're looking for?",
+  "Scrivi qui il nome: lo aggiungeremo a VibeUp. Intanto puoi continuare la demo con questo posto.":
+    "Type its name here: we'll add it to VibeUp. Meanwhile you can continue the demo with this place.",
+  "Nome del locale": "Venue name",
+  Conferma: "Confirm",
+  "Il tuo posto": "Your place",
+  "Da definire": "To be set",
+  Cambia: "Change",
+  Confronta: "Compare",
+  "Nel confronto": "In the comparison",
+  "Il nome può avere al massimo 60 caratteri.": "The name can be at most 60 characters.",
+  "Scrivi solo il nome del locale, senza link.": "Type only the venue name, with no link.",
   "Invia richiesta di disponibilità": "Send availability request",
   "Invio in corso…": "Sending…",
   "Richiesta accettata!": "Request accepted!",

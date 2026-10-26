@@ -20,6 +20,11 @@ import {
   type DemoEntryIdentity,
 } from "@/lib/demo/signup-gate";
 import { claimDemoStep } from "@/lib/demo/steps";
+import {
+  catalogChoice,
+  CUSTOM_VENUE_ID,
+  type CustomVenueRecord,
+} from "@/lib/demo/custom-venue";
 import { saveDemoSubmission } from "@/lib/demo/submissions";
 import { usesDemoShell } from "@/lib/demo/shell";
 import {
@@ -51,6 +56,7 @@ interface DemoModeContextValue {
   landingState: DemoLandingState;
   bootError: string | null;
   selectedLocations: DemoChosenLocation[];
+  customVenue: CustomVenueRecord | null;
   bookedLocation: DemoChosenLocation | null;
   bookingConfirmed: boolean;
   homeTipDismissed: boolean;
@@ -59,6 +65,7 @@ interface DemoModeContextValue {
   exitDemo: () => void;
   toggleDemoLocation: (location: DemoChosenLocation) => void;
   selectDemoLocation: (location: DemoChosenLocation | null) => void;
+  confirmCustomVenue: (name: string) => void;
   persistDemoSelections: () => Promise<void>;
   setDemoBookedLocation: (location: DemoChosenLocation) => Promise<void>;
   markDemoBookingConfirmed: () => Promise<void>;
@@ -116,6 +123,7 @@ async function startDemoAttempt(identity: DemoEntryIdentity): Promise<DemoSessio
       bookingConfirmedAt: null,
       completed: false,
       completedAt: null,
+      custom_venue: null,
     },
   });
 
@@ -132,6 +140,7 @@ async function startDemoAttempt(identity: DemoEntryIdentity): Promise<DemoSessio
     privacyConsentAt: "",
     sessionCreatedAt,
     selectedLocations: [],
+    customVenue: null,
     bookedLocation: null,
     bookingConfirmed: false,
     bookingConfirmedAt: null,
@@ -296,14 +305,50 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       const current = readDemoSession();
       if (!current || current.completed || current.bookingConfirmed) return;
       const selectedLocations = location ? [location] : [];
-      const next = persist({ ...current, selectedLocations });
+      const next = persist({
+        ...current,
+        selectedLocations,
+        customVenue: null,
+      });
       setSession(next);
       const stepLocationAt = location ? claimDemoStep(next.id, "location") : null;
       void saveDemoSubmission({
         id: next.id,
         payload: {
-          chosenLocation: location,
+          chosenLocation: catalogChoice(location),
           selectedLocations,
+          custom_venue: null,
+          ...(stepLocationAt ? { stepLocationAt } : {}),
+        },
+        optional: true,
+      }).catch(() => undefined);
+    },
+    [demoActive],
+  );
+
+  const confirmCustomVenue = useCallback(
+    (name: string) => {
+      if (!demoActive) return;
+      const current = readDemoSession();
+      if (!current || current.completed || current.bookingConfirmed) return;
+      const trimmed = name.trim();
+      if (trimmed.length < 2) return;
+      const at = new Date().toISOString();
+      const customVenue: CustomVenueRecord = { name: trimmed, at };
+      const location: DemoChosenLocation = { id: CUSTOM_VENUE_ID, name: trimmed };
+      const next = persist({
+        ...current,
+        selectedLocations: [location],
+        customVenue,
+      });
+      setSession(next);
+      const stepLocationAt = claimDemoStep(next.id, "location");
+      void saveDemoSubmission({
+        id: next.id,
+        payload: {
+          chosenLocation: null,
+          selectedLocations: [location],
+          custom_venue: customVenue,
           ...(stepLocationAt ? { stepLocationAt } : {}),
         },
         optional: true,
@@ -344,8 +389,11 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
           selectedLocations: next.selectedLocations.length
             ? next.selectedLocations
             : [location],
-          chosenLocation: location,
+          chosenLocation: catalogChoice(location),
           bookedLocation: location,
+          ...(location.id === CUSTOM_VENUE_ID && current.customVenue
+            ? { custom_venue: current.customVenue }
+            : {}),
         },
         optional: true,
       });
@@ -372,8 +420,9 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
         bookingConfirmed: true,
         bookingConfirmedAt,
         bookedLocation: next.bookedLocation,
-        chosenLocation:
+        chosenLocation: catalogChoice(
           next.bookedLocation ?? next.selectedLocations.at(-1) ?? null,
+        ),
         selectedLocations: next.selectedLocations,
         ...(stepEventAt ? { stepEventAt } : {}),
       },
@@ -397,8 +446,9 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
         id: session.id,
         payload: {
           selectedLocations: feedback.selectedLocations,
-          chosenLocation:
+          chosenLocation: catalogChoice(
             feedback.selectedLocations.at(-1) ?? session.bookedLocation,
+          ),
           bookedLocation: session.bookedLocation,
           bookingConfirmed: session.bookingConfirmed,
           bookingConfirmedAt: session.bookingConfirmedAt,
@@ -439,6 +489,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       landingState,
       bootError,
       selectedLocations: session?.selectedLocations ?? [],
+      customVenue: session?.customVenue ?? null,
       bookedLocation: session?.bookedLocation ?? null,
       bookingConfirmed: session?.bookingConfirmed === true,
       homeTipDismissed,
@@ -447,6 +498,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       exitDemo,
       toggleDemoLocation,
       selectDemoLocation,
+      confirmCustomVenue,
       persistDemoSelections,
       setDemoBookedLocation,
       markDemoBookingConfirmed,
@@ -456,6 +508,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     [
       bootError,
       completeDemoSession,
+      confirmCustomVenue,
       demoActive,
       dismissHomeTip,
       enterDemo,
@@ -492,6 +545,8 @@ const DEMO_MODE_FALLBACK: DemoModeContextValue = {
   exitDemo: () => undefined,
   toggleDemoLocation: () => undefined,
   selectDemoLocation: () => undefined,
+  confirmCustomVenue: () => undefined,
+  customVenue: null,
   persistDemoSelections: async () => undefined,
   setDemoBookedLocation: async () => undefined,
   markDemoBookingConfirmed: async () => undefined,

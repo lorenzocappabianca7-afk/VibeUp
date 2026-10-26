@@ -1,3 +1,5 @@
+import type { CustomVenueRecord } from "@/lib/demo/custom-venue";
+
 /** Payload written only to `public.demo_submissions` — never profiles/bookings. */
 export type DemoSubmissionPayload = Record<string, unknown>;
 
@@ -23,6 +25,8 @@ export interface DemoSession {
   privacyConsentAt: string;
   sessionCreatedAt: string;
   selectedLocations: DemoChosenLocation[];
+  /** Handwritten place, kept apart from a catalog location. */
+  customVenue: CustomVenueRecord | null;
   /** Which of the saved favorites the visitor tries to book. */
   bookedLocation: DemoChosenLocation | null;
   bookingConfirmed: boolean;

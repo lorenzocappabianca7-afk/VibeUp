@@ -1,5 +1,6 @@
 "use client";
 
+import { DemoCustomVenueBox } from "@/components/demo/demo-custom-venue";
 import { DemoExploreGuide } from "@/components/demo/demo-explore-picker";
 import { CompareFavorites } from "@/components/explore/compare-favorites";
 import { DiscountInviteBanner } from "@/components/discount-invite-banner";
@@ -787,6 +788,8 @@ export function ExploreScreen({
           </button>
         </div>
       )}
+
+      {activeCategory === "locali" && demoPicking ? <DemoCustomVenueBox /> : null}
 
       {activeCategory !== "locali" ? (
         <section

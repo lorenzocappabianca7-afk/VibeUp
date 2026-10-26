@@ -91,6 +91,7 @@ export interface DemoSummary {
   lastStepAt: string | null;
   criteria: Record<string, unknown> | null;
   chosenLocation: string;
+  customVenue: string;
   rating: number | null;
   wouldUse: boolean | null;
   durationMs: number | null;
@@ -125,17 +126,22 @@ function asRating(value: unknown) {
   return rating;
 }
 
+function locationName(value: unknown) {
+  if (!value || typeof value !== "object" || !("name" in value)) return "";
+  const row = value as { id?: unknown; name?: unknown };
+  if (row.id === "custom-venue") return "";
+  return asText(row.name);
+}
+
 function chosenName(payload: Record<string, unknown>) {
-  const chosen = payload.chosenLocation;
-  if (chosen && typeof chosen === "object" && "name" in chosen) {
-    const name = asText((chosen as { name?: unknown }).name);
-    if (name) return name;
-  }
-  const booked = payload.bookedLocation;
-  if (booked && typeof booked === "object" && "name" in booked) {
-    return asText((booked as { name?: unknown }).name);
-  }
-  return "";
+  return locationName(payload.chosenLocation) || locationName(payload.bookedLocation);
+}
+
+function customVenueName(payload: Record<string, unknown>) {
+  const raw = payload.custom_venue;
+  if (!raw || typeof raw !== "object") return "";
+  const row = raw as { name?: unknown; nome?: unknown };
+  return asText(row.name ?? row.nome);
 }
 
 const STEP_ORDER = [
@@ -192,6 +198,7 @@ export function summarizeDemo(row: DemoDb): DemoSummary {
     lastStepAt,
     criteria,
     chosenLocation: chosenName(payload),
+    customVenue: customVenueName(payload),
     rating,
     wouldUse: typeof payload.wouldUseForEighteenth === "boolean" ? payload.wouldUseForEighteenth : null,
     durationMs: Number.isFinite(start) && Number.isFinite(end) && end >= start ? end - start : null,
@@ -292,6 +299,21 @@ function topCounts(values: string[], limit = 8) {
     .slice(0, limit);
 }
 
+function suggestedVenueCounts(values: string[]) {
+  const counts = new Map<string, { name: string; count: number }>();
+  for (const value of values) {
+    const name = value.trim().replace(/\s+/g, " ");
+    if (!name) continue;
+    const key = name.toLocaleLowerCase("it");
+    const current = counts.get(key);
+    if (current) current.count += 1;
+    else counts.set(key, { name, count: 1 });
+  }
+  return [...counts.values()].sort(
+    (a, b) => b.count - a.count || a.name.localeCompare(b.name, "it"),
+  );
+}
+
 function percent(part: number, total: number) {
   if (total <= 0) return null;
   return Math.round((part / total) * 1000) / 10;
@@ -339,7 +361,7 @@ export async function loadCommunityOverview() {
     if (!id || !verifiedIds.has(id)) continue;
     if (demo.steps.stepEnteredAt) reached.entered.add(id);
     if (demo.steps.stepCriteriaAt) reached.criteria.add(id);
-    if (demo.steps.stepLocationAt || demo.chosenLocation) reached.location.add(id);
+    if (demo.steps.stepLocationAt || demo.chosenLocation || demo.customVenue) reached.location.add(id);
     if (demo.steps.stepRequestAt) reached.request.add(id);
     if (demo.steps.stepEventAt) reached.event.add(id);
     if (demo.steps.stepRatingAt || demo.rating != null) reached.rating.add(id);
@@ -396,6 +418,7 @@ export async function loadCommunityOverview() {
     schools: topCounts(slim.map((row) => row.high_school ?? "")),
     venues: topCounts(slim.map((row) => row.dream_venue ?? "")),
     locations: topCounts(locations),
+    suggestedVenues: suggestedVenueCounts(demos.map((demo) => demo.customVenue)),
     locales: [
       { name: "Italiano", count: slim.filter((row) => (row.locale ?? "it") !== "en").length },
       { name: "English", count: slim.filter((row) => row.locale === "en").length },
@@ -805,6 +828,7 @@ export function demosToCsv(rows: DemoSummary[]) {
     "Orario passo",
     "Criteri",
     "Location scelta",
+    "Posto suggerito",
     "Voto",
     "Useresti per il 18",
     "Durata minuti",
@@ -832,6 +856,7 @@ export function demosToCsv(rows: DemoSummary[]) {
       row.lastStepAt ?? "",
       criteria,
       row.chosenLocation,
+      row.customVenue,
       row.rating == null ? "" : String(row.rating),
       row.wouldUse == null ? "" : row.wouldUse ? "sì" : "no",
       row.durationMs == null ? "" : String(Math.round(row.durationMs / 60000)),

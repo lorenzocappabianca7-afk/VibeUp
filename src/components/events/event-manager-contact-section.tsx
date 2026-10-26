@@ -50,7 +50,7 @@ export function EventManagerContactSection({ event }: { event: UserEvent }) {
   const isConfirmed = apiConfirmed || localConfirmed;
 
   useEffect(() => {
-    if (!event.locationId) {
+    if (!event.locationId || event.locationId === "custom-venue") {
       queueMicrotask(() => {
         setWaMeUrl(null);
         setApiConfirmed(false);

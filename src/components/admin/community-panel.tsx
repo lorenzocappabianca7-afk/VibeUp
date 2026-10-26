@@ -53,6 +53,7 @@ type Overview = {
   schools: { name: string; count: number }[];
   venues: { name: string; count: number }[];
   locations: { name: string; count: number }[];
+  suggestedVenues: { name: string; count: number }[];
   locales: { name: string; count: number }[];
 };
 
@@ -66,6 +67,7 @@ type DemoRow = {
   lastStepAt: string | null;
   criteria: Record<string, unknown> | null;
   chosenLocation: string;
+  customVenue: string;
   rating: number | null;
   wouldUse: boolean | null;
   durationMs: number | null;
@@ -379,6 +381,7 @@ function OverviewTab() {
         <RankList title="Licei più citati" rows={data.schools} />
         <RankList title="Locali sognati" rows={data.venues} />
         <RankList title="Location più scelte in demo" rows={data.locations} />
+        <RankList title="Posti suggeriti dagli utenti" rows={data.suggestedVenues ?? []} />
         <RankList title="Lingua" rows={data.locales} />
       </div>
     </div>
@@ -683,6 +686,7 @@ function SignupsTab() {
               <p>{demo.lastStep} · {formatWhen(demo.lastStepAt)}</p>
               <p className="mt-1 text-primary-black/60">Criteri: {criteriaText(demo.criteria)}</p>
               <p className="mt-1">Location: {demo.chosenLocation || "—"}</p>
+              <p className="mt-1">Posto suggerito: {demo.customVenue || "—"}</p>
               <p className="mt-1">Voto {demo.rating ?? "—"} · 18esimo {yesNo(demo.wouldUse)} · {minutes(demo.durationMs)}</p>
               <ul className="mt-2 space-y-1 text-xs text-primary-black/55">
                 {Object.entries({
@@ -760,7 +764,7 @@ function DemosTab() {
         <table className="min-w-[980px] w-full text-left text-sm">
           <thead className="bg-surface text-xs uppercase tracking-wide text-primary-black/50">
             <tr>
-              {["Data", "Nome / email", "Ultimo passo", "Criteri", "Location", "Voto", "18esimo", "Tempo"].map((label) => (
+              {["Data", "Nome / email", "Ultimo passo", "Criteri", "Location", "Posto suggerito", "Voto", "18esimo", "Tempo"].map((label) => (
                 <th key={label} className="px-3 py-2 font-semibold">{label}</th>
               ))}
             </tr>
@@ -773,6 +777,7 @@ function DemosTab() {
                 <td className="px-3 py-2">{row.lastStep}<br /><span className="text-xs text-primary-black/45">{formatWhen(row.lastStepAt)}</span></td>
                 <td className="px-3 py-2">{criteriaText(row.criteria)}</td>
                 <td className="px-3 py-2">{row.chosenLocation || "—"}</td>
+                <td className="px-3 py-2">{row.customVenue || "—"}</td>
                 <td className="px-3 py-2">{row.rating ?? "—"}</td>
                 <td className="px-3 py-2">{yesNo(row.wouldUse)}</td>
                 <td className="px-3 py-2">{minutes(row.durationMs)}</td>

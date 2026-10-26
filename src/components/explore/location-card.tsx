@@ -92,7 +92,7 @@ export const LocationCard = memo(function LocationCard({
       ? `Choose ${location.name}`
       : `Scegli ${location.name}`;
 
-  return (
+  const card = (
     <article
       role={picking ? "button" : undefined}
       tabIndex={picking ? 0 : undefined}
@@ -301,6 +301,28 @@ export const LocationCard = memo(function LocationCard({
         </div>
       ) : null}
     </article>
+  );
+
+  if (!picking) return card;
+
+  return (
+    <div className="flex h-full flex-col">
+      {card}
+      <button
+        type="button"
+        onClick={() => onToggleCompare(location.id)}
+        className={cn(
+          "mt-2 flex w-full items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-black transition-colors",
+          isCompareSelected
+            ? "border-brand-teal bg-brand-teal text-ink-inverse"
+            : "border-brand-teal/35 bg-brand-teal/10 text-brand-teal hover:bg-brand-teal/20",
+        )}
+        aria-pressed={isCompareSelected}
+      >
+        <GitCompareArrows className="h-3.5 w-3.5" strokeWidth={2.75} aria-hidden />
+        {isCompareSelected ? "Nel confronto" : "Confronta"}
+      </button>
+    </div>
   );
 });
 

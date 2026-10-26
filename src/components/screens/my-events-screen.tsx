@@ -731,7 +731,7 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
             <p className="flex min-w-0 items-center gap-1.5">
               <MapPin className="h-4 w-4 shrink-0 text-brand-pink" aria-hidden />
               <span className="min-w-0 truncate">
-                {event.locationName}, {event.city}
+                {[event.locationName, event.city].filter(Boolean).join(", ")}
               </span>
             </p>
             <p className="flex min-w-0 items-center gap-1.5">

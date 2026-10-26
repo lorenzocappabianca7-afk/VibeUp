@@ -1,3 +1,4 @@
+import type { CustomVenueRecord } from "@/lib/demo/custom-venue";
 import type { DemoChosenLocation, DemoSession } from "@/types/demo";
 import {
   normalizePartyCriteria,
@@ -77,6 +78,9 @@ function parseSession(raw: string | null | undefined): DemoSession | null {
       ...parsed,
       phone: typeof parsed.phone === "string" ? parsed.phone : "",
       selectedLocations: parseChosenLocations(parsed.selectedLocations),
+      customVenue: parseCustomVenue(
+        (parsed as DemoSession).customVenue,
+      ),
       bookedLocation: parseChosenLocation(parsed.bookedLocation),
       bookingConfirmed: parsed.bookingConfirmed === true,
       bookingConfirmedAt:
@@ -89,6 +93,18 @@ function parseSession(raw: string | null | undefined): DemoSession | null {
   } catch {
     return null;
   }
+}
+
+function parseCustomVenue(value: unknown): CustomVenueRecord | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as CustomVenueRecord;
+  if (typeof row.name !== "string") return null;
+  const name = row.name.trim();
+  if (name.length < 2) return null;
+  return {
+    name,
+    at: typeof row.at === "string" ? row.at : "",
+  };
 }
 
 function parseChosenLocation(value: unknown): DemoChosenLocation | null {
