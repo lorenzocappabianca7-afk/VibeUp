@@ -16,68 +16,13 @@ export function PrelaunchHero({
   return (
     <>
       <header className="vu-in vu-head">
+        <Wordmark size="header" />
         <div className="vu-head-lang">
           <DemoLanguageSwitch />
-        </div>
-        <Wordmark size="header" />
-        <div className="vu-head-end">
-        <a
-          href="#demo"
-          className="vu-btn vu-pill border-surface-2 bg-surface text-primary-black"
-          onClick={(event) => {
-            event.preventDefault();
-            onDemo();
-          }}
-        >
-          <span className="vu-pill-short">{landingCopy.headerDemo}</span>
-          <span className="vu-pill-long">{landingCopy.headerTryDemo}</span>
-        </a>
-        {member ? null : (
-          <button
-            type="button"
-            className="vu-btn vu-cta vu-head-join bg-brand-pink font-[family-name:var(--font-brand)] text-ink-inverse"
-            onClick={onSignup}
-          >
-            <span className="vu-join-long">{landingCopy.joinCta}</span>
-            <span className="vu-join-short">{landingCopy.headerJoinShort}</span>
-          </button>
-        )}
         </div>
       </header>
 
       <section className="vu-hero">
-        <svg className="vu-deco vu-deco-wave" viewBox="0 0 34 18" aria-hidden>
-          <path
-            d="M3 9q5-7 10 0t10 0t9 0"
-            stroke={brandTokens.pink}
-            strokeWidth="7"
-            fill="none"
-            strokeLinecap="round"
-          />
-          <path
-            d="M3 9q5-7 10 0t10 0t9 0"
-            stroke={brandTokens.surface}
-            strokeWidth="3.5"
-            fill="none"
-            strokeLinecap="round"
-          />
-        </svg>
-        <svg className="vu-deco vu-deco-square" viewBox="0 0 16 16" aria-hidden>
-          <rect
-            x="2"
-            y="2"
-            width="12"
-            height="12"
-            rx="2"
-            fill={brandTokens.surface}
-            stroke={brandTokens.teal}
-            strokeWidth="2"
-          />
-        </svg>
-        <svg className="vu-deco vu-deco-circle" viewBox="0 0 14 14" aria-hidden>
-          <circle cx="7" cy="7" r="5" fill={brandTokens.surface} stroke={brandTokens.pink} strokeWidth="2" />
-        </svg>
-
         <div className="vu-in vu-d1 vu-badge border-surface-2 bg-surface">
           <span className="vu-dot bg-brand-teal" />
           <span>{landingCopy.launchBadge}</span>

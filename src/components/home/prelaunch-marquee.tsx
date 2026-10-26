@@ -19,11 +19,11 @@ function MarqueeRun({ hidden = false }: { hidden?: boolean }) {
 export function PrelaunchMarquee() {
   return (
     <>
-      <p className="vu-in vu-d5 vu-tagline vu-brand font-[family-name:var(--font-brand)] text-[20px] font-extrabold">
+      <p className="vu-tagline vu-brand vu-reveal-item font-[family-name:var(--font-brand)] text-[20px] font-extrabold" data-vu-reveal>
         {landingCopy.taglineBefore}
         <span className="vu-tagline-accent text-brand-teal">{landingCopy.taglineAccent}</span>
       </p>
-      <div className="vu-in vu-d5 vu-marquee border-surface-2">
+      <div className="vu-marquee vu-reveal-item border-surface-2" data-vu-reveal>
         <div className="vu-track">
           <MarqueeRun />
           <MarqueeRun hidden />

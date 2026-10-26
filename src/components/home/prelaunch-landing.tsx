@@ -7,6 +7,7 @@ import { PrelaunchFooter } from "@/components/home/prelaunch-footer";
 import { PrelaunchHero } from "@/components/home/prelaunch-hero";
 import { PrelaunchMarquee } from "@/components/home/prelaunch-marquee";
 import { PrelaunchPreview } from "@/components/home/prelaunch-preview";
+import { startLandingReveal } from "@/components/home/prelaunch-reveal";
 import { SignupFlow } from "@/components/home/signup-flow";
 import { landingCopy } from "@/content/landing";
 import { isContestOver } from "@/config/contest";
@@ -15,7 +16,7 @@ import { rememberSignupReferral } from "@/lib/launch/draft";
 import { isVibeUpCode, normalizeCode } from "@/lib/launch/fields";
 import { readRememberedDemoTesterEmail } from "@/lib/demo/testers";
 import { useRouter } from "next/navigation";
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 function scrollToLanding(id: string) {
   const root = document.querySelector("[data-prelaunch-landing]");
@@ -28,6 +29,7 @@ function scrollToLanding(id: string) {
 
 export function PrelaunchLanding({ startSignup = false }: { startSignup?: boolean }) {
   const router = useRouter();
+  const rootRef = useRef<HTMLDivElement>(null);
   const [signupOpen, setSignupOpen] = useState(startSignup);
   const [canEnterDemo, setCanEnterDemo] = useState(false);
   const [member, setMember] = useState<VerifiedMemberCard | null>(null);
@@ -57,6 +59,12 @@ export function PrelaunchLanding({ startSignup = false }: { startSignup?: boolea
     return () => cancelAnimationFrame(again);
   }, []);
 
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    return startLandingReveal(root);
+  }, []);
+
   function openSignup() {
     const root = document.querySelector("[data-prelaunch-landing]");
     if (root instanceof HTMLElement && !root.hasAttribute("data-dialog-open")) {
@@ -75,6 +83,7 @@ export function PrelaunchLanding({ startSignup = false }: { startSignup?: boolea
     <>
       <style>{prelaunchCriticalCss}</style>
       <div
+        ref={rootRef}
         data-prelaunch-landing
         className="bg-background font-sans text-primary-black"
         data-dialog-open={signupOpen ? "" : undefined}
@@ -87,7 +96,7 @@ export function PrelaunchLanding({ startSignup = false }: { startSignup?: boolea
           />
           <PrelaunchMarquee />
           <PrelaunchPreview />
-          <p className="vu-invite vu-brand font-[family-name:var(--font-brand)]">
+          <p className="vu-invite vu-reveal-item vu-brand font-[family-name:var(--font-brand)]" data-vu-reveal>
             {landingCopy.inviteBefore}
             <span className="vu-invite-prize">{landingCopy.invitePrize}</span>
           </p>
@@ -96,8 +105,8 @@ export function PrelaunchLanding({ startSignup = false }: { startSignup?: boolea
             contestOver={contestOver}
             onSignup={openSignup}
           />
-          <section className="vu-follow">
-            <div className="vu-follow-row">
+          <section className="vu-follow" data-vu-reveal>
+            <div className="vu-follow-row vu-reveal-item">
               <p className="vu-follow-title vu-brand">{landingCopy.followSocial}</p>
               <div className="vu-follow-socials">
                 <a
@@ -127,7 +136,7 @@ export function PrelaunchLanding({ startSignup = false }: { startSignup?: boolea
                 </a>
               </div>
             </div>
-            <p className="vu-follow-note vu-brand">{landingCopy.followDemo}</p>
+            <p className="vu-follow-note vu-reveal-item vu-reveal-d1 vu-brand">{landingCopy.followDemo}</p>
           </section>
           <PrelaunchDemoSection
             canEnterDemo={canEnterDemo}

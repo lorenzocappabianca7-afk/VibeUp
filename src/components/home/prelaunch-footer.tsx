@@ -3,7 +3,7 @@ import { Wordmark } from "@/components/home/prelaunch-wordmark";
 
 export function PrelaunchFooter() {
   return (
-    <footer className="vu-foot border-surface-2" data-landing-footer>
+    <footer className="vu-foot vu-reveal-item border-surface-2" data-landing-footer data-vu-reveal>
       <div className="vu-foot-row">
         <div className="vu-foot-brand">
           <Wordmark size="footer" />

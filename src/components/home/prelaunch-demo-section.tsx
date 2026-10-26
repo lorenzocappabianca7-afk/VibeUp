@@ -11,16 +11,16 @@ export function PrelaunchDemoSection({
 }) {
   return (
     <section id="demo" className="vu-demo">
-      <div className="vu-demo-card bg-surface">
-        <span className="vu-kicker vu-kicker-pink text-brand-pink">{landingCopy.demoKicker}</span>
-        <h2 className="vu-h2 vu-brand font-[family-name:var(--font-brand)] text-[28px] font-extrabold leading-[1.08] tracking-[-0.9px]">
+      <div className="vu-demo-card bg-surface" data-vu-reveal>
+        <span className="vu-kicker vu-kicker-pink vu-reveal-item text-brand-pink">{landingCopy.demoKicker}</span>
+        <h2 className="vu-h2 vu-reveal-item vu-reveal-d1 vu-brand font-[family-name:var(--font-brand)] text-[28px] font-extrabold leading-[1.08] tracking-[-0.9px]">
           {landingCopy.demoTitle1}
           <br />
           {landingCopy.demoTitle2}
         </h2>
-        <p className="vu-body text-[15px]">{landingCopy.demoBody}</p>
+        <p className="vu-body vu-reveal-item vu-reveal-d2 text-[15px]">{landingCopy.demoBody}</p>
 
-        <div className="vu-phone-wrap" aria-hidden>
+        <div className="vu-phone-wrap vu-reveal-item vu-reveal-d3" aria-hidden>
           <div className="vu-phone border-surface-2 bg-background">
             <div className="vu-phone-brand">
               <Wordmark size="mock" />
@@ -48,13 +48,13 @@ export function PrelaunchDemoSection({
         </div>
 
         {canEnterDemo ? (
-          <a className="vu-btn vu-cta-teal bg-brand-teal font-[family-name:var(--font-brand)] text-[17px] text-ink-inverse" href="/demo">
+          <a className="vu-btn vu-cta-teal vu-reveal-item vu-reveal-d3 bg-brand-teal font-[family-name:var(--font-brand)] text-[17px] text-ink-inverse" href="/demo">
             {landingCopy.demoEnter}
             <ArrowIcon />
           </a>
         ) : (
           <a
-            className="vu-btn vu-cta-teal bg-brand-teal font-[family-name:var(--font-brand)] text-[17px] text-ink-inverse"
+            className="vu-btn vu-cta-teal vu-reveal-item vu-reveal-d3 bg-brand-teal font-[family-name:var(--font-brand)] text-[17px] text-ink-inverse"
             href="#iscriviti"
             onClick={(event) => {
               event.preventDefault();
@@ -67,7 +67,7 @@ export function PrelaunchDemoSection({
         )}
 
         {canEnterDemo ? null : (
-        <div className="vu-lock">
+        <div className="vu-lock vu-reveal-item vu-reveal-d3">
           <svg
             viewBox="0 0 24 24"
             fill="none"

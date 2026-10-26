@@ -25,7 +25,7 @@ function PhoneShot({
 
 export function PrelaunchPreview() {
   return (
-    <section className="vu-preview" aria-label={landingCopy.previewLabel}>
+    <section className="vu-preview vu-reveal-item" data-vu-reveal aria-label={landingCopy.previewLabel}>
       <div className="vu-preview-fit">
       <div className="vu-preview-stage">
         <PhoneShot
