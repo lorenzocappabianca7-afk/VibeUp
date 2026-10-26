@@ -229,7 +229,13 @@ export function CommunityPanel() {
   }
 
   if (!isStorageHydrated || gate === "checking") {
-    return <Shell><p className="text-sm text-primary-black/50">Caricamento…</p></Shell>;
+    return (
+      <Shell>
+        <p className="text-sm text-primary-black/50" suppressHydrationWarning>
+          Caricamento…
+        </p>
+      </Shell>
+    );
   }
 
   if (gate !== "ready") {
