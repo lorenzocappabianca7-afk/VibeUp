@@ -1,6 +1,10 @@
 import { createHash, createHmac, randomInt, timingSafeEqual } from "crypto";
+import { verifyCopy } from "@/content/emails/verify";
 import { sendTransactionalEmail } from "@/lib/email/mailer";
+import { parseSiteLocale, type DemoLanguage } from "@/lib/demo/language";
 import { getSiteUrl } from "@/lib/site";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 let pepperWarningShown = false;
@@ -60,35 +64,64 @@ export function marketingTokenMatches(signupId: string, token: string) {
   return timingSafeEqual(left, right);
 }
 
+const VERIFY_PREVIEW_PATH = path.join(process.cwd(), ".tmp", "emails", "verify-preview.html");
+
+export function isLocalTestInbox(email: string) {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    /^test\+[^@\s]+@(vibeupevents\.com|mailinator\.com)$/i.test(email.trim())
+  );
+}
+
+export function buildVerificationEmail(input: {
+  firstName: string;
+  code: string;
+  locale?: DemoLanguage;
+}) {
+  const locale = parseSiteLocale(input.locale);
+  const copy = verifyCopy(locale);
+  const name = input.firstName.trim() || (locale === "en" ? "there" : "ciao");
+  const greeting = copy.greeting.replaceAll("{nome}", name);
+  const subject = copy.subject;
+  const text = `${greeting}\n\n${copy.lead} ${input.code}.\n${copy.textExpires}\n\n${copy.textIgnore}`;
+  const html = `<!DOCTYPE html>
+<html lang="${locale}">
+  <head><meta charset="utf-8" /><title>${escapeHtml(subject)}</title></head>
+  <body style="margin:0;padding:24px;background:#0F1115;color:#F5F5F7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+    <p style="margin:0 0 12px;font-size:16px;">${escapeHtml(greeting)}</p>
+    <p style="margin:0 0 12px;font-size:15px;line-height:1.5;color:#C9CAD0;">${escapeHtml(copy.lead)}</p>
+    <p style="margin:0 0 12px;font-size:32px;letter-spacing:6px;font-weight:700;">${escapeHtml(input.code)}</p>
+    <p style="margin:0;font-size:14px;line-height:1.5;color:#A1A3AB;">${escapeHtml(copy.expires)}</p>
+  </body>
+</html>`;
+  return { subject, text, html };
+}
+
 export async function sendVerificationEmail(input: {
   to: string;
   firstName: string;
   code: string;
   signupId: string;
   origin?: string;
+  locale?: DemoLanguage;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  const name = input.firstName.trim() || "ciao";
-  const text = `Ciao ${name},\n\nil tuo codice VibeUp è ${input.code}.\nScade tra 10 minuti.\n\nSe non hai chiesto tu l’iscrizione, ignora questa email.`;
-  const html = `<!DOCTYPE html>
-<html lang="it">
-  <body style="margin:0;padding:24px;background:#0F1115;color:#F5F5F7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-    <p style="margin:0 0 12px;font-size:16px;">Ciao ${escapeHtml(name)},</p>
-    <p style="margin:0 0 12px;font-size:15px;line-height:1.5;color:#C9CAD0;">Il tuo codice VibeUp è</p>
-    <p style="margin:0 0 12px;font-size:32px;letter-spacing:6px;font-weight:700;">${escapeHtml(input.code)}</p>
-    <p style="margin:0;font-size:14px;line-height:1.5;color:#A1A3AB;">Scade tra 10 minuti. Se non hai chiesto tu l’iscrizione, ignora questa email.</p>
-  </body>
-</html>`;
+  const mail = buildVerificationEmail(input);
+  const skipSend =
+    (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY?.trim()) ||
+    isLocalTestInbox(input.to);
 
-  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY?.trim()) {
+  if (skipSend) {
+    await mkdir(path.dirname(VERIFY_PREVIEW_PATH), { recursive: true });
+    await writeFile(VERIFY_PREVIEW_PATH, mail.html, "utf8");
     console.info(`[waitlist] codice per ${input.to}: ${input.code}`);
     return { ok: true };
   }
 
   return sendTransactionalEmail({
     to: input.to,
-    subject: "Il tuo codice VibeUp",
-    text,
-    html,
+    subject: mail.subject,
+    text: mail.text,
+    html: mail.html,
     fromName: "VibeUp",
     unsubscribeUrl: marketingUnsubscribeUrl(input.signupId, input.origin),
   });

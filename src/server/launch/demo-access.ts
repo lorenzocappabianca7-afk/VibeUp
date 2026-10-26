@@ -63,16 +63,18 @@ export async function ensureDemoAccessToken(signupId: string): Promise<string | 
   return null;
 }
 
-/** Signup id when the token matches a verified row and the public demo is still open. */
-export async function findSignupIdByDemoToken(token: string): Promise<string | null> {
+/** Signup id and language when the token matches a verified row and the public demo is still open. */
+export async function findSignupByDemoToken(
+  token: string,
+): Promise<{ signupId: string; locale: "it" | "en" } | null> {
   if (!isDemoAccessToken(token) || !isDemoAccessOpen() || !isSupabaseConfigured()) return null;
   const { data, error } = await getSupabaseAdmin()
     .from(SIGNUPS)
-    .select("id, email_verified_at")
+    .select("id, email_verified_at, locale")
     .eq("demo_access_token", token)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  const row = data as { id: string; email_verified_at: string | null } | null;
+  const row = data as { id: string; email_verified_at: string | null; locale?: string | null } | null;
   if (!row?.email_verified_at) return null;
-  return row.id;
+  return { signupId: row.id, locale: row.locale === "en" ? "en" : "it" };
 }

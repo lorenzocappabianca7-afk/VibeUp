@@ -4,6 +4,7 @@ import { useDemoLanguage } from "@/context/demo-language-context";
 import { consentText } from "@/content/legal";
 import { signupCopy } from "@/content/signup";
 import { SignupMemberCard } from "@/components/home/signup-share";
+import { readDemoLanguage } from "@/lib/demo/language";
 import { DEMO_SIGNUP_ID_STORAGE_KEY, readVerifiedMember } from "@/lib/demo/signup-gate";
 import {
   clearSignupDraft,
@@ -400,6 +401,7 @@ export function SignupFlow({
       email: draft.email,
       consentPrivacy: false,
       consentRules: false,
+      locale: readDemoLanguage(),
     });
     setBusy(false);
     if (!result.ok || !result.signupId) {
@@ -437,6 +439,7 @@ export function SignupFlow({
       consentPrivacy: draft.consentPrivacy,
       consentRules: draft.consentRules,
       consentMarketing: draft.consentMarketing,
+      locale: readDemoLanguage(),
     });
     setBusy(false);
     const signupId = result.signupId || draft.signupId;

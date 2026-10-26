@@ -27,3 +27,31 @@ export const welcomeEmailCopy = {
   dataLabel: "Gestisci i tuoi dati",
   brandLine: "VibeUp · info@vibeupevents.com",
 } as const;
+
+export const welcomeEmailCopyEn = {
+  subject: "Welcome to VibeUp, {nome}! Here's your VibeUpcode",
+  preheader: "Your personal code to invite friends and win prizes.",
+  greeting: "Hi {nome},",
+  thanks:
+    "thanks for signing up to VibeUp! You're now officially part of our pre-launch community.",
+  codeLead: "Your personal VibeUpcode is:",
+  contest:
+    "Share it with your friends: every friend who signs up with your code and confirms their email counts towards the invite contest. Up for grabs: VibeUp vouchers worth €300, €150 and €50 for whoever invites the most friends, redeemable from the app launch on 1 January 2027.",
+  shareButton: "Share your code",
+  updates:
+    "In the meantime, we'll keep you posted on everything: the platform launch, new venues and services, the invite contest and tips to plan your 18th without stress.",
+  demoLead: "Want a sneak peek? You can already try our demo:",
+  demoLink: "Try the demo",
+  signoff: "See you soon,",
+  team: "The VibeUp team",
+  reason:
+    "You're receiving this email because you joined the VibeUp community on vibeupevents.com.",
+  privacyLabel: "Privacy",
+  rulesLabel: "Rules",
+  dataLabel: "Manage your data",
+  brandLine: "VibeUp · info@vibeupevents.com",
+} as const;
+
+export function welcomeCopy(locale: "it" | "en") {
+  return locale === "en" ? welcomeEmailCopyEn : welcomeEmailCopy;
+}

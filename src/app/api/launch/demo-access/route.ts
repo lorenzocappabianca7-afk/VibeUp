@@ -6,7 +6,7 @@ import {
   launchOk,
   readJsonObject,
 } from "@/server/launch/request";
-import { findSignupIdByDemoToken, isDemoAccessToken } from "@/server/launch/demo-access";
+import { findSignupByDemoToken, isDemoAccessToken } from "@/server/launch/demo-access";
 import { type NextRequest } from "next/server";
 
 export const runtime = "nodejs";
@@ -18,9 +18,9 @@ export async function POST(request: NextRequest) {
   const token = asText(body?.token).trim();
   if (!isDemoAccessToken(token) || !isDemoAccessOpen()) return launchOk({ ok: false });
   try {
-    const signupId = await findSignupIdByDemoToken(token);
-    if (!signupId) return launchOk({ ok: false });
-    return launchOk({ ok: true, signupId });
+    const found = await findSignupByDemoToken(token);
+    if (!found) return launchOk({ ok: false });
+    return launchOk({ ok: true, signupId: found.signupId, locale: found.locale });
   } catch {
     return launchError(500, "unavailable");
   }

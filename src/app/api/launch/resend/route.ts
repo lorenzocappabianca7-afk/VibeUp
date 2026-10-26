@@ -8,7 +8,7 @@ import {
   readJsonObject,
   requestOrigin,
 } from "@/server/launch/request";
-import { issueEmailCode } from "@/server/repositories/waitlist";
+import { issueEmailCode, readSignupLocale } from "@/server/repositories/waitlist";
 import { type NextRequest } from "next/server";
 
 export const runtime = "nodejs";
@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
       code: issued.code,
       signupId,
       origin: requestOrigin(request),
+      locale: await readSignupLocale(signupId),
     });
     if (!mailed.ok) return launchError(503, "send_failed");
     return launchOk({ sentAt: issued.sentAt });

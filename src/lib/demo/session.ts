@@ -161,12 +161,16 @@ export function clearDemoVisit() {
   clearDurable(DEMO_VISIT_STORAGE_KEY);
 }
 
-/** Drop every client key that could resume or prefill a previous attempt. */
+/**
+ * Drop every client key that could resume or prefill a previous attempt.
+ * vu_locale and vibeup-demo-lang stay, so a new demo entry keeps the language.
+ */
 export function clearDemoAttemptLocalState() {
   clearDemoSession();
   clearDemoVisit();
   clearDemoHomeTip();
   clearDemoPartyCriteria();
+  if (typeof window !== "undefined") window.__vibeupActivateDemoLang?.();
 }
 
 /**

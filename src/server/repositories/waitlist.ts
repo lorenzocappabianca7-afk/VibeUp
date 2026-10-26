@@ -1,4 +1,5 @@
 import { randomInt } from "crypto";
+import { parseSiteLocale, type DemoLanguage } from "@/lib/demo/language";
 import { ensureDemoAccessToken } from "@/server/launch/demo-access";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -54,6 +55,7 @@ export type WaitlistDraft = {
   referralCode: string | null;
   consentMarketing: boolean;
   ipHash: string | null;
+  locale?: DemoLanguage;
 };
 
 type SignupRow = {
@@ -168,12 +170,21 @@ async function findByEmail(email: string) {
 }
 
 /** Name, username and email only. The profile and consents come later. */
+export async function readSignupLocale(signupId: string): Promise<DemoLanguage> {
+  const client = admin();
+  if (!client) return "it";
+  const { data, error } = await client.from(SIGNUPS).select("locale").eq("id", signupId).maybeSingle();
+  if (error) return "it";
+  return parseSiteLocale((data as { locale?: string } | null)?.locale);
+}
+
 export async function startEmailSignup(input: {
   firstName: string;
   lastName: string;
   username: string;
   email: string;
   ipHash: string | null;
+  locale?: DemoLanguage;
 }): Promise<{ ok: true; id: string; firstName: string } | { ok: false; error: WaitlistError }> {
   const client = admin();
   if (!client) return unavailable();
@@ -195,6 +206,7 @@ export async function startEmailSignup(input: {
     username,
     email,
     ip_hash: input.ipHash,
+    locale: parseSiteLocale(input.locale),
     email_confirmed_at: null as string | null,
   };
 
@@ -288,6 +300,7 @@ export async function savePendingSignup(
     consent_rules_at: now,
     consent_marketing: draft.consentMarketing,
     ip_hash: draft.ipHash,
+    locale: parseSiteLocale(draft.locale),
   };
 
   if (existing) {

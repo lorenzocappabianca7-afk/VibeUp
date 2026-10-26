@@ -3,6 +3,7 @@
 import { MobileShell } from "@/components/layout/mobile-shell";
 import { useAppState } from "@/context/app-state-context";
 import { isDemoExitToSite, useDemoMode } from "@/context/demo-mode-context";
+import { isSiteLocale, writeDemoLanguage } from "@/lib/demo/language";
 import { confirmVerifiedSignup, DEMO_SIGNUP_ID_STORAGE_KEY, demoEntryIdentity } from "@/lib/demo/signup-gate";
 import { isUnlimitedDemoTesterEmail, rememberDemoTesterEmail } from "@/lib/demo/testers";
 import { useRouter } from "next/navigation";
@@ -26,11 +27,20 @@ export default function DemoRoutePage() {
         body: JSON.stringify({ token }),
       })
         .then((response) => response.json())
-        .then((data: { ok?: boolean; signupId?: string }) => {
+        .then((data: { ok?: boolean; signupId?: string; locale?: string }) => {
           if (cancelled || isDemoExitToSite()) return;
           if (data.ok !== true || typeof data.signupId !== "string" || !data.signupId) {
             router.replace("/#iscriviti");
             return;
+          }
+          if (isSiteLocale(data.locale)) {
+            const active = document.documentElement.dataset.vibeupLang;
+            writeDemoLanguage(data.locale);
+            if (active !== data.locale) {
+              window.location.replace(window.location.href);
+              return;
+            }
+            window.__vibeupActivateDemoLang?.();
           }
           window.localStorage.setItem(DEMO_SIGNUP_ID_STORAGE_KEY, data.signupId);
           History.prototype.replaceState.call(window.history, window.history.state, "", "/demo");

@@ -232,15 +232,30 @@ for(var k in pack){
 if(Object.prototype.hasOwnProperty.call(pack,k)&&pack[k])dict.set(norm(k),pack[k]);
 }
 }
+function chosenLocale(){
+try{
+var site=localStorage.getItem("vu_locale");
+if(site==="en"||site==="it")return site;
+var legacy=localStorage.getItem("vibeup-demo-lang");
+if(legacy==="en"||legacy==="it")return legacy;
+}catch(e){}
+return "";
+}
+function resolveLocale(){
+var chosen=chosenLocale();
+if(chosen)return chosen;
+var nav=((navigator.language||"")+"").toLowerCase();
+return nav.indexOf("en")===0?"en":"it";
+}
 window.__vibeupActivateDemoLang=function(){
-var lang="it";
-try{if(localStorage.getItem("vibeup-demo-lang")==="en")lang="en";}catch(e){}
+var lang=resolveLocale();
 window.__vibeupDemoLang=lang;
 try{document.documentElement.dataset.vibeupLang=lang;}catch(e){}
-if(lang!=="en"){return;}
+if(lang!=="en"){active=false;return;}
 active=true;
 seedDemoDict();
 if(document.body)applyDict(document.body);
 };
+try{window.__vibeupActivateDemoLang();}catch(e){}
 }catch(e){}
 })();`;

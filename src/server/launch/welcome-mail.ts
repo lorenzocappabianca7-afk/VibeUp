@@ -1,4 +1,6 @@
-import { welcomeEmailCopy } from "@/content/emails/welcome";
+import { welcomeCopy } from "@/content/emails/welcome";
+import { isLocalTestInbox } from "@/server/launch/code-mail";
+import { parseSiteLocale, type DemoLanguage } from "@/lib/demo/language";
 import { isTransactionalEmailConfigured, sendTransactionalEmail } from "@/lib/email/mailer";
 import { getSiteUrl } from "@/lib/site";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -33,8 +35,10 @@ export function buildWelcomeEmail(input: {
   firstName: string;
   code: string;
   demoUrl?: string;
+  locale?: DemoLanguage;
 }): WelcomeMail {
-  const name = input.firstName.trim() || "ciao";
+  const locale = parseSiteLocale(input.locale);
+  const name = input.firstName.trim() || (locale === "en" ? "there" : "ciao");
   const code = input.code.trim();
   const origin = emailOrigin();
   const shareUrl = `${origin}/?ref=${encodeURIComponent(code)}`;
@@ -42,7 +46,7 @@ export function buildWelcomeEmail(input: {
   const privacyUrl = `${origin}/privacy`;
   const rulesUrl = `${origin}/regolamento`;
   const dataUrl = `${origin}/privacy/richiesta`;
-  const copy = welcomeEmailCopy;
+  const copy = welcomeCopy(locale);
   const subject = copy.subject.replaceAll("{nome}", name);
   const text = [
     copy.greeting.replaceAll("{nome}", name),
@@ -75,7 +79,7 @@ export function buildWelcomeEmail(input: {
   const safeCode = escapeHtml(code);
   const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
   const html = `<!DOCTYPE html>
-<html lang="it">
+<html lang="${locale}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -167,12 +171,18 @@ export async function deliverWelcomeEmail(input: {
     console.error("[demo-access] token non creato", error instanceof Error ? error.message : error);
     return null;
   });
+  const { data: localeRow } = await getSupabaseAdmin()
+    .from("waitlist_signups")
+    .select("locale")
+    .eq("id", input.signupId)
+    .maybeSingle();
   const mail = buildWelcomeEmail({
     firstName: input.firstName,
     code: input.code,
+    locale: parseSiteLocale((localeRow as { locale?: string } | null)?.locale),
     demoUrl: token ? demoAccessUrl(token, origin) : `${origin}/demo`,
   });
-  if (!isTransactionalEmailConfigured()) {
+  if (!isTransactionalEmailConfigured() || isLocalTestInbox(input.email)) {
     const file = await writeWelcomePreview(mail.html);
     console.info(`[welcome] RESEND_API_KEY assente, anteprima salvata in ${file}`);
     return { ok: false as const, skipped: true as const };

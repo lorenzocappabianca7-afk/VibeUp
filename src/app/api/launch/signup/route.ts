@@ -5,6 +5,7 @@ import {
   normalizeCode,
   normalizeEmail,
 } from "@/lib/launch/fields";
+import { parseSiteLocale } from "@/lib/demo/language";
 import { hashClientIp, sendVerificationEmail } from "@/server/launch/code-mail";
 import { demoAccessPath, ensureDemoAccessToken } from "@/server/launch/demo-access";
 import {
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
     referralCode: isVibeUpCode(referralRaw) ? referralRaw : null,
     consentMarketing: marketing,
     ipHash,
+    locale: parseSiteLocale(body.locale),
   };
 
   if (!hasConsents) {
@@ -77,6 +79,7 @@ export async function POST(request: NextRequest) {
       username: draft.username,
       email,
       ipHash,
+      locale: draft.locale,
     }).catch(() => null);
     if (!started) return launchError(500, "unavailable");
     if (!started.ok) return launchError(started.error === "invalid" ? 400 : 409, started.error);
@@ -96,6 +99,7 @@ export async function POST(request: NextRequest) {
       code: issued.code,
       signupId: started.id,
       origin: requestOrigin(request),
+      locale: draft.locale,
     });
     if (!mailed.ok) return launchError(503, "send_failed");
     return launchOk({ signupId: started.id, sentAt: issued.sentAt });
@@ -156,6 +160,7 @@ export async function POST(request: NextRequest) {
     code: issued.code,
     signupId: saved.id,
     origin: requestOrigin(request),
+    locale: draft.locale,
   });
   if (!mailed.ok) return launchError(503, "send_failed");
   return launchOk({ signupId: saved.id, sentAt: issued.sentAt });
