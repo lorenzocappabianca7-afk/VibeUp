@@ -1,4 +1,5 @@
 import { isDemoAccessOpen } from "@/config/demo-access";
+import { isUuid } from "@/server/launch/request";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { randomBytes } from "node:crypto";
@@ -24,7 +25,7 @@ function createDemoAccessToken() {
 
 /** Opaque reusable token for this verified signup. The raw value is not the signup id. */
 export async function ensureDemoAccessToken(signupId: string): Promise<string | null> {
-  if (!isSupabaseConfigured() || !isDemoAccessOpen()) return null;
+  if (!isSupabaseConfigured() || !isDemoAccessOpen() || !isUuid(signupId)) return null;
   const client = getSupabaseAdmin();
   const { data, error } = await client
     .from(SIGNUPS)

@@ -1,4 +1,5 @@
 import { randomInt } from "crypto";
+import { isUuid } from "@/server/launch/request";
 import { parseSiteLocale, type DemoLanguage } from "@/lib/demo/language";
 import { ensureDemoAccessToken } from "@/server/launch/demo-access";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -172,7 +173,7 @@ async function findByEmail(email: string) {
 /** Name, username and email only. The profile and consents come later. */
 export async function readSignupLocale(signupId: string): Promise<DemoLanguage> {
   const client = admin();
-  if (!client) return "it";
+  if (!client || !isUuid(signupId)) return "it";
   const { data, error } = await client.from(SIGNUPS).select("locale").eq("id", signupId).maybeSingle();
   if (error) return "it";
   return parseSiteLocale((data as { locale?: string } | null)?.locale);
@@ -674,7 +675,7 @@ export async function finishConfirmedSignup(
 
 export async function findVerifiedSignup(signupId: string) {
   const client = admin();
-  if (!client) return null;
+  if (!client || !isUuid(signupId)) return null;
   const { data, error } = await client
     .from(SIGNUPS)
     .select("id, email, first_name, phone, vibeup_code, email_verified_at")

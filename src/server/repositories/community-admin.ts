@@ -1,4 +1,5 @@
 import { isValidInvite } from "@/server/repositories/contest";
+import { isUuid } from "@/server/launch/request";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
@@ -82,6 +83,7 @@ type DemoDb = {
 export interface DemoSummary {
   id: string;
   signupId: string;
+  linked: boolean;
   email: string;
   name: string;
   createdAt: string;
@@ -189,6 +191,7 @@ export function summarizeDemo(row: DemoDb): DemoSummary {
   return {
     id: row.id,
     signupId: asText(payload.signup_id),
+    linked: false,
     email: asText(payload.email).toLowerCase(),
     name: [asText(payload.firstName), asText(payload.lastName)].filter(Boolean).join(" "),
     createdAt: row.created_at,
@@ -256,18 +259,19 @@ async function attachSignupNames(demos: DemoSummary[]) {
   }
   await pull(
     "id",
-    [...new Set(demos.map((demo) => demo.signupId).filter(Boolean))],
+    [...new Set(demos.map((demo) => demo.signupId).filter(isUuid))],
   );
   await pull(
     "email",
-    [...new Set(demos.filter((demo) => !demo.signupId && demo.email).map((demo) => demo.email))],
+    [...new Set(demos.filter((demo) => !isUuid(demo.signupId) && demo.email).map((demo) => demo.email))],
   );
   return demos.map((demo) => {
-    const card = (demo.signupId ? byId.get(demo.signupId) : undefined) ?? byEmail.get(demo.email);
-    if (!card) return demo;
+    const card = (isUuid(demo.signupId) ? byId.get(demo.signupId) : undefined) ?? byEmail.get(demo.email);
+    if (!card) return { ...demo, linked: false };
     return {
       ...demo,
-      signupId: demo.signupId || card.id,
+      linked: true,
+      signupId: isUuid(demo.signupId) ? demo.signupId : card.id,
       name: demo.name || card.name,
       email: demo.email || card.email,
     };
@@ -616,7 +620,7 @@ export async function loadCommunitySignups(filters: CommunityFilters, all: boole
   }
   if (filters.demo !== "all") {
     const demos = await loadDemos();
-    const linked = new Set(demos.map((demo) => demo.signupId).filter(Boolean));
+    const linked = new Set(demos.map((demo) => demo.signupId).filter(isUuid));
     const emails = [...new Set(demos.map((demo) => demo.email).filter(Boolean))];
     if (emails.length > 0) {
       const { data: matched, error: matchError } = await client
@@ -633,7 +637,7 @@ export async function loadCommunitySignups(filters: CommunityFilters, all: boole
         ...new Set(
           demos
             .filter((demo) => demo.status === filters.demo)
-            .flatMap((demo) => (demo.signupId ? [demo.signupId] : [])),
+            .flatMap((demo) => (isUuid(demo.signupId) ? [demo.signupId] : [])),
         ),
       ];
       if (ids.length === 0) {
@@ -723,6 +727,7 @@ export function signupsToCsv(rows: CommunitySignupRow[]) {
 export async function loadCommunityPerson(signupId: string) {
   const client = admin();
   if (!client) throw new Error("Supabase non configurato.");
+  if (!isUuid(signupId)) return null;
   const { data, error } = await client.from(SIGNUPS).select("*").eq("id", signupId).maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return null;

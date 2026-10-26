@@ -60,6 +60,7 @@ type Overview = {
 type DemoRow = {
   id: string;
   signupId: string;
+  linked: boolean;
   email: string;
   name: string;
   createdAt: string;
@@ -773,7 +774,13 @@ function DemosTab() {
             {rows.map((row) => (
               <tr key={row.id} className="border-t border-white/10">
                 <td className="px-3 py-2 whitespace-nowrap">{formatWhen(row.createdAt)}</td>
-                <td className="px-3 py-2">{row.name || "—"}<br />{row.email || row.signupId || "—"}</td>
+                <td className="px-3 py-2">
+                  {row.linked ? (
+                    <>{row.name || "—"}<br />{row.email || "—"}</>
+                  ) : (
+                    <>Non collegata a un iscritto{row.email ? <><br />{row.email}</> : null}</>
+                  )}
+                </td>
                 <td className="px-3 py-2">{row.lastStep}<br /><span className="text-xs text-primary-black/45">{formatWhen(row.lastStepAt)}</span></td>
                 <td className="px-3 py-2">{criteriaText(row.criteria)}</td>
                 <td className="px-3 py-2">{row.chosenLocation || "—"}</td>
