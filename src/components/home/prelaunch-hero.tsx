@@ -38,7 +38,8 @@ export function PrelaunchHero({
             className="vu-btn vu-cta vu-head-join bg-brand-pink font-[family-name:var(--font-brand)] text-ink-inverse"
             onClick={onSignup}
           >
-            {landingCopy.joinCta}
+            <span className="vu-join-long">{landingCopy.joinCta}</span>
+            <span className="vu-join-short">{landingCopy.headerJoinShort}</span>
           </button>
         )}
         </div>

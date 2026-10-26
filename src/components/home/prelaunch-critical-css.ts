@@ -121,6 +121,7 @@ ${prelaunchChromeHideCss}
 .vu-head-join,
 .vu-pill-long { display: none; }
 .vu-pill-short { display: contents; }
+.vu-join-short { display: none; }
 .vu-mark {
   display: flex;
   align-items: baseline;
@@ -197,7 +198,7 @@ ${prelaunchChromeHideCss}
 .vu-hero-tagline {
   width: 100%;
   margin: -4px 0 6px;
-  overflow: hidden;
+  overflow: visible;
   color: ${text};
   font-size: 26px;
   font-weight: 700;
@@ -206,16 +207,92 @@ ${prelaunchChromeHideCss}
   white-space: nowrap;
 }
 .vu-hero-tagline span {
-  display: inline-block;
-  transform-origin: left center;
   text-decoration: underline;
   text-decoration-color: ${teal};
   text-decoration-thickness: 3px;
   text-underline-offset: 5px;
+  text-decoration-skip-ink: none;
+  -webkit-text-decoration-skip: none;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 @media (max-width: 446px) {
-  .vu-hero-tagline span {
-    transform: scaleX(calc((100vw - 40px) / 420px));
+  .vu-hero-tagline {
+    white-space: normal;
+    line-height: 1.45;
+  }
+}
+@media (max-width: 767px) {
+  .vu-head {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    grid-template-areas:
+      "logo logo"
+      "lang actions";
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 12px;
+    padding: 14px 16px 0;
+    container-type: inline-size;
+    container-name: vuhead;
+  }
+  .vu-head .vu-mark {
+    grid-area: logo;
+    justify-self: center;
+    margin-right: 0;
+  }
+  .vu-mark-header { font-size: 30px; letter-spacing: -0.55px; }
+  .vu-head .vu-script { font-size: 22px; }
+  .vu-head-lang {
+    grid-area: lang;
+    justify-self: start;
+    align-self: center;
+  }
+  .vu-head-lang > div {
+    height: 36px;
+    align-items: center;
+  }
+  .vu-head-lang button {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+  .vu-head-end {
+    grid-area: actions;
+    justify-self: end;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .vu-head .vu-pill,
+  .vu-head .vu-head-join {
+    position: relative;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    font-size: 14px;
+    line-height: 1;
+    white-space: nowrap;
+    flex: none;
+  }
+  .vu-head .vu-head-join {
+    display: inline-flex;
+    width: auto;
+  }
+  .vu-head .vu-pill::before,
+  .vu-head .vu-head-join::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 44px;
+    transform: translateY(-50%);
+  }
+  @container vuhead (max-width: 280px) {
+    .vu-head .vu-join-long { display: none; }
+    .vu-head .vu-join-short { display: inline; }
   }
 }
 .vu-cool {

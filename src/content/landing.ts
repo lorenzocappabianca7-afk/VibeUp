@@ -20,6 +20,7 @@ export const landingCopy = {
   heroSubtitleRest:
     ", la soluzione per chi vuole creare il 18 perfetto senza stress.",
   joinCta: "Iscriviti ora",
+  headerJoinShort: "Iscriviti",
   howItWorks: "Guarda come funziona",
   taglineBefore: "Trova tutto ciò che ti serve in ",
   taglineAccent: "un unico posto",
