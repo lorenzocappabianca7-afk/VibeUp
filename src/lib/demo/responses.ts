@@ -18,14 +18,29 @@ function asRating(value: unknown): number | null {
   return rating;
 }
 
+function asLocation(value: unknown): DemoChosenLocation | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as DemoChosenLocation;
+  if (typeof row.id !== "string" || typeof row.name !== "string") return null;
+  const id = row.id.trim();
+  const name = row.name.trim();
+  if (!id || !name) return null;
+  return { id, name };
+}
+
 function asLocations(value: unknown): DemoChosenLocation[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item) => {
-    if (!item || typeof item !== "object") return [];
-    const row = item as DemoChosenLocation;
-    if (typeof row.id !== "string" || typeof row.name !== "string") return [];
-    return [{ id: row.id, name: row.name }];
+    const parsed = asLocation(item);
+    return parsed ? [parsed] : [];
   });
+}
+
+/** Location saved for this visit. Older rows keep the booked pick, then the list. */
+export function demoChosenLocation(row: DemoResponseRow): DemoChosenLocation | null {
+  if (row.chosenLocation) return row.chosenLocation;
+  if (row.selectedLocations.length === 1) return row.selectedLocations[0];
+  return row.bookedLocation;
 }
 
 export function parseDemoResponse(submission: DemoSubmission): DemoResponseRow {
@@ -38,7 +53,8 @@ export function parseDemoResponse(submission: DemoSubmission): DemoResponseRow {
     email: asString(payload.email) ?? "",
     phone: asString(payload.phone) ?? "",
     selectedLocations: asLocations(payload.selectedLocations),
-    bookedLocation: asLocations([payload.bookedLocation])[0] ?? null,
+    chosenLocation: asLocation(payload.chosenLocation),
+    bookedLocation: asLocation(payload.bookedLocation),
     rating: asRating(payload.rating),
     wouldUseForEighteenth: asBoolean(payload.wouldUseForEighteenth),
     completed: payload.completed === true,

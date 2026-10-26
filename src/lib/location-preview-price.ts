@@ -1,3 +1,4 @@
+import { isDemoMode } from "@/lib/demo/mode";
 import { formatQuoteDisplayPriceSpan } from "@/lib/demo/price";
 import { calculateDrinksCost, DEFAULT_DRINKS_PER_INVITEE } from "@/lib/drinks-quote";
 import { calculateBookingQuote } from "@/lib/location";
@@ -60,14 +61,16 @@ export function estimateLocationFilteredCost(
     location,
     date,
   });
-  const drinksCost = calculateDrinksCost({
-    mode: criteria?.drinkMode ?? "none",
-    drinksPerInvitee: criteria?.drinksPerInvitee ?? DEFAULT_DRINKS_PER_INVITEE,
-    guestCount,
-    drinkUnitPrice: location.drinksPricing?.drinkUnitPrice,
-    openBarPerInvitee: location.drinksPricing?.openBarPerInvitee,
-    vatRate: location.drinksPricing?.vatRate,
-  });
+  const drinksCost = isDemoMode()
+    ? 0
+    : calculateDrinksCost({
+        mode: criteria?.drinkMode ?? "none",
+        drinksPerInvitee: criteria?.drinksPerInvitee ?? DEFAULT_DRINKS_PER_INVITEE,
+        guestCount,
+        drinkUnitPrice: location.drinksPricing?.drinkUnitPrice,
+        openBarPerInvitee: location.drinksPricing?.openBarPerInvitee,
+        vatRate: location.drinksPricing?.vatRate,
+      });
   return quote.locationCost + drinksCost;
 }
 
@@ -99,11 +102,13 @@ export function getFilteredLocationPricePresentation(
   ];
 
   if (
+    !isDemoMode() &&
     criteria?.drinkMode === "open_bar" &&
     location.drinksPricing?.openBarPerInvitee != null
   ) {
     parts.push("open bar");
   } else if (
+    !isDemoMode() &&
     criteria?.drinkMode === "per_invitee" &&
     location.drinksPricing?.drinkUnitPrice != null
   ) {

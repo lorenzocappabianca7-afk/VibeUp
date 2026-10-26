@@ -6,11 +6,12 @@ import {
   ImageCarousel,
   uniqueImages,
 } from "@/components/ui/image-carousel";
+import { useDemoLanguage } from "@/context/demo-language-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { getFilteredLocationPricePresentation } from "@/lib/location-preview-price";
 import { cn } from "@/lib/utils";
 import type { ContactPreview, Location } from "@/types/location";
-import { GitCompareArrows, Heart, MapPin } from "lucide-react";
+import { Check, GitCompareArrows, Heart, MapPin } from "lucide-react";
 import { memo, useMemo, useState } from "react";
 
 interface LocationCardProps {
@@ -24,6 +25,8 @@ interface LocationCardProps {
   showCompare?: boolean;
   /** First above-the-fold card: eager LCP image. */
   priority?: boolean;
+  /** Demo Esplora: one circle instead of the heart. */
+  selectionStyle?: "heart" | "radio";
 }
 
 export const LocationCard = memo(function LocationCard({
@@ -35,7 +38,9 @@ export const LocationCard = memo(function LocationCard({
   href = `/location/${location.id}`,
   showCompare = true,
   priority = false,
+  selectionStyle = "heart",
 }: LocationCardProps) {
+  const { lang } = useDemoLanguage();
   const { criteria } = usePartyCriteria();
   const { contactsBeenHere } = location;
   const hasContacts = contactsBeenHere.count > 0;
@@ -57,7 +62,16 @@ export const LocationCard = memo(function LocationCard({
     .join(" · ");
 
   return (
-    <article className="render-contained h-full overflow-clip rounded-2xl border border-primary-black/12 bg-background shadow-sm transition-[border-color,box-shadow] duration-150 hover:border-primary-black">
+    <article
+      className={cn(
+        "render-contained h-full overflow-clip rounded-2xl bg-background shadow-sm transition-[border-color,box-shadow] duration-150",
+        selectionStyle === "radio"
+          ? isFavorite
+            ? "border-2 border-brand-teal"
+            : "border-2 border-primary-black/12 hover:border-primary-black"
+          : "border border-primary-black/12 hover:border-primary-black",
+      )}
+    >
       <div className="relative">
         <ImageCarousel
           images={photos}
@@ -111,32 +125,65 @@ export const LocationCard = memo(function LocationCard({
               />
             </button>
           ) : null}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onToggleFavorite(location.id);
-            }}
-            aria-label={
-              isFavorite
-                ? `Rimuovi ${location.name} dai preferiti`
-                : `Aggiungi ${location.name} ai preferiti`
-            }
-            className={cn(
-              "touch-target touch-feedback flex items-center justify-center rounded-full shadow-md backdrop-blur-md transition-colors duration-150",
-              isFavorite
-                ? "bg-brand-pink text-white"
-                : "bg-surface text-primary-black hover:bg-surface/90",
-            )}
-          >
-            <Heart
-              className="h-4 w-4"
-              strokeWidth={2.75}
-              fill={isFavorite ? "currentColor" : "none"}
-              aria-hidden
-            />
-          </button>
+          {selectionStyle === "radio" ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleFavorite(location.id);
+              }}
+              aria-pressed={isFavorite}
+              aria-label={
+                isFavorite
+                  ? lang === "en"
+                    ? `Selected: ${location.name}. Tap to clear.`
+                    : `Selezionata: ${location.name}. Tocca per togliere.`
+                  : lang === "en"
+                    ? `Choose ${location.name}`
+                    : `Scegli ${location.name}`
+              }
+              className="touch-target touch-feedback flex items-center justify-center"
+            >
+              <span
+                className={cn(
+                  "flex h-7 w-7 items-center justify-center rounded-full border-2 shadow-md",
+                  isFavorite
+                    ? "border-brand-teal bg-brand-teal text-ink-inverse"
+                    : "border-white/90 bg-black/35 text-transparent",
+                )}
+              >
+                <Check className="h-4 w-4" strokeWidth={3} aria-hidden />
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleFavorite(location.id);
+              }}
+              aria-label={
+                isFavorite
+                  ? `Rimuovi ${location.name} dai preferiti`
+                  : `Aggiungi ${location.name} ai preferiti`
+              }
+              className={cn(
+                "touch-target touch-feedback flex items-center justify-center rounded-full shadow-md backdrop-blur-md transition-colors duration-150",
+                isFavorite
+                  ? "bg-brand-pink text-white"
+                  : "bg-surface text-primary-black hover:bg-surface/90",
+              )}
+            >
+              <Heart
+                className="h-4 w-4"
+                strokeWidth={2.75}
+                fill={isFavorite ? "currentColor" : "none"}
+                aria-hidden
+              />
+            </button>
+          )}
         </div>
       </div>
 

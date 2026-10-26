@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  DemoAvailabilityBar,
+  useDemoAvailabilityTarget,
+} from "@/components/demo/demo-availability-bar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { EmailActivationBanner } from "@/components/auth/email-activation-banner";
@@ -46,6 +50,8 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const hideFooter = shouldHideFooter(pathname);
   const chromeLocked = useDemoLockedTab() !== null;
   const { isDemoMode } = useDemoMode();
+  const demoRequestLocation = useDemoAvailabilityTarget();
+  const showDemoRequestBar = !hideNav && demoRequestLocation != null;
 
   return (
     <>
@@ -64,7 +70,13 @@ export function AppChrome({ children }: { children: ReactNode }) {
           {!hideNav && !isDemoMode && <PwaInstallBanner />}
           {!hideNav && <EmailActivationBanner />}
         </div>
-        <div className="min-w-0 max-w-full flex-1 overflow-x-clip">
+        <div
+          className={
+            showDemoRequestBar
+              ? "min-w-0 max-w-full flex-1 overflow-x-clip pb-28"
+              : "min-w-0 max-w-full flex-1 overflow-x-clip"
+          }
+        >
           {children}
         </div>
         {hideFooter ? null : (
@@ -76,6 +88,9 @@ export function AppChrome({ children }: { children: ReactNode }) {
           </div>
         )}
       </div>
+      {showDemoRequestBar && demoRequestLocation ? (
+        <DemoAvailabilityBar location={demoRequestLocation} />
+      ) : null}
       {!hideNav && <AppChromeNav />}
     </>
   );

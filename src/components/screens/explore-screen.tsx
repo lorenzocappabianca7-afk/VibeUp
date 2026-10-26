@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  DemoExploreGuide,
-  DemoExplorePickerBar,
-} from "@/components/demo/demo-explore-picker";
+import { DemoExploreGuide } from "@/components/demo/demo-explore-picker";
 import { CompareFavorites } from "@/components/explore/compare-favorites";
 import { DiscountInviteBanner } from "@/components/discount-invite-banner";
 import { ExploreSearchBar } from "@/components/explore/explore-search-bar";
@@ -308,10 +305,7 @@ export function ExploreScreen({
     hasAppliedCriteria &&
     !!session &&
     !session.completed;
-  const demoSelectedIdSet = useMemo(
-    () => new Set(selectedLocations.map((item) => item.id)),
-    [selectedLocations],
-  );
+  const demoSelectedId = selectedLocations.at(-1)?.id ?? "";
   const locationNameByIdRef = useRef(new Map<string, string>());
 
   function handleToggleFavoriteLocation(id: string) {
@@ -878,9 +872,10 @@ export function ExploreScreen({
                     location={location}
                     isFavorite={
                       demoPicking
-                        ? demoSelectedIdSet.has(location.id)
+                        ? location.id === demoSelectedId
                         : favoriteLocationIdSet.has(location.id)
                     }
+                    selectionStyle={demoPicking ? "radio" : "heart"}
                     isCompareSelected={compareLocationIdSet.has(location.id)}
                     onToggleFavorite={handleToggleFavoriteLocation}
                     onToggleCompare={handleToggleCompareLocation}
@@ -889,9 +884,7 @@ export function ExploreScreen({
                 </li>
               ))}
             </ul>
-            {demoPicking ? (
-              <DemoExplorePickerBar availableCount={filteredLocations.length} />
-            ) : compareLocationIds.length > 0 ? (
+            {demoPicking ? null : compareLocationIds.length > 0 ? (
               <div className="sticky bottom-24 z-20 sm:bottom-28">
                 <button
                   type="button"

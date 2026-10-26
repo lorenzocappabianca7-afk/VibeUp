@@ -9,6 +9,7 @@ import {
 } from "@/context/app-state-context";
 import { ADMIN_CATALOG_EMAIL, canAccessAdminCatalog } from "@/lib/admin-access";
 import { fetchDemoResponses } from "@/lib/demo/admin";
+import { demoChosenLocation } from "@/lib/demo/responses";
 import {
   computeDemoStats,
   demoEntryTimestamp,
@@ -340,10 +341,10 @@ export function DemoResponsesPanel() {
 
           <section className="mt-5 rounded-2xl border border-primary-black/10 bg-primary-black/[0.02] p-4">
             <h2 className="text-sm font-black text-primary-black">
-              Location più selezionate
+              Location più scelte
             </h2>
             <p className="mt-0.5 text-xs text-primary-black/50">
-              Tra le tre location scelte nel form, nel periodo filtrato.
+              Quante volte ogni location è stata scelta, nel periodo filtrato.
             </p>
             {stats.locationRanking.length === 0 ? (
               <p className="mt-3 text-sm text-primary-black/50">
@@ -388,7 +389,7 @@ export function DemoResponsesPanel() {
                     <th className="px-3 py-2 font-semibold">Email</th>
                     <th className="px-3 py-2 font-semibold">Telefono</th>
                     <th className="px-3 py-2 font-semibold">Privacy</th>
-                    <th className="px-3 py-2 font-semibold">Location selezionate</th>
+                    <th className="px-3 py-2 font-semibold">Location scelta</th>
                     <th className="px-3 py-2 font-semibold">
                       Location disponibilità
                     </th>
@@ -418,9 +419,10 @@ export function DemoResponsesPanel() {
                         {formatPrivacy(row)}
                       </td>
                       <td className="px-3 py-2 text-primary-black/70">
-                        {row.selectedLocations.length > 0
-                          ? row.selectedLocations.map((item) => item.name).join(", ")
-                          : "—"}
+                        {demoChosenLocation(row)?.name ??
+                          (row.selectedLocations.length > 0
+                            ? row.selectedLocations.map((item) => item.name).join(", ")
+                            : "—")}
                       </td>
                       <td className="px-3 py-2 text-primary-black/70">
                         {row.bookedLocation?.name ?? "—"}

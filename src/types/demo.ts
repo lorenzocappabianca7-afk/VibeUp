@@ -46,6 +46,8 @@ export interface DemoResponseRow {
   email: string;
   phone: string;
   selectedLocations: DemoChosenLocation[];
+  /** The single location chosen in Esplora. Falls back for older rows. */
+  chosenLocation: DemoChosenLocation | null;
   bookedLocation: DemoChosenLocation | null;
   rating: number | null;
   wouldUseForEighteenth: boolean | null;

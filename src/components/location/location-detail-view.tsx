@@ -133,8 +133,7 @@ export function LocationDetailView({
   const { requireAccount } = useAccountGate();
   const { startVendorConversation } = useChat();
   const { setTab } = useTabNavigation();
-  const { isDemoMode, setDemoBookedLocation, markDemoBookingConfirmed } =
-    useDemoMode();
+  const { isDemoMode, selectDemoLocation } = useDemoMode();
   const { criteria, hasAppliedCriteria } = usePartyCriteria();
   const router = useRouter();
   const [chatError, setChatError] = useState<string | null>(null);
@@ -411,20 +410,22 @@ export function LocationDetailView({
       location,
       date,
     });
+    const pricedDrinkMode = isDemoMode ? "none" : drinkMode;
+    const pricedServices = isDemoMode ? [] : selectedInternalServices;
     const drinksCost = calculateDrinksCost({
-      mode: drinkMode,
+      mode: pricedDrinkMode,
       drinksPerInvitee,
       guestCount,
       drinkUnitPrice: location.drinksPricing?.drinkUnitPrice,
       openBarPerInvitee: location.drinksPricing?.openBarPerInvitee,
       vatRate: location.drinksPricing?.vatRate,
     });
-    const venueServicesCost = selectedInternalServices.reduce((sum, id) => {
+    const venueServicesCost = pricedServices.reduce((sum, id) => {
       const service = internalServices.find((item) => item.id === id);
       if (!service) return sum;
       // Paid drink package replaces any paid bar line to avoid double counting.
       if (
-        drinkMode !== "none" &&
+        pricedDrinkMode !== "none" &&
         service.type === "bar" &&
         service.pricing.type !== "included"
       ) {
@@ -457,6 +458,7 @@ export function LocationDetailView({
     drinksPerInvitee,
     selectedInternalServices,
     internalServices,
+    isDemoMode,
   ]);
 
   const candidateDatePrices = useMemo(() => {
@@ -724,30 +726,10 @@ export function LocationDetailView({
             return;
           }
           setRequestError(null);
-          if (!isDemoMode) return;
-          void (async () => {
-            try {
-              await setDemoBookedLocation({
-                id: location.id,
-                name: location.name,
-              });
-            } catch {
-              // Local session still has the pick.
-            }
-            try {
-              await markDemoBookingConfirmed();
-            } catch {
-              // Event already exists locally; Continua still needs this flag.
-            }
-            pushHomeHref(router, withDemoShell("/?tab=events", isDemoMode));
-          })();
         });
     };
 
-    if (isDemoMode) {
-      sendNow();
-      return;
-    }
+    if (isDemoMode) return;
 
     requireAccount(
       sendNow,
@@ -811,6 +793,7 @@ export function LocationDetailView({
               aria-hidden
             />
           </button>
+          {isDemoMode ? null : (
           <button
             type="button"
             onClick={toggleFavorite}
@@ -832,8 +815,21 @@ export function LocationDetailView({
               aria-hidden
             />
           </button>
+          )}
         </div>
       </div>
+      {isDemoMode ? (
+        <button
+          type="button"
+          onClick={() => {
+            selectDemoLocation({ id: location.id, name: location.name });
+            pushHomeHref(router, withDemoShell("/?tab=explore", true));
+          }}
+          className="flex h-[50px] w-full items-center justify-center rounded-[14px] bg-brand-pink px-4 text-[17px] font-semibold text-ink-inverse"
+        >
+          Scegli questa location
+        </button>
+      ) : null}
       {chatError ? (
         <p className="text-xs font-semibold text-brand-pink">{chatError}</p>
       ) : null}
@@ -927,6 +923,8 @@ export function LocationDetailView({
             requestStatus={activeRequest?.status ?? null}
             confirmationDeadline={activeRequest?.confirmationDeadline ?? null}
             requestError={requestError}
+            hideOptionalPackages={isDemoMode}
+            hideSendRequest={isDemoMode}
             eventTitle={eventTitle}
             eventTitlePlaceholder={defaultEventTitle}
             onEventTitleChange={(title) => {

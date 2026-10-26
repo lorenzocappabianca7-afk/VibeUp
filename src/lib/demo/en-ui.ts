@@ -278,6 +278,18 @@ export const DEMO_EN_UI: Record<string, string> = {
   Condividi: "Share",
   "Prova la demo": "Try the demo",
   "Ciao": "Hi",
+  "Scegli una location": "Choose one venue",
+  "Tocca il cerchio in alto a destra sulla foto. Puoi sceglierne una sola: se ne tocchi un'altra, la selezione si sposta.":
+    "Tap the circle at the top right of the photo. You can choose only one: tapping another moves the selection.",
+  "Invia richiesta di disponibilità": "Send availability request",
+  "Invio in corso…": "Sending…",
+  "Richiesta accettata!": "Request accepted!",
+  "Questa è una demo: nessuna richiesta è stata inviata davvero al locale.":
+    "This is a demo: no request was actually sent to the venue.",
+  "Vedi il tuo evento": "See your event",
+  "Scegli questa location": "Choose this venue",
+  "Questo budget vale per il totale della location.":
+    "This budget is for the venue total.",
 };
 
 export function demoEnUiBootstrapScript() {

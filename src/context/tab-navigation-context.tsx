@@ -195,7 +195,6 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
       router.prefetch("/demo?tab=explore");
       router.prefetch("/demo?tab=events");
       router.prefetch("/demo?tab=profile");
-      router.prefetch("/demo/book");
       router.prefetch("/demo/rating");
     }
   }, [isDemoMode, router]);

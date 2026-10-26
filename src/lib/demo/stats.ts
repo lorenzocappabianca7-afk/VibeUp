@@ -1,4 +1,4 @@
-import type { DemoResponseRow } from "@/types/demo";
+import type { DemoChosenLocation, DemoResponseRow } from "@/types/demo";
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -59,6 +59,12 @@ export function filterDemoRowsByDateRange(
   });
 }
 
+function locationsChosenInRow(row: DemoResponseRow): DemoChosenLocation[] {
+  if (row.chosenLocation) return [row.chosenLocation];
+  if (row.selectedLocations.length > 0) return row.selectedLocations;
+  return row.bookedLocation ? [row.bookedLocation] : [];
+}
+
 function rate(part: number, total: number): number | null {
   if (total <= 0) return null;
   return part / total;
@@ -89,7 +95,7 @@ export function computeDemoStats(rows: DemoResponseRow[]): DemoStats {
 
   const locationCounts = new Map<string, DemoLocationRank>();
   for (const row of rows) {
-    for (const location of row.selectedLocations) {
+    for (const location of locationsChosenInRow(row)) {
       const key = location.id || location.name;
       const current = locationCounts.get(key);
       if (current) {

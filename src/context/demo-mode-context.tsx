@@ -7,7 +7,6 @@ import {
   writeDemoModeCookie,
 } from "@/lib/demo/mode";
 import {
-  DEMO_PICK_LIMIT,
   clearDemoAttemptLocalState,
   clearDemoPartyCriteria,
   dismissDemoHomeTip,
@@ -58,6 +57,7 @@ interface DemoModeContextValue {
   enterDemo: () => void;
   exitDemo: () => void;
   toggleDemoLocation: (location: DemoChosenLocation) => void;
+  selectDemoLocation: (location: DemoChosenLocation | null) => void;
   persistDemoSelections: () => Promise<void>;
   setDemoBookedLocation: (location: DemoChosenLocation) => Promise<void>;
   markDemoBookingConfirmed: () => Promise<void>;
@@ -82,8 +82,8 @@ export function isDemoExitToSite() {
 
 /**
  * Drop the demo cookie and local attempt, then load `/` as a new document.
- * A client `router.replace` stays inside the demo shell: `/demo/book` and
- * `/demo/rating` answer `isDemoMode === false` with `router.replace("/demo")`,
+ * A client `router.replace` stays inside the demo shell: `/demo/rating`
+ * answers `isDemoMode === false` with `router.replace("/demo")`,
  * and `/demo` then calls `enterDemo()` and writes the cookie back.
  */
 export function leaveDemoForSite() {
@@ -288,21 +288,34 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     });
   }, [demoActive, pathname]);
 
-  const toggleDemoLocation = useCallback((location: DemoChosenLocation) => {
-    setSession((current) => {
-      if (!current || current.completed) return current;
-      const exists = current.selectedLocations.some((item) => item.id === location.id);
-      let selectedLocations = current.selectedLocations;
-      if (exists) {
-        selectedLocations = current.selectedLocations.filter(
-          (item) => item.id !== location.id,
-        );
-      } else if (current.selectedLocations.length < DEMO_PICK_LIMIT) {
-        selectedLocations = [...current.selectedLocations, location];
-      }
-      return persist({ ...current, selectedLocations });
-    });
-  }, []);
+  const selectDemoLocation = useCallback(
+    (location: DemoChosenLocation | null) => {
+      if (!demoActive) return;
+      const current = readDemoSession();
+      if (!current || current.completed || current.bookingConfirmed) return;
+      const selectedLocations = location ? [location] : [];
+      const next = persist({ ...current, selectedLocations });
+      setSession(next);
+      void saveDemoSubmission({
+        id: next.id,
+        payload: {
+          chosenLocation: location,
+          selectedLocations,
+        },
+        optional: true,
+      }).catch(() => undefined);
+    },
+    [demoActive],
+  );
+
+  const toggleDemoLocation = useCallback(
+    (location: DemoChosenLocation) => {
+      const current = readDemoSession();
+      const selected = current?.selectedLocations.at(-1);
+      selectDemoLocation(selected?.id === location.id ? null : location);
+    },
+    [selectDemoLocation],
+  );
 
   const persistDemoSelections = useCallback(async () => {
     const current = readDemoSession();
@@ -324,7 +337,10 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       await saveDemoSubmission({
         id: next.id,
         payload: {
-          selectedLocations: next.selectedLocations,
+          selectedLocations: next.selectedLocations.length
+            ? next.selectedLocations
+            : [location],
+          chosenLocation: location,
           bookedLocation: location,
         },
         optional: true,
@@ -351,6 +367,8 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
         bookingConfirmed: true,
         bookingConfirmedAt,
         bookedLocation: next.bookedLocation,
+        chosenLocation:
+          next.bookedLocation ?? next.selectedLocations.at(-1) ?? null,
         selectedLocations: next.selectedLocations,
       },
       optional: true,
@@ -372,6 +390,8 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
         id: session.id,
         payload: {
           selectedLocations: feedback.selectedLocations,
+          chosenLocation:
+            feedback.selectedLocations.at(-1) ?? session.bookedLocation,
           bookedLocation: session.bookedLocation,
           bookingConfirmed: session.bookingConfirmed,
           bookingConfirmedAt: session.bookingConfirmedAt,
@@ -418,6 +438,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       enterDemo,
       exitDemo,
       toggleDemoLocation,
+      selectDemoLocation,
       persistDemoSelections,
       setDemoBookedLocation,
       markDemoBookingConfirmed,
@@ -437,6 +458,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       markDemoBookingConfirmed,
       onDemoSurface,
       persistDemoSelections,
+      selectDemoLocation,
       session,
       setDemoBookedLocation,
       toggleDemoLocation,
@@ -461,6 +483,7 @@ const DEMO_MODE_FALLBACK: DemoModeContextValue = {
   enterDemo: () => undefined,
   exitDemo: () => undefined,
   toggleDemoLocation: () => undefined,
+  selectDemoLocation: () => undefined,
   persistDemoSelections: async () => undefined,
   setDemoBookedLocation: async () => undefined,
   markDemoBookingConfirmed: async () => undefined,

@@ -9,7 +9,8 @@ export const DEMO_VISIT_STORAGE_KEY = "vibeup-demo-visit-v1";
 export const DEMO_HOME_TIP_KEY = "vibeup-demo-home-tip-v1";
 export const DEMO_CRITERIA_STORAGE_KEY = "vibeup-demo-party-criteria-v1";
 export const DEMO_SESSION_COOKIE = "vibeup-demo-session";
-export const DEMO_PICK_LIMIT = 3;
+/** One location per demo visit. Kept for older imports. */
+export const DEMO_PICK_LIMIT = 1;
 
 function readDurable(key: string): string | null {
   if (typeof window === "undefined") return null;

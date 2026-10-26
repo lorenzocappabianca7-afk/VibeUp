@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { VibeUpCalendar } from "@/components/ui/vibeup-calendar";
 import { useDemoLanguage } from "@/context/demo-language-context";
+import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
@@ -77,6 +78,7 @@ interface PartyWizardProps {
 }
 
 export function PartyWizard({ open, onClose }: PartyWizardProps) {
+  const { isDemoMode } = useDemoMode();
   const { applyCriteria, criteria: savedCriteria } = usePartyCriteria();
   const { setTab } = useTabNavigation();
   const [stepIndex, setStepIndex] = useState(0);
@@ -97,9 +99,11 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
     }
   }
 
-  const step = STEPS[stepIndex];
-  const isLast = stepIndex === STEPS.length - 1;
-  const progressLabel = `${stepIndex + 1}/${STEPS.length}`;
+  const steps = isDemoMode ? STEPS.filter((id) => id !== "drinks") : STEPS;
+  const safeIndex = Math.min(stepIndex, steps.length - 1);
+  const step = steps[safeIndex];
+  const isLast = safeIndex === steps.length - 1;
+  const progressLabel = `${safeIndex + 1}/${steps.length}`;
 
   if (!open || typeof document === "undefined") return null;
 
@@ -136,6 +140,7 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
         guestCount: criteria.guestCount ?? EXPLORE_GUEST_MIN,
         budgetMin: criteria.budgetMin ?? EXPLORE_PRICE_MIN,
         budgetMax: criteria.budgetMax ?? DEFAULT_EXPLORE_MAX_PRICE,
+        ...(isDemoMode ? { drinkMode: "none" as const, wantedServices: [] } : {}),
       });
       applyCriteria(finalized);
       onClose();
@@ -205,12 +210,12 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
             </button>
           </div>
           <div className="mb-4 flex gap-1.5" aria-hidden>
-            {STEPS.map((id, i) => (
+            {steps.map((id, i) => (
               <div
                 key={id}
                 className={cn(
                   "h-1 flex-1 rounded-full",
-                  i <= stepIndex ? "bg-brand-teal" : "bg-primary-black/10",
+                  i <= safeIndex ? "bg-brand-teal" : "bg-primary-black/10",
                 )}
               />
             ))}
@@ -535,11 +540,25 @@ function BudgetStep({
           onChange({ budgetMin, budgetMax })
         }
       />
-      <p className="mt-3 text-xs leading-relaxed text-primary-black/50">
-        Questo budget vale per il totale. Nel passo dopo puoi aggiungere i
-        drink: li fornisce il locale e il costo entra nello stesso prezzo.
-      </p>
+      <BudgetHint />
     </fieldset>
+  );
+}
+
+function BudgetHint() {
+  const { isDemoMode } = useDemoMode();
+  if (isDemoMode) {
+    return (
+      <p className="mt-3 text-xs leading-relaxed text-primary-black/50">
+        Questo budget vale per il totale della location.
+      </p>
+    );
+  }
+  return (
+    <p className="mt-3 text-xs leading-relaxed text-primary-black/50">
+      Questo budget vale per il totale. Nel passo dopo puoi aggiungere i
+      drink: li fornisce il locale e il costo entra nello stesso prezzo.
+    </p>
   );
 }
 

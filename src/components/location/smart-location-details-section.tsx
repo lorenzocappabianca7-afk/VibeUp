@@ -144,6 +144,10 @@ interface SmartLocationDetailsSectionProps {
   wantedExtraServices?: ExtraServiceId[];
   quoteReady?: boolean;
   shareHref?: string;
+  /** Demo only: venue add-ons and drinks stay off the quote. */
+  hideOptionalPackages?: boolean;
+  /** Demo only: the request is sent from the explore bar. */
+  hideSendRequest?: boolean;
 }
 
 function formatInternalServicePrice(
@@ -277,6 +281,8 @@ export function SmartLocationDetailsSection({
   wantedExtraServices = [],
   quoteReady = true,
   shareHref,
+  hideOptionalPackages = false,
+  hideSendRequest = false,
 }: SmartLocationDetailsSectionProps) {
   const [openPicker, setOpenPicker] = useState<PickerPanel>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -966,6 +972,8 @@ export function SmartLocationDetailsSection({
               Durata minima richiesta: {minHours} ore.
             </p>
           )}
+            {hideOptionalPackages ? null : (
+            <>
             <div className="mt-4 grid gap-3">
         <div className="rounded-[0.85rem] border border-ink-inverse/10 bg-ink-inverse/[0.03] px-3 py-2.5">
           <button
@@ -1219,6 +1227,8 @@ export function SmartLocationDetailsSection({
               </p>
             ) : null}
             </>
+            )}
+            </>
           )}
         </div>
 
@@ -1257,6 +1267,8 @@ export function SmartLocationDetailsSection({
             </button>
           ) : null}
 
+          {hideSendRequest ? null : (
+          <>
           <label className="mt-3 block rounded-xl border border-ink-inverse/10 bg-paper px-3 py-1.5">
             <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-ink-inverse/45">
               Nome evento
@@ -1379,6 +1391,8 @@ export function SmartLocationDetailsSection({
               <p className="text-center text-xs text-brand-pink">{requestError}</p>
             )}
           </div>
+          </>
+          )}
 
           {onAddToCompare ? (
             <button
