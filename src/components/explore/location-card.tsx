@@ -12,7 +12,7 @@ import { getFilteredLocationPricePresentation } from "@/lib/location-preview-pri
 import { cn } from "@/lib/utils";
 import type { ContactPreview, Location } from "@/types/location";
 import { Check, GitCompareArrows, Heart, MapPin } from "lucide-react";
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 interface LocationCardProps {
   location: Location;
@@ -46,6 +46,8 @@ export const LocationCard = memo(function LocationCard({
   const hasContacts = contactsBeenHere.count > 0;
   const price = getFilteredLocationPricePresentation(location, criteria);
   const [contactsOpen, setContactsOpen] = useState(false);
+  const pointerRef = useRef({ x: 0, y: 0, dragged: false });
+  const picking = selectionStyle === "radio";
   const photos = useMemo(
     () => uniqueImages([location.imageUrl, ...(location.gallery ?? [])]),
     [location.gallery, location.imageUrl],
@@ -61,11 +63,50 @@ export const LocationCard = memo(function LocationCard({
     .filter(Boolean)
     .join(" · ");
 
+  function rememberPointer(event: PointerEvent<HTMLElement>) {
+    pointerRef.current = { x: event.clientX, y: event.clientY, dragged: false };
+  }
+
+  function trackPointer(event: PointerEvent<HTMLElement>) {
+    const dx = event.clientX - pointerRef.current.x;
+    const dy = event.clientY - pointerRef.current.y;
+    if (dx * dx + dy * dy > 100) pointerRef.current.dragged = true;
+  }
+
+  function selectFromTap() {
+    if (pointerRef.current.dragged) return;
+    onToggleFavorite(location.id);
+  }
+
+  function selectFromKeyboard(event: KeyboardEvent<HTMLElement>) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    onToggleFavorite(location.id);
+  }
+
+  const pickLabel = isFavorite
+    ? lang === "en"
+      ? `Selected: ${location.name}. Tap to clear.`
+      : `Selezionata: ${location.name}. Tocca per togliere.`
+    : lang === "en"
+      ? `Choose ${location.name}`
+      : `Scegli ${location.name}`;
+
   return (
     <article
+      role={picking ? "button" : undefined}
+      tabIndex={picking ? 0 : undefined}
+      aria-pressed={picking ? isFavorite : undefined}
+      aria-label={picking ? pickLabel : undefined}
+      onPointerDown={picking ? rememberPointer : undefined}
+      onPointerMove={picking ? trackPointer : undefined}
+      onClick={picking ? selectFromTap : undefined}
+      onKeyDown={picking ? selectFromKeyboard : undefined}
       className={cn(
-        "render-contained h-full overflow-clip rounded-2xl bg-background shadow-sm transition-[border-color,box-shadow] duration-150",
-        selectionStyle === "radio"
+        "render-contained h-full overflow-clip rounded-2xl bg-background shadow-sm transition-[border-color,box-shadow,transform] duration-150",
+        picking &&
+          "cursor-pointer outline-none active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:ring-2 focus-visible:ring-brand-teal",
+        picking
           ? isFavorite
             ? "border-2 border-brand-teal"
             : "border-2 border-primary-black/12 hover:border-primary-black"
@@ -80,15 +121,19 @@ export const LocationCard = memo(function LocationCard({
           sizes="(max-width: 448px) 100vw, 448px"
           showDots={photos.length > 1}
           priority={priority}
-          renderSlide={(_image, _index, imageNode) => (
-            <SoftNavLink
-              href={href}
-              className="absolute inset-0 block touch-pan-y"
-              draggable={false}
-            >
-              {imageNode}
-            </SoftNavLink>
-          )}
+          renderSlide={(_image, _index, imageNode) =>
+            picking ? (
+              imageNode
+            ) : (
+              <SoftNavLink
+                href={href}
+                className="absolute inset-0 block touch-pan-y"
+                draggable={false}
+              >
+                {imageNode}
+              </SoftNavLink>
+            )
+          }
         />
 
         {location.distanceBadge && (
@@ -98,7 +143,7 @@ export const LocationCard = memo(function LocationCard({
         )}
 
         <div className="absolute right-3 top-3 z-10 flex gap-2">
-          {showCompare ? (
+          {showCompare && !picking ? (
             <button
               type="button"
               onClick={(e) => {
@@ -125,26 +170,8 @@ export const LocationCard = memo(function LocationCard({
               />
             </button>
           ) : null}
-          {selectionStyle === "radio" ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onToggleFavorite(location.id);
-              }}
-              aria-pressed={isFavorite}
-              aria-label={
-                isFavorite
-                  ? lang === "en"
-                    ? `Selected: ${location.name}. Tap to clear.`
-                    : `Selezionata: ${location.name}. Tocca per togliere.`
-                  : lang === "en"
-                    ? `Choose ${location.name}`
-                    : `Scegli ${location.name}`
-              }
-              className="touch-target touch-feedback flex items-center justify-center"
-            >
+          {picking ? (
+            <span className="pointer-events-none flex h-11 w-11 items-center justify-center" aria-hidden>
               <span
                 className={cn(
                   "flex h-7 w-7 items-center justify-center rounded-full border-2 shadow-md",
@@ -153,9 +180,9 @@ export const LocationCard = memo(function LocationCard({
                     : "border-white/90 bg-black/35 text-transparent",
                 )}
               >
-                <Check className="h-4 w-4" strokeWidth={3} aria-hidden />
+                <Check className="h-4 w-4" strokeWidth={3} />
               </span>
-            </button>
+            </span>
           ) : (
             <button
               type="button"
@@ -187,31 +214,17 @@ export const LocationCard = memo(function LocationCard({
         </div>
       </div>
 
-      <SoftNavLink href={href} className="block p-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-          <div className="min-w-0">
-            <h3 className="truncate font-semibold text-primary-black">
-              {location.name}
-            </h3>
-            {subtitle ? (
-              <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-primary-black/50">
-                <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-                <span className="truncate">{subtitle}</span>
-              </p>
-            ) : null}
-          </div>
-          <p className="shrink-0 self-start sm:text-right">
-            <span className="rounded-full bg-paper px-3 py-1 text-xs font-bold text-ink-inverse">
-              {price.price}
-            </span>
-            <span className="mt-1 block text-[10px] font-bold text-brand-teal">
-              {price.detail}
-            </span>
-          </p>
+      {picking ? (
+        <div className="block p-4">
+          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} />
         </div>
-      </SoftNavLink>
+      ) : (
+        <SoftNavLink href={href} className="block p-4">
+          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} />
+        </SoftNavLink>
+      )}
 
-      {showCompare ? (
+      {showCompare && !picking ? (
         <div className="px-4 pb-3">
           <button
             type="button"
@@ -234,7 +247,7 @@ export const LocationCard = memo(function LocationCard({
         </div>
       ) : null}
 
-      {hasContacts && (
+      {hasContacts && !picking ? (
         <div className="px-4 pb-4">
           <button
             type="button"
@@ -286,10 +299,44 @@ export const LocationCard = memo(function LocationCard({
             )}
           </button>
         </div>
-      )}
+      ) : null}
     </article>
   );
 });
+
+function CardSummary({
+  name,
+  subtitle,
+  price,
+  detail,
+}: {
+  name: string;
+  subtitle: string;
+  price: string;
+  detail: string;
+}) {
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+      <div className="min-w-0">
+        <h3 className="truncate font-semibold text-primary-black">{name}</h3>
+        {subtitle ? (
+          <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-primary-black/50">
+            <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+            <span className="truncate">{subtitle}</span>
+          </p>
+        ) : null}
+      </div>
+      <p className="shrink-0 self-start sm:text-right">
+        <span className="rounded-full bg-paper px-3 py-1 text-xs font-bold text-ink-inverse">
+          {price}
+        </span>
+        <span className="mt-1 block text-[10px] font-bold text-brand-teal">
+          {detail}
+        </span>
+      </p>
+    </div>
+  );
+}
 
 function ContactAvatar({
   contact,

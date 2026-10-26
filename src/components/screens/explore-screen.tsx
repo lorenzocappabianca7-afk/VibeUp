@@ -856,7 +856,7 @@ export function ExploreScreen({
                 </span>
               ) : null}
             </p>
-            {compareLocationIds.length > 0 && (
+            {!demoPicking && compareLocationIds.length > 0 && (
               <p className="text-xs text-brand-teal">
                 {compareLocationIds.length}/{MAX_COMPARE_LOCATIONS} in confronto
               </p>
@@ -876,6 +876,7 @@ export function ExploreScreen({
                         : favoriteLocationIdSet.has(location.id)
                     }
                     selectionStyle={demoPicking ? "radio" : "heart"}
+                    showCompare={!demoPicking}
                     isCompareSelected={compareLocationIdSet.has(location.id)}
                     onToggleFavorite={handleToggleFavoriteLocation}
                     onToggleCompare={handleToggleCompareLocation}

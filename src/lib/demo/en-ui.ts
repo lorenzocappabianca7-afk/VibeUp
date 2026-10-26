@@ -279,8 +279,8 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Prova la demo": "Try the demo",
   "Ciao": "Hi",
   "Scegli una location": "Choose one venue",
-  "Tocca il cerchio in alto a destra sulla foto. Puoi sceglierne una sola: se ne tocchi un'altra, la selezione si sposta.":
-    "Tap the circle at the top right of the photo. You can choose only one: tapping another moves the selection.",
+  "Scegli la location che ti si addice di più cliccandoci sopra":
+    "Pick the venue that suits you best by tapping on it",
   "Invia richiesta di disponibilità": "Send availability request",
   "Invio in corso…": "Sending…",
   "Richiesta accettata!": "Request accepted!",
