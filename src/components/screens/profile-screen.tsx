@@ -1102,28 +1102,26 @@ export function ProfileScreen({
         Esci dall&apos;account
       </button>
 
-      {canManagePublications && (
+      {currentUser.role === "admin" || canManagePublications ? (
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
-          <HardNavLink
-            href="/admin/catalog"
-            className="text-xs font-medium text-primary-black/35 underline-offset-4 transition-colors hover:text-primary-black/55 hover:underline"
-          >
-            Catalogo
-          </HardNavLink>
-          <HardNavLink
-            href="/admin/demo"
-            className="text-xs font-medium text-primary-black/35 underline-offset-4 transition-colors hover:text-primary-black/55 hover:underline"
-          >
-            Demo
-          </HardNavLink>
-          <HardNavLink
-            href="/admin/iscrizioni"
-            className="text-xs font-medium text-primary-black/35 underline-offset-4 transition-colors hover:text-primary-black/55 hover:underline"
-          >
-            Iscrizioni
-          </HardNavLink>
+          {currentUser.role === "admin" ? (
+            <HardNavLink
+              href="/admin/demo"
+              className="text-xs font-medium text-primary-black/35 underline-offset-4 transition-colors hover:text-primary-black/55 hover:underline"
+            >
+              Dati community
+            </HardNavLink>
+          ) : null}
+          {canManagePublications ? (
+            <HardNavLink
+              href="/admin/catalog"
+              className="text-xs font-medium text-primary-black/35 underline-offset-4 transition-colors hover:text-primary-black/55 hover:underline"
+            >
+              Catalogo
+            </HardNavLink>
+          ) : null}
         </div>
-      )}
+      ) : null}
 
       {avatarCropFile && (
         <AvatarCropModal

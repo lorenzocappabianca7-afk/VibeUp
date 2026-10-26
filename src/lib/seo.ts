@@ -153,9 +153,9 @@ export const STATIC_PAGE_METADATA = {
     index: false,
   },
   adminDemo: {
-    title: "Controllo demo",
+    title: "Dati community",
     description:
-      "Area riservata per consultare gli ingressi e le risposte raccolte dalla modalità demo di VibeUp.",
+      "Area riservata per consultare iscrizioni, percorso demo e gara inviti della community VibeUp.",
     path: "/admin/demo",
     index: false,
   },

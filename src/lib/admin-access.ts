@@ -4,15 +4,27 @@ export const ADMIN_CATALOG_EMAIL = "info@vibeupevents.com";
 
 const ADMIN_MANAGER_VIEW_KEY = "vibeup-admin-manager-view";
 
-/** Admin catalog: role admin on profiles AND the official info@ mailbox. */
+function listedAdminEmails(): Set<string> {
+  const emails = new Set<string>([ADMIN_CATALOG_EMAIL]);
+  const raw = process.env.ADMIN_EMAILS ?? "";
+  for (const part of raw.split(",")) {
+    const email = part.trim().toLowerCase();
+    if (email.includes("@")) emails.add(email);
+  }
+  return emails;
+}
+
+/**
+ * Role admin, and the mailbox is info@ or listed in ADMIN_EMAILS.
+ * On the client the env list is empty, so only info@ matches there.
+ * Admin APIs read the same list on the server.
+ */
 export function canAccessAdminCatalog(
   email: string,
   role?: AppRole | null,
 ): boolean {
-  return (
-    role === "admin" &&
-    email.trim().toLowerCase() === ADMIN_CATALOG_EMAIL
-  );
+  if (role !== "admin") return false;
+  return listedAdminEmails().has(email.trim().toLowerCase());
 }
 
 export function isAdminManagerViewEnabled() {

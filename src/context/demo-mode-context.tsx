@@ -19,6 +19,7 @@ import {
   demoEntryIdentity,
   type DemoEntryIdentity,
 } from "@/lib/demo/signup-gate";
+import { claimDemoStep } from "@/lib/demo/steps";
 import { saveDemoSubmission } from "@/lib/demo/submissions";
 import { usesDemoShell } from "@/lib/demo/shell";
 import {
@@ -108,6 +109,7 @@ async function startDemoAttempt(identity: DemoEntryIdentity): Promise<DemoSessio
       phone: "",
       privacyConsentAt: null,
       sessionCreatedAt,
+      stepEnteredAt: sessionCreatedAt,
       selectedLocations: [],
       bookedLocation: null,
       bookingConfirmed: false,
@@ -296,11 +298,13 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       const selectedLocations = location ? [location] : [];
       const next = persist({ ...current, selectedLocations });
       setSession(next);
+      const stepLocationAt = location ? claimDemoStep(next.id, "location") : null;
       void saveDemoSubmission({
         id: next.id,
         payload: {
           chosenLocation: location,
           selectedLocations,
+          ...(stepLocationAt ? { stepLocationAt } : {}),
         },
         optional: true,
       }).catch(() => undefined);
@@ -355,6 +359,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     if (!current || current.completed) return;
     const bookingConfirmedAt =
       current.bookingConfirmedAt ?? new Date().toISOString();
+    const stepEventAt = claimDemoStep(current.id, "event");
     const next = persist({
       ...current,
       bookingConfirmed: true,
@@ -370,6 +375,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
         chosenLocation:
           next.bookedLocation ?? next.selectedLocations.at(-1) ?? null,
         selectedLocations: next.selectedLocations,
+        ...(stepEventAt ? { stepEventAt } : {}),
       },
       optional: true,
     });
@@ -386,6 +392,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       if (!demoActive || !session || session.completed) return;
 
       const completedAt = new Date().toISOString();
+      const stepRatingAt = claimDemoStep(session.id, "rating") ?? completedAt;
       await saveDemoSubmission({
         id: session.id,
         payload: {
@@ -399,6 +406,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
           wouldUseForEighteenth: feedback.wouldUseForEighteenth,
           completed: true,
           completedAt,
+          stepRatingAt,
         },
       });
 

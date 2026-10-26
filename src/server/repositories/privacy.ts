@@ -184,13 +184,9 @@ export async function exportSignupData(email: string, code: string) {
   };
 }
 
-export async function deleteSignupData(email: string, code: string) {
-  const check = await readPrivacyCode(email, code);
-  if (!check.ok) return check;
+async function eraseSignupRecord(signup: { id: string; email: string; vibeup_code: string | null }) {
   const client = admin();
   if (!client) return { ok: false as const, error: "unavailable" as const };
-  const signup = await loadSignup(check.email);
-  if (!signup) return { ok: false as const, error: "mismatch" as const };
 
   if (signup.vibeup_code) {
     const { count, error: countError } = await client
@@ -212,11 +208,34 @@ export async function deleteSignupData(email: string, code: string) {
     }
   }
 
-  const { error: codeError } = await client.from(CODES).delete().eq("email", check.email);
+  const { error: codeError } = await client.from(CODES).delete().eq("email", signup.email);
   if (codeError) throw new Error(codeError.message);
   const { error: deleteError } = await client.from(SIGNUPS).delete().eq("id", signup.id);
   if (deleteError) throw new Error(deleteError.message);
   return { ok: true as const, signupId: signup.id };
+}
+
+export async function deleteSignupData(email: string, code: string) {
+  const check = await readPrivacyCode(email, code);
+  if (!check.ok) return check;
+  const signup = await loadSignup(check.email);
+  if (!signup) return { ok: false as const, error: "mismatch" as const };
+  return eraseSignupRecord(signup);
+}
+
+/** Same erasure as the privacy request, for an admin who already passed the email list. */
+export async function eraseSignupById(signupId: string) {
+  const client = admin();
+  if (!client) return { ok: false as const, error: "unavailable" as const };
+  const { data, error } = await client
+    .from(SIGNUPS)
+    .select("id, email, vibeup_code")
+    .eq("id", signupId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  const signup = data as { id: string; email: string; vibeup_code: string | null } | null;
+  if (!signup) return { ok: false as const, error: "not_found" as const };
+  return eraseSignupRecord(signup);
 }
 
 export async function revokeMarketingConsent(

@@ -1,6 +1,7 @@
 "use client";
 
 import { useDemoMode } from "@/context/demo-mode-context";
+import { markDemoStep } from "@/lib/demo/steps";
 import {
   clearDemoPartyCriteria,
   readDemoPartyCriteria,
@@ -79,6 +80,15 @@ export function PartyCriteriaProvider({ children }: { children: ReactNode }) {
       setHasAppliedCriteria(true);
       if (isDemoMode && session && !session.completed) {
         writeDemoPartyCriteria(session.id, normalized);
+        markDemoStep("criteria", {
+          partyCriteria: {
+            dates: normalized.dates,
+            guestCount: normalized.guestCount,
+            budgetMin: normalized.budgetMin,
+            budgetMax: normalized.budgetMax,
+            freeText: normalized.freeText,
+          },
+        });
       }
     },
     [isDemoMode, session],

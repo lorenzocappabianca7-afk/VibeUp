@@ -15,6 +15,7 @@ import {
   demoFallbackEventDate,
 } from "@/lib/demo/book";
 import { scrollDemoPageToTop } from "@/lib/demo/scroll-top";
+import { markDemoStep } from "@/lib/demo/steps";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import type { AvailabilityEventPayload } from "@/types/availability-request";
 import type { DemoChosenLocation } from "@/types/demo";
@@ -118,6 +119,7 @@ export function DemoAvailabilityBar({
       setPhase("idle");
       return;
     }
+    markDemoStep("request");
     setPhase("accepted");
   }
 

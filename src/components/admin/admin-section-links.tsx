@@ -3,8 +3,7 @@ import Link from "next/link";
 
 const LINKS = [
   { href: "/admin/catalog", id: "catalog", label: "Catalogo" },
-  { href: "/admin/demo", id: "demo", label: "Demo" },
-  { href: "/admin/iscrizioni", id: "signups", label: "Iscrizioni" },
+  { href: "/admin/demo", id: "demo", label: "Dati community" },
 ] as const;
 
 export function AdminSectionLinks({ current }: { current: (typeof LINKS)[number]["id"] }) {
