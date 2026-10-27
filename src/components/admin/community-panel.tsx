@@ -168,11 +168,21 @@ export function CommunityPanel() {
   const [submitting, setSubmitting] = useState(false);
   const [gate, setGate] = useState<"checking" | "login" | "denied" | "ready">("checking");
   const [error, setError] = useState("");
+  const [accessAttempt, setAccessAttempt] = useState(0);
 
   const mayTry = isStorageHydrated && !isGuest && currentUser.role === "admin";
 
-  const checkAccess = useCallback(async () => {
-    const response = await fetch("/api/admin/community?view=overview", { cache: "no-store" });
+  const checkAccess = useCallback(async (retry: boolean) => {
+    const load = () =>
+      fetch("/api/admin/community?view=overview", {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+    let response = await load();
+    if (retry && response.status === 401) {
+      await new Promise((resolve) => window.setTimeout(resolve, 50));
+      response = await load();
+    }
     if (response.status === 401) return "login" as const;
     if (response.status === 403) return "denied" as const;
     if (!response.ok) {
@@ -190,9 +200,14 @@ export function CommunityPanel() {
     }
     let cancelled = false;
     setGate("checking");
-    void checkAccess()
+    void checkAccess(accessAttempt > 0)
       .then((next) => {
-        if (!cancelled) setGate(next);
+        if (cancelled) return;
+        if (next === "login" && accessAttempt > 0) {
+          setLoginError("Sei entrato, ma il pannello non vede ancora la sessione. Riprova.");
+        }
+        if (next === "ready") setLoginError("");
+        setGate(next);
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -203,7 +218,7 @@ export function CommunityPanel() {
     return () => {
       cancelled = true;
     };
-  }, [checkAccess, isGuest, isStorageHydrated, mayTry]);
+  }, [accessAttempt, checkAccess, isGuest, isStorageHydrated, mayTry]);
 
   async function handleLogin(event: FormEvent) {
     event.preventDefault();
@@ -222,6 +237,7 @@ export function CommunityPanel() {
       return;
     }
     setPassword("");
+    setAccessAttempt((attempt) => attempt + 1);
   }
 
   function openTab(next: TabId) {

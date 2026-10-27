@@ -102,6 +102,17 @@ function isDemoBookOrRating(pathname: string) {
   );
 }
 
+/** Route handlers read the Cookie header forwarded by the proxy, not the mutated cookie jar. */
+function continueRequest(request: NextRequest, baseHeaders: Headers) {
+  const headers = new Headers(baseHeaders);
+  const cookie = request.headers.get("cookie");
+  if (cookie) headers.set("cookie", cookie);
+  else headers.delete("cookie");
+  return NextResponse.next({
+    request: { headers },
+  });
+}
+
 function applySecurityHeaders(response: NextResponse, csp: string, isDev: boolean) {
   response.headers.set("Content-Security-Policy", csp);
   response.headers.set("X-Content-Type-Options", "nosniff");
@@ -142,11 +153,7 @@ export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("Content-Security-Policy", csp);
 
-  let response = NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
+  let response = continueRequest(request, requestHeaders);
 
   const refreshedCookies: {
     name: string;
@@ -166,13 +173,10 @@ export async function proxy(request: NextRequest) {
             },
             setAll(cookiesToSet) {
               cookiesToSet.forEach(({ name, value }) => {
-                request.cookies.set(name, value);
+                if (value) request.cookies.set(name, value);
+                else request.cookies.delete(name);
               });
-              response = NextResponse.next({
-                request: {
-                  headers: requestHeaders,
-                },
-              });
+              response = continueRequest(request, requestHeaders);
               cookiesToSet.forEach(({ name, value, options }) => {
                 response.cookies.set(name, value, withAuthCookieOptions(options));
               });
