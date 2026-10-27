@@ -143,6 +143,9 @@ export const viewport: Viewport = {
   maximumScale: 5,
   viewportFit: "cover",
   userScalable: true,
+  /* Android Chrome shrinks the layout viewport with the keyboard.
+     iOS ignores this token and keeps the existing scale and viewport-fit. */
+  interactiveWidget: "resizes-content",
   /* Media-less so iOS applies it before prefers-color-scheme is evaluated.
      `only dark` forces a black WKWebView canvas in iOS Light Mode. */
   themeColor: "#000000",
@@ -168,7 +171,7 @@ export default function RootLayout({
         {/* First tag so iOS reads scale before splash CSS/scripts. */}
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, viewport-fit=cover"
+          content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
         />
         {/* Inside <head>, before the CSS links. React 19 rejects a sync script
             as a child of <html>; this still unblocks Next's stylesheet so the

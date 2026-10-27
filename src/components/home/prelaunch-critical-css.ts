@@ -845,7 +845,10 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
 
 .vu-sheet-root {
   position: fixed;
-  inset: 0;
+  left: 0;
+  right: 0;
+  top: var(--vv-top, 0px);
+  height: var(--vv-height, 100dvh);
   z-index: 80;
   display: flex;
   align-items: flex-end;
@@ -868,8 +871,10 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 75dvh;
-  max-height: 75dvh;
+  height: min(75dvh, calc(var(--vv-height, 100dvh) - 24px));
+  max-height: min(75dvh, calc(var(--vv-height, 100dvh) - 24px));
+  min-height: 0;
+  overflow: hidden;
   border-radius: 24px 24px 0 0;
   border-top: 1px solid #2A2C33;
   background: #1A1C21;

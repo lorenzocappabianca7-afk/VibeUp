@@ -30,7 +30,49 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 
 const years = birthYearChoices();
 const FOCUSABLE = "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])";
+const SHEET_OPEN_MS = 350;
 const verifyInflight = new Set<string>();
+
+function focusWithoutScroll(node: HTMLElement) {
+  try {
+    node.focus({ preventScroll: true });
+  } catch {
+    node.focus();
+  }
+}
+
+/** Keep the active field in the sheet's middle scroller. The page and the visual viewport stay put. */
+function revealInSheet(field: HTMLElement, scroller: HTMLElement) {
+  const fieldBox = field.getBoundingClientRect();
+  const frame = scroller.getBoundingClientRect();
+  const above = frame.top - fieldBox.top;
+  const below = fieldBox.bottom - frame.bottom;
+  if (above > 1) scroller.scrollTop -= above;
+  else if (below > 1) scroller.scrollTop += below;
+}
+
+function readVisibleFrame() {
+  const viewport = window.visualViewport;
+  const top = viewport && Number.isFinite(viewport.offsetTop) ? viewport.offsetTop : 0;
+  const viewportHeight = viewport && Number.isFinite(viewport.height) ? viewport.height : 0;
+  const height = viewportHeight > 0 ? viewportHeight : window.innerHeight;
+  return { top, height: height > 0 ? height : window.innerHeight };
+}
+
+function scheduleFrame(callback: () => void) {
+  if (typeof window.requestAnimationFrame === "function") {
+    return window.requestAnimationFrame(callback);
+  }
+  return window.setTimeout(callback, 16);
+}
+
+function cancelFrame(id: number) {
+  if (typeof window.cancelAnimationFrame === "function") {
+    window.cancelAnimationFrame(id);
+    return;
+  }
+  window.clearTimeout(id);
+}
 
 function errorText(code: string) {
   if (code.includes(" ")) return code;
@@ -117,8 +159,6 @@ export function SignupFlow({
   const [referralWarn, setReferralWarn] = useState("");
   const [verifyCode, setVerifyCode] = useState("");
   const [resendTick, setResendTick] = useState(0);
-  const [keyboardInset, setKeyboardInset] = useState(0);
-  const [viewportHeight, setViewportHeight] = useState(0);
   const [narrow, setNarrow] = useState(true);
   const [reduced, setReduced] = useState(false);
   const [opened, setOpened] = useState(false);
@@ -138,7 +178,9 @@ export function SignupFlow({
     return Boolean(window.localStorage.getItem(DEMO_SIGNUP_ID_STORAGE_KEY)?.trim());
   });
   const panelRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const openedAtRef = useRef(0);
   const exitRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef(draft);
   const requestCloseRef = useRef<() => void>(() => undefined);
@@ -197,7 +239,10 @@ export function SignupFlow({
     sync();
     width.addEventListener("change", sync);
     motion.addEventListener("change", sync);
-    const frame = requestAnimationFrame(() => setOpened(true));
+    const frame = requestAnimationFrame(() => {
+      openedAtRef.current = Date.now();
+      setOpened(true);
+    });
     return () => {
       cancelAnimationFrame(frame);
       width.removeEventListener("change", sync);
@@ -205,31 +250,120 @@ export function SignupFlow({
     };
   }, []);
 
-  useEffect(() => {
-    const viewport = window.visualViewport;
-    if (!viewport) return;
-    const sync = () => {
-      setViewportHeight(viewport.height);
-      setKeyboardInset(Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop));
+  useLayoutEffect(() => {
+    const root = frameRef.current;
+    if (!root) return;
+    let frame = 0;
+    const apply = () => {
+      frame = 0;
+      const { top, height } = readVisibleFrame();
+      root.style.setProperty("--vv-top", `${top}px`);
+      root.style.setProperty("--vv-height", `${height}px`);
+      const scroller = panelRef.current;
+      const active = document.activeElement;
+      if (
+        scroller &&
+        active instanceof HTMLElement &&
+        scroller.contains(active) &&
+        active.matches("input, select, textarea")
+      ) {
+        revealInSheet(active, scroller);
+      }
     };
-    sync();
-    viewport.addEventListener("resize", sync);
-    viewport.addEventListener("scroll", sync);
+    const schedule = () => {
+      if (frame) return;
+      frame = scheduleFrame(apply);
+    };
+    apply();
+    const viewport = window.visualViewport;
+    if (viewport && typeof viewport.addEventListener === "function") {
+      viewport.addEventListener("resize", schedule);
+      viewport.addEventListener("scroll", schedule);
+    }
+    window.addEventListener("resize", schedule);
+    window.addEventListener("orientationchange", schedule);
     return () => {
-      viewport.removeEventListener("resize", sync);
-      viewport.removeEventListener("scroll", sync);
+      if (frame) cancelFrame(frame);
+      if (viewport && typeof viewport.removeEventListener === "function") {
+        viewport.removeEventListener("resize", schedule);
+        viewport.removeEventListener("scroll", schedule);
+      }
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("orientationchange", schedule);
     };
   }, []);
 
   useEffect(() => {
-    if (checking || done || exitOpen) return;
-    const node = panelRef.current?.querySelector("input, select");
-    if (node instanceof HTMLElement) node.focus();
-  }, [draft.step, checking, done, exitOpen]);
+    const body = document.body;
+    const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    const previous = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow,
+    };
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+
+    const landing = document.querySelector("[data-prelaunch-landing]");
+    const landingTop = landing instanceof HTMLElement ? landing.scrollTop : 0;
+    const landingOverflow = landing instanceof HTMLElement ? landing.style.overflow : "";
+    const freezeLanding = () => {
+      if (landing instanceof HTMLElement && landing.scrollTop !== landingTop) {
+        landing.scrollTop = landingTop;
+      }
+    };
+    if (landing instanceof HTMLElement) {
+      landing.style.overflow = "hidden";
+      landing.addEventListener("scroll", freezeLanding);
+    }
+
+    return () => {
+      body.style.position = previous.position;
+      body.style.top = previous.top;
+      body.style.left = previous.left;
+      body.style.right = previous.right;
+      body.style.width = previous.width;
+      body.style.overflow = previous.overflow;
+      if (landing instanceof HTMLElement) {
+        landing.removeEventListener("scroll", freezeLanding);
+        landing.style.overflow = landingOverflow;
+        landing.scrollTop = landingTop;
+      }
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!opened || checking || done || exitOpen) return;
+    const wait = Math.max(0, SHEET_OPEN_MS - (Date.now() - openedAtRef.current));
+    const timer = window.setTimeout(() => {
+      const scroller = panelRef.current;
+      if (!scroller) return;
+      const active = document.activeElement;
+      const current =
+        active instanceof HTMLElement &&
+        scroller.contains(active) &&
+        active.matches("input, select, textarea")
+          ? active
+          : scroller.querySelector("input, select, textarea");
+      if (!(current instanceof HTMLElement)) return;
+      focusWithoutScroll(current);
+      revealInSheet(current, scroller);
+    }, wait);
+    return () => window.clearTimeout(timer);
+  }, [opened, draft.step, checking, done, exitOpen]);
 
   useEffect(() => {
     if (!exitOpen) return;
-    exitRef.current?.querySelector<HTMLElement>(".vu-cta")?.focus();
+    const node = exitRef.current?.querySelector<HTMLElement>(".vu-cta");
+    if (node) focusWithoutScroll(node);
   }, [exitOpen]);
 
   useEffect(() => {
@@ -249,10 +383,10 @@ export function SignupFlow({
       const active = document.activeElement;
       if (event.shiftKey && (active === first || !root.contains(active))) {
         event.preventDefault();
-        last.focus();
+        focusWithoutScroll(last);
       } else if (!event.shiftKey && active === last) {
         event.preventDefault();
-        first.focus();
+        focusWithoutScroll(first);
       }
     }
     document.addEventListener("keydown", onKey);
@@ -651,17 +785,7 @@ export function SignupFlow({
     : signupCopy.stepProgress
         .replaceAll("{n}", String(stepNumber))
         .replaceAll("{total}", String(visibleSteps.length));
-  const keyboardLift = narrow && keyboardInset > 120 && viewportHeight > 0;
   const sheetStyle: CSSProperties = { ["--drag" as string]: `${dragY}px` };
-  if (keyboardLift) {
-    const height = Math.max(280, viewportHeight - 24);
-    sheetStyle.position = "fixed";
-    sheetStyle.left = 0;
-    sheetStyle.right = 0;
-    sheetStyle.bottom = keyboardInset;
-    sheetStyle.height = height;
-    sheetStyle.maxHeight = height;
-  }
   const lead =
     draft.step === 2
       ? signupCopy.verifyBody
@@ -673,7 +797,7 @@ export function SignupFlow({
   const showBack = !done && draft.step > 0;
 
   return (
-    <div className="vu-sheet-root">
+    <div className="vu-sheet-root" ref={frameRef}>
       <div className="vu-sheet-overlay" onClick={requestClose} />
       <div
         ref={dialogRef}
@@ -754,6 +878,13 @@ export function SignupFlow({
             onSubmit={(event: FormEvent) => {
               event.preventDefault();
               void continueStep();
+            }}
+            onFocusCapture={(event) => {
+              const target = event.target;
+              const scroller = panelRef.current;
+              if (!(target instanceof HTMLElement) || !scroller || !scroller.contains(target)) return;
+              if (!target.matches("input, select, textarea")) return;
+              revealInSheet(target, scroller);
             }}
           >
             <div className={`vu-sheet-body vu-sheet-slide is-${dir}`} key={draft.step} ref={panelRef}>
