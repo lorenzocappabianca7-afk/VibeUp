@@ -3,7 +3,3 @@ export function isPlatformLive(): boolean {
   const raw = process.env.NEXT_PUBLIC_PLATFORM_LIVE?.trim().toLowerCase();
   return raw === "true" || raw === "1";
 }
-
-export function isStaffRole(role: string | null | undefined) {
-  return role === "business" || role === "admin";
-}

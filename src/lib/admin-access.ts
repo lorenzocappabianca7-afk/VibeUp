@@ -14,17 +14,22 @@ function listedAdminEmails(): Set<string> {
   return emails;
 }
 
+/** info@ or a mailbox listed in ADMIN_EMAILS. The client bundle only sees info@. */
+export function isListedAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return listedAdminEmails().has(email.trim().toLowerCase());
+}
+
 /**
- * Role admin, and the mailbox is info@ or listed in ADMIN_EMAILS.
+ * Logged-in mailbox is info@ or listed in ADMIN_EMAILS.
  * On the client the env list is empty, so only info@ matches there.
  * Admin APIs read the same list on the server.
  */
 export function canAccessAdminCatalog(
   email: string,
-  role?: AppRole | null,
+  _role?: AppRole | null,
 ): boolean {
-  if (role !== "admin") return false;
-  return listedAdminEmails().has(email.trim().toLowerCase());
+  return isListedAdminEmail(email);
 }
 
 export function isAdminManagerViewEnabled() {

@@ -1,7 +1,6 @@
 "use client";
 
 import { MobileShell } from "@/components/layout/mobile-shell";
-import { useAppState } from "@/context/app-state-context";
 import { isDemoExitToSite, useDemoMode } from "@/context/demo-mode-context";
 import { isSiteLocale, writeDemoLanguage } from "@/lib/demo/language";
 import { confirmVerifiedSignup, DEMO_SIGNUP_ID_STORAGE_KEY, demoEntryIdentity } from "@/lib/demo/signup-gate";
@@ -11,12 +10,10 @@ import { useEffect } from "react";
 
 export default function DemoRoutePage() {
   const { isDemoMode, enterDemo } = useDemoMode();
-  const { currentUser, isGuest, isStorageHydrated } = useAppState();
   const router = useRouter();
 
   useEffect(() => {
     if (isDemoExitToSite() || isDemoMode) return;
-    if (!isStorageHydrated) return;
 
     const token = new URLSearchParams(window.location.search).get("t")?.trim() ?? "";
     if (token) {
@@ -54,7 +51,7 @@ export default function DemoRoutePage() {
       };
     }
 
-    const identity = demoEntryIdentity(isGuest ? null : currentUser.email);
+    const identity = demoEntryIdentity();
     if (!identity) {
       router.replace("/#iscriviti");
       return;
@@ -81,14 +78,7 @@ export default function DemoRoutePage() {
     return () => {
       cancelled = true;
     };
-  }, [
-    currentUser.email,
-    enterDemo,
-    isDemoMode,
-    isGuest,
-    isStorageHydrated,
-    router,
-  ]);
+  }, [enterDemo, isDemoMode, router]);
 
   if (!isDemoMode) return null;
   return <MobileShell />;

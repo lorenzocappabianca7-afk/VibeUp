@@ -1,22 +1,18 @@
+import { isListedAdminEmail } from "@/lib/admin-access";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { isStaffRole } from "@/lib/platform";
 
-/** Logged-in business or admin, from the Supabase session. False when auth isn't configured. */
-export async function isServerStaffUser(): Promise<boolean> {
+export type ServerAdminAccess = "anonymous" | "forbidden" | "allowed";
+
+/** Session mailbox checked against ADMIN_EMAILS. Anonymous when auth isn't configured. */
+export async function getServerAdminAccess(): Promise<ServerAdminAccess> {
   try {
     const supabase = await getSupabaseServer();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return false;
-    const { data } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-    const role = data && typeof data.role === "string" ? data.role : null;
-    return isStaffRole(role);
+    if (!user) return "anonymous";
+    return isListedAdminEmail(user.email) ? "allowed" : "forbidden";
   } catch {
-    return false;
+    return "anonymous";
   }
 }

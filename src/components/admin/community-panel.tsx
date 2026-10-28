@@ -157,20 +157,51 @@ function yesNo(value: boolean | null) {
   return value ? "Sì" : "No";
 }
 
-export function CommunityPanel() {
+function loginFailureMessage(error: string) {
+  const normalized = error.toLowerCase();
+  if (
+    normalized.includes("invalid login") ||
+    normalized.includes("invalid credentials") ||
+    normalized.includes("email o password")
+  ) {
+    return "Email o password errate";
+  }
+  if (
+    normalized.includes("fetch") ||
+    normalized.includes("network") ||
+    normalized.includes("connessione") ||
+    normalized.includes("failed to")
+  ) {
+    return "Errore di connessione, riprova";
+  }
+  return error;
+}
+
+export function CommunityPanel({
+  initialAccess = "anonymous",
+}: {
+  initialAccess?: "anonymous" | "forbidden" | "allowed";
+}) {
   const params = useSearchParams();
   const router = useRouter();
   const tab = tabFrom(params.get("tab"));
-  const { createAccount, currentUser, isGuest, isStorageHydrated, switchAccount } = useAppState();
+  const { createAccount, isGuest, isStorageHydrated, switchAccount } = useAppState();
   const [email, setEmail] = useState(ADMIN_CATALOG_EMAIL);
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [gate, setGate] = useState<"checking" | "login" | "denied" | "ready">("checking");
-  const [error, setError] = useState("");
+  const [gate, setGate] = useState<"checking" | "login" | "denied" | "ready">(
+    initialAccess === "allowed" ? "ready" : initialAccess === "forbidden" ? "denied" : "login",
+  );
   const [accessAttempt, setAccessAttempt] = useState(0);
+  const [dismissed, setDismissed] = useState(false);
 
-  const mayTry = isStorageHydrated && !isGuest && currentUser.role === "admin";
+  const signedIn = isStorageHydrated && !isGuest;
+
+  function leavePanel() {
+    setDismissed(true);
+    switchAccount(GUEST_USER.id);
+  }
 
   const checkAccess = useCallback(async (retry: boolean) => {
     const load = () =>
@@ -194,8 +225,16 @@ export function CommunityPanel() {
 
   useEffect(() => {
     if (!isStorageHydrated) return;
-    if (!mayTry) {
-      setGate(isGuest ? "login" : "denied");
+    if (!signedIn) {
+      if (initialAccess === "allowed" && !dismissed) {
+        setGate("ready");
+        return;
+      }
+      setGate("login");
+      return;
+    }
+    if (initialAccess === "allowed" && accessAttempt === 0) {
+      setGate("ready");
       return;
     }
     let cancelled = false;
@@ -204,36 +243,42 @@ export function CommunityPanel() {
       .then((next) => {
         if (cancelled) return;
         if (next === "login" && accessAttempt > 0) {
-          setLoginError("Sei entrato, ma il pannello non vede ancora la sessione. Riprova.");
+          setLoginError("Errore di connessione, riprova");
         }
-        if (next === "ready") setLoginError("");
+        if (next === "ready" || next === "denied") setLoginError("");
         setGate(next);
       })
-      .catch((err: unknown) => {
+      .catch(() => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Caricamento non riuscito.");
-          setGate("denied");
+          setLoginError("Errore di connessione, riprova");
+          setGate("login");
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [accessAttempt, checkAccess, isGuest, isStorageHydrated, mayTry]);
+  }, [accessAttempt, checkAccess, dismissed, initialAccess, isStorageHydrated, signedIn]);
 
   async function handleLogin(event: FormEvent) {
     event.preventDefault();
     if (submitting) return;
     setSubmitting(true);
     setLoginError("");
-    const result = await createAccount({
-      name: "Admin",
-      email: email.trim().toLowerCase(),
-      password,
-      mode: "login",
-    });
-    setSubmitting(false);
-    if (!result.ok) {
-      setLoginError(result.error);
+    try {
+      const result = await createAccount({
+        name: "Admin",
+        email: email.trim().toLowerCase(),
+        password,
+        mode: "login",
+      });
+      setSubmitting(false);
+      if (!result.ok) {
+        setLoginError(loginFailureMessage(result.error));
+        return;
+      }
+    } catch {
+      setSubmitting(false);
+      setLoginError("Errore di connessione, riprova");
       return;
     }
     setPassword("");
@@ -244,7 +289,7 @@ export function CommunityPanel() {
     router.replace(next === "panoramica" ? "/admin/demo" : `/admin/demo?tab=${next}`);
   }
 
-  if (!isStorageHydrated || gate === "checking") {
+  if (gate === "checking") {
     return (
       <Shell>
         <p className="text-sm text-primary-black/50" suppressHydrationWarning>
@@ -268,10 +313,15 @@ export function CommunityPanel() {
             Pagina riservata. Entra con un account admin il cui indirizzo è in ADMIN_EMAILS.
           </p>
           {gate === "denied" ? (
-            <p className="mt-4 rounded-2xl bg-brand-pink/15 px-3 py-2 text-sm text-brand-pink">
-              {error || "Questo account non può aprire il pannello."}
-            </p>
-          ) : null}
+            <div className="mt-4 space-y-4">
+              <p className="rounded-2xl bg-brand-pink/15 px-3 py-2 text-sm text-brand-pink">
+                Questo account non è autorizzato al pannello
+              </p>
+              <Button type="button" variant="outline" className="min-h-11 px-3" onClick={leavePanel}>
+                Esci
+              </Button>
+            </div>
+          ) : (
           <form className="mt-6 space-y-4" onSubmit={(event) => void handleLogin(event)}>
             <div>
               <FieldLabel htmlFor="community-email">Email</FieldLabel>
@@ -286,6 +336,7 @@ export function CommunityPanel() {
               {submitting ? "Accesso…" : "Entra"}
             </Button>
           </form>
+          )}
         </div>
       </Shell>
     );
@@ -300,9 +351,14 @@ export function CommunityPanel() {
             Dati community
           </h1>
         </div>
-        <Button type="button" variant="outline" className="min-h-11 px-3" onClick={() => switchAccount(GUEST_USER.id)}>
-          Esci
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <a href="/?app=1" className="inline-flex min-h-11 items-center rounded-[14px] border border-white/15 px-3 text-sm font-semibold text-primary-black">
+            Apri piattaforma
+          </a>
+          <Button type="button" variant="outline" className="min-h-11 px-3" onClick={leavePanel}>
+            Esci
+          </Button>
+        </div>
       </div>
       <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
         {TABS.map((item) => (

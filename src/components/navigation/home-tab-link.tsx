@@ -4,6 +4,7 @@ import { useTabNavigation } from "@/context/tab-navigation-context";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { buildShellTabHref, usesDemoShell } from "@/lib/demo/shell";
 import { isHomePath, pushHomeHref } from "@/lib/home-navigation";
+import { isPlatformLive } from "@/lib/platform";
 import type { TabId } from "@/types/navigation";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -39,6 +40,7 @@ function buildHref(
       });
     }
   }
+  if (!demoShell && !isPlatformLive()) params.set("app", "1");
   const qs = params.toString();
   const path = demoShell ? "/demo" : "/";
   return qs ? `${path}?${qs}` : path;

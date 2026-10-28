@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { DEMO_MODE_COOKIE, DEMO_MODE_COOKIE_VALUE } from "@/lib/demo/mode";
 import { isDemoKillSwitchOn } from "@/lib/demo/mode.server";
-import { isPlatformLive, isStaffRole } from "@/lib/platform";
+import { isListedAdminEmail } from "@/lib/admin-access";
+import { isPlatformLive } from "@/lib/platform";
 import {
   getAuthCookieOptions,
   withAuthCookieOptions,
@@ -247,34 +248,30 @@ async function gateRequest(
     return redirect;
   }
 
-  if (!isPlatformLive() && isCatalogDetail(pathname) && !demoOn) {
-    const staff = await requestIsStaff(supabase);
-    if (!staff) {
-      const redirect = NextResponse.redirect(new URL("/", request.url));
-      if (killed) clearDemoCookie(redirect);
-      return redirect;
+  if (!isPlatformLive() && !demoOn) {
+    const appPreview =
+      pathname === "/" && request.nextUrl.searchParams.get("app") === "1";
+    if (appPreview || isCatalogDetail(pathname)) {
+      const allowed = await requestIsListedAdmin(supabase);
+      if (!allowed) {
+        const redirect = NextResponse.redirect(new URL("/", request.url));
+        if (killed) clearDemoCookie(redirect);
+        return redirect;
+      }
     }
   }
 
   return null;
 }
 
-async function requestIsStaff(
+async function requestIsListedAdmin(
   supabase: ReturnType<typeof createServerClient> | null,
 ) {
   if (!supabase) return false;
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  const { data } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-  const role = data && typeof data.role === "string" ? data.role : null;
-  return isStaffRole(role);
+  return isListedAdminEmail(user?.email);
 }
 
 export const config = {
