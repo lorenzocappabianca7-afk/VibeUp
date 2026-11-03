@@ -35,6 +35,7 @@ type SignupRow = {
   consentMarketing: boolean;
   demoStatus: "none" | "entered" | "completed";
   demoRating: number | null;
+  isTester: boolean;
 };
 
 type Overview = {
@@ -496,6 +497,7 @@ function SignupsTab() {
   const [marketing, setMarketing] = useState("all");
   const [demo, setDemo] = useState("all");
   const [locale, setLocale] = useState("all");
+  const [testers, setTesters] = useState("all");
   const [sort, setSort] = useState("createdAt");
   const [dir, setDir] = useState<"asc" | "desc">("desc");
   const [error, setError] = useState("");
@@ -530,11 +532,12 @@ function SignupsTab() {
       marketing,
       demo,
       locale,
+      testers,
       sort,
       dir,
     });
     return search.toString();
-  }, [demo, dir, locale, marketing, page, q, school, sort, venue, verified]);
+  }, [demo, dir, locale, marketing, page, q, school, sort, testers, venue, verified]);
 
   useEffect(() => {
     let cancelled = false;
@@ -650,6 +653,11 @@ function SignupsTab() {
           <option value="entered">Entrato</option>
           <option value="completed">Completata</option>
         </select>
+        <select value={testers} onChange={(event) => { setPage(1); setTesters(event.target.value); }} className={inputClass} aria-label="Tester">
+          <option value="all">Tester: visibili</option>
+          <option value="hide">Nascondi tester</option>
+          <option value="only">Solo tester</option>
+        </select>
         <select value={locale} onChange={(event) => { setPage(1); setLocale(event.target.value); }} className={inputClass} aria-label="Lingua">
           <option value="all">Lingua: tutte</option>
           <option value="it">Italiano</option>
@@ -686,7 +694,10 @@ function SignupsTab() {
             {rows.map((row) => (
               <tr key={row.id} className="cursor-pointer border-t border-white/10 hover:bg-white/[0.03]" onClick={() => void openPerson(row.id)}>
                 <td className="px-3 py-2 whitespace-nowrap">{formatWhen(row.createdAt)}</td>
-                <td className="px-3 py-2">{row.firstName}</td>
+                <td className="px-3 py-2">
+                  {row.firstName}
+                  {row.isTester ? <span className="ml-2 rounded-full bg-brand-pink/15 px-2 py-0.5 text-xs font-semibold text-brand-pink">Tester</span> : null}
+                </td>
                 <td className="px-3 py-2">{row.lastName}</td>
                 <td className="px-3 py-2">{row.username}</td>
                 <td className="px-3 py-2">{row.email}</td>
@@ -728,6 +739,7 @@ function SignupsTab() {
           </div>
           <dl className="mt-4 space-y-2 text-sm">
             {[
+              ["Tester", person.signup.isTester ? "Tester" : "No"],
               ["Username", person.signup.username],
               ["Email", person.signup.email],
               ["Telefono", person.signup.phone || "—"],

@@ -23,12 +23,13 @@ type SignupRow = {
   welcome_email_sent_at: string | null;
   consent_marketing: boolean;
   contest_excluded: boolean;
+  is_tester: boolean;
   ip_hash: string | null;
   created_at: string;
 };
 
 const SIGNUP_COLUMNS =
-  "id, first_name, last_name, username, email, phone, birth_year, high_school, dream_venue, vibeup_code, referred_by_code, email_verified_at, welcome_email_sent_at, consent_marketing, contest_excluded, ip_hash, created_at";
+  "id, first_name, last_name, username, email, phone, birth_year, high_school, dream_venue, vibeup_code, referred_by_code, email_verified_at, welcome_email_sent_at, consent_marketing, contest_excluded, is_tester, ip_hash, created_at";
 
 function admin() {
   if (!isSupabaseConfigured()) return null;
@@ -81,11 +82,11 @@ function burstIds(
 }
 
 export function isValidInvite(
-  invitee: Pick<SignupRow, "email" | "phone" | "email_verified_at" | "contest_excluded">,
-  inviter: Pick<SignupRow, "email" | "phone">,
+  invitee: Pick<SignupRow, "email" | "phone" | "email_verified_at" | "contest_excluded" | "is_tester">,
+  inviter: Pick<SignupRow, "email" | "phone" | "is_tester">,
 ) {
   if (!inviteCountsForContest(invitee.email_verified_at)) return false;
-  if (invitee.contest_excluded) return false;
+  if (invitee.contest_excluded || invitee.is_tester || inviter.is_tester) return false;
   if (isDisposableEmail(invitee.email)) return false;
   if (invitee.email.trim().toLowerCase() === inviter.email.trim().toLowerCase()) return false;
   if (invitee.phone === inviter.phone) return false;
@@ -117,29 +118,30 @@ export async function countValidInvitesForCode(code: string) {
   if (!client || !code) return 0;
   const { data: owner, error: ownerError } = await client
     .from(SIGNUPS)
-    .select("email, phone")
+    .select("email, phone, is_tester")
     .eq("vibeup_code", code)
     .maybeSingle();
   if (ownerError) throw new Error(ownerError.message);
   if (!owner) return 0;
+  const inviter = owner as { email: string; phone: string; is_tester: boolean | null };
+  if (inviter.is_tester) return 0;
+  const inviterRow = { email: inviter.email, phone: inviter.phone, is_tester: Boolean(inviter.is_tester) };
   const { data, error } = await client
     .from(SIGNUPS)
-    .select("email, phone, email_verified_at, contest_excluded")
+    .select("email, phone, email_verified_at, contest_excluded, is_tester")
     .eq("referred_by_code", code);
   if (error) {
-    if (!/contest_excluded/i.test(error.message)) throw new Error(error.message);
+    if (!/contest_excluded|is_tester/i.test(error.message)) throw new Error(error.message);
     const retry = await client
       .from(SIGNUPS)
       .select("email, phone, email_verified_at")
       .eq("referred_by_code", code);
     if (retry.error) throw new Error(retry.error.message);
-    const inviter = owner as { email: string; phone: string };
     return ((retry.data ?? []) as SignupRow[]).filter((row) =>
-      isValidInvite({ ...row, contest_excluded: false }, inviter),
+      isValidInvite({ ...row, contest_excluded: false, is_tester: false }, inviterRow),
     ).length;
   }
-  const inviter = owner as { email: string; phone: string };
-  return ((data ?? []) as SignupRow[]).filter((row) => isValidInvite(row, inviter)).length;
+  return ((data ?? []) as SignupRow[]).filter((row) => isValidInvite(row, inviterRow)).length;
 }
 
 function romeDay(iso: string) {
@@ -175,7 +177,7 @@ function lastDays(count: number) {
 }
 
 export async function loadContestAdmin() {
-  const rows = await fetchAllSignups();
+  const rows = (await fetchAllSignups()).filter((row) => !row.is_tester);
   const client = admin();
   const exclusions = new Map<string, { excluded: boolean; reason: string; at: string }>();
   if (client) {

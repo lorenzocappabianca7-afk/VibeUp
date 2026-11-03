@@ -9,7 +9,7 @@ const DEMOS = "demo_submissions";
 const PAGE_SIZE = 50;
 
 const SIGNUP_LIST_COLUMNS =
-  "id, created_at, first_name, last_name, username, email, phone, birth_year, high_school, dream_venue, locale, vibeup_code, referred_by_code, email_verified_at, welcome_email_sent_at, consent_privacy_at, consent_rules_at, consent_marketing, contest_excluded";
+  "id, created_at, first_name, last_name, username, email, phone, birth_year, high_school, dream_venue, locale, vibeup_code, referred_by_code, email_verified_at, welcome_email_sent_at, consent_privacy_at, consent_rules_at, consent_marketing, contest_excluded, is_tester";
 
 export type DemoStatus = "none" | "entered" | "completed";
 
@@ -36,6 +36,7 @@ export interface CommunitySignupRow {
   consentMarketing: boolean;
   demoStatus: DemoStatus;
   demoRating: number | null;
+  isTester: boolean;
 }
 
 export interface CommunityFilters {
@@ -46,6 +47,7 @@ export interface CommunityFilters {
   marketing: "all" | "yes" | "no";
   demo: "all" | DemoStatus;
   locale: "all" | "it" | "en";
+  testers: "all" | "hide" | "only";
   sort: string;
   dir: "asc" | "desc";
   page: number;
@@ -71,6 +73,7 @@ type SignupDb = {
   consent_rules_at: string | null;
   consent_marketing: boolean;
   contest_excluded: boolean | null;
+  is_tester: boolean | null;
 };
 
 type DemoDb = {
@@ -326,25 +329,34 @@ function percent(part: number, total: number) {
 export async function loadCommunityOverview() {
   const client = admin();
   if (!client) throw new Error("Supabase non configurato.");
-  const slim: { created_at: string; email_verified_at: string | null; high_school: string | null; dream_venue: string | null; locale: string | null; id: string; email: string }[] = [];
+  const slim: { created_at: string; email_verified_at: string | null; high_school: string | null; dream_venue: string | null; locale: string | null; id: string; email: string; is_tester: boolean | null }[] = [];
   for (let from = 0; ; from += 1000) {
     const { data, error } = await client
       .from(SIGNUPS)
-      .select("id, email, created_at, email_verified_at, high_school, dream_venue, locale")
+      .select("id, email, created_at, email_verified_at, high_school, dream_venue, locale, is_tester")
       .range(from, from + 999);
     if (error) throw new Error(error.message);
     const page = (data ?? []) as typeof slim;
     slim.push(...page);
     if (page.length < 1000) break;
   }
-  const demos = await loadDemos();
+  const counted = slim.filter((row) => !row.is_tester);
+  const testerIds = new Set(slim.filter((row) => row.is_tester).map((row) => row.id));
+  const testerEmails = new Set(
+    slim.filter((row) => row.is_tester).map((row) => row.email.toLowerCase()),
+  );
+  const demos = (await loadDemos()).filter((demo) => {
+    if (demo.signupId && testerIds.has(demo.signupId)) return false;
+    if (demo.email && testerEmails.has(demo.email.toLowerCase())) return false;
+    return true;
+  });
   const today = romeDay(new Date().toISOString());
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - 6);
   const weekDay = romeDay(weekStart.toISOString());
-  const verifiedRows = slim.filter((row) => row.email_verified_at);
+  const verifiedRows = counted.filter((row) => row.email_verified_at);
   const verifiedIds = new Set(verifiedRows.map((row) => row.id));
-  const emailToId = new Map(slim.map((row) => [row.email.toLowerCase(), row.id]));
+  const emailToId = new Map(counted.map((row) => [row.email.toLowerCase(), row.id]));
 
   function signupIdOf(demo: DemoSummary) {
     if (demo.signupId && verifiedIds.has(demo.signupId)) return demo.signupId;
@@ -378,7 +390,7 @@ export async function loadCommunityOverview() {
     dayKeys.push(romeDay(day.toISOString()));
   }
   const perDay = new Map(dayKeys.map((day) => [day, 0]));
-  for (const row of slim) {
+  for (const row of counted) {
     const day = romeDay(row.created_at);
     if (perDay.has(day)) perDay.set(day, (perDay.get(day) ?? 0) + 1);
   }
@@ -401,10 +413,10 @@ export async function loadCommunityOverview() {
 
   return {
     totals: {
-      signups: slim.length,
+      signups: counted.length,
       verified,
-      today: slim.filter((row) => romeDay(row.created_at) === today).length,
-      week: slim.filter((row) => romeDay(row.created_at) >= weekDay).length,
+      today: counted.filter((row) => romeDay(row.created_at) === today).length,
+      week: counted.filter((row) => romeDay(row.created_at) >= weekDay).length,
       demoEntered: demos.filter((demo) => demo.steps.stepEnteredAt).length,
       demoCompleted: demos.filter((demo) => demo.status === "completed").length,
       averageRating:
@@ -419,13 +431,13 @@ export async function loadCommunityOverview() {
       percent: percent(count, verified),
     })),
     perDay: dayKeys.map((day) => ({ day, count: perDay.get(day) ?? 0 })),
-    schools: topCounts(slim.map((row) => row.high_school ?? "")),
-    venues: topCounts(slim.map((row) => row.dream_venue ?? "")),
+    schools: topCounts(counted.map((row) => row.high_school ?? "")),
+    venues: topCounts(counted.map((row) => row.dream_venue ?? "")),
     locations: topCounts(locations),
     suggestedVenues: suggestedVenueCounts(demos.map((demo) => demo.customVenue)),
     locales: [
-      { name: "Italiano", count: slim.filter((row) => (row.locale ?? "it") !== "en").length },
-      { name: "English", count: slim.filter((row) => row.locale === "en").length },
+      { name: "Italiano", count: counted.filter((row) => (row.locale ?? "it") !== "en").length },
+      { name: "English", count: counted.filter((row) => row.locale === "en").length },
     ],
   };
 }
@@ -454,6 +466,7 @@ export function parseCommunityFilters(search: URLSearchParams): CommunityFilters
   const marketing = search.get("marketing");
   const demo = search.get("demo");
   const locale = search.get("locale");
+  const testers = search.get("testers");
   const sort = search.get("sort") || "createdAt";
   const dir = search.get("dir") === "asc" ? "asc" : "desc";
   const page = Math.max(1, Number(search.get("page")) || 1);
@@ -465,6 +478,7 @@ export function parseCommunityFilters(search: URLSearchParams): CommunityFilters
     marketing: marketing === "yes" || marketing === "no" ? marketing : "all",
     demo: demo === "none" || demo === "entered" || demo === "completed" ? demo : "all",
     locale: locale === "it" || locale === "en" ? locale : "all",
+    testers: testers === "hide" || testers === "only" ? testers : "all",
     sort: SORTS[sort] ? sort : "createdAt",
     dir,
     page,
@@ -477,16 +491,16 @@ async function inviteCounts(codes: string[]) {
   if (!client || codes.length === 0) return counts;
   const { data: owners, error: ownerError } = await client
     .from(SIGNUPS)
-    .select("vibeup_code, email, phone")
+    .select("vibeup_code, email, phone, is_tester")
     .in("vibeup_code", codes);
   if (ownerError) throw new Error(ownerError.message);
-  const inviters = new Map<string, { email: string; phone: string | null }>();
-  for (const owner of (owners ?? []) as { vibeup_code: string | null; email: string; phone: string | null }[]) {
+  const inviters = new Map<string, { email: string; phone: string | null; is_tester: boolean | null }>();
+  for (const owner of (owners ?? []) as { vibeup_code: string | null; email: string; phone: string | null; is_tester: boolean | null }[]) {
     if (owner.vibeup_code) inviters.set(owner.vibeup_code, owner);
   }
   const { data, error } = await client
     .from(SIGNUPS)
-    .select("referred_by_code, email, phone, email_verified_at, contest_excluded")
+    .select("referred_by_code, email, phone, email_verified_at, contest_excluded, is_tester")
     .in("referred_by_code", codes);
   if (error) throw new Error(error.message);
   for (const row of (data ?? []) as {
@@ -495,6 +509,7 @@ async function inviteCounts(codes: string[]) {
     phone: string | null;
     email_verified_at: string | null;
     contest_excluded: boolean | null;
+    is_tester: boolean | null;
   }[]) {
     if (!row.referred_by_code) continue;
     const inviter = inviters.get(row.referred_by_code);
@@ -506,8 +521,9 @@ async function inviteCounts(codes: string[]) {
           phone: row.phone,
           email_verified_at: row.email_verified_at,
           contest_excluded: Boolean(row.contest_excluded),
+          is_tester: Boolean(row.is_tester),
         },
-        inviter,
+        { ...inviter, is_tester: Boolean(inviter.is_tester) },
       )
     ) {
       continue;
@@ -561,6 +577,7 @@ function mapSignup(
     consentMarketing: row.consent_marketing,
     demoStatus: demo?.status ?? "none",
     demoRating: demo?.rating ?? null,
+    isTester: Boolean(row.is_tester),
   };
 }
 
@@ -599,6 +616,8 @@ export async function loadCommunitySignups(filters: CommunityFilters, all: boole
   if (filters.marketing === "yes") query = query.eq("consent_marketing", true);
   if (filters.marketing === "no") query = query.eq("consent_marketing", false);
   if (filters.locale !== "all") query = query.eq("locale", filters.locale);
+  if (filters.testers === "hide") query = query.eq("is_tester", false);
+  if (filters.testers === "only") query = query.eq("is_tester", true);
   const school = cleanLike(filters.school);
   const venue = cleanLike(filters.venue);
   const q = cleanLike(filters.q);
@@ -692,6 +711,7 @@ export function signupsToCsv(rows: CommunitySignupRow[]) {
     "Consenso marketing",
     "Stato demo",
     "Voto demo",
+    "Tester",
   ];
   const cell = (value: string) => `"${value.replaceAll('"', '""')}"`;
   const lines = rows.map((row) =>
@@ -717,6 +737,7 @@ export function signupsToCsv(rows: CommunitySignupRow[]) {
       row.consentMarketing ? "sì" : "no",
       row.demoStatus === "completed" ? "completata" : row.demoStatus === "entered" ? "entrato" : "non entrato",
       row.demoRating == null ? "" : String(row.demoRating),
+      row.isTester ? "sì" : "no",
     ]
       .map(cell)
       .join(","),
@@ -747,7 +768,7 @@ export async function loadCommunityPerson(signupId: string) {
   if (row.vibeup_code) {
     const { data: invited, error: inviteError } = await client
       .from(SIGNUPS)
-      .select("username, first_name, email, phone, email_verified_at, created_at, contest_excluded")
+      .select("username, first_name, email, phone, email_verified_at, created_at, contest_excluded, is_tester")
       .eq("referred_by_code", row.vibeup_code)
       .order("created_at", { ascending: false })
       .limit(100);
@@ -760,6 +781,7 @@ export async function loadCommunityPerson(signupId: string) {
       email_verified_at: string | null;
       created_at: string;
       contest_excluded: boolean | null;
+      is_tester: boolean | null;
     }[])
       .filter((item) =>
         isValidInvite(
@@ -768,8 +790,9 @@ export async function loadCommunityPerson(signupId: string) {
             phone: item.phone,
             email_verified_at: item.email_verified_at,
             contest_excluded: Boolean(item.contest_excluded),
+            is_tester: Boolean(item.is_tester),
           },
-          { email: row.email, phone: row.phone },
+          { email: row.email, phone: row.phone, is_tester: Boolean(row.is_tester) },
         ),
       )
       .map((item) => ({

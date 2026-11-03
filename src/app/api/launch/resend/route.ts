@@ -1,27 +1,37 @@
 import { sendVerificationEmail } from "@/server/launch/code-mail";
+import { isTesterEmail } from "@/server/launch/testers";
 import {
   asText,
-  guardLaunchRequest,
   isUuid,
   launchError,
   launchOk,
   readJsonObject,
   requestOrigin,
 } from "@/server/launch/request";
-import { issueEmailCode, readSignupLocale } from "@/server/repositories/waitlist";
+import { rateLimit } from "@/server/http/rate-limit";
+import { rejectLargeRequest } from "@/server/http/request-limits";
+import { issueEmailCode, readSignupEmail, readSignupLocale } from "@/server/repositories/waitlist";
 import { type NextRequest } from "next/server";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
-  const limited = guardLaunchRequest(request, "launch-resend", 6, 60 * 60 * 1000);
-  if (limited) return limited;
+  const tooBig = rejectLargeRequest(request, 16_000);
+  if (tooBig) return tooBig;
   const body = await readJsonObject(request);
   const signupId = asText(body?.signupId).trim();
   if (!isUuid(signupId)) return launchError(400, "invalid");
 
   try {
-    const issued = await issueEmailCode(signupId, { enforceWait: true });
+    const email = await readSignupEmail(signupId);
+    const tester = isTesterEmail(email);
+    const limited = rateLimit(request, {
+      scope: "launch-resend",
+      limit: tester ? 60 : 6,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (limited) return limited;
+    const issued = await issueEmailCode(signupId, { enforceWait: !tester });
     if (!issued.ok) {
       if (issued.error === "wait") {
         return launchError(429, "wait", { retryAfter: issued.retryAfter ?? 30 });

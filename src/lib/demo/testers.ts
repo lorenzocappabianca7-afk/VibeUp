@@ -1,5 +1,8 @@
-/** Testers who may repeat the demo on the same browser after completing it. */
-const UNLIMITED_TESTER_EMAILS = new Set(["lorenzo.cappabianca7@gmail.com"]);
+/** Testers who may repeat signup and the demo. Compared lowercase, without surrounding spaces. */
+const UNLIMITED_TESTER_EMAILS = new Set([
+  "federico.bossotti@gmail.com",
+  "lorenzo.cappabianca7@gmail.com",
+]);
 
 export const DEMO_LOCAL_RESET_EVENT = "vibeup-demo-local-reset";
 const DEMO_TESTER_EMAIL_KEY = "vibeup-demo-tester-email-v1";

@@ -8,6 +8,7 @@ import {
 import { parseSiteLocale } from "@/lib/demo/language";
 import { hashClientIp, sendVerificationEmail } from "@/server/launch/code-mail";
 import { demoAccessPath, ensureDemoAccessToken } from "@/server/launch/demo-access";
+import { isTesterEmail } from "@/server/launch/testers";
 import {
   asText,
   clientIp,
@@ -19,6 +20,8 @@ import {
   readJsonObject,
   requestOrigin,
 } from "@/server/launch/request";
+import { rateLimit } from "@/server/http/rate-limit";
+import { rejectLargeRequest } from "@/server/http/request-limits";
 import { deliverWelcomeEmail } from "@/server/launch/welcome-mail";
 import {
   finishConfirmedSignup,
@@ -32,18 +35,26 @@ import { type NextRequest } from "next/server";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
-  const limited = guardLaunchRequest(request, "launch-signup", 8, 60 * 60 * 1000);
-  if (limited) return limited;
+  const tooBig = rejectLargeRequest(request, 16_000);
+  if (tooBig) return tooBig;
 
   const body = await readJsonObject(request);
   if (!body) return launchError(400, "invalid");
 
   const email = normalizeEmail(asText(body.email));
+  const tester = isTesterEmail(email);
+  const limited = rateLimit(request, {
+    scope: "launch-signup",
+    limit: tester ? 80 : 8,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (limited) return limited;
+
   const signupId = asText(body.signupId).trim();
   const hasConsents = body.consentPrivacy === true && body.consentRules === true;
   const completing = hasConsents && isUuid(signupId);
 
-  if (!completing) {
+  if (!completing && !tester) {
     const emailLimited = guardLaunchRequest(
       request,
       "launch-signup-email",

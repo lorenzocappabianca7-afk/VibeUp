@@ -2,6 +2,8 @@ import { randomInt } from "crypto";
 import { isUuid } from "@/server/launch/request";
 import { parseSiteLocale, type DemoLanguage } from "@/lib/demo/language";
 import { ensureDemoAccessToken } from "@/server/launch/demo-access";
+import { isTesterEmail } from "@/server/launch/testers";
+import { eraseSignupById } from "@/server/repositories/privacy";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import {
@@ -158,6 +160,14 @@ function validateDraft(draft: WaitlistDraft): WaitlistError | null {
   return null;
 }
 
+/** A finished tester signup is removed, with the same erasure as a privacy request. */
+async function releaseVerifiedTesterSignup(existing: SignupRow | null, email: string) {
+  if (!existing?.email_verified_at || !isTesterEmail(email)) return existing;
+  const erased = await eraseSignupById(existing.id);
+  if (!erased.ok) return "unavailable" as const;
+  return null;
+}
+
 async function findByEmail(email: string) {
   const client = admin();
   if (!client) return null;
@@ -168,6 +178,15 @@ async function findByEmail(email: string) {
     .maybeSingle();
   if (error) throw new Error(error.message);
   return (data as SignupRow | null) ?? null;
+}
+
+export async function readSignupEmail(signupId: string) {
+  const client = admin();
+  if (!client || !isUuid(signupId)) return null;
+  const { data, error } = await client.from(SIGNUPS).select("email").eq("id", signupId).maybeSingle();
+  if (error) throw new Error(error.message);
+  const email = (data as { email?: string } | null)?.email;
+  return typeof email === "string" ? email : null;
 }
 
 /** Name, username and email only. The profile and consents come later. */
@@ -195,7 +214,9 @@ export async function startEmailSignup(input: {
   const email = normalizeEmail(input.email);
   if (!isEmailAddress(email)) return { ok: false, error: "invalid" };
 
-  const existing = await findByEmail(email);
+  const found = await findByEmail(email);
+  const existing = await releaseVerifiedTesterSignup(found, email);
+  if (existing === "unavailable") return unavailable();
   if (existing?.email_verified_at) return { ok: false, error: "email_taken" };
   const usernameFree = await isUsernameAvailable(username, existing?.id);
   if (usernameFree === null) return unavailable();
@@ -209,6 +230,7 @@ export async function startEmailSignup(input: {
     ip_hash: input.ipHash,
     locale: parseSiteLocale(input.locale),
     email_confirmed_at: null as string | null,
+    ...(isTesterEmail(email) ? { is_tester: true } : {}),
   };
 
   if (existing) {
@@ -239,7 +261,9 @@ export async function savePendingSignup(
   const email = normalizeEmail(draft.email);
   const username = draft.username.trim();
   const phone = draft.phone;
-  const existing = await findByEmail(email);
+  const found = await findByEmail(email);
+  const existing = await releaseVerifiedTesterSignup(found, email);
+  if (existing === "unavailable") return unavailable();
 
   let referred: string | null = null;
   if (draft.referralCode && client) {
@@ -302,6 +326,7 @@ export async function savePendingSignup(
     consent_marketing: draft.consentMarketing,
     ip_hash: draft.ipHash,
     locale: parseSiteLocale(draft.locale),
+    ...(isTesterEmail(email) ? { is_tester: true } : {}),
   };
 
   if (existing) {
