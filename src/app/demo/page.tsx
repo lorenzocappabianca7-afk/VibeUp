@@ -4,7 +4,6 @@ import { MobileShell } from "@/components/layout/mobile-shell";
 import { isDemoExitToSite, useDemoMode } from "@/context/demo-mode-context";
 import { isSiteLocale, writeDemoLanguage } from "@/lib/demo/language";
 import { confirmVerifiedSignup, DEMO_SIGNUP_ID_STORAGE_KEY, demoEntryIdentity } from "@/lib/demo/signup-gate";
-import { isUnlimitedDemoTesterEmail, rememberDemoTesterEmail } from "@/lib/demo/testers";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -52,16 +51,7 @@ export default function DemoRoutePage() {
     }
 
     const identity = demoEntryIdentity();
-    if (!identity) {
-      router.replace("/#iscriviti");
-      return;
-    }
-    if (isUnlimitedDemoTesterEmail(identity.email)) {
-      rememberDemoTesterEmail(identity.email);
-      enterDemo();
-      return;
-    }
-    if (!identity.signupId) {
+    if (!identity?.signupId) {
       router.replace("/#iscriviti");
       return;
     }

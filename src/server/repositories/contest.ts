@@ -1,5 +1,6 @@
 import { contestConfig, inviteCountsForContest } from "@/config/contest";
 import { isDisposableEmail } from "@/config/disposable-email-domains";
+import { canonicalContestEmail } from "@/lib/launch/fields";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { listDemoSubmissions } from "@/server/repositories/demo";
@@ -88,9 +89,26 @@ export function isValidInvite(
   if (!inviteCountsForContest(invitee.email_verified_at)) return false;
   if (invitee.contest_excluded || invitee.is_tester || inviter.is_tester) return false;
   if (isDisposableEmail(invitee.email)) return false;
-  if (invitee.email.trim().toLowerCase() === inviter.email.trim().toLowerCase()) return false;
+  if (canonicalContestEmail(invitee.email) === canonicalContestEmail(inviter.email)) return false;
   if (invitee.phone === inviter.phone) return false;
   return true;
+}
+
+/** One row per Gmail inbox. The earliest verified signup is the one that counts. */
+export function collapseSameInbox<T extends { email: string; email_verified_at: string | null }>(rows: T[]) {
+  const kept = new Map<string, T>();
+  for (const row of rows) {
+    const key = canonicalContestEmail(row.email);
+    const current = kept.get(key);
+    if (!current) {
+      kept.set(key, row);
+      continue;
+    }
+    const currentAt = current.email_verified_at ?? "";
+    const nextAt = row.email_verified_at ?? "";
+    if (nextAt && (!currentAt || nextAt < currentAt)) kept.set(key, row);
+  }
+  return [...kept.values()];
 }
 
 function inviteStats(rows: SignupRow[]) {
@@ -98,17 +116,24 @@ function inviteStats(rows: SignupRow[]) {
   for (const row of rows) {
     if (row.vibeup_code) byCode.set(row.vibeup_code, row);
   }
-  const stats = new Map<string, { count: number; lastAt: string | null }>();
+  const grouped = new Map<string, SignupRow[]>();
   for (const row of rows) {
     if (!row.referred_by_code) continue;
     const inviter = byCode.get(row.referred_by_code);
-    if (!inviter) continue;
-    if (!isValidInvite(row, inviter)) continue;
-    const current = stats.get(inviter.id) ?? { count: 0, lastAt: null };
-    current.count += 1;
-    const at = row.email_verified_at;
-    if (at && (!current.lastAt || at > current.lastAt)) current.lastAt = at;
-    stats.set(inviter.id, current);
+    if (!inviter || !isValidInvite(row, inviter)) continue;
+    const list = grouped.get(inviter.id) ?? [];
+    list.push(row);
+    grouped.set(inviter.id, list);
+  }
+  const stats = new Map<string, { count: number; lastAt: string | null }>();
+  for (const [id, list] of grouped) {
+    const unique = collapseSameInbox(list);
+    let lastAt: string | null = null;
+    for (const row of unique) {
+      const at = row.email_verified_at;
+      if (at && (!lastAt || at > lastAt)) lastAt = at;
+    }
+    stats.set(id, { count: unique.length, lastAt });
   }
   return stats;
 }
@@ -137,11 +162,15 @@ export async function countValidInvitesForCode(code: string) {
       .select("email, phone, email_verified_at")
       .eq("referred_by_code", code);
     if (retry.error) throw new Error(retry.error.message);
-    return ((retry.data ?? []) as SignupRow[]).filter((row) =>
-      isValidInvite({ ...row, contest_excluded: false, is_tester: false }, inviterRow),
+    return collapseSameInbox(
+      ((retry.data ?? []) as SignupRow[]).filter((row) =>
+        isValidInvite({ ...row, contest_excluded: false, is_tester: false }, inviterRow),
+      ),
     ).length;
   }
-  return ((data ?? []) as SignupRow[]).filter((row) => isValidInvite(row, inviterRow)).length;
+  return collapseSameInbox(
+    ((data ?? []) as SignupRow[]).filter((row) => isValidInvite(row, inviterRow)),
+  ).length;
 }
 
 function romeDay(iso: string) {
@@ -227,6 +256,19 @@ export async function loadContestAdmin() {
     if (row.referred_by_code && referralFlags.has(row.id)) hotCodes.add(row.referred_by_code);
   }
 
+  const aliasFlags = new Set<string>();
+  const inboxes = new Map<string, string[]>();
+  for (const row of rows) {
+    const key = canonicalContestEmail(row.email);
+    const list = inboxes.get(key) ?? [];
+    list.push(row.id);
+    inboxes.set(key, list);
+  }
+  for (const ids of inboxes.values()) {
+    if (ids.length < 2) continue;
+    for (const id of ids) aliasFlags.add(id);
+  }
+
   const invites = inviteStats(rows);
 
   function flagsFor(row: SignupRow) {
@@ -239,6 +281,7 @@ export async function loadContestAdmin() {
     if (row.vibeup_code && hotCodes.has(row.vibeup_code)) {
       flags.push("Il suo codice è stato usato a raffica");
     }
+    if (aliasFlags.has(row.id)) flags.push("Stessa email normalizzata di un'altra iscrizione");
     return flags;
   }
 

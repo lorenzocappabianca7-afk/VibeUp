@@ -29,8 +29,6 @@ import { saveDemoSubmission } from "@/lib/demo/submissions";
 import { usesDemoShell } from "@/lib/demo/shell";
 import {
   dispatchDemoLocalReset,
-  isUnlimitedDemoTesterEmail,
-  rememberDemoTesterEmail,
 } from "@/lib/demo/testers";
 import type {
   DemoChosenLocation,
@@ -150,7 +148,6 @@ async function startDemoAttempt(identity: DemoEntryIdentity): Promise<DemoSessio
 
   writeDemoSession(next);
   writeDemoVisitId(next.id);
-  if (identity.email) rememberDemoTesterEmail(identity.email);
   clearDemoPartyCriteria();
   return next;
 }
@@ -243,7 +240,6 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     bootedRef.current = true;
 
     const boot = () => {
-      if (identity.email) rememberDemoTesterEmail(identity.email);
       setLandingState("loading");
       setBootError(null);
       clearDemoAttemptLocalState();
@@ -260,6 +256,11 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
         })
         .catch((error: unknown) => {
           if (exitingToSite || attempt !== attemptRef.current) return;
+          if (error instanceof Error && error.message === "demo_completed") {
+            setBootError(null);
+            setLandingState("completed");
+            return;
+          }
           bootedRef.current = false;
           setBootError(
             error instanceof Error
@@ -270,10 +271,6 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
         });
     };
 
-    if (isUnlimitedDemoTesterEmail(identity.email)) {
-      boot();
-      return;
-    }
     if (!identity.signupId) {
       bootedRef.current = false;
       clearDemoModeCookie();
@@ -468,7 +465,6 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       };
       writeDemoSession(next);
       writeDemoVisitId(next.id);
-      if (next.email) rememberDemoTesterEmail(next.email);
       setSession(next);
       setLandingState("completed");
     },

@@ -1,4 +1,3 @@
-import { isUnlimitedDemoTesterEmail } from "@/lib/demo/testers";
 import { findVerifiedSignup } from "@/server/repositories/waitlist";
 
 /** Email of a verified waitlist signup. Null if the id is missing or the table is unavailable. */
@@ -11,12 +10,8 @@ export async function lookupSignupEmail(signupId: string): Promise<string | null
   }
 }
 
-/** Demo writes require a verified signup, unless the email is on the tester allowlist. */
-export async function isVerifiedSignupAllowed(
-  signupId: string | null | undefined,
-  email: string | null | undefined,
-) {
-  if (isUnlimitedDemoTesterEmail(email)) return true;
+/** Demo writes require a verified signup id. Tester mail does not skip this check. */
+export async function isVerifiedSignupAllowed(signupId: string | null | undefined) {
   const id = signupId?.trim() ?? "";
   if (!id) return false;
   try {

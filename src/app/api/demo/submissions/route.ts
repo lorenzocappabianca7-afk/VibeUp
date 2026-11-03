@@ -8,7 +8,10 @@ import {
   createDemoSubmission,
   listDemoSubmissions,
   patchDemoSubmission,
+  signupHasCompletedDemo,
 } from "@/server/repositories/demo";
+import { findVerifiedSignup } from "@/server/repositories/waitlist";
+import { isTesterEmail } from "@/server/launch/testers";
 import { getProfileRole } from "@/server/repositories/bookings";
 import { rateLimit } from "@/server/http/rate-limit";
 import { rejectLargeRequest } from "@/server/http/request-limits";
@@ -107,14 +110,16 @@ export async function POST(request: NextRequest) {
   }
 
   if (!id) {
-    const signupId =
-      typeof payload.signup_id === "string" ? payload.signup_id : null;
-    const email = typeof payload.email === "string" ? payload.email : null;
-    if (!(await isVerifiedSignupAllowed(signupId, email))) {
+    const signupId = typeof payload.signup_id === "string" ? payload.signup_id : null;
+    if (!(await isVerifiedSignupAllowed(signupId))) {
       return NextResponse.json(
         { error: "Serve un'iscrizione per salvare la demo." },
         { status: 422 },
       );
+    }
+    const signup = signupId ? await findVerifiedSignup(signupId) : null;
+    if (signup && (await signupHasCompletedDemo(signup.id)) && !isTesterEmail(signup.email)) {
+      return NextResponse.json({ error: "demo_completed" }, { status: 409 });
     }
   }
 

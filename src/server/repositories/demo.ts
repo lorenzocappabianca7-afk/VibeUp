@@ -91,6 +91,20 @@ export async function patchDemoSubmission(
   return mapRow(data as DemoSubmissionRow);
 }
 
+/** True when this signup already finished a demo. */
+export async function signupHasCompletedDemo(signupId: string): Promise<boolean> {
+  if (!UUID_RE.test(signupId) || !isSupabaseConfigured()) return false;
+  const { data, error } = await getSupabaseAdmin()
+    .from(TABLE)
+    .select("payload")
+    .filter("payload->>signup_id", "eq", signupId)
+    .limit(20);
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as { payload: DemoSubmissionPayload | null }[]).some(
+    (row) => row.payload?.completed === true,
+  );
+}
+
 /** Admin read of isolated demo rows. Does not touch profiles/bookings. */
 export async function listDemoSubmissions(): Promise<DemoSubmission[]> {
   if (!isSupabaseConfigured()) {

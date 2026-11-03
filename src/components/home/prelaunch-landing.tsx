@@ -14,7 +14,6 @@ import { isContestOver } from "@/config/contest";
 import { readDemoSignupId, readVerifiedMember, type VerifiedMemberCard } from "@/lib/demo/signup-gate";
 import { rememberSignupReferral } from "@/lib/launch/draft";
 import { isVibeUpCode, normalizeCode } from "@/lib/launch/fields";
-import { readRememberedDemoTesterEmail } from "@/lib/demo/testers";
 import { useRouter } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 
@@ -40,9 +39,6 @@ export function PrelaunchLanding({ startSignup = false }: { startSignup?: boolea
     const params = new URLSearchParams(window.location.search);
     const ref = normalizeCode(params.get("ref") ?? "");
     if (isVibeUpCode(ref)) rememberSignupReferral(ref);
-    if (readRememberedDemoTesterEmail()) {
-      queueMicrotask(() => setCanEnterDemo(true));
-    }
     const signupId = readDemoSignupId();
     if (signupId) {
       void readVerifiedMember(signupId).then((card) => {

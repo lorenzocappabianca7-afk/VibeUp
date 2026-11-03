@@ -1,8 +1,3 @@
-import {
-  isUnlimitedDemoTesterEmail,
-  readRememberedDemoTesterEmail,
-} from "@/lib/demo/testers";
-
 /** Set by the pre-launch signup. The landing that writes it comes later. */
 export const DEMO_SIGNUP_ID_STORAGE_KEY = "vu_signup_id";
 
@@ -26,17 +21,10 @@ export function readDemoSignupId(): string | null {
 }
 
 /** Local identity only. The server still checks that the signup id is verified. */
-export function demoEntryIdentity(
-  accountEmail?: string | null,
-): DemoEntryIdentity | null {
+export function demoEntryIdentity(): DemoEntryIdentity | null {
   const signupId = readDemoSignupId();
-  const fromAccount = isUnlimitedDemoTesterEmail(accountEmail)
-    ? accountEmail!.trim().toLowerCase()
-    : null;
-  const remembered = readRememberedDemoTesterEmail();
-  const email = fromAccount || remembered || "";
-  if (!signupId && !email) return null;
-  return { signupId, email };
+  if (!signupId) return null;
+  return { signupId, email: "" };
 }
 
 const verifiedSignupIds = new Set<string>();

@@ -11,6 +11,22 @@ export function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
+/** Gmail and Googlemail aliases of the same inbox. Other domains stay trimmed and lowercase. */
+export function canonicalContestEmail(value: string) {
+  const normalized = normalizeEmail(value);
+  const at = normalized.lastIndexOf("@");
+  if (at <= 0) return normalized;
+  let local = normalized.slice(0, at);
+  let domain = normalized.slice(at + 1);
+  if (domain === "googlemail.com") domain = "gmail.com";
+  if (domain === "gmail.com") {
+    const plus = local.indexOf("+");
+    if (plus >= 0) local = local.slice(0, plus);
+    local = local.replaceAll(".", "");
+  }
+  return `${local}@${domain}`;
+}
+
 export function normalizeCode(value: string) {
   return value.trim().toUpperCase().replace(/\s+/g, "");
 }
@@ -22,6 +38,7 @@ export function isVibeUpCode(value: string) {
 export function joinPhone(prefix: string, national: string) {
   const digits = prefix.replace(/[^\d]/g, "");
   let rest = national.replace(/[^\d]/g, "");
+  if (digits && rest.startsWith(digits)) rest = rest.slice(digits.length);
   if (digits === "39" && rest.startsWith("0")) rest = rest.slice(1);
   if (!digits || !rest) return "";
   return `+${digits}${rest}`;

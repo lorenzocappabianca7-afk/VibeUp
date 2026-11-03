@@ -1,4 +1,4 @@
-import { isValidInvite } from "@/server/repositories/contest";
+import { isValidInvite, collapseSameInbox } from "@/server/repositories/contest";
 import { isUuid } from "@/server/launch/request";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -503,6 +503,11 @@ async function inviteCounts(codes: string[]) {
     .select("referred_by_code, email, phone, email_verified_at, contest_excluded, is_tester")
     .in("referred_by_code", codes);
   if (error) throw new Error(error.message);
+  const accepted: {
+    referred_by_code: string;
+    email: string;
+    email_verified_at: string | null;
+  }[] = [];
   for (const row of (data ?? []) as {
     referred_by_code: string | null;
     email: string;
@@ -528,8 +533,19 @@ async function inviteCounts(codes: string[]) {
     ) {
       continue;
     }
-    counts.set(row.referred_by_code, (counts.get(row.referred_by_code) ?? 0) + 1);
+    accepted.push({
+      referred_by_code: row.referred_by_code,
+      email: row.email,
+      email_verified_at: row.email_verified_at,
+    });
   }
+  const byCode = new Map<string, typeof accepted>();
+  for (const row of accepted) {
+    const list = byCode.get(row.referred_by_code) ?? [];
+    list.push(row);
+    byCode.set(row.referred_by_code, list);
+  }
+  for (const [code, list] of byCode) counts.set(code, collapseSameInbox(list).length);
   return counts;
 }
 
@@ -773,7 +789,8 @@ export async function loadCommunityPerson(signupId: string) {
       .order("created_at", { ascending: false })
       .limit(100);
     if (inviteError) throw new Error(inviteError.message);
-    invitees = ((invited ?? []) as {
+    invitees = collapseSameInbox(
+      ((invited ?? []) as {
       username: string;
       first_name: string;
       email: string;
@@ -794,7 +811,8 @@ export async function loadCommunityPerson(signupId: string) {
           },
           { email: row.email, phone: row.phone, is_tester: Boolean(row.is_tester) },
         ),
-      )
+      ),
+    )
       .map((item) => ({
         username: item.username,
         firstName: item.first_name,

@@ -1,8 +1,12 @@
-import { isUnlimitedDemoTesterEmail } from "@/lib/demo/testers";
+/** Tester mailboxes. Server only: the client asks for a yes or no, never this list. */
+const DEFAULT_TESTER_EMAILS = [
+  "federico.bossotti@gmail.com",
+  "lorenzo.cappabianca7@gmail.com",
+];
 
-/** Extra tester mailboxes, comma-separated. Read on the server only. */
 function listedTesterEmails() {
   const emails = new Set<string>();
+  for (const email of DEFAULT_TESTER_EMAILS) emails.add(email);
   const raw = process.env.TESTER_EMAILS ?? "";
   for (const part of raw.split(",")) {
     const email = part.trim().toLowerCase();
@@ -14,6 +18,5 @@ function listedTesterEmails() {
 export function isTesterEmail(email: string | null | undefined) {
   const normalized = email?.trim().toLowerCase() ?? "";
   if (!normalized.includes("@")) return false;
-  if (isUnlimitedDemoTesterEmail(normalized)) return true;
   return listedTesterEmails().has(normalized);
 }

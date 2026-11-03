@@ -8,6 +8,7 @@ import { ADMIN_CATALOG_EMAIL } from "@/lib/admin-access";
 import { cn } from "@/lib/utils";
 import { Lock, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 type TabId = "panoramica" | "iscritti" | "demo" | "gara";
@@ -191,13 +192,29 @@ export function CommunityPanel({
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [gate, setGate] = useState<"checking" | "login" | "denied" | "ready">(
-    initialAccess === "allowed" ? "ready" : initialAccess === "forbidden" ? "denied" : "login",
-  );
   const [accessAttempt, setAccessAttempt] = useState(0);
   const [dismissed, setDismissed] = useState(false);
+  const [asyncGate, setAsyncGate] = useState<{
+    attempt: number;
+    gate: "login" | "denied" | "ready";
+  } | null>(null);
 
   const signedIn = isStorageHydrated && !isGuest;
+
+  const syncGate = !isStorageHydrated
+    ? initialAccess === "allowed"
+      ? "ready"
+      : initialAccess === "forbidden"
+        ? "denied"
+        : "login"
+    : !signedIn
+      ? initialAccess === "allowed" && !dismissed
+        ? "ready"
+        : "login"
+      : initialAccess === "allowed" && accessAttempt === 0
+        ? "ready"
+        : null;
+  const gate = syncGate ?? (asyncGate?.attempt === accessAttempt ? asyncGate.gate : "checking");
 
   function leavePanel() {
     setDismissed(true);
@@ -225,21 +242,8 @@ export function CommunityPanel({
   }, []);
 
   useEffect(() => {
-    if (!isStorageHydrated) return;
-    if (!signedIn) {
-      if (initialAccess === "allowed" && !dismissed) {
-        setGate("ready");
-        return;
-      }
-      setGate("login");
-      return;
-    }
-    if (initialAccess === "allowed" && accessAttempt === 0) {
-      setGate("ready");
-      return;
-    }
+    if (syncGate) return;
     let cancelled = false;
-    setGate("checking");
     void checkAccess(accessAttempt > 0)
       .then((next) => {
         if (cancelled) return;
@@ -247,18 +251,18 @@ export function CommunityPanel({
           setLoginError("Errore di connessione, riprova");
         }
         if (next === "ready" || next === "denied") setLoginError("");
-        setGate(next);
+        setAsyncGate({ attempt: accessAttempt, gate: next });
       })
       .catch(() => {
         if (!cancelled) {
           setLoginError("Errore di connessione, riprova");
-          setGate("login");
+          setAsyncGate({ attempt: accessAttempt, gate: "login" });
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [accessAttempt, checkAccess, dismissed, initialAccess, isStorageHydrated, signedIn]);
+  }, [accessAttempt, checkAccess, syncGate]);
 
   async function handleLogin(event: FormEvent) {
     event.preventDefault();
@@ -353,9 +357,9 @@ export function CommunityPanel({
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <a href="/?app=1" className="inline-flex min-h-11 items-center rounded-[14px] border border-white/15 px-3 text-sm font-semibold text-primary-black">
+          <Link href="/?app=1" className="inline-flex min-h-11 items-center rounded-[14px] border border-white/15 px-3 text-sm font-semibold text-primary-black">
             Apri piattaforma
-          </a>
+          </Link>
           <Button type="button" variant="outline" className="min-h-11 px-3" onClick={leavePanel}>
             Esci
           </Button>
@@ -487,8 +491,6 @@ function RankList({ title, rows }: { title: string; rows: { name: string; count:
 }
 
 function SignupsTab() {
-  const [rows, setRows] = useState<SignupRow[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
   const [verified, setVerified] = useState("all");
@@ -501,7 +503,7 @@ function SignupsTab() {
   const [sort, setSort] = useState("createdAt");
   const [dir, setDir] = useState<"asc" | "desc">("desc");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState<{ key: string; rows: SignupRow[]; total: number } | null>(null);
   const [person, setPerson] = useState<Person | null>(null);
   const [personId, setPersonId] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -539,28 +541,37 @@ function SignupsTab() {
     return search.toString();
   }, [demo, dir, locale, marketing, page, q, school, sort, testers, venue, verified]);
 
+  const listKey = `${queryString()}#${reload}`;
+  const loading = loaded?.key !== listKey;
+  const rows = loaded?.rows ?? [];
+  const total = loaded?.total ?? 0;
+
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    const key = listKey;
     void fetch(`/api/admin/community?${queryString()}`, { cache: "no-store" })
       .then(async (response) => {
         const body = (await response.json()) as { rows?: SignupRow[]; total?: number; error?: string };
         if (!response.ok) throw new Error(body.error || "Caricamento non riuscito.");
         if (!cancelled) {
-          setRows(body.rows ?? []);
-          setTotal(body.total ?? 0);
+          setError("");
+          setLoaded({ key, rows: body.rows ?? [], total: body.total ?? 0 });
         }
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Caricamento non riuscito.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Caricamento non riuscito.");
+          setLoaded((current) => ({
+            key,
+            rows: current?.rows ?? [],
+            total: current?.total ?? 0,
+          }));
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [queryString, reload]);
+  }, [listKey, queryString]);
 
   function toggleSort(column: string) {
     setPage(1);
@@ -911,9 +922,18 @@ function ContestTab() {
 
   useEffect(() => {
     let cancelled = false;
-    void load().catch((err: unknown) => {
-      if (!cancelled) setError(err instanceof Error ? err.message : "Caricamento non riuscito.");
-    });
+    void fetch("/api/admin/signups", { cache: "no-store" })
+      .then(async (response) => {
+        const body = (await response.json()) as { leaderboard?: LeaderRow[]; error?: string };
+        if (!response.ok) throw new Error(body.error || "Caricamento non riuscito.");
+        if (!cancelled) {
+          setError("");
+          setRows(body.leaderboard ?? []);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Caricamento non riuscito.");
+      });
     return () => {
       cancelled = true;
     };
