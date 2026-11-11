@@ -1,7 +1,6 @@
 import {
   cleanVenue,
   isVibeUpCode,
-  joinPhone,
   normalizeCode,
   normalizeEmail,
 } from "@/lib/launch/fields";
@@ -28,6 +27,7 @@ import {
   issueEmailCode,
   recordConsents,
   savePendingSignup,
+  saveSignupDetails,
   startEmailSignup,
 } from "@/server/repositories/waitlist";
 import { type NextRequest } from "next/server";
@@ -51,6 +51,16 @@ export async function POST(request: NextRequest) {
   if (limited) return limited;
 
   const signupId = asText(body.signupId).trim();
+  if (body.preferences === true && isUuid(signupId)) {
+    const saved = await saveSignupDetails(signupId, {
+      highSchool: asText(body.highSchool),
+      dreamVenue: asText(body.dreamVenue),
+    }).catch(() => null);
+    if (!saved) return launchError(500, "unavailable");
+    if (!saved.ok) return launchError(saved.error === "not_found" ? 404 : 400, saved.error);
+    return launchOk({ ok: true });
+  }
+
   const hasConsents = body.consentPrivacy === true && body.consentRules === true;
   const completing = hasConsents && isUuid(signupId);
 
@@ -71,10 +81,8 @@ export async function POST(request: NextRequest) {
   const draft = {
     firstName: asText(body.firstName),
     lastName: asText(body.lastName),
-    username: asText(body.username),
     email,
-    phone: joinPhone(asText(body.phonePrefix) || "+39", asText(body.phoneNational)),
-    birthYear: Number(body.birthYear),
+    birthDate: asText(body.birthDate),
     highSchool: asText(body.highSchool),
     dreamVenue: cleanVenue(asText(body.dreamVenue)) || null,
     referralCode: isVibeUpCode(referralRaw) ? referralRaw : null,
@@ -87,7 +95,6 @@ export async function POST(request: NextRequest) {
     const started = await startEmailSignup({
       firstName: draft.firstName,
       lastName: draft.lastName,
-      username: draft.username,
       email,
       ipHash,
       locale: draft.locale,

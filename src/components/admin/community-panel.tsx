@@ -11,6 +11,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 
+function formatBirth(date: string | null | undefined, year: number | null | undefined) {
+  const match = typeof date === "string" ? /^(\d{4})-(\d{2})-(\d{2})/.exec(date) : null;
+  if (match) return `${match[3]}/${match[2]}/${match[1]}`;
+  return year == null ? "—" : String(year);
+}
+
 type TabId = "panoramica" | "iscritti" | "demo" | "gara";
 
 type SignupRow = {
@@ -21,6 +27,7 @@ type SignupRow = {
   username: string;
   email: string;
   phone: string;
+  birthDate: string | null;
   birthYear: number | null;
   highSchool: string;
   dreamVenue: string;
@@ -636,7 +643,7 @@ function SignupsTab() {
     ["username", "Username"],
     ["email", "Email"],
     ["phone", "Telefono"],
-    ["birthYear", "Anno"],
+    ["birthDate", "Data di nascita"],
     ["highSchool", "Liceo"],
     ["dreamVenue", "Locale"],
     ["locale", "Lingua"],
@@ -710,10 +717,10 @@ function SignupsTab() {
                   {row.isTester ? <span className="ml-2 rounded-full bg-brand-pink/15 px-2 py-0.5 text-xs font-semibold text-brand-pink">Tester</span> : null}
                 </td>
                 <td className="px-3 py-2">{row.lastName}</td>
-                <td className="px-3 py-2">{row.username}</td>
+                <td className="px-3 py-2">{row.username || "—"}</td>
                 <td className="px-3 py-2">{row.email}</td>
                 <td className="px-3 py-2 whitespace-nowrap">{row.phone || "—"}</td>
-                <td className="px-3 py-2">{row.birthYear ?? "—"}</td>
+                <td className="px-3 py-2 whitespace-nowrap">{formatBirth(row.birthDate, row.birthYear)}</td>
                 <td className="px-3 py-2">{row.highSchool || "—"}</td>
                 <td className="px-3 py-2">{row.dreamVenue || "—"}</td>
                 <td className="px-3 py-2 uppercase">{row.locale}</td>
@@ -751,10 +758,10 @@ function SignupsTab() {
           <dl className="mt-4 space-y-2 text-sm">
             {[
               ["Tester", person.signup.isTester ? "Tester" : "No"],
-              ["Username", person.signup.username],
+              ["Username", person.signup.username || "—"],
               ["Email", person.signup.email],
               ["Telefono", person.signup.phone || "—"],
-              ["Anno", person.signup.birthYear == null ? "—" : String(person.signup.birthYear)],
+              ["Data di nascita", formatBirth(person.signup.birthDate, person.signup.birthYear)],
               ["Liceo", person.signup.highSchool || "—"],
               ["Locale desiderato", person.signup.dreamVenue || "—"],
               ["Lingua", person.signup.locale.toUpperCase()],
@@ -779,7 +786,7 @@ function SignupsTab() {
           <p className="mt-1 text-sm">Invitato da {person.inviter ? `${person.inviter.code}${person.inviter.username ? ` · @${person.inviter.username}` : ""}` : "—"}</p>
           <ul className="mt-2 space-y-1 text-sm">
             {person.invitees.length === 0 ? <li className="text-primary-black/45">Nessun invito valido.</li> : person.invitees.map((item) => (
-              <li key={item.username}>@{item.username} · {item.firstName} · {formatWhen(item.createdAt)}</li>
+              <li key={`${item.username}-${item.createdAt}`}>@{item.username || "—"} · {item.firstName} · {formatWhen(item.createdAt)}</li>
             ))}
           </ul>
           <h3 className="mt-6 text-sm font-bold">Percorso demo</h3>

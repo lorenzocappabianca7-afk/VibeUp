@@ -66,6 +66,30 @@ export function isAtLeast14(year: number, now = new Date()) {
   return Number.isInteger(year) && ageFromBirthYear(year, now) >= 14;
 }
 
+/** A real calendar date, not in the future, and not more than 100 years ago. */
+export function parseBirthDate(value: string, now = new Date()) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const born = new Date(year, month - 1, day);
+  if (born.getFullYear() !== year || born.getMonth() !== month - 1 || born.getDate() !== day) return null;
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (born > today) return null;
+  const oldest = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+  if (born < oldest) return null;
+  return { year, month, day, iso: `${match[1]}-${match[2]}-${match[3]}` };
+}
+
+/** True when the person has already had their 14th birthday on this exact date. */
+export function isAtLeast14OnDate(value: string, now = new Date()) {
+  const born = parseBirthDate(value, now);
+  if (!born) return false;
+  const fourteenth = new Date(now.getFullYear() - 14, now.getMonth(), now.getDate());
+  return new Date(born.year, born.month - 1, born.day) <= fourteenth;
+}
+
 export function birthYearChoices(now = new Date()) {
   const end = now.getFullYear() - 10;
   const start = now.getFullYear() - 40;

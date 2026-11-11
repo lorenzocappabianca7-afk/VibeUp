@@ -217,6 +217,10 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Invitato da un amico ✓": "Invited by a friend ✓",
   "Attendi…": "Please wait…",
   "Come ti chiami?": "What's your name?",
+  "Nome e email": "Name and email",
+  "Data di nascita": "Date of birth",
+  Salvato: "Saved",
+  Salva: "Save",
   "Scegli un nome utente": "Choose a username",
   "Nome utente e email": "Username and email",
   "Da 3 a 20 caratteri: lettere, numeri e underscore.":

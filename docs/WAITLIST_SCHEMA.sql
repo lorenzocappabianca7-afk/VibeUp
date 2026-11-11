@@ -6,9 +6,10 @@ create table if not exists public.waitlist_signups (
   id uuid primary key default gen_random_uuid(),
   first_name text not null,
   last_name text not null,
-  username text not null,
+  username text,
   email text not null,
   phone text,
+  birth_date date,
   birth_year integer,
   high_school text,
   dream_venue text,
@@ -68,3 +69,8 @@ revoke all on table public.waitlist_signups from anon, authenticated;
 revoke all on table public.waitlist_email_codes from anon, authenticated;
 grant select, insert, update, delete on table public.waitlist_signups to service_role;
 grant select, insert, update, delete on table public.waitlist_email_codes to service_role;
+
+-- Existing databases: username and phone stay in the table, but new signups can leave them empty.
+-- birth_date is the full birthday. birth_year remains for rows saved before this column.
+alter table public.waitlist_signups alter column username drop not null;
+alter table public.waitlist_signups add column if not exists birth_date date;

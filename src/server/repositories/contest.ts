@@ -90,7 +90,7 @@ export function isValidInvite(
   if (invitee.contest_excluded || invitee.is_tester || inviter.is_tester) return false;
   if (isDisposableEmail(invitee.email)) return false;
   if (canonicalContestEmail(invitee.email) === canonicalContestEmail(inviter.email)) return false;
-  if (invitee.phone === inviter.phone) return false;
+  if (invitee.phone && inviter.phone && invitee.phone === inviter.phone) return false;
   return true;
 }
 
@@ -292,7 +292,7 @@ export async function loadContestAdmin() {
         id: row.id,
         firstName: row.first_name,
         lastName: row.last_name,
-        username: row.username,
+        username: row.username ?? "",
         email: row.email,
         phone: row.phone ?? "",
         birthYear: row.birth_year,

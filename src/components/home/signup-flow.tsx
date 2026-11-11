@@ -14,24 +14,34 @@ import {
   type SignupDraft,
 } from "@/lib/launch/draft";
 import {
-  birthYearChoices,
-  isAtLeast14,
-  isE164,
+  isAtLeast14OnDate,
   isEmailAddress,
   isHighSchool,
   isPersonName,
   isVibeUpCode,
-  joinPhone,
   normalizeCode,
   normalizeEmail,
-  USERNAME_RE,
 } from "@/lib/launch/fields";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
-const years = birthYearChoices();
 const FOCUSABLE = "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])";
 const SHEET_OPEN_MS = 350;
 const verifyInflight = new Set<string>();
+
+function isoDate(date: Date) {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function birthDateBounds(now = new Date()) {
+  return {
+    min: isoDate(new Date(now.getFullYear() - 100, now.getMonth(), now.getDate())),
+    max: isoDate(new Date(now.getFullYear() - 14, now.getMonth(), now.getDate())),
+  };
+}
+
+const birthBounds = birthDateBounds();
 
 function focusWithoutScroll(node: HTMLElement) {
   try {
@@ -41,7 +51,6 @@ function focusWithoutScroll(node: HTMLElement) {
   }
 }
 
-/** Keep the active field in the sheet's middle scroller. The page and the visual viewport stay put. */
 function revealInSheet(field: HTMLElement, scroller: HTMLElement) {
   const fieldBox = field.getBoundingClientRect();
   const frame = scroller.getBoundingClientRect();
@@ -60,9 +69,7 @@ function readVisibleFrame() {
 }
 
 function scheduleFrame(callback: () => void) {
-  if (typeof window.requestAnimationFrame === "function") {
-    return window.requestAnimationFrame(callback);
-  }
+  if (typeof window.requestAnimationFrame === "function") return window.requestAnimationFrame(callback);
   return window.setTimeout(callback, 16);
 }
 
@@ -77,12 +84,8 @@ function cancelFrame(id: number) {
 function errorText(code: string) {
   if (code.includes(" ")) return code;
   switch (code) {
-    case "username_taken":
-      return signupCopy.usernameTaken;
     case "email_taken":
       return signupCopy.emailTaken;
-    case "phone_taken":
-      return signupCopy.phoneTaken;
     case "too_young":
       return signupCopy.tooYoung;
     case "own_code":
@@ -102,16 +105,11 @@ function errorText(code: string) {
 
 function stepForError(code: string) {
   switch (code) {
-    case "username_taken":
-      return 1;
     case "email_taken":
-      return 1;
-    case "phone_taken":
-      return 3;
+      return 0;
     case "too_young":
-      return 4;
     case "own_code":
-      return 7;
+      return 2;
     default:
       return null;
   }
@@ -128,7 +126,6 @@ async function postJson(url: string, body: unknown) {
     ok: response.ok,
     status: response.status,
     error: typeof data.error === "string" ? data.error : "",
-    available: data.available === true,
     exists: data.exists === true,
     signupId: typeof data.signupId === "string" ? data.signupId : "",
     sentAt: typeof data.sentAt === "string" ? data.sentAt : "",
@@ -149,13 +146,6 @@ export function SignupFlow({
   const [draft, setDraft] = useState<SignupDraft>(() => loadSignupDraft());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [usernameResult, setUsernameResult] = useState<{
-    username: string;
-    state: "free" | "taken" | "error";
-  } | null>(null);
-  const [suggestionResult, setSuggestionResult] = useState<{ query: string; items: string[] } | null>(
-    null,
-  );
   const [referralWarn, setReferralWarn] = useState("");
   const [verifyCode, setVerifyCode] = useState("");
   const [resendTick, setResendTick] = useState(0);
@@ -173,6 +163,11 @@ export function SignupFlow({
     inviteCount: number | null;
     demoPath: string | null;
   } | null>(null);
+  const [school, setSchool] = useState("");
+  const [venue, setVenue] = useState("");
+  const [detailFocus, setDetailFocus] = useState<"school" | "venue" | "">("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [detailsSaved, setDetailsSaved] = useState(false);
   const [checking, setChecking] = useState(() => {
     if (typeof window === "undefined") return false;
     return Boolean(window.localStorage.getItem(DEMO_SIGNUP_ID_STORAGE_KEY)?.trim());
@@ -198,27 +193,13 @@ export function SignupFlow({
   }, [draft]);
 
   useEffect(() => {
-    if (!linkedReferral || draftRef.current.step !== 7) return;
-    go(8);
-    // Saved drafts that stopped on the friend-code step skip it once. A later
-    // validation error can still open that step.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
     const id = window.localStorage.getItem(DEMO_SIGNUP_ID_STORAGE_KEY)?.trim() ?? "";
     if (!id) return;
     let cancelled = false;
     void readVerifiedMember(id)
       .then((card) => {
         if (cancelled || !card) return;
-        setDone({
-          id,
-          code: card.code,
-          firstName: card.firstName,
-          inviteCount: card.inviteCount,
-          demoPath: null,
-        });
+        setDone({ id, code: card.code, firstName: card.firstName, inviteCount: card.inviteCount, demoPath: null });
       })
       .catch(() => undefined)
       .finally(() => {
@@ -294,53 +275,6 @@ export function SignupFlow({
   }, []);
 
   useEffect(() => {
-    const body = document.body;
-    const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-    const previous = {
-      position: body.style.position,
-      top: body.style.top,
-      left: body.style.left,
-      right: body.style.right,
-      width: body.style.width,
-      overflow: body.style.overflow,
-    };
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.left = "0";
-    body.style.right = "0";
-    body.style.width = "100%";
-    body.style.overflow = "hidden";
-
-    const landing = document.querySelector("[data-prelaunch-landing]");
-    const landingTop = landing instanceof HTMLElement ? landing.scrollTop : 0;
-    const landingOverflow = landing instanceof HTMLElement ? landing.style.overflow : "";
-    const freezeLanding = () => {
-      if (landing instanceof HTMLElement && landing.scrollTop !== landingTop) {
-        landing.scrollTop = landingTop;
-      }
-    };
-    if (landing instanceof HTMLElement) {
-      landing.style.overflow = "hidden";
-      landing.addEventListener("scroll", freezeLanding);
-    }
-
-    return () => {
-      body.style.position = previous.position;
-      body.style.top = previous.top;
-      body.style.left = previous.left;
-      body.style.right = previous.right;
-      body.style.width = previous.width;
-      body.style.overflow = previous.overflow;
-      if (landing instanceof HTMLElement) {
-        landing.removeEventListener("scroll", freezeLanding);
-        landing.style.overflow = landingOverflow;
-        landing.scrollTop = landingTop;
-      }
-      window.scrollTo(0, scrollY);
-    };
-  }, []);
-
-  useEffect(() => {
     if (!opened || checking || done || exitOpen) return;
     const wait = Math.max(0, SHEET_OPEN_MS - (Date.now() - openedAtRef.current));
     const timer = window.setTimeout(() => {
@@ -348,9 +282,7 @@ export function SignupFlow({
       if (!scroller) return;
       const active = document.activeElement;
       const current =
-        active instanceof HTMLElement &&
-        scroller.contains(active) &&
-        active.matches("input, select, textarea")
+        active instanceof HTMLElement && scroller.contains(active) && active.matches("input, select, textarea")
           ? active
           : scroller.querySelector("input, select, textarea");
       if (!(current instanceof HTMLElement)) return;
@@ -394,23 +326,8 @@ export function SignupFlow({
   }, [exitOpen]);
 
   const resendClock = resendTick >= draft.codeSentAt ? resendTick : draft.codeSentAt;
-  const resendIn = draft.codeSentAt
-    ? Math.max(0, 30 - Math.floor((resendClock - draft.codeSentAt) / 1000))
-    : 0;
-  const usernameQuery = draft.username.trim();
-  const usernameActive = draft.step === 1 && USERNAME_RE.test(usernameQuery);
-  const usernameState: "idle" | "checking" | "free" | "taken" = !usernameActive
-    ? "idle"
-    : !usernameResult || usernameResult.username !== usernameQuery
-      ? "checking"
-      : usernameResult.state === "error"
-        ? "idle"
-        : usernameResult.state;
-  const suggestionQuery = draft.step === 5 ? draft.highSchool : draft.step === 6 ? draft.dreamVenue : "";
-  const suggestionNeedle = suggestionQuery.trim();
-  const suggestionActive = (draft.step === 5 || draft.step === 6) && suggestionNeedle.length >= 2;
-  const suggestions =
-    suggestionActive && suggestionResult?.query === suggestionNeedle ? suggestionResult.items : [];
+  const resendIn = draft.codeSentAt ? Math.max(0, 30 - Math.floor((resendClock - draft.codeSentAt) / 1000)) : 0;
+  const detailQuery = (detailFocus === "school" ? school : detailFocus === "venue" ? venue : "").trim();
 
   useEffect(() => {
     if (!draft.codeSentAt) return;
@@ -419,46 +336,22 @@ export function SignupFlow({
   }, [draft.codeSentAt]);
 
   useEffect(() => {
-    if (!usernameActive) return;
-    const username = usernameQuery;
-    const timer = window.setTimeout(() => {
-      void postJson("/api/launch/username", { username, signupId: draftRef.current.signupId }).then((result) => {
-        if (draftRef.current.username.trim() !== username) return;
-        if (!result.ok) {
-          setUsernameResult({ username, state: "error" });
-          setError(signupCopy.genericError);
-          return;
-        }
-        setUsernameResult({
-          username,
-          state: result.available === true ? "free" : "taken",
-        });
-      }).catch(() => {
-        if (draftRef.current.username.trim() === username) {
-          setUsernameResult({ username, state: "error" });
-        }
-      });
-    }, 280);
-    return () => window.clearTimeout(timer);
-  }, [usernameActive, usernameQuery, draft.signupId]);
-
-  useEffect(() => {
-    if (!suggestionActive) return;
-    const query = suggestionNeedle;
-    const path = draft.step === 5 ? "schools" : "venues";
+    if (!done || detailQuery.length < 2 || !detailFocus) {
+      setSuggestions([]);
+      return;
+    }
+    const query = detailQuery;
+    const path = detailFocus === "school" ? "schools" : "venues";
     const timer = window.setTimeout(() => {
       void fetch(`/api/launch/${path}?q=${encodeURIComponent(query)}`)
         .then((response) => response.json())
         .then((data: { suggestions?: string[] }) => {
-          setSuggestionResult({
-            query,
-            items: Array.isArray(data.suggestions) ? data.suggestions : [],
-          });
+          setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
         })
-        .catch(() => setSuggestionResult({ query, items: [] }));
+        .catch(() => setSuggestions([]));
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [draft.step, suggestionActive, suggestionNeedle]);
+  }, [detailFocus, detailQuery, done]);
 
   function patch(partial: Partial<SignupDraft>) {
     setError("");
@@ -472,33 +365,11 @@ export function SignupFlow({
     setDraft((current) => ({ ...current, step }));
   }
 
-  function stepAfter(step: number) {
-    if (step === 1 && draft.emailConfirmed) return 3;
-    if (step === 6 && linkedReferral) return 8;
-    return Math.min(8, step + 1);
-  }
-
-  function stepBefore(step: number) {
-    if (step === 3 && draft.emailConfirmed) return 1;
-    if (step === 8 && linkedReferral) return 6;
-    return Math.max(0, step - 1);
-  }
-
-  const year = Number(draft.birthYear);
-  const phone = joinPhone(draft.phonePrefix, draft.phoneNational);
+  const birthdayReady = isAtLeast14OnDate(draft.birthDate);
   const canContinue =
-    (draft.step === 0 && isPersonName(draft.firstName) && isPersonName(draft.lastName)) ||
-    (draft.step === 1 &&
-      USERNAME_RE.test(draft.username.trim()) &&
-      usernameState === "free" &&
-      isEmailAddress(draft.email)) ||
-    (draft.step === 2 && /^\d{6}$/.test(verifyCode)) ||
-    (draft.step === 3 && isE164(phone)) ||
-    (draft.step === 4 && Number.isInteger(year) && isAtLeast14(year)) ||
-    (draft.step === 5 && isHighSchool(draft.highSchool)) ||
-    (draft.step === 6 && draft.dreamVenue.trim().length > 1) ||
-    (draft.step === 7 && isVibeUpCode(draft.referralCode)) ||
-    (draft.step === 8 && draft.consentPrivacy && draft.consentRules);
+    (draft.step === 0 && isPersonName(draft.firstName) && isPersonName(draft.lastName) && isEmailAddress(draft.email)) ||
+    (draft.step === 1 && /^\d{6}$/.test(verifyCode)) ||
+    (draft.step === 2 && birthdayReady && draft.consentPrivacy && draft.consentRules);
 
   async function finishVerify(id: string, code: string, demoPath: string | null) {
     window.localStorage.setItem(DEMO_SIGNUP_ID_STORAGE_KEY, id);
@@ -507,21 +378,12 @@ export function SignupFlow({
     onVerified({ id, code });
     const card = await readVerifiedMember(id);
     if (!card) return;
-    setDone({
-      id,
-      code: card.code,
-      firstName: card.firstName,
-      inviteCount: card.inviteCount,
-      demoPath,
-    });
+    setDone({ id, code: card.code, firstName: card.firstName, inviteCount: card.inviteCount, demoPath });
   }
 
   function showError(code: string) {
     const jump = stepForError(code);
     if (jump !== null && jump !== draft.step) go(jump);
-    if (code === "username_taken") {
-      setUsernameResult({ username: draft.username.trim(), state: "taken" });
-    }
     setError(errorText(code));
   }
 
@@ -531,7 +393,6 @@ export function SignupFlow({
     const result = await postJson("/api/launch/signup", {
       firstName: draft.firstName,
       lastName: draft.lastName,
-      username: draft.username,
       email: draft.email,
       consentPrivacy: false,
       consentRules: false,
@@ -551,7 +412,7 @@ export function SignupFlow({
       codeSentAt: sentAt,
       codeSentFor: normalizeEmail(current.email),
       emailConfirmed: false,
-      step: 2,
+      step: 1,
     }));
   }
 
@@ -562,14 +423,9 @@ export function SignupFlow({
       signupId: draft.signupId,
       firstName: draft.firstName,
       lastName: draft.lastName,
-      username: draft.username,
       email: draft.email,
-      phonePrefix: draft.phonePrefix,
-      phoneNational: draft.phoneNational,
-      birthYear: year,
-      highSchool: draft.highSchool,
-      dreamVenue: draft.dreamVenue,
-      referralCode: draft.referralCode,
+      birthDate: draft.birthDate,
+      referralCode: draft.referralSkipped ? "" : draft.referralCode,
       consentPrivacy: draft.consentPrivacy,
       consentRules: draft.consentRules,
       consentMarketing: draft.consentMarketing,
@@ -577,77 +433,56 @@ export function SignupFlow({
     });
     setBusy(false);
     const signupId = result.signupId || draft.signupId;
-    if (!result.ok || !signupId) {
+    if (!result.ok || !signupId || !result.vibeupCode) {
       showError(result.error || "unavailable");
       return;
     }
-    if (result.vibeupCode) {
-      await finishVerify(signupId, result.vibeupCode, result.demoPath || null);
-      return;
-    }
-    const sentAt = result.sentAt ? new Date(result.sentAt).getTime() : Date.now();
-    setVerifyCode("");
-    setDir("next");
-    setDraft((current) => ({
-      ...current,
-      signupId,
-      codeSentAt: sentAt,
-      codeSentFor: normalizeEmail(current.email),
-      emailConfirmed: false,
-      step: 2,
-    }));
+    await finishVerify(signupId, result.vibeupCode, result.demoPath || null);
   }
 
   async function continueStep() {
     if (busy || !canContinue || done) return;
-    if (draft.step === 1) {
+    if (draft.step === 0) {
       const emailKey = normalizeEmail(draft.email);
-      if (draft.emailConfirmed && draft.signupId && draft.confirmedSignupId === draft.signupId) {
-        go(3);
+      if (draft.emailConfirmed && draft.signupId && draft.confirmedSignupId === draft.signupId && draft.confirmedEmail === emailKey) {
+        go(2);
         return;
       }
-      if (
-        draft.signupId &&
-        draft.codeSentFor === emailKey &&
-        draft.codeSentAt > 0 &&
-        Date.now() - draft.codeSentAt < 30_000
-      ) {
-        go(2);
+      if (draft.signupId && draft.codeSentFor === emailKey && draft.codeSentAt > 0 && Date.now() - draft.codeSentAt < 30_000) {
+        go(1);
         return;
       }
       await sendAccountCode();
       return;
     }
-    if (draft.step === 7) {
+    if (draft.step === 1) {
+      await verifyNow(verifyCode);
+      return;
+    }
+    const typedCode = draft.referralCode.trim();
+    if (!linkedReferral && !draft.referralSkipped && typedCode) {
+      if (!isVibeUpCode(typedCode)) {
+        setReferralWarn(signupCopy.codeMissing);
+        return;
+      }
       if (referralWarn) {
         patch({ referralCode: "", referralSkipped: true });
-        go(8);
+        await submitSignup();
         return;
       }
       setBusy(true);
-      const result = await postJson("/api/launch/referral", { code: normalizeCode(draft.referralCode) });
+      const result = await postJson("/api/launch/referral", { code: normalizeCode(typedCode) });
       setBusy(false);
-      const exists = result.exists;
       if (!result.ok) {
         setError(signupCopy.genericError);
         return;
       }
-      if (!exists) {
+      if (!result.exists) {
         setReferralWarn(signupCopy.codeMissing);
         return;
       }
-      go(8);
-      return;
     }
-    if (draft.step === 2) {
-      await verifyNow(verifyCode);
-      return;
-    }
-    if (draft.step === 8) {
-      await submitSignup();
-      return;
-    }
-    go(stepAfter(draft.step));
+    await submitSignup();
   }
 
   async function verifyNow(code: string) {
@@ -656,13 +491,11 @@ export function SignupFlow({
     if (verifyInflight.has(key)) return;
     verifyInflight.add(key);
     setBusy(true);
-    const result = await postJson("/api/launch/verify", {
-      signupId: draft.signupId,
-      code,
-    });
+    const result = await postJson("/api/launch/verify", { signupId: draft.signupId, code });
     setBusy(false);
     if (result.ok && result.vibeupCode) {
       await finishVerify(draft.signupId, result.vibeupCode, result.demoPath || null);
+      verifyInflight.delete(key);
       return;
     }
     if (result.ok && result.confirmed) {
@@ -674,8 +507,9 @@ export function SignupFlow({
         emailConfirmed: true,
         confirmedEmail: emailKey,
         confirmedSignupId: current.signupId,
-        step: 3,
+        step: 2,
       }));
+      verifyInflight.delete(key);
       return;
     }
     verifyInflight.delete(key);
@@ -700,24 +534,37 @@ export function SignupFlow({
     setError("");
   }
 
-  function skipOptional() {
-    if (draft.step === 7) {
-      patch({ referralCode: "", referralSkipped: true });
-      setReferralWarn("");
-      go(8);
+  function skipFriendCode() {
+    patch({ referralCode: "", referralSkipped: true });
+    setReferralWarn("");
+  }
+
+  async function saveDetails() {
+    if (busy || !done) return;
+    if (!isHighSchool(school) && venue.trim().length < 2) return;
+    setBusy(true);
+    setError("");
+    const result = await postJson("/api/launch/signup", {
+      preferences: true,
+      signupId: done.id,
+      highSchool: school,
+      dreamVenue: venue,
+    });
+    setBusy(false);
+    if (!result.ok) {
+      setError(errorText(result.error || "unavailable"));
+      return;
     }
+    setDetailsSaved(true);
+    setSuggestions([]);
   }
 
   function hasEnteredData() {
     return Boolean(
       draft.firstName.trim() ||
         draft.lastName.trim() ||
-        draft.username.trim() ||
         draft.email.trim() ||
-        draft.phoneNational.trim() ||
-        draft.birthYear ||
-        draft.highSchool.trim() ||
-        draft.dreamVenue.trim() ||
+        draft.birthDate ||
         (!linkedReferral && draft.referralCode.trim()) ||
         draft.consentPrivacy ||
         draft.consentRules ||
@@ -749,11 +596,6 @@ export function SignupFlow({
 
   requestCloseRef.current = requestClose;
 
-  function chooseYear(value: string) {
-    setError("");
-    setDraft((current) => ({ ...current, birthYear: value }));
-  }
-
   function onDragStart(event: ReactPointerEvent<HTMLElement>) {
     if (!narrow || event.button !== 0) return;
     const target = event.target;
@@ -777,24 +619,16 @@ export function SignupFlow({
     if (travel > 80) requestClose();
   }
 
-  const visibleSteps = linkedReferral ? [0, 1, 2, 3, 4, 5, 6, 8] : [0, 1, 2, 3, 4, 5, 6, 7, 8];
-  const stepNumber = Math.max(1, visibleSteps.indexOf(draft.step) + 1);
-  const progress = (stepNumber / visibleSteps.length) * 100;
+  const totalSteps = 3;
+  const stepNumber = draft.step + 1;
+  const progress = (stepNumber / totalSteps) * 100;
   const stepLabel = lang === "en"
-    ? `Step ${stepNumber} of ${visibleSteps.length}`
-    : signupCopy.stepProgress
-        .replaceAll("{n}", String(stepNumber))
-        .replaceAll("{total}", String(visibleSteps.length));
+    ? `Step ${stepNumber} of ${totalSteps}`
+    : signupCopy.stepProgress.replaceAll("{n}", String(stepNumber)).replaceAll("{total}", String(totalSteps));
   const sheetStyle: CSSProperties = { ["--drag" as string]: `${dragY}px` };
-  const lead =
-    draft.step === 2
-      ? signupCopy.verifyBody
-      : draft.step === 6
-        ? signupCopy.venueOptional
-        : draft.step === 1 && usernameState === "idle"
-          ? signupCopy.usernameHint
-          : "";
+  const lead = draft.step === 1 ? signupCopy.verifyBody : "";
   const showBack = !done && draft.step > 0;
+  const detailsReady = isHighSchool(school) || venue.trim().length > 1;
 
   return (
     <div className="vu-sheet-root" ref={frameRef}>
@@ -808,24 +642,12 @@ export function SignupFlow({
         aria-hidden={exitOpen || undefined}
         aria-labelledby="signup-title"
       >
-        <div
-          className="vu-sheet-grab"
-          onPointerDown={onDragStart}
-          onPointerMove={onDragMove}
-          onPointerUp={onDragEnd}
-          onPointerCancel={onDragEnd}
-        >
+        <div className="vu-sheet-grab" onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}>
           <span className="vu-sheet-handle" />
         </div>
-        <header
-          className="vu-sheet-head"
-          onPointerDown={onDragStart}
-          onPointerMove={onDragMove}
-          onPointerUp={onDragEnd}
-          onPointerCancel={onDragEnd}
-        >
+        <header className="vu-sheet-head" onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}>
           {showBack ? (
-            <button type="button" className="vu-btn vu-icon-btn" onClick={() => go(stepBefore(draft.step))} aria-label={signupCopy.back}>
+            <button type="button" className="vu-btn vu-icon-btn" onClick={() => go(draft.step === 2 && draft.emailConfirmed ? 0 : draft.step - 1)} aria-label={signupCopy.back}>
               <ArrowBack />
             </button>
           ) : (
@@ -837,14 +659,7 @@ export function SignupFlow({
           </button>
         </header>
         {done ? null : (
-          <div
-            className="vu-sheet-bar"
-            role="progressbar"
-            aria-valuemin={1}
-            aria-valuemax={visibleSteps.length}
-            aria-valuenow={stepNumber}
-            aria-valuetext={stepLabel}
-          >
+          <div className="vu-sheet-bar" role="progressbar" aria-valuemin={1} aria-valuemax={totalSteps} aria-valuenow={stepNumber} aria-valuetext={stepLabel}>
             <span style={{ width: `${progress}%` }} />
           </div>
         )}
@@ -854,22 +669,49 @@ export function SignupFlow({
         ) : done ? (
           <div className="vu-sheet-body vu-sheet-done">
             <Confetti />
-            <h1 id="signup-title" className="vu-sheet-title">
-              {signupCopy.doneTitle}
-            </h1>
+            <h1 id="signup-title" className="vu-sheet-title">{signupCopy.doneTitle}</h1>
             <p className="vu-sheet-lead">{signupCopy.doneBody}</p>
-            <SignupMemberCard
-              firstName={done.firstName}
-              code={done.code}
-              inviteCount={done.inviteCount}
-              variant="full"
-            />
-            <a className="vu-btn vu-cta vu-signup-demo" href={done.demoPath ?? "/demo"}>
-              {signupCopy.tryDemo}
-            </a>
-            <button type="button" className="vu-text-btn" onClick={dismiss}>
-              {signupCopy.backToSite}
-            </button>
+            <SignupMemberCard firstName={done.firstName} code={done.code} inviteCount={done.inviteCount} variant="full" />
+            <div className="vu-signup-fields">
+              <p className="vu-sheet-lead">{signupCopy.schoolTitle}</p>
+              <Field valid={isHighSchool(school)}>
+                <input
+                  className="vu-input"
+                  placeholder={signupCopy.schoolPlaceholder}
+                  value={school}
+                  autoComplete="off"
+                  onFocus={() => setDetailFocus("school")}
+                  onChange={(event) => {
+                    setDetailsSaved(false);
+                    setSchool(event.target.value);
+                  }}
+                />
+              </Field>
+              {detailFocus === "school" && suggestions.length > 0 ? <SuggestionList items={suggestions} onPick={(item) => { setSchool(item); setSuggestions([]); }} /> : null}
+              <p className="vu-sheet-lead">{signupCopy.venueTitle}</p>
+              <p className="vu-sheet-lead">{signupCopy.venueOptional}</p>
+              <Field valid={venue.trim().length > 1}>
+                <input
+                  className="vu-input"
+                  placeholder={signupCopy.venuePlaceholder}
+                  value={venue}
+                  autoComplete="off"
+                  onFocus={() => setDetailFocus("venue")}
+                  onChange={(event) => {
+                    setDetailsSaved(false);
+                    setVenue(event.target.value);
+                  }}
+                />
+              </Field>
+              {detailFocus === "venue" && suggestions.length > 0 ? <SuggestionList items={suggestions} onPick={(item) => { setVenue(item); setSuggestions([]); }} /> : null}
+              {detailsSaved ? <p className="vu-signup-ok">{signupCopy.detailsSaved}</p> : null}
+              {error ? <p className="vu-signup-error">{error}</p> : null}
+              <button type="button" className="vu-btn vu-cta" disabled={!detailsReady || busy || detailsSaved} onClick={() => void saveDetails()}>
+                {busy ? signupCopy.wait : signupCopy.saveDetails}
+              </button>
+            </div>
+            <a className="vu-btn vu-cta vu-signup-demo" href={done.demoPath ?? "/demo"}>{signupCopy.tryDemo}</a>
+            <button type="button" className="vu-text-btn" onClick={dismiss}>{signupCopy.backToSite}</button>
           </div>
         ) : (
           <form
@@ -888,36 +730,18 @@ export function SignupFlow({
             }}
           >
             <div className={`vu-sheet-body vu-sheet-slide is-${dir}`} key={draft.step} ref={panelRef}>
-              <h1 id="signup-title" className="vu-sheet-title">
-                {titleFor(draft.step)}
-              </h1>
+              <h1 id="signup-title" className="vu-sheet-title">{titleFor(draft.step)}</h1>
               {lead ? <p className="vu-sheet-lead">{lead}</p> : null}
-              {fieldsFor()}
-              {draft.step === 4 && draft.birthYear && !isAtLeast14(year) ? (
-                <p className="vu-signup-error">{signupCopy.tooYoung}</p>
-              ) : null}
-              {draft.step === 3 && draft.phoneNational && !isE164(phone) ? (
-                <p className="vu-signup-error">{signupCopy.phoneInvalid}</p>
-              ) : null}
-              {draft.step === 1 && usernameState === "checking" ? (
-                <p className="vu-signup-note">{signupCopy.usernameChecking}</p>
-              ) : null}
-              {draft.step === 1 && usernameState === "free" ? (
-                <p className="vu-signup-ok">{signupCopy.usernameFree}</p>
-              ) : null}
-              {draft.step === 1 && usernameState === "taken" ? (
-                <p className="vu-signup-error">{signupCopy.usernameTaken}</p>
-              ) : null}
+              {fieldsFor(draft, patch, verifyCode, setVerifyCode, setError, error, birthdayReady, linkedReferral, referralWarn, setReferralWarn, (code) => void verifyNow(code))}
+              {draft.step === 2 && draft.birthDate && !birthdayReady ? <p className="vu-signup-error">{signupCopy.tooYoung}</p> : null}
               {referralWarn ? <p className="vu-signup-error">{referralWarn}</p> : null}
               {error ? <p className="vu-signup-error">{error}</p> : null}
             </div>
             <div className="vu-sheet-foot">
-              {draft.step === 7 ? (
-                <button type="button" className="vu-sheet-skip" onClick={skipOptional}>
-                  {signupCopy.skip}
-                </button>
+              {draft.step === 2 && !linkedReferral ? (
+                <button type="button" className="vu-sheet-skip" onClick={skipFriendCode}>{signupCopy.skip}</button>
               ) : null}
-              {draft.step === 2 ? (
+              {draft.step === 1 ? (
                 <button type="button" className="vu-sheet-skip" disabled={busy || resendIn > 0} onClick={() => void resend()}>
                   {resendIn > 0 ? `${signupCopy.resendIn} ${resendIn}s` : signupCopy.resend}
                 </button>
@@ -932,268 +756,163 @@ export function SignupFlow({
 
       {exitOpen ? (
         <div className="vu-exit-layer" onClick={() => setExitOpen(false)}>
-          <div
-            ref={exitRef}
-            className="vu-exit"
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="signup-exit-title"
-            aria-describedby="signup-exit-body"
-            onClick={(event) => event.stopPropagation()}
-          >
+          <div ref={exitRef} className="vu-exit" role="alertdialog" aria-modal="true" aria-labelledby="signup-exit-title" aria-describedby="signup-exit-body" onClick={(event) => event.stopPropagation()}>
             <h2 id="signup-exit-title">{signupCopy.exitTitle}</h2>
             <p id="signup-exit-body">{signupCopy.exitBody}</p>
-            <button type="button" className="vu-btn vu-cta" onClick={() => setExitOpen(false)}>
-              {signupCopy.exitStay}
-            </button>
-            <button type="button" className="vu-text-btn" onClick={dismiss}>
-              {signupCopy.exitLeave}
-            </button>
+            <button type="button" className="vu-btn vu-cta" onClick={() => setExitOpen(false)}>{signupCopy.exitStay}</button>
+            <button type="button" className="vu-text-btn" onClick={dismiss}>{signupCopy.exitLeave}</button>
           </div>
         </div>
       ) : null}
     </div>
   );
+}
 
-  function fieldsFor() {
-    if (draft.step === 0) {
-      return (
-        <div className="vu-signup-fields">
-          <Field valid={isPersonName(draft.firstName)}>
+function fieldsFor(
+  draft: SignupDraft,
+  patch: (partial: Partial<SignupDraft>) => void,
+  verifyCode: string,
+  setVerifyCode: (value: string) => void,
+  setError: (value: string) => void,
+  error: string,
+  birthdayReady: boolean,
+  linkedReferral: boolean,
+  referralWarn: string,
+  setReferralWarn: (value: string) => void,
+  onCode: (code: string) => void,
+) {
+  if (draft.step === 0) {
+    return (
+      <div className="vu-signup-fields">
+        <Field valid={isPersonName(draft.firstName)}>
+          <input className="vu-input" autoComplete="given-name" enterKeyHint="next" placeholder={signupCopy.firstName} value={draft.firstName} onChange={(event) => patch({ firstName: event.target.value })} />
+        </Field>
+        <Field valid={isPersonName(draft.lastName)}>
+          <input className="vu-input" autoComplete="family-name" enterKeyHint="next" placeholder={signupCopy.lastName} value={draft.lastName} onChange={(event) => patch({ lastName: event.target.value })} />
+        </Field>
+        <Field valid={isEmailAddress(draft.email)} invalid={error === signupCopy.emailTaken}>
+          <input
+            className="vu-input"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            autoCapitalize="none"
+            enterKeyHint="go"
+            placeholder={signupCopy.emailPlaceholder}
+            value={draft.email}
+            aria-invalid={error === signupCopy.emailTaken}
+            onChange={(event) => {
+              const email = event.target.value;
+              const key = normalizeEmail(email);
+              patch({
+                email,
+                emailConfirmed: key.length > 0 && key === draft.confirmedEmail && draft.signupId.length > 0 && draft.signupId === draft.confirmedSignupId,
+              });
+            }}
+          />
+        </Field>
+      </div>
+    );
+  }
+  if (draft.step === 1) {
+    return (
+      <Field valid={/^\d{6}$/.test(verifyCode)} invalid={Boolean(error)}>
+        <input
+          className="vu-input vu-code-input"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          enterKeyHint="go"
+          maxLength={6}
+          placeholder={signupCopy.verifyPlaceholder}
+          value={verifyCode}
+          aria-invalid={Boolean(error)}
+          onChange={(event) => {
+            setError("");
+            const next = event.target.value.replace(/\D/g, "").slice(0, 6);
+            setVerifyCode(next);
+            if (/^\d{6}$/.test(next)) onCode(next);
+          }}
+        />
+      </Field>
+    );
+  }
+  return (
+    <div className="vu-signup-fields">
+      <label className="vu-sheet-lead" htmlFor="signup-birth">{signupCopy.birthLabel}</label>
+      <Field valid={birthdayReady} invalid={Boolean(draft.birthDate) && !birthdayReady}>
+        <input
+          id="signup-birth"
+          className="vu-input"
+          type="date"
+          autoComplete="bday"
+          enterKeyHint="next"
+          min={birthBounds.min}
+          max={birthBounds.max}
+          value={draft.birthDate}
+          aria-invalid={Boolean(draft.birthDate) && !birthdayReady}
+          onChange={(event) => patch({ birthDate: event.target.value })}
+        />
+      </Field>
+      {linkedReferral ? <p className="vu-sheet-chip">{signupCopy.invitedByFriend}</p> : (
+        <>
+          <p className="vu-sheet-lead">{signupCopy.codeTitle}</p>
+          <Field valid={isVibeUpCode(draft.referralCode)} invalid={Boolean(referralWarn)}>
             <input
               className="vu-input"
-              autoComplete="given-name"
-              enterKeyHint="next"
-              placeholder={signupCopy.firstName}
-              value={draft.firstName}
-              onChange={(event) => patch({ firstName: event.target.value })}
-            />
-          </Field>
-          <Field valid={isPersonName(draft.lastName)}>
-            <input
-              className="vu-input"
-              autoComplete="family-name"
-              enterKeyHint="next"
-              placeholder={signupCopy.lastName}
-              value={draft.lastName}
-              onChange={(event) => patch({ lastName: event.target.value })}
-            />
-          </Field>
-        </div>
-      );
-    }
-    if (draft.step === 1) {
-      return (
-        <div className="vu-signup-fields">
-          <Field valid={usernameState === "free"} invalid={usernameState === "taken"}>
-            <input
-              className="vu-input"
-              autoCapitalize="none"
+              autoCapitalize="characters"
               autoCorrect="off"
-              spellCheck={false}
               enterKeyHint="next"
-              placeholder="nome_utente"
-              value={draft.username}
-              aria-invalid={usernameState === "taken"}
-              onChange={(event) => patch({ username: event.target.value.replace(/\s/g, "") })}
-            />
-          </Field>
-          <Field valid={isEmailAddress(draft.email)} invalid={error === signupCopy.emailTaken}>
-            <input
-              className="vu-input"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              autoCapitalize="none"
-              enterKeyHint="go"
-              placeholder={signupCopy.emailPlaceholder}
-              value={draft.email}
-              aria-invalid={error === signupCopy.emailTaken}
+              placeholder={signupCopy.codePlaceholder}
+              value={draft.referralCode}
+              aria-invalid={Boolean(referralWarn)}
               onChange={(event) => {
-                const email = event.target.value;
-                const key = normalizeEmail(email);
-                patch({
-                  email,
-                  emailConfirmed:
-                    key.length > 0 &&
-                    key === draft.confirmedEmail &&
-                    draft.signupId.length > 0 &&
-                    draft.signupId === draft.confirmedSignupId,
-                });
+                setReferralWarn("");
+                patch({ referralCode: event.target.value.toUpperCase(), referralSkipped: false });
               }}
             />
           </Field>
+        </>
+      )}
+      <div className="vu-checks">
+        <div className="vu-consent-summary">
+          {consentText.summary.map((line) => <p key={line}>{line}</p>)}
         </div>
-      );
-    }
-    if (draft.step === 2) {
-      return (
-        <Field valid={/^\d{6}$/.test(verifyCode)} invalid={Boolean(error)}>
-          <input
-            className="vu-input vu-code-input"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            enterKeyHint="go"
-            maxLength={6}
-            placeholder={signupCopy.verifyPlaceholder}
-            value={verifyCode}
-            aria-invalid={Boolean(error)}
-            onChange={(event) => {
-              setError("");
-              const next = event.target.value.replace(/\D/g, "").slice(0, 6);
-              setVerifyCode(next);
-              if (/^\d{6}$/.test(next)) void verifyNow(next);
-            }}
-          />
-        </Field>
-      );
-    }
-    if (draft.step === 3) {
-      const invalid = Boolean(draft.phoneNational) && !isE164(phone);
-      return (
-        <div className="vu-phone-row">
-          <input
-            className="vu-input vu-prefix"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel-country-code"
-            aria-label="Prefisso"
-            value={draft.phonePrefix}
-            onChange={(event) => patch({ phonePrefix: event.target.value })}
-          />
-          <Field valid={isE164(phone)} invalid={invalid}>
-            <input
-              className="vu-input"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel-national"
-              enterKeyHint="next"
-              placeholder="333 123 4567"
-              value={draft.phoneNational}
-              aria-invalid={invalid}
-              onChange={(event) => patch({ phoneNational: event.target.value })}
-            />
-          </Field>
-        </div>
-      );
-    }
-    if (draft.step === 4) {
-      const invalid = Boolean(draft.birthYear) && !isAtLeast14(year);
-      return (
-        <Field valid={Boolean(draft.birthYear) && isAtLeast14(year)} invalid={invalid}>
-          <select
-            className="vu-input"
-            value={draft.birthYear}
-            aria-invalid={invalid}
-            onChange={(event) => chooseYear(event.target.value)}
-          >
-            <option value="">{signupCopy.yearPlaceholder}</option>
-            {years.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </Field>
-      );
-    }
-    if (draft.step === 5 || draft.step === 6) {
-      const value = draft.step === 5 ? draft.highSchool : draft.dreamVenue;
-      const placeholder = draft.step === 5 ? signupCopy.schoolPlaceholder : signupCopy.venuePlaceholder;
-      const valid = draft.step === 5 ? isHighSchool(value) : value.trim().length > 1;
-      return (
-        <div className="vu-suggest-wrap">
-          <Field valid={valid}>
-            <input
-              className="vu-input"
-              placeholder={placeholder}
-              value={value}
-              autoComplete="off"
-              enterKeyHint="next"
-              onChange={(event) =>
-                patch(draft.step === 5 ? { highSchool: event.target.value } : { dreamVenue: event.target.value })
-              }
-            />
-          </Field>
-          {suggestions.length > 0 ? (
-            <ul className="vu-suggest">
-              {suggestions.map((item) => (
-                <li key={item}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      patch(draft.step === 5 ? { highSchool: item } : { dreamVenue: item });
-                    }}
-                  >
-                    {item}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      );
-    }
-    if (draft.step === 7) {
-      return (
-        <Field valid={isVibeUpCode(draft.referralCode)} invalid={Boolean(referralWarn)}>
-          <input
-            className="vu-input"
-            autoCapitalize="characters"
-            autoCorrect="off"
-            enterKeyHint="next"
-            placeholder={signupCopy.codePlaceholder}
-            value={draft.referralCode}
-            aria-invalid={Boolean(referralWarn)}
-            onChange={(event) => {
-              setReferralWarn("");
-              patch({ referralCode: event.target.value.toUpperCase(), referralSkipped: false });
-            }}
-          />
-        </Field>
-      );
-    }
-    if (draft.step === 8) {
-      return (
-        <div className="vu-checks">
-          {linkedReferral ? <p className="vu-sheet-chip">{signupCopy.invitedByFriend}</p> : null}
-          <div className="vu-consent-summary">
-            {consentText.summary.map((line) => (
-              <p key={line}>{line}</p>
-            ))}
-          </div>
-          <label className="vu-check">
-            <input type="checkbox" checked={draft.consentPrivacy} onChange={(event) => patch({ consentPrivacy: event.target.checked })} />
-            <span>
-              <ConsentSentence sentence={signupCopy.consentPrivacy} link={signupCopy.consentPrivacyLink} href="/privacy" />
-            </span>
-          </label>
-          <label className="vu-check">
-            <input type="checkbox" checked={draft.consentRules} onChange={(event) => patch({ consentRules: event.target.checked })} />
-            <span>
-              <ConsentSentence sentence={signupCopy.consentRules} link={signupCopy.consentRulesLink} href="/regolamento" />
-            </span>
-          </label>
-          <label className="vu-check">
-            <input type="checkbox" checked={draft.consentMarketing} onChange={(event) => patch({ consentMarketing: event.target.checked })} />
-            <span>{signupCopy.consentMarketing}</span>
-          </label>
-        </div>
-      );
-    }
-    return null;
-  }
+        <label className="vu-check">
+          <input type="checkbox" checked={draft.consentPrivacy} onChange={(event) => patch({ consentPrivacy: event.target.checked })} />
+          <span><ConsentSentence sentence={signupCopy.consentPrivacy} link={signupCopy.consentPrivacyLink} href="/privacy" /></span>
+        </label>
+        <label className="vu-check">
+          <input type="checkbox" checked={draft.consentRules} onChange={(event) => patch({ consentRules: event.target.checked })} />
+          <span><ConsentSentence sentence={signupCopy.consentRules} link={signupCopy.consentRulesLink} href="/regolamento" /></span>
+        </label>
+        <label className="vu-check">
+          <input type="checkbox" checked={draft.consentMarketing} onChange={(event) => patch({ consentMarketing: event.target.checked })} />
+          <span>{signupCopy.consentMarketing}</span>
+        </label>
+      </div>
+    </div>
+  );
 }
 
-function Field({
-  valid,
-  invalid,
-  children,
-}: {
-  valid?: boolean;
-  invalid?: boolean;
-  children: ReactNode;
-}) {
+function SuggestionList({ items, onPick }: { items: string[]; onPick: (item: string) => void }) {
+  return (
+    <ul className="vu-suggest">
+      {items.map((item) => (
+        <li key={item}>
+          <button type="button" onClick={() => onPick(item)}>{item}</button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function titleFor(step: number) {
+  if (step === 0) return signupCopy.nameTitle;
+  if (step === 1) return signupCopy.verifyTitle;
+  return signupCopy.consentTitle;
+}
+
+function Field({ valid, invalid, children }: { valid?: boolean; invalid?: boolean; children: ReactNode }) {
   const state = invalid ? " is-invalid" : valid ? " is-valid" : "";
   return (
     <div className={`vu-field${state}`}>
@@ -1206,72 +925,29 @@ function Field({
 function Confetti() {
   return (
     <div className="vu-confetti" aria-hidden>
-      {Array.from({ length: 14 }, (_, index) => (
-        <i key={index} style={{ ["--i" as string]: index }} />
-      ))}
+      {Array.from({ length: 14 }, (_, index) => <i key={index} style={{ ["--i" as string]: index }} />)}
     </div>
   );
 }
 
-function ConsentSentence({
-  sentence,
-  link,
-  href,
-}: {
-  sentence: string;
-  link: string;
-  href: string;
-}) {
+function ConsentSentence({ sentence, link, href }: { sentence: string; link: string; href: string }) {
   const index = sentence.toLowerCase().indexOf(link.toLowerCase());
   if (index < 0) return sentence;
-  const before = sentence.slice(0, index);
-  const after = sentence.slice(index + link.length);
   return (
     <>
-      {before}
+      {sentence.slice(0, index)}
       <ConsentLink href={href}>{sentence.slice(index, index + link.length)}</ConsentLink>
-      {after}
+      {sentence.slice(index + link.length)}
     </>
   );
 }
 
 function ConsentLink({ href, children }: { href: string; children: string }) {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      onMouseDown={(event) => event.preventDefault()}
-      onClick={(event) => event.stopPropagation()}
-    >
+    <a href={href} target="_blank" rel="noopener noreferrer" onMouseDown={(event) => event.preventDefault()} onClick={(event) => event.stopPropagation()}>
       {children}
     </a>
   );
-}
-
-function titleFor(step: number) {
-  switch (step) {
-    case 0:
-      return signupCopy.nameTitle;
-    case 1:
-      return signupCopy.accountTitle;
-    case 2:
-      return signupCopy.verifyTitle;
-    case 3:
-      return signupCopy.phoneTitle;
-    case 4:
-      return signupCopy.yearTitle;
-    case 5:
-      return signupCopy.schoolTitle;
-    case 6:
-      return signupCopy.venueTitle;
-    case 7:
-      return signupCopy.codeTitle;
-    case 8:
-      return signupCopy.consentTitle;
-    default:
-      return signupCopy.verifyTitle;
-  }
 }
 
 function ArrowBack() {

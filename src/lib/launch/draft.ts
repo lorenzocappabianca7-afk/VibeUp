@@ -6,13 +6,8 @@ export const SIGNUP_REFERRAL_KEY = "vu_referral";
 export type SignupDraft = {
   firstName: string;
   lastName: string;
-  username: string;
   email: string;
-  phonePrefix: string;
-  phoneNational: string;
-  birthYear: string;
-  highSchool: string;
-  dreamVenue: string;
+  birthDate: string;
   referralCode: string;
   referralSkipped: boolean;
   consentPrivacy: boolean;
@@ -73,13 +68,8 @@ export function emptySignupDraft(): SignupDraft {
   return {
     firstName: "",
     lastName: "",
-    username: "",
     email: "",
-    phonePrefix: "+39",
-    phoneNational: "",
-    birthYear: "",
-    highSchool: "",
-    dreamVenue: "",
+    birthDate: "",
     referralCode: referralFromLocation(),
     referralSkipped: false,
     consentPrivacy: false,
@@ -92,7 +82,7 @@ export function emptySignupDraft(): SignupDraft {
     emailConfirmed: false,
     confirmedEmail: "",
     confirmedSignupId: "",
-    flow: 2,
+    flow: 3,
   };
 }
 
@@ -102,30 +92,35 @@ export function loadSignupDraft(): SignupDraft {
   try {
     const raw = sessionStorage.getItem(SIGNUP_DRAFT_KEY);
     if (!raw) return base;
-    const parsed = JSON.parse(raw) as Partial<SignupDraft>;
-    const legacy = parsed.flow !== 2;
+    const parsed = JSON.parse(raw) as Partial<SignupDraft> & { flow?: number; emailConfirmed?: boolean; signupId?: string };
+    const legacy = parsed.flow !== 3;
+    const confirmed = parsed.emailConfirmed === true;
+    const hasId = typeof parsed.signupId === "string" && parsed.signupId.length > 0;
     let step = typeof parsed.step === "number" ? parsed.step : 0;
-    if (legacy) {
-      if (step === 2) step = 1;
-      else if (step >= 9) step = 2;
-    }
+    if (legacy) step = confirmed ? 2 : hasId ? 1 : 0;
     const fromUrl = urlReferral();
     const skipped = parsed.referralSkipped === true && !fromUrl;
     const savedCode = typeof parsed.referralCode === "string" ? parsed.referralCode : "";
+    const birthDate = typeof parsed.birthDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.birthDate) ? parsed.birthDate : "";
     return {
       ...base,
-      ...parsed,
-      phonePrefix: parsed.phonePrefix || "+39",
+      firstName: typeof parsed.firstName === "string" ? parsed.firstName : "",
+      lastName: typeof parsed.lastName === "string" ? parsed.lastName : "",
+      email: typeof parsed.email === "string" ? parsed.email : "",
+      birthDate,
+      consentPrivacy: parsed.consentPrivacy === true,
+      consentRules: parsed.consentRules === true,
+      consentMarketing: parsed.consentMarketing === true,
       referralSkipped: skipped,
       referralCode: fromUrl || (skipped ? "" : savedCode || storedReferral()),
-      step: Math.min(8, Math.max(0, step)),
-      signupId: typeof parsed.signupId === "string" ? parsed.signupId : "",
+      step: Math.min(2, Math.max(0, step)),
+      signupId: hasId ? parsed.signupId! : "",
       codeSentAt: typeof parsed.codeSentAt === "number" ? parsed.codeSentAt : 0,
       codeSentFor: !legacy && typeof parsed.codeSentFor === "string" ? parsed.codeSentFor : "",
-      emailConfirmed: !legacy && parsed.emailConfirmed === true,
+      emailConfirmed: !legacy && confirmed,
       confirmedEmail: !legacy && typeof parsed.confirmedEmail === "string" ? parsed.confirmedEmail : "",
       confirmedSignupId: !legacy && typeof parsed.confirmedSignupId === "string" ? parsed.confirmedSignupId : "",
-      flow: 2,
+      flow: 3,
     };
   } catch {
     return base;

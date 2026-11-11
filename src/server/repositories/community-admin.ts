@@ -9,7 +9,7 @@ const DEMOS = "demo_submissions";
 const PAGE_SIZE = 50;
 
 const SIGNUP_LIST_COLUMNS =
-  "id, created_at, first_name, last_name, username, email, phone, birth_year, high_school, dream_venue, locale, vibeup_code, referred_by_code, email_verified_at, welcome_email_sent_at, consent_privacy_at, consent_rules_at, consent_marketing, contest_excluded, is_tester";
+  "id, created_at, first_name, last_name, username, email, phone, birth_date, birth_year, high_school, dream_venue, locale, vibeup_code, referred_by_code, email_verified_at, welcome_email_sent_at, consent_privacy_at, consent_rules_at, consent_marketing, contest_excluded, is_tester";
 
 export type DemoStatus = "none" | "entered" | "completed";
 
@@ -21,6 +21,7 @@ export interface CommunitySignupRow {
   username: string;
   email: string;
   phone: string;
+  birthDate: string | null;
   birthYear: number | null;
   highSchool: string;
   dreamVenue: string;
@@ -58,9 +59,10 @@ type SignupDb = {
   created_at: string;
   first_name: string;
   last_name: string;
-  username: string;
+  username: string | null;
   email: string;
   phone: string | null;
+  birth_date: string | null;
   birth_year: number | null;
   high_school: string | null;
   dream_venue: string | null;
@@ -450,6 +452,7 @@ const SORTS: Record<string, string> = {
   email: "email",
   phone: "phone",
   birthYear: "birth_year",
+  birthDate: "birth_date",
   highSchool: "high_school",
   dreamVenue: "dream_venue",
   locale: "locale",
@@ -559,7 +562,7 @@ async function usernamesForCodes(codes: string[]) {
     .in("vibeup_code", codes);
   if (error) throw new Error(error.message);
   for (const row of (data ?? []) as { username: string; vibeup_code: string | null }[]) {
-    if (row.vibeup_code) names.set(row.vibeup_code, row.username);
+    if (row.vibeup_code && row.username) names.set(row.vibeup_code, row.username);
   }
   return names;
 }
@@ -575,9 +578,10 @@ function mapSignup(
     createdAt: row.created_at,
     firstName: row.first_name,
     lastName: row.last_name,
-    username: row.username,
+    username: row.username ?? "",
     email: row.email,
     phone: row.phone ?? "",
+    birthDate: row.birth_date,
     birthYear: row.birth_year,
     highSchool: row.high_school ?? "",
     dreamVenue: row.dream_venue ?? "",
@@ -712,7 +716,7 @@ export function signupsToCsv(rows: CommunitySignupRow[]) {
     "Username",
     "Email",
     "Telefono",
-    "Anno di nascita",
+    "Data di nascita",
     "Liceo",
     "Locale desiderato",
     "Lingua",
@@ -738,7 +742,7 @@ export function signupsToCsv(rows: CommunitySignupRow[]) {
       row.username,
       row.email,
       row.phone,
-      row.birthYear == null ? "" : String(row.birthYear),
+      row.birthDate ?? (row.birthYear == null ? "" : String(row.birthYear)),
       row.highSchool,
       row.dreamVenue,
       row.locale,
@@ -814,7 +818,7 @@ export async function loadCommunityPerson(signupId: string) {
       ),
     )
       .map((item) => ({
-        username: item.username,
+        username: item.username ?? "",
         firstName: item.first_name,
         verified: Boolean(item.email_verified_at),
         createdAt: item.created_at,

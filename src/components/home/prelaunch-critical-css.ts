@@ -981,6 +981,10 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   background: #0F1115;
   font-size: 17px;
 }
+.vu-sheet input[type="date"].vu-input {
+  color-scheme: dark;
+  min-height: 52px;
+}
 .vu-sheet .vu-field.is-valid .vu-input { padding-right: 44px; }
 .vu-sheet .vu-field.is-invalid .vu-input { border-color: #F091B2; }
 .vu-sheet .vu-input:focus,

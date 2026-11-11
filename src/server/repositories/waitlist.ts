@@ -9,8 +9,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import {
   CODE_ALPHABET,
   cleanVenue,
-  isAtLeast14,
-  isE164,
+  isAtLeast14OnDate,
   isEmailAddress,
   isHighSchool,
   isPersonName,
@@ -49,10 +48,8 @@ export type WaitlistError =
 export type WaitlistDraft = {
   firstName: string;
   lastName: string;
-  username: string;
   email: string;
-  phone: string;
-  birthYear: number;
+  birthDate: string;
   highSchool: string;
   dreamVenue: string | null;
   referralCode: string | null;
@@ -150,13 +147,8 @@ export async function referralExists(code: string) {
 
 function validateDraft(draft: WaitlistDraft): WaitlistError | null {
   if (!isPersonName(draft.firstName) || !isPersonName(draft.lastName)) return "invalid";
-  if (!USERNAME_RE.test(draft.username.trim())) return "invalid";
   if (!isEmailAddress(draft.email)) return "invalid";
-  if (!isE164(draft.phone)) return "invalid";
-  if (!Number.isInteger(draft.birthYear)) return "invalid";
-  if (!isAtLeast14(draft.birthYear)) return "too_young";
-  if (!isHighSchool(draft.highSchool)) return "invalid";
-  if (!draft.dreamVenue || draft.dreamVenue.length < 2 || draft.dreamVenue.length > 80) return "invalid";
+  if (!isAtLeast14OnDate(draft.birthDate)) return "too_young";
   return null;
 }
 
@@ -201,7 +193,6 @@ export async function readSignupLocale(signupId: string): Promise<DemoLanguage> 
 export async function startEmailSignup(input: {
   firstName: string;
   lastName: string;
-  username: string;
   email: string;
   ipHash: string | null;
   locale?: DemoLanguage;
@@ -209,8 +200,6 @@ export async function startEmailSignup(input: {
   const client = admin();
   if (!client) return unavailable();
   if (!isPersonName(input.firstName) || !isPersonName(input.lastName)) return { ok: false, error: "invalid" };
-  const username = input.username.trim();
-  if (!USERNAME_RE.test(username)) return { ok: false, error: "invalid" };
   const email = normalizeEmail(input.email);
   if (!isEmailAddress(email)) return { ok: false, error: "invalid" };
 
@@ -218,14 +207,10 @@ export async function startEmailSignup(input: {
   const existing = await releaseVerifiedTesterSignup(found, email);
   if (existing === "unavailable") return unavailable();
   if (existing?.email_verified_at) return { ok: false, error: "email_taken" };
-  const usernameFree = await isUsernameAvailable(username, existing?.id);
-  if (usernameFree === null) return unavailable();
-  if (!usernameFree) return { ok: false, error: "username_taken" };
 
   const payload = {
     first_name: input.firstName.trim(),
     last_name: input.lastName.trim(),
-    username,
     email,
     ip_hash: input.ipHash,
     locale: parseSiteLocale(input.locale),
@@ -259,8 +244,6 @@ export async function savePendingSignup(
   if (problem) return { ok: false, error: problem };
 
   const email = normalizeEmail(draft.email);
-  const username = draft.username.trim();
-  const phone = draft.phone;
   const found = await findByEmail(email);
   const existing = await releaseVerifiedTesterSignup(found, email);
   if (existing === "unavailable") return unavailable();
@@ -280,15 +263,11 @@ export async function savePendingSignup(
         const owner = ref as {
           id: string;
           email: string;
-          username: string;
-          phone: string;
+          username: string | null;
+          phone: string | null;
           vibeup_code: string;
         };
-        const samePerson =
-          owner.email === email ||
-          owner.phone === phone ||
-          owner.username.toLowerCase() === username.toLowerCase() ||
-          owner.id === existing?.id;
+        const samePerson = owner.email === email || owner.id === existing?.id;
         if (samePerson) return { ok: false, error: "own_code" };
         referred = owner.vibeup_code;
       }
@@ -297,29 +276,14 @@ export async function savePendingSignup(
 
   if (existing?.email_verified_at) return { ok: false, error: "email_taken" };
 
-  const usernameFree = await isUsernameAvailable(username, existing?.id);
-  if (usernameFree === null) return unavailable();
-  if (!usernameFree) return { ok: false, error: "username_taken" };
-
-  const { data: phoneOwner, error: phoneError } = await client
-    .from(SIGNUPS)
-    .select("id")
-    .eq("phone", phone)
-    .limit(1);
-  if (phoneError) throw new Error(phoneError.message);
-  const phoneRow = phoneOwner?.[0] as { id: string } | undefined;
-  if (phoneRow && phoneRow.id !== existing?.id) return { ok: false, error: "phone_taken" };
-
+  const birthday = draft.birthDate;
   const now = new Date().toISOString();
   const payload = {
     first_name: draft.firstName.trim(),
     last_name: draft.lastName.trim(),
-    username,
     email,
-    phone,
-    birth_year: draft.birthYear,
-    high_school: draft.highSchool.trim(),
-    dream_venue: cleanVenue(draft.dreamVenue ?? "") || null,
+    birth_date: birthday,
+    birth_year: Number(birthday.slice(0, 4)),
     referred_by_code: referred,
     consent_privacy_at: now,
     consent_rules_at: now,
@@ -348,6 +312,37 @@ export async function savePendingSignup(
     throw new Error(error.message);
   }
   return { ok: true, id: (data as { id: string }).id, firstName: payload.first_name };
+}
+
+/** Optional school and venue, saved after the signup is already complete. */
+export async function saveSignupDetails(
+  signupId: string,
+  input: { highSchool: string; dreamVenue: string },
+): Promise<{ ok: true } | { ok: false; error: WaitlistError }> {
+  const client = admin();
+  if (!client || !isUuid(signupId)) return { ok: false, error: "invalid" };
+  const school = input.highSchool.trim();
+  const venue = cleanVenue(input.dreamVenue);
+  const patch: { high_school?: string; dream_venue?: string } = {};
+  if (school) {
+    if (!isHighSchool(school)) return { ok: false, error: "invalid" };
+    patch.high_school = school;
+  }
+  if (venue) {
+    if (venue.length < 2) return { ok: false, error: "invalid" };
+    patch.dream_venue = venue;
+  }
+  if (!patch.high_school && !patch.dream_venue) return { ok: false, error: "invalid" };
+  const { data, error } = await client
+    .from(SIGNUPS)
+    .update(patch)
+    .eq("id", signupId)
+    .not("email_verified_at", "is", null)
+    .select("id")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return { ok: false, error: "not_found" };
+  return { ok: true };
 }
 
 /** Append-only. A later revocation inserts another row; it does not update this one. */
@@ -571,7 +566,7 @@ export async function verifyEmailCode(
   const { data: signup, error: signupError } = await client
     .from(SIGNUPS)
     .select(
-      "id, email, first_name, phone, birth_year, high_school, consent_privacy_at, consent_rules_at, email_verified_at, vibeup_code, welcome_email_sent_at",
+      "id, email, first_name, birth_date, consent_privacy_at, consent_rules_at, email_verified_at, vibeup_code, welcome_email_sent_at",
     )
     .eq("id", signupId)
     .maybeSingle();
@@ -581,9 +576,7 @@ export async function verifyEmailCode(
     id: string;
     email: string;
     first_name: string;
-    phone: string | null;
-    birth_year: number | null;
-    high_school: string | null;
+    birth_date: string | null;
     consent_privacy_at: string | null;
     consent_rules_at: string | null;
     email_verified_at: string | null;
@@ -605,9 +598,7 @@ export async function verifyEmailCode(
     };
   }
 
-  const profileReady = Boolean(
-    current.phone && current.birth_year && current.high_school && current.consent_privacy_at && current.consent_rules_at,
-  );
+  const profileReady = Boolean(current.birth_date && current.consent_privacy_at && current.consent_rules_at);
   if (!profileReady) {
     const { error: confirmError } = await client
       .from(SIGNUPS)
