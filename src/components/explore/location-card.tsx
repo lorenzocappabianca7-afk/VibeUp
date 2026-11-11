@@ -9,6 +9,7 @@ import {
 import { useDemoLanguage } from "@/context/demo-language-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { getFilteredLocationPricePresentation } from "@/lib/location-preview-price";
+import { applyVat } from "@/lib/vat";
 import { cn } from "@/lib/utils";
 import type { ContactPreview, Location } from "@/types/location";
 import { Check, GitCompareArrows, Heart, MapPin } from "lucide-react";
@@ -27,6 +28,8 @@ interface LocationCardProps {
   priority?: boolean;
   /** Demo Esplora: one circle instead of the heart. */
   selectionStyle?: "heart" | "radio";
+  /** Esplora: Confronta and Scegli under the card, photo still opens the venue. */
+  footerActions?: boolean;
 }
 
 export const LocationCard = memo(function LocationCard({
@@ -39,23 +42,40 @@ export const LocationCard = memo(function LocationCard({
   showCompare = true,
   priority = false,
   selectionStyle = "heart",
+  footerActions = false,
 }: LocationCardProps) {
   const { lang } = useDemoLanguage();
   const { criteria } = usePartyCriteria();
   const { contactsBeenHere } = location;
   const hasContacts = contactsBeenHere.count > 0;
-  const price = getFilteredLocationPricePresentation(location, criteria);
+  const quote = getFilteredLocationPricePresentation(location, criteria);
+  const guestsChosen =
+    typeof criteria.guestCount === "number" &&
+    Number.isFinite(criteria.guestCount) &&
+    criteria.guestCount >= 1;
+  const personUnit =
+    location.priceModel === "person" && location.personPrice != null
+      ? applyVat(location.personPrice, location.vatRate)
+      : null;
+  const price = personUnit != null && !guestsChosen
+    ? { price: `${formatEuroAmount(personUnit)} a persona`, detail: "" }
+    : personUnit != null && guestsChosen
+      ? {
+          price: formatEuroSpan(quote.min, quote.max),
+          detail: `per ${criteria.guestCount} invitati`,
+        }
+      : {
+          price: formatHundreds(quote.min, quote.max),
+          detail: quote.detail,
+        };
   const [contactsOpen, setContactsOpen] = useState(false);
   const pointerRef = useRef({ x: 0, y: 0, dragged: false });
-  const picking = selectionStyle === "radio";
+  const picking = selectionStyle === "radio" && !footerActions;
   const photos = useMemo(
     () => uniqueImages([location.imageUrl, ...(location.gallery ?? [])]),
     [location.gallery, location.imageUrl],
   );
-  const placeLabel = [location.zoneLabel, location.comune]
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .join(" · ");
+  const placeLabel = venuePlaceLabel(location.zoneLabel, location.comune);
   const subtitle = [
     placeLabel,
     location.capacity > 0 ? `fino a ${location.capacity} ospiti` : "",
@@ -106,7 +126,9 @@ export const LocationCard = memo(function LocationCard({
         "render-contained h-full overflow-clip rounded-2xl bg-background shadow-sm transition-[border-color,box-shadow,transform] duration-150",
         picking &&
           "cursor-pointer outline-none active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:ring-2 focus-visible:ring-brand-teal",
-        picking
+        footerActions && isFavorite
+          ? "border-2 border-brand-teal"
+          : picking
           ? isFavorite
             ? "border-2 border-brand-teal"
             : "border-2 border-primary-black/12 hover:border-primary-black"
@@ -143,7 +165,7 @@ export const LocationCard = memo(function LocationCard({
         )}
 
         <div className="absolute right-3 top-3 z-10 flex gap-2">
-          {showCompare && !picking ? (
+          {footerActions ? null : showCompare && !picking ? (
             <button
               type="button"
               onClick={(e) => {
@@ -170,7 +192,7 @@ export const LocationCard = memo(function LocationCard({
               />
             </button>
           ) : null}
-          {picking ? (
+          {footerActions ? null : picking ? (
             <span className="pointer-events-none flex h-11 w-11 items-center justify-center" aria-hidden>
               <span
                 className={cn(
@@ -224,7 +246,38 @@ export const LocationCard = memo(function LocationCard({
         </SoftNavLink>
       )}
 
-      {showCompare && !picking ? (
+      {footerActions ? (
+        <div className="flex gap-2 px-4 pb-4">
+          <button
+            type="button"
+            onClick={() => onToggleCompare(location.id)}
+            aria-pressed={isCompareSelected}
+            className={cn(
+              "flex h-11 flex-1 items-center justify-center rounded-2xl border px-2 text-sm font-bold",
+              isCompareSelected
+                ? "border-brand-teal text-brand-teal"
+                : "border-white/15 text-primary-black",
+            )}
+          >
+            {isCompareSelected ? "✓ Nel confronto" : "+ Confronta"}
+          </button>
+          <button
+            type="button"
+            onClick={() => onToggleFavorite(location.id)}
+            aria-pressed={isFavorite}
+            className={cn(
+              "flex h-11 flex-1 items-center justify-center rounded-2xl px-2 text-sm font-bold",
+              isFavorite
+                ? "border border-brand-teal bg-brand-teal/15 text-brand-teal"
+                : "bg-[#F5F5F7] text-[#0F1115]",
+            )}
+          >
+            {isFavorite ? "✓ Scelta" : "Scegli"}
+          </button>
+        </div>
+      ) : null}
+
+      {showCompare && !picking && !footerActions ? (
         <div className="px-4 pb-3">
           <button
             type="button"
@@ -326,6 +379,45 @@ export const LocationCard = memo(function LocationCard({
   );
 });
 
+function venuePlaceLabel(zoneLabel: string, comune: string) {
+  const zone = zoneLabel.trim();
+  const town = comune.trim();
+  if (!zone) return town;
+  if (!town) return zone;
+  const zoneKey = zone.toLowerCase();
+  const townKey = town.toLowerCase();
+  if (zoneKey === townKey || zoneKey.startsWith(`${townKey} ·`)) return zone;
+  return `${zone} · ${town}`;
+}
+
+function formatEuroAmount(amount: number) {
+  const rounded = Math.round(amount * 100) / 100;
+  const hasCents = Math.abs(rounded - Math.round(rounded)) > 0.001;
+  const [whole, cents] = rounded.toFixed(hasCents ? 2 : 0).split(".");
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return cents ? `${grouped},${cents} €` : `${grouped} €`;
+}
+
+function formatEuroSpan(min: number, max: number) {
+  const low = formatEuroAmount(Math.min(min, max));
+  const high = formatEuroAmount(Math.max(min, max));
+  if (low === high) return low;
+  return `${low.replace(" €", "")}–${high}`;
+}
+
+function groupedEuros(amount: number) {
+  return Math.round(amount)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function formatHundreds(min: number, max: number) {
+  const low = Math.max(0, Math.round(Math.min(min, max) / 100) * 100);
+  const high = Math.max(0, Math.round(Math.max(min, max) / 100) * 100);
+  if (low === high) return `${groupedEuros(low)} €`;
+  return `${groupedEuros(low)}–${groupedEuros(high)} €`;
+}
+
 function CardSummary({
   name,
   subtitle,
@@ -352,8 +444,13 @@ function CardSummary({
         <span className="rounded-full bg-paper px-3 py-1 text-xs font-bold text-ink-inverse">
           {price}
         </span>
-        <span className="mt-1 block text-[10px] font-bold text-brand-teal">
-          {detail}
+        {detail ? (
+          <span className="mt-1 block text-[10px] font-bold text-brand-teal">
+            {detail}
+          </span>
+        ) : null}
+        <span className="mt-1 block text-[10px] font-medium text-primary-black/45">
+          prezzo indicativo
         </span>
       </p>
     </div>

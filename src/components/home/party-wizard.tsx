@@ -4,10 +4,6 @@ import {
   GuestCountStepper,
   type GuestCountStepperHandle,
 } from "@/components/explore/guest-count-stepper";
-import {
-  PriceRangeInputs,
-  type PriceRangeInputsHandle,
-} from "@/components/explore/price-range-inputs";
 import { Button } from "@/components/ui/button";
 import { VibeUpCalendar } from "@/components/ui/vibeup-calendar";
 import { useDemoLanguage } from "@/context/demo-language-context";
@@ -15,7 +11,7 @@ import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
-import { cn, formatDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import {
   clampDrinksPerInvitee,
   DEFAULT_DRINKS_PER_INVITEE,
@@ -26,18 +22,18 @@ import {
 import {
   emptyPartyCriteria,
   MAX_PARTY_DATES,
-  PARTY_DATES_MANAGER_HINT,
+  PARTY_BUDGET_BANDS,
+  PARTY_SERVICE_OPTIONS,
+  partyBudgetBand,
   normalizePartyCriteria,
   syncPartyDateRange,
   type PartyCriteria,
+  type PartyServicePick,
 } from "@/types/party-criteria";
 import {
-  DEFAULT_EXPLORE_MAX_PRICE,
-  EXPLORE_GUEST_MAX,
   EXPLORE_GUEST_MIN,
-  EXPLORE_PRICE_MIN,
 } from "@/types/location";
-import { Calendar, ChevronDown, Minus, Plus, X } from "lucide-react";
+import { Cake, Calendar, Camera, Check, ChevronDown, Disc3, Gift, Minus, Plus, ShieldCheck, UtensilsCrossed, X } from "lucide-react";
 import { useRef, useState, type Ref } from "react";
 import { createPortal } from "react-dom";
 
@@ -46,16 +42,25 @@ const STEPS = [
   "guests",
   "budget",
   "drinks",
-  "description",
+  "services",
 ] as const;
 
-const STEP_TITLES: Record<(typeof STEPS)[number], string> = {
-  date: "Quando festeggi",
-  guests: "Quanti siete",
-  drinks: "Drink per persona",
-  budget: "Budget location",
-  description: "Dettagli e preferenze",
+const STEP_QUESTIONS: Record<(typeof STEPS)[number], string> = {
+  date: "Quando vuoi festeggiare?",
+  guests: "Quanti siete?",
+  budget: "Quanto vuoi spendere per la location?",
+  drinks: "Bevande della serata",
+  services: "Cosa vuoi nella tua festa?",
 };
+
+const SERVICE_ICONS = {
+  dj: Disc3,
+  photographer: Camera,
+  bakery: Cake,
+  security: ShieldCheck,
+  catering: UtensilsCrossed,
+  decorations: Gift,
+} as const;
 
 function formatWizardDateLabel(dates: string[], locale: string) {
   const dateLabelFormatter = new Intl.DateTimeFormat(locale, {
@@ -86,7 +91,6 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
   const [wasOpen, setWasOpen] = useState(false);
   const [stepError, setStepError] = useState<string | null>(null);
   const guestsRef = useRef<GuestCountStepperHandle>(null);
-  const budgetRef = useRef<PriceRangeInputsHandle>(null);
 
   useBodyScrollLock(open);
 
@@ -95,7 +99,15 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
     if (open) {
       setStepIndex(0);
       setStepError(null);
-      setCriteria(normalizePartyCriteria(savedCriteria));
+      const opened = normalizePartyCriteria(savedCriteria);
+      const band = partyBudgetBand(opened.budgetMin, opened.budgetMax);
+      const hasBand =
+        opened.budgetMin === band.min && opened.budgetMax === band.max;
+      setCriteria(
+        hasBand
+          ? opened
+          : { ...opened, budgetMin: 1000, budgetMax: 2000 },
+      );
     }
   }
 
@@ -103,7 +115,7 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
   const safeIndex = Math.min(stepIndex, steps.length - 1);
   const step = steps[safeIndex];
   const isLast = safeIndex === steps.length - 1;
-  const progressLabel = `${safeIndex + 1}/${steps.length}`;
+  const progressLabel = `${safeIndex + 1} di ${steps.length}`;
 
   if (!open || typeof document === "undefined") return null;
 
@@ -122,14 +134,6 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
       guestsRef.current?.commit();
     }
 
-    if (step === "budget") {
-      const range = budgetRef.current?.commit();
-      if (!range) {
-        setStepError("Inserisci un minimo e un massimo budget validi.");
-        return;
-      }
-    }
-
     if (isLast) {
       if (criteria.dates.length === 0) {
         setStepError("Scegli almeno una data per continuare.");
@@ -138,9 +142,9 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
       const finalized = normalizePartyCriteria({
         ...criteria,
         guestCount: criteria.guestCount ?? EXPLORE_GUEST_MIN,
-        budgetMin: criteria.budgetMin ?? EXPLORE_PRICE_MIN,
-        budgetMax: criteria.budgetMax ?? DEFAULT_EXPLORE_MAX_PRICE,
-        ...(isDemoMode ? { drinkMode: "none" as const, wantedServices: [] } : {}),
+        budgetMin: criteria.budgetMin ?? 1000,
+        budgetMax: criteria.budgetMax === undefined ? 2000 : criteria.budgetMax,
+        ...(isDemoMode ? { drinkMode: "none" as const } : {}),
       });
       applyCriteria(finalized);
       onClose();
@@ -190,15 +194,25 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
           <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-primary-black/15" />
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <h2
-                id="party-wizard-title"
-                className="text-lg font-bold text-primary-black"
-              >
-                {STEP_TITLES[step]}
-              </h2>
-              <p className="mt-0.5 text-xs font-semibold text-primary-black/45">
+              <p className="text-xs font-semibold text-primary-black/45">
                 Crea la tua festa · {progressLabel}
               </p>
+              <h2
+                id="party-wizard-title"
+                className="mt-1 text-[1.65rem] font-bold leading-tight text-primary-black"
+              >
+                {STEP_QUESTIONS[step]}
+              </h2>
+              {step === "budget" ? (
+                <p className="mt-1 text-sm text-primary-black/55">
+                  Sala e drink inclusi. Tocca una fascia.
+                </p>
+              ) : null}
+              {step === "services" ? (
+                <p className="mt-1 text-sm text-primary-black/55">
+                  Oltre alla location, pensiamo noi a tutto il resto. Scegli quello che ti serve.
+                </p>
+              ) : null}
             </div>
             <button
               type="button"
@@ -235,17 +249,13 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
               />
             ) : null}
             {step === "budget" ? (
-              <BudgetStep
-                criteria={criteria}
-                onChange={patch}
-                rangeRef={budgetRef}
-              />
+              <BudgetStep criteria={criteria} onChange={patch} />
             ) : null}
             {step === "drinks" ? (
               <DrinksStep criteria={criteria} onChange={patch} />
             ) : null}
-            {step === "description" ? (
-              <DescriptionStep criteria={criteria} onChange={patch} />
+            {step === "services" ? (
+              <ServicesStep criteria={criteria} onChange={patch} />
             ) : null}
           </div>
         </div>
@@ -264,14 +274,18 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              className="flex-1 rounded-2xl"
+              className="h-[52px] flex-1 rounded-2xl"
               onClick={back}
             >
               Indietro
             </Button>
-            <Button className="flex-1 rounded-2xl" onClick={next}>
+            <button
+              type="button"
+              onClick={next}
+              className="h-[52px] flex-[1.7] rounded-2xl bg-brand-pink text-base font-bold text-[#0F1115]"
+            >
               {isLast ? "Cerca location" : "Avanti"}
-            </Button>
+            </button>
           </div>
         </div>
       </div>
@@ -304,9 +318,6 @@ function DateStep({
 
   return (
     <fieldset>
-      <legend className="mb-3 text-sm font-semibold text-primary-black">
-        Quando vuoi festeggiare?
-      </legend>
       <button
         type="button"
         onClick={() => setDatePickerOpen((current) => !current)}
@@ -348,27 +359,11 @@ function DateStep({
             onChange(syncPartyDateRange([]));
             setDatePickerOpen(false);
           }}
-          className="mt-3 text-xs font-bold text-brand-pink"
+          className="mt-3 text-xs font-semibold text-primary-black/45"
         >
           Cancella date
         </button>
       )}
-      <p className="mt-2 text-xs leading-relaxed text-primary-black/50">
-        Tocca i giorni che ti vanno bene, fino a {MAX_PARTY_DATES}. Il
-        preventivo resta legato a una sola data: se weekend e feriali hanno
-        prezzi diversi, li vedi prima di inviare la richiesta.
-        {dates.length > 0 ? (
-          <>
-            {" "}
-            Selezionate:{" "}
-            {dates.map((value) => formatDate(value, locale)).join(" · ")}.
-          </>
-        ) : null}
-        {atMax ? ` Hai raggiunto il massimo di ${MAX_PARTY_DATES} date.` : null}
-      </p>
-      <p className="mt-1 text-xs leading-relaxed text-primary-black/50">
-        {PARTY_DATES_MANAGER_HINT}
-      </p>
     </fieldset>
   );
 }
@@ -386,22 +381,12 @@ function GuestsStep({
 
   return (
     <fieldset>
-      <legend className="mb-3 text-sm font-semibold text-primary-black">
-        Numero persone
-      </legend>
       <GuestCountStepper
         ref={stepperRef}
+        showHeading={false}
         value={guestCount}
         onChange={(next) => onChange({ guestCount: next })}
       />
-      <p className="mt-2 text-xs text-primary-black/50">
-        Tocca il numero e digita gli invitati (es. 45). Mostra location con
-        capienza da{" "}
-        {guestCount >= EXPLORE_GUEST_MAX
-          ? `${EXPLORE_GUEST_MAX}+`
-          : guestCount}{" "}
-        ospiti.
-      </p>
     </fieldset>
   );
 }
@@ -426,9 +411,6 @@ function DrinksStep({
 
   return (
     <fieldset>
-      <legend className="mb-1 text-sm font-semibold text-primary-black">
-        Bevande della serata
-      </legend>
       <p className="mb-3 text-xs leading-relaxed text-primary-black/50">
         I drink li fornisce il locale. Il costo entra nel prezzo della
         location, insieme alla sala.
@@ -519,72 +501,97 @@ function DrinksStep({
 function BudgetStep({
   criteria,
   onChange,
-  rangeRef,
 }: {
   criteria: PartyCriteria;
   onChange: (partial: Partial<PartyCriteria>) => void;
-  rangeRef: Ref<PriceRangeInputsHandle>;
 }) {
-  const minValue = criteria.budgetMin ?? EXPLORE_PRICE_MIN;
-  const maxValue = criteria.budgetMax ?? DEFAULT_EXPLORE_MAX_PRICE;
+  const selected = partyBudgetBand(criteria.budgetMin, criteria.budgetMax);
 
   return (
     <fieldset>
-      <legend className="mb-3 text-sm font-semibold text-primary-black">
-        Budget location
-      </legend>
-      <PriceRangeInputs
-        ref={rangeRef}
-        value={[minValue, maxValue]}
-        onChange={([budgetMin, budgetMax]) =>
-          onChange({ budgetMin, budgetMax })
-        }
-      />
-      <BudgetHint />
+      <div className="grid grid-cols-2 gap-2">
+        {PARTY_BUDGET_BANDS.map((band) => {
+          const active = selected.id === band.id;
+          return (
+            <button
+              key={band.id}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onChange({ budgetMin: band.min, budgetMax: band.max })}
+              className={cn(
+                "flex min-h-[72px] items-center justify-between gap-2 rounded-2xl border-2 px-3 py-3 text-left text-sm font-bold",
+                active
+                  ? "border-brand-teal bg-brand-teal/15 text-primary-black"
+                  : "border-white/10 bg-surface text-primary-black/80",
+              )}
+            >
+              <span>{band.label}</span>
+              {active ? <Check className="h-4 w-4 shrink-0 text-brand-teal" aria-hidden /> : null}
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-xs text-primary-black/50">
+        Il prezzo cambia tra feriale e weekend.
+      </p>
     </fieldset>
   );
 }
 
-function BudgetHint() {
-  const { isDemoMode } = useDemoMode();
-  if (isDemoMode) {
-    return (
-      <p className="mt-3 text-xs leading-relaxed text-primary-black/50">
-        Questo budget vale per il totale della location.
-      </p>
-    );
-  }
-  return (
-    <p className="mt-3 text-xs leading-relaxed text-primary-black/50">
-      Questo budget vale per il totale. Nel passo dopo puoi aggiungere i
-      drink: li fornisce il locale e il costo entra nello stesso prezzo.
-    </p>
-  );
-}
-
-function DescriptionStep({
+function ServicesStep({
   criteria,
   onChange,
 }: {
   criteria: PartyCriteria;
   onChange: (partial: Partial<PartyCriteria>) => void;
 }) {
+  function toggle(id: PartyServicePick) {
+    const current = criteria.partyServices;
+    onChange({
+      partyServices: current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id],
+    });
+  }
+
   return (
     <fieldset>
-      <legend className="mb-3 text-sm font-semibold text-primary-black">
-        Dettagli e preferenze
-      </legend>
-      <textarea
-        value={criteria.freeText}
-        onChange={(e) => onChange({ freeText: e.target.value })}
-        rows={4}
-        placeholder="Scrivi qui se cerchi dettagli particolari (es. area esterna, cena, stile)"
-        className="w-full resize-none rounded-2xl border border-primary-black/10 bg-paper px-4 py-3 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
-      />
-      <p className="mt-2 text-xs text-primary-black/50">
-        Usiamo queste parole per ordinare le location più affini in cima —
-        nessuna viene nascosta.
-      </p>
+      <div className="grid grid-cols-3 gap-2">
+        {PARTY_SERVICE_OPTIONS.map((option) => {
+          const active = criteria.partyServices.includes(option.id);
+          const Icon = SERVICE_ICONS[option.id];
+          return (
+            <button
+              key={option.id}
+              type="button"
+              aria-pressed={active}
+              onClick={() => toggle(option.id)}
+              className={cn(
+                "relative flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-2xl border-2 px-2 py-3 text-center text-sm font-bold",
+                active
+                  ? "border-brand-teal bg-[#123E3E] text-primary-black"
+                  : "border-white/10 bg-surface text-primary-black/80",
+              )}
+            >
+              {active ? (
+                <Check className="absolute right-2 top-2 h-3.5 w-3.5 text-brand-teal" aria-hidden />
+              ) : null}
+              <Icon className="h-5 w-5" aria-hidden />
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+      <label className="mt-4 block text-xs font-semibold text-primary-black/55">
+        Altri dettagli (facoltativo)
+        <textarea
+          value={criteria.freeText}
+          onChange={(event) => onChange({ freeText: event.target.value })}
+          rows={2}
+          placeholder="Es. area esterna, cena, stile"
+          className="mt-1 w-full resize-none rounded-2xl border border-primary-black/10 bg-paper px-3 py-2 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none"
+        />
+      </label>
     </fieldset>
   );
 }

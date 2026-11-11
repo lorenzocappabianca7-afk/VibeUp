@@ -1,7 +1,7 @@
 "use client";
 
 import { DemoCustomVenueBox } from "@/components/demo/demo-custom-venue";
-import { DemoExploreGuide } from "@/components/demo/demo-explore-picker";
+import { ExploreResultHeading } from "@/components/demo/demo-explore-picker";
 import { CompareFavorites } from "@/components/explore/compare-favorites";
 import { DiscountInviteBanner } from "@/components/discount-invite-banner";
 import { ExploreSearchBar } from "@/components/explore/explore-search-bar";
@@ -27,6 +27,8 @@ import {
   type Location,
 } from "@/types/location";
 import {
+  PARTY_SERVICE_OPTIONS,
+  partyBudgetBand,
   partyCriteriaRankingText,
   type PartyCriteria,
 } from "@/types/party-criteria";
@@ -84,14 +86,25 @@ function ExploreUrlParamsSync({
   const view = searchParams.get("view");
 
   useEffect(() => {
-    onCategory(category);
-    onEventId(eventId);
-    onView(view);
+    const live = new URLSearchParams(window.location.search);
+    onCategory(live.get("category") ?? category);
+    onEventId(live.get("eventId") ?? eventId);
+    onView(live.get("view") ?? view);
   }, [category, eventId, onCategory, onEventId, onView, view]);
 
   return null;
 }
 const MAX_COMPARE_LOCATIONS = 3;
+
+let queuedExploreCategory: ExploreCategory | null = null;
+
+/** Home cards ask Esplora to open this category on the next paint. */
+export function queueExploreCategory(category: ExploreCategory) {
+  queuedExploreCategory = category;
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("vibeup-explore-category"));
+  }
+}
 
 const EXPLORE_CATEGORIES: {
   id: ExploreCategory;
@@ -197,6 +210,7 @@ function filterLocationsByPartyCriteria(
       location.address.toLowerCase().includes(normalizedQuery) ||
       location.zoneLabel.toLowerCase().includes(normalizedQuery);
 
+    // Capienza 0 = non indicata: resta nei risultati, ma non conta come adatta.
     const matchesCapacity =
       guestCount == null ||
       location.capacity <= 0 ||
@@ -213,6 +227,48 @@ function filterLocationsByPartyCriteria(
 
     return matchesQuery && matchesCapacity && matchesBudgetMax && matchesBudgetMin;
   });
+}
+
+function locationFitness(location: Location, criteria: PartyCriteria) {
+  const cost = estimateLocationFilteredCostRange(location, criteria);
+  const mid = (cost.min + cost.max) / 2;
+  const budgetTarget =
+    criteria.budgetMin != null && criteria.budgetMax != null
+      ? (criteria.budgetMin + criteria.budgetMax) / 2
+      : (criteria.budgetMax ?? criteria.budgetMin ?? mid);
+  const priceGap = Math.abs(mid - budgetTarget);
+  const guestGap =
+    criteria.guestCount && location.capacity > 0
+      ? Math.abs(location.capacity - criteria.guestCount)
+      : 0;
+  const capacityUnknown =
+    criteria.guestCount && location.capacity <= 0 ? 1_000_000 : 0;
+  const tooSmall =
+    criteria.guestCount &&
+    location.capacity > 0 &&
+    location.capacity < criteria.guestCount
+      ? 2_000_000
+      : 0;
+  return priceGap + guestGap * 10 + capacityUnknown + tooSmall;
+}
+
+/** 0 = capienza adatta, 1 = capienza non indicata, 2 = troppo piccola. */
+function capacitySortGroup(location: Location, guestCount: number | null) {
+  if (guestCount == null || guestCount <= 0) return 0;
+  if (location.capacity > 0 && location.capacity >= guestCount) return 0;
+  if (location.capacity <= 0) return 1;
+  return 2;
+}
+
+function searchPlaceLabel(city: string, zoneLabel: string) {
+  const town = city.trim();
+  const zone = zoneLabel.trim();
+  if (!zone) return town;
+  if (!town) return zone;
+  const zoneKey = zone.toLowerCase();
+  const townKey = town.toLowerCase();
+  if (zoneKey === townKey || zoneKey.startsWith(`${townKey} ·`)) return zone;
+  return `${town} · ${zone}`;
 }
 
 function getServicePriceLabel(service: ServiceProvider): string {
@@ -367,8 +423,13 @@ export function ExploreScreen({
     queueMicrotask(() => {
       if (cancelled) return;
 
+      if (queuedExploreCategory) return;
+      const liveCategory = new URLSearchParams(window.location.search).get(
+        "category",
+      );
       const nextCategory =
-        initialCategory ?? parseExploreCategory(categoryParam);
+        initialCategory ??
+        parseExploreCategory(liveCategory ?? categoryParam);
       setActiveCategory(nextCategory);
       setView(viewParam === "compare" ? "compare" : "list");
       setDiscountBannerOpen(false);
@@ -383,6 +444,20 @@ export function ExploreScreen({
     if (!demoPicking) return;
     setActiveCategory("locali");
   }, [demoPicking]);
+
+  useEffect(() => {
+    const applyQueuedCategory = () => {
+      if (!queuedExploreCategory) return;
+      const next = queuedExploreCategory;
+      queuedExploreCategory = null;
+      setActiveCategory(next);
+      setView("list");
+    };
+    applyQueuedCategory();
+    window.addEventListener("vibeup-explore-category", applyQueuedCategory);
+    return () =>
+      window.removeEventListener("vibeup-explore-category", applyQueuedCategory);
+  }, [activeTab]);
 
   const [catalogLocations, setCatalogLocations] = useState<Location[]>([]);
 
@@ -437,19 +512,45 @@ export function ExploreScreen({
     [publishedManagedServices],
   );
 
-  const filteredLocations = useMemo(() => {
+  const locationResults = useMemo(() => {
+    const freeText = hasAppliedCriteria
+      ? partyCriteriaRankingText(criteria)
+      : "";
     const hardFiltered = filterLocationsByPartyCriteria(
       allLocations,
       deferredQuery,
       criteria,
       hasAppliedCriteria,
     );
-
-    const freeText = hasAppliedCriteria
-      ? partyCriteriaRankingText(criteria)
-      : "";
-    return rankLocationsByKeywords(hardFiltered, freeText);
-  }, [allLocations, criteria, deferredQuery, hasAppliedCriteria]);
+    const ranked = rankLocationsByKeywords(hardFiltered, freeText);
+    const guestCount = hasAppliedCriteria ? criteria.guestCount : null;
+    const ordered = [...ranked].sort(
+      (left, right) =>
+        capacitySortGroup(left, guestCount) -
+        capacitySortGroup(right, guestCount),
+    );
+    const relax =
+      isDemoMode &&
+      hasAppliedCriteria &&
+      ranked.length === 0 &&
+      deferredQuery.trim().length === 0;
+    if (!relax) return { locations: ordered, relaxed: false };
+    const nearest = [...allLocations].sort(
+      (left, right) =>
+        locationFitness(left, criteria) - locationFitness(right, criteria),
+    );
+    const nearestRanked = rankLocationsByKeywords(nearest, freeText);
+    return {
+      locations: [...nearestRanked].sort(
+        (left, right) =>
+          capacitySortGroup(left, guestCount) -
+          capacitySortGroup(right, guestCount),
+      ),
+      relaxed: true,
+    };
+  }, [allLocations, criteria, deferredQuery, hasAppliedCriteria, isDemoMode]);
+  const filteredLocations = locationResults.locations;
+  const relaxedLocations = locationResults.relaxed;
 
   const filteredServices = useMemo(() => {
     if (activeCategory === "locali") return [];
@@ -489,7 +590,7 @@ export function ExploreScreen({
       return allLocations.slice(0, 10).map((location) => ({
         id: location.id,
         label: location.name,
-        subtitle: [location.city, location.zoneLabel].filter(Boolean).join(" · "),
+        subtitle: searchPlaceLabel(location.city, location.zoneLabel),
       }));
     }
 
@@ -534,6 +635,23 @@ export function ExploreScreen({
     }
     if (criteria.freeText.trim()) parts.push("ordinato per descrizione");
     return parts.length > 0 ? parts.join(" · ") : "Criteri dalla Home";
+  }, [criteria, hasAppliedCriteria]);
+
+  const filterChips = useMemo(() => {
+    if (!hasAppliedCriteria) return [];
+    const chips: string[] = [];
+    if (criteria.dates.length > 0) {
+      chips.push(criteria.dates.map((value) => formatDate(value)).join(" · "));
+    }
+    if (criteria.guestCount) chips.push(`${criteria.guestCount} persone`);
+    if (criteria.budgetMin != null || criteria.budgetMax != null) {
+      chips.push(partyBudgetBand(criteria.budgetMin, criteria.budgetMax).label);
+    }
+    for (const id of criteria.partyServices) {
+      const label = PARTY_SERVICE_OPTIONS.find((item) => item.id === id)?.label;
+      if (label) chips.push(label);
+    }
+    return chips;
   }, [criteria, hasAppliedCriteria]);
 
   const selectCategory = useCallback((category: ExploreCategory) => {
@@ -621,9 +739,7 @@ export function ExploreScreen({
             Esplora
           </h1>
           <p className="mt-1 text-sm text-primary-black/60">
-            {demoPicking
-              ? "Scegli i locali per la tua festa"
-              : "Location e servizi per la tua festa"}
+            Location e servizi per la tua festa
           </p>
         </div>
         {demoPicking ? null : (
@@ -662,7 +778,7 @@ export function ExploreScreen({
         )}
       </header>
 
-      {demoPicking ? <DemoExploreGuide /> : (
+      {demoPicking ? null : (
       <ExploreSearchBar
         key={activeCategory}
         query={query}
@@ -846,26 +962,18 @@ export function ExploreScreen({
             isCategoryPending && "opacity-80",
           )}
         >
-          <div className="flex min-w-0 items-center justify-between gap-2">
-            <p className="min-w-0 text-sm text-primary-black/60">
-              {filteredLocations.length}{" "}
-              {filteredLocations.length === 1
-                ? "location trovata"
-                : "location trovate"}
-              {hasAppliedCriteria && criteria.freeText.trim() ? (
-                <span className="text-brand-teal">
-                  {" "}
-                  · ordinate per affinità
-                </span>
-              ) : null}
+          {compareLocationIds.length > 0 ? (
+            <p className="text-xs font-semibold text-brand-teal">
+              {compareLocationIds.length}/{MAX_COMPARE_LOCATIONS} in confronto
             </p>
-            {!demoPicking && compareLocationIds.length > 0 && (
-              <p className="text-xs text-brand-teal">
-                {compareLocationIds.length}/{MAX_COMPARE_LOCATIONS} in confronto
-              </p>
-            )}
-          </div>
+          ) : null}
 
+          {relaxedLocations ? (
+            <p className="text-sm font-semibold text-primary-black/70">
+              Nessuna corrisponde esattamente: ecco le più vicine.
+            </p>
+          ) : null}
+          <ExploreResultHeading count={filteredLocations.length} chips={filterChips} />
           {filteredLocations.length > 0 ? (
             <>
               <ul className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -878,8 +986,8 @@ export function ExploreScreen({
                         ? location.id === demoSelectedId
                         : favoriteLocationIdSet.has(location.id)
                     }
-                    selectionStyle={demoPicking ? "radio" : "heart"}
-                    showCompare={!demoPicking}
+                    footerActions
+                    showCompare={false}
                     isCompareSelected={compareLocationIdSet.has(location.id)}
                     onToggleFavorite={handleToggleFavoriteLocation}
                     onToggleCompare={handleToggleCompareLocation}
@@ -925,10 +1033,6 @@ export function ExploreScreen({
             <h2 className="text-lg font-bold text-primary-black">
               Confronta location
             </h2>
-            <p className="mt-1 text-sm text-primary-black/60">
-              Aggiungi fino a {MAX_COMPARE_LOCATIONS} locali dai risultati,
-              poi confronta prezzo e servizi quando ne selezioni almeno 2.
-            </p>
           </div>
 
           <CompareFavorites

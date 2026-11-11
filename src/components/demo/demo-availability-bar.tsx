@@ -189,11 +189,11 @@ export function DemoAvailabilityBar({
     <>
       <div
         className={cn(
-          "vu-demo-request-bar fixed inset-x-0 z-40 mx-auto w-full px-2",
+          "vu-demo-request-bar fixed inset-x-0 z-[55] mx-auto w-full px-2",
           APP_SHELL_WIDTH_CLASS,
         )}
         style={{
-          bottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))",
+          bottom: "calc(5.15rem + env(safe-area-inset-bottom, 0px))",
         }}
       >
         <div className="flex items-center gap-3 rounded-[14px] border border-white/10 bg-surface px-3 py-2 shadow-[0_-8px_28px_rgba(0,0,0,0.35)]">

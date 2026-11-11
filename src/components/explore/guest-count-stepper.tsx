@@ -24,6 +24,8 @@ interface GuestCountStepperProps {
   onChange: (value: number) => void;
   className?: string;
   autoFocus?: boolean;
+  /** The wizard already asks the question above this control. */
+  showHeading?: boolean;
   ref?: Ref<GuestCountStepperHandle>;
 }
 
@@ -36,6 +38,7 @@ export function GuestCountStepper({
   onChange,
   className,
   autoFocus = false,
+  showHeading = true,
   ref,
 }: GuestCountStepperProps) {
   const [draft, setDraft] = useState(String(value));
@@ -95,14 +98,18 @@ export function GuestCountStepper({
         className,
       )}
     >
-      <label className="block text-sm font-semibold text-ink-inverse">
-        Invitati
-      </label>
-      <p className="mt-0.5 text-[11px] font-medium text-ink-inverse/50">
-        Tocca il campo e digita il numero esatto
-      </p>
+      {showHeading ? (
+        <>
+          <label className="block text-sm font-semibold text-ink-inverse">
+            Invitati
+          </label>
+          <p className="mt-0.5 text-[11px] font-medium text-ink-inverse/50">
+            Tocca il campo e digita il numero esatto
+          </p>
+        </>
+      ) : null}
 
-      <div className="mt-3 flex items-center gap-3">
+      <div className={cn("flex items-center gap-3", showHeading && "mt-3")}>
         <HoldStepButton
           label="Riduci numero invitati"
           disabled={atMin}
@@ -164,9 +171,11 @@ export function GuestCountStepper({
           <Plus className="h-4 w-4" aria-hidden />
         </HoldStepButton>
       </div>
-      <p className="mt-2 text-center text-[10px] font-medium text-ink-inverse/40">
-        ±1 a tap · tieni premuto per accelerare
-      </p>
+      {showHeading ? (
+        <p className="mt-2 text-center text-[10px] font-medium text-ink-inverse/40">
+          ±1 a tap · tieni premuto per accelerare
+        </p>
+      ) : null}
     </div>
   );
 }

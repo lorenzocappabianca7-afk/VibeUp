@@ -86,6 +86,7 @@ export function PartyCriteriaProvider({ children }: { children: ReactNode }) {
             guestCount: normalized.guestCount,
             budgetMin: normalized.budgetMin,
             budgetMax: normalized.budgetMax,
+            partyServices: normalized.partyServices,
             freeText: normalized.freeText,
           },
         });

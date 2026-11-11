@@ -93,6 +93,8 @@ export function getFilteredLocationPricePresentation(
 ): {
   price: string;
   detail: string;
+  min: number;
+  max: number;
 } {
   const { min, max } = estimateLocationFilteredCostRange(location, criteria);
   const hasDateRange = min !== max;
@@ -122,5 +124,7 @@ export function getFilteredLocationPricePresentation(
   return {
     price: formatQuoteDisplayPriceSpan(min, max),
     detail: parts.join(" · "),
+    min,
+    max,
   };
 }

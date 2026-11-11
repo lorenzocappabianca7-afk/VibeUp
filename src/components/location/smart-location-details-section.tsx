@@ -539,6 +539,9 @@ export function SmartLocationDetailsSection({
             </p>
           </div>
         </div>
+        <p className="mt-1 text-[11px] font-medium leading-snug text-[#1c2430]/50">
+          Prezzi indicativi: il prezzo finale lo conferma il locale.
+        </p>
         {!isQuoteReady ? (
           <p className="relative mt-2 text-[11px] font-semibold text-ink-inverse/50">
             {hasInvalidTimeOrder

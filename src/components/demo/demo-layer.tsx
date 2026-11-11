@@ -31,7 +31,11 @@ export function DemoLayer({ children }: { children: ReactNode }) {
     <>
       <style>{`html[data-demo-mode],html[data-demo-mode] body{-webkit-text-size-adjust:100%;text-size-adjust:100%}html[data-demo-mode] input:not([type=checkbox]):not([type=radio]):not([type=range]),html[data-demo-mode] textarea,html[data-demo-mode] select{font-size:16px}`}</style>
       <DemoExitControl />
-      <div aria-hidden={!appUnlocked} inert={!appUnlocked || undefined}>
+      <div
+        className="pt-11"
+        aria-hidden={!appUnlocked}
+        inert={!appUnlocked || undefined}
+      >
         {children}
       </div>
       <DemoLanding />
@@ -42,16 +46,16 @@ export function DemoLayer({ children }: { children: ReactNode }) {
 function DemoExitControl() {
   return (
     <div
-      className="fixed z-[75] flex items-center gap-2"
+      className="fixed inset-x-0 top-0 z-[75] flex items-center justify-end bg-background px-3"
       style={{
-        top: "max(0.5rem, env(safe-area-inset-top, 0px))",
-        right: "max(0.5rem, env(safe-area-inset-right, 0px))",
+        height: "calc(env(safe-area-inset-top, 0px) + 2.75rem)",
+        paddingTop: "env(safe-area-inset-top, 0px)",
       }}
     >
       <button
         type="button"
         onClick={() => leaveDemoForSite()}
-        className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-medium text-primary-black/55 shadow-sm ring-1 ring-primary-black/10"
+        className="rounded-full px-2 py-1 text-[11px] font-medium text-primary-black/55"
       >
         Esci dalla demo
       </button>

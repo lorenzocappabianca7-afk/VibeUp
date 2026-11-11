@@ -2,20 +2,20 @@
 
 import { DjCard } from "@/components/explore/dj-card";
 import { LocationCard } from "@/components/explore/location-card";
-import {
-  DemoCreateCtaLabel,
-  DemoHomeCreateWrap,
-} from "@/components/demo/demo-home-tip";
+import { DemoHomeCreateWrap } from "@/components/demo/demo-home-tip";
 import { useDemoLockedTab } from "@/lib/demo/chrome-lock";
 import { PartyWizard } from "@/components/home/party-wizard";
 import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
-import { Button } from "@/components/ui/button";
+import { queueExploreCategory } from "@/components/screens/explore-screen";
 import { useAppState } from "@/context/app-state-context";
+import { useDemoMode } from "@/context/demo-mode-context";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useProfileCommunications } from "@/context/profile-communications-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { getRequestStatusShortLabel } from "@/lib/availability/request-status-display";
+import { withDemoShell } from "@/lib/demo/shell";
+import { replaceHomeHref } from "@/lib/home-navigation";
 import { buildLocationHrefFromCriteria } from "@/lib/location-href";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
 import {
@@ -27,9 +27,9 @@ import {
   isManagedListingLive,
   type ManagedServiceListing,
 } from "@/types/admin";
-import type { Location } from "@/types/location";
+import type { ExploreCategory, Location } from "@/types/location";
 import type { PartyCriteria } from "@/types/party-criteria";
-import { ArrowUp, Bell, ChevronRight } from "lucide-react";
+import { ArrowRight, Bell, Building2, Cake, Camera, ChevronRight, Disc3, Gift, ShieldCheck, UtensilsCrossed } from "lucide-react";
 import { useMemo, useState } from "react";
 
 type HomeNotification = {
@@ -65,6 +65,21 @@ function managedListingToDj(listing: ManagedServiceListing): ServiceProvider {
   };
 }
 
+const HOME_PARTY_PICKS: {
+  id: ExploreCategory;
+  label: string;
+  icon: typeof Building2;
+  tint: string;
+}[] = [
+  { id: "locali", label: "Location", icon: Building2, tint: "bg-brand-teal/20 text-brand-teal" },
+  { id: "dj", label: "DJ", icon: Disc3, tint: "bg-brand-pink/20 text-brand-pink" },
+  { id: "fotografo", label: "Fotografo", icon: Camera, tint: "bg-[#4A8FE7]/20 text-[#8EB6F2]" },
+  { id: "altri", label: "Torta", icon: Cake, tint: "bg-[#E8A54B]/20 text-[#E8A54B]" },
+  { id: "altri", label: "Security", icon: ShieldCheck, tint: "bg-brand-teal/20 text-brand-teal" },
+  { id: "altri", label: "Catering", icon: UtensilsCrossed, tint: "bg-brand-pink/20 text-brand-pink" },
+  { id: "decorazioni", label: "Decorazioni", icon: Gift, tint: "bg-[#2BB673]/20 text-[#3DDB8C]" },
+];
+
 function buildDjHrefFromCriteria(djId: string, criteria: PartyCriteria): string {
   const params = new URLSearchParams();
   params.set("category", "dj");
@@ -80,7 +95,8 @@ function buildDjHrefFromCriteria(djId: string, criteria: PartyCriteria): string 
 }
 
 export function HomeScreen() {
-  const { criteria, homeBannerText } = usePartyCriteria();
+  const { criteria } = usePartyCriteria();
+  const { isDemoMode, dismissHomeTip } = useDemoMode();
   const { setTab } = useTabNavigation();
   const isDemoHomeLocked = useDemoLockedTab() === "home";
   const {
@@ -95,6 +111,17 @@ export function HomeScreen() {
   const { communications } = useProfileCommunications();
   const { requests } = useAvailabilityRequests();
   const [wizardOpen, setWizardOpen] = useState(false);
+
+  function openPartyPick(category: ExploreCategory) {
+    if (isDemoMode) {
+      dismissHomeTip();
+      setWizardOpen(true);
+      return;
+    }
+    queueExploreCategory(category);
+    setTab("explore");
+    replaceHomeHref(withDemoShell(`/?tab=explore&category=${category}`, false));
+  }
 
   function handleToggleFavorite(id: string) {
     toggleFavoriteLocation(id);
@@ -235,24 +262,47 @@ export function HomeScreen() {
       </h1>
 
       <section className="min-w-0 max-w-full rounded-2xl border border-brand-teal/25 bg-brand-teal/10 p-5">
-        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-teal">
-          Home
-        </p>
-        <h2 className="mt-2 max-w-full text-pretty text-2xl font-bold tracking-tight text-primary-black sm:text-[1.75rem]">
-          {homeBannerText}
+        <h2 className="max-w-full text-pretty text-[2rem] font-bold leading-tight tracking-tight text-primary-black">
+          Organizza il tuo 18
         </h2>
+        <p className="mt-2 text-sm font-medium text-primary-black/55">
+          Location, DJ, fotografo e tutto il resto. In un&apos;unica app.
+        </p>
         <DemoHomeCreateWrap>
-          <Button className="mt-4 w-full sm:w-auto" onClick={() => setWizardOpen(true)}>
-            <DemoCreateCtaLabel text="Crea la tua festa" />
-          </Button>
-          <p
-            className="mt-2 flex flex-col items-center gap-0.5 text-sm font-bold text-primary-black"
-            aria-hidden
+          <button
+            type="button"
+            onClick={() => setWizardOpen(true)}
+            className="mt-4 flex h-[60px] w-full items-center justify-between rounded-2xl bg-brand-pink px-5 text-lg font-bold text-[#0F1115]"
           >
-            <ArrowUp className="h-5 w-5 text-brand-pink" strokeWidth={2.5} />
-            <span>Clicca qui</span>
-          </p>
+            Crea la tua festa
+            <ArrowRight className="h-5 w-5" aria-hidden />
+          </button>
         </DemoHomeCreateWrap>
+        <div className="mt-4 min-w-0">
+          <h3 className="text-sm font-bold text-primary-black">Tutto per la tua festa</h3>
+          <HorizontalTouchScroll className="mt-2 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex w-max gap-2">
+              {HOME_PARTY_PICKS.map((pick) => {
+                const Icon = pick.icon;
+                return (
+                  <button
+                    key={pick.label}
+                    type="button"
+                    onClick={() => openPartyPick(pick.id)}
+                    className="flex h-24 w-[84px] shrink-0 flex-col items-center justify-center gap-2 rounded-2xl bg-surface px-1"
+                  >
+                    <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${pick.tint}`}>
+                      <Icon className="h-4 w-4" aria-hidden />
+                    </span>
+                    <span className="text-center text-[11px] font-bold leading-tight text-primary-black">
+                      {pick.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </HorizontalTouchScroll>
+        </div>
       </section>
 
       <div
@@ -263,7 +313,7 @@ export function HomeScreen() {
         }
         inert={isDemoHomeLocked || undefined}
       >
-      <section className="min-w-0 max-w-full space-y-3">
+      {isDemoMode ? null : <section className="min-w-0 max-w-full space-y-3">
         <div className="flex min-w-0 items-center justify-between gap-2">
           <h2 className="flex min-w-0 items-center gap-2 text-lg font-bold text-primary-black">
             <Bell className="h-4 w-4 shrink-0 text-brand-teal" aria-hidden />
@@ -305,7 +355,7 @@ export function HomeScreen() {
             ))}
           </ul>
         )}
-      </section>
+      </section>}
 
       <section className="min-w-0 max-w-full space-y-3">
         <h2 className="text-lg font-bold text-primary-black">

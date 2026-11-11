@@ -120,18 +120,21 @@ export function LocationInfo({
   return (
     <div className="space-y-6">
       <div>
-        {quotePrice ? (
-          <div className="mb-3">
+        <div className="mb-3">
+          {quotePrice ? (
             <p className="text-[1.65rem] font-black leading-none tracking-tight text-primary-black">
               {quotePrice}
             </p>
-            {quoteDetail ? (
-              <p className="mt-1 text-xs font-bold text-brand-teal">
-                {quoteDetail}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
+          ) : null}
+          {quoteDetail ? (
+            <p className="mt-1 text-xs font-bold text-brand-teal">
+              {quoteDetail}
+            </p>
+          ) : null}
+          <p className="mt-1 text-[11px] font-medium leading-snug text-primary-black/45">
+            Prezzi indicativi: il prezzo finale lo conferma il locale.
+          </p>
+        </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
           <h1 className="text-2xl font-bold text-primary-black">
             {location.name}

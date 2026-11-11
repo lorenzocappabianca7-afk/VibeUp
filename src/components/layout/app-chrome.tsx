@@ -73,7 +73,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
         <div
           className={
             showDemoRequestBar
-              ? "min-w-0 max-w-full flex-1 overflow-x-clip pb-28"
+              ? "min-w-0 max-w-full flex-1 overflow-x-clip pb-44"
               : "min-w-0 max-w-full flex-1 overflow-x-clip"
           }
         >

@@ -7,6 +7,45 @@ import type { ExtraServiceId } from "@/types/location";
 
 export const MAX_PARTY_DATES = 5;
 
+export const PARTY_SERVICE_PICKS = [
+  "dj",
+  "photographer",
+  "bakery",
+  "security",
+  "catering",
+  "decorations",
+] as const;
+
+export type PartyServicePick = (typeof PARTY_SERVICE_PICKS)[number];
+
+export const PARTY_SERVICE_OPTIONS: { id: PartyServicePick; label: string }[] = [
+  { id: "dj", label: "DJ" },
+  { id: "photographer", label: "Fotografo" },
+  { id: "bakery", label: "Torta" },
+  { id: "security", label: "Security" },
+  { id: "catering", label: "Catering" },
+  { id: "decorations", label: "Decorazioni" },
+];
+
+export const PARTY_BUDGET_BANDS: {
+  id: string;
+  label: string;
+  min: number;
+  max: number | null;
+}[] = [
+  { id: "to-1000", label: "fino a 1.000 €", min: 0, max: 1000 },
+  { id: "1000-2000", label: "1.000–2.000 €", min: 1000, max: 2000 },
+  { id: "2000-3000", label: "2.000–3.000 €", min: 2000, max: 3000 },
+  { id: "over-3000", label: "oltre 3.000 €", min: 3000, max: null },
+];
+
+export function partyBudgetBand(min: number | null, max: number | null) {
+  return (
+    PARTY_BUDGET_BANDS.find((band) => band.min === (min ?? 0) && band.max === max) ??
+    PARTY_BUDGET_BANDS[1]
+  );
+}
+
 export const PARTY_EXTRA_SERVICE_OPTIONS: {
   id: ExtraServiceId;
   label: string;
@@ -37,6 +76,8 @@ export interface PartyCriteria {
   guestCount: number | null;
   budgetMin: number | null;
   budgetMax: number | null;
+  /** Services the guest wants besides the venue. Does not filter the catalog. */
+  partyServices: PartyServicePick[];
   wantedServices: ExtraServiceId[];
   drinkMode: DrinkPackageMode;
   drinksPerInvitee: number;
@@ -50,6 +91,7 @@ export const emptyPartyCriteria: PartyCriteria = {
   guestCount: null,
   budgetMin: null,
   budgetMax: null,
+  partyServices: [],
   wantedServices: [],
   drinkMode: "none",
   drinksPerInvitee: DEFAULT_DRINKS_PER_INVITEE,
@@ -57,6 +99,18 @@ export const emptyPartyCriteria: PartyCriteria = {
 };
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const PARTY_SERVICE_IDS = new Set<string>(PARTY_SERVICE_PICKS);
+
+function normalizePartyServices(value: unknown): PartyServicePick[] {
+  if (!Array.isArray(value)) return [];
+  const picked: PartyServicePick[] = [];
+  for (const item of value) {
+    if (typeof item !== "string" || !PARTY_SERVICE_IDS.has(item)) continue;
+    const id = item as PartyServicePick;
+    if (!picked.includes(id)) picked.push(id);
+  }
+  return picked;
+}
 
 export function normalizePartyDates(dates: readonly string[]): string[] {
   const unique = new Set<string>();
@@ -110,6 +164,7 @@ export function normalizePartyCriteria(
     guestCount,
     budgetMin,
     budgetMax,
+    partyServices: normalizePartyServices(value?.partyServices),
     // Venue add-ons are incomplete across the catalog, so they never filter search.
     wantedServices: [],
     drinkMode: isDrinkMode(value?.drinkMode) ? value.drinkMode : "none",

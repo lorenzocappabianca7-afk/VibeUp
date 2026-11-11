@@ -117,5 +117,50 @@ export async function listDemoSubmissions(): Promise<DemoSubmission[]> {
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return ((data ?? []) as DemoSubmissionRow[]).map(mapRow);
+  const rows = (data ?? []) as DemoSubmissionRow[];
+  const signupIds = [
+    ...new Set(
+      rows
+        .map((row) => {
+          const id = row.payload?.signup_id;
+          return typeof id === "string" && UUID_RE.test(id) ? id : "";
+        })
+        .filter(Boolean),
+    ),
+  ];
+  const people = new Map<string, { firstName: string; lastName: string; email: string }>();
+  if (signupIds.length > 0) {
+    const lookup = await getSupabaseAdmin()
+      .from("waitlist_signups")
+      .select("id, first_name, last_name, email")
+      .in("id", signupIds);
+    if (lookup.error) throw new Error(lookup.error.message);
+    for (const person of (lookup.data ?? []) as {
+      id: string;
+      first_name: string;
+      last_name: string;
+      email: string;
+    }[]) {
+      people.set(person.id, {
+        firstName: person.first_name,
+        lastName: person.last_name,
+        email: person.email,
+      });
+    }
+  }
+  return rows.map((row) => {
+    const mapped = mapRow(row);
+    const signupId = typeof row.payload?.signup_id === "string" ? row.payload.signup_id : "";
+    const person = people.get(signupId);
+    if (!person) return mapped;
+    return {
+      ...mapped,
+      payload: {
+        ...mapped.payload,
+        firstName: person.firstName,
+        lastName: person.lastName,
+        email: person.email,
+      },
+    };
+  });
 }
