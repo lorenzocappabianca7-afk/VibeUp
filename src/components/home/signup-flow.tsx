@@ -587,11 +587,6 @@ export function SignupFlow({
     }));
   }
 
-  function skipFriendCode() {
-    patch({ referralCode: "", referralSkipped: true });
-    setReferralWarn("");
-  }
-
   async function saveDetails() {
     if (busy || !done) return;
     if (!isHighSchool(school)) return;
@@ -778,9 +773,6 @@ export function SignupFlow({
               {error ? <p className="vu-signup-error">{error}</p> : null}
             </div>
             <div className="vu-sheet-foot">
-              {draft.step === STEP_PROFILE && !linkedReferral ? (
-                <button type="button" className="vu-sheet-skip" onClick={skipFriendCode}>{signupCopy.skip}</button>
-              ) : null}
               {draft.step === STEP_VERIFY ? (
                 <button type="button" className="vu-sheet-skip" disabled={busy || resendIn > 0} onClick={() => void resend()}>
                   {resendIn > 0 ? `${signupCopy.resendIn} ${resendIn}s` : signupCopy.resend}
@@ -904,7 +896,7 @@ function fieldsFor(
       <Field valid={birthdayReady} invalid={Boolean(draft.birthDate) && !birthdayReady}>
         <input
           id="signup-birth"
-          className="vu-input"
+          className={`vu-input${draft.birthDate ? "" : " is-empty"}`}
           type="date"
           autoComplete="bday"
           enterKeyHint="next"
@@ -914,6 +906,7 @@ function fieldsFor(
           aria-invalid={Boolean(draft.birthDate) && !birthdayReady}
           onChange={(event) => patch({ birthDate: event.target.value })}
         />
+        {draft.birthDate ? null : <span className="vu-date-hint" aria-hidden="true">{signupCopy.birthPlaceholder}</span>}
       </Field>
       {linkedReferral ? <p className="vu-sheet-chip">{signupCopy.invitedByFriend}</p> : (
         <>

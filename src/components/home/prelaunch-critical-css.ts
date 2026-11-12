@@ -287,13 +287,19 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-sizing: border-box;
   width: 100%;
-  height: 50px;
-  padding: 0 12px;
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  min-height: 50px;
+  padding: 8px 12px;
   border-radius: 14px;
   font-size: 17px;
-  line-height: 1.15;
+  line-height: 1.2;
   text-align: center;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 .vu-cta,
 .vu-cta-teal {
@@ -546,7 +552,7 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   font-size: 14px;
   font-weight: 800;
 }
-.vu-step-copy { display: flex; flex-direction: column; gap: 2px; }
+.vu-step-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
 .vu-step-copy-loose { gap: 6px; }
 .vu-step-title { font-size: 15px; font-weight: 600; }
 .vu-step-note { font-size: 13px; color: ${faint}; }
@@ -736,6 +742,7 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
 .vu-mail {
   color: ${muted};
   font-size: 15px;
+  overflow-wrap: anywhere;
   text-decoration: none;
 }
 .vu-legal { display: flex; flex-wrap: wrap; gap: 12px 16px; }
@@ -746,9 +753,13 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   text-underline-offset: 0.15em;
 }
 
-.vu-signup-fields, .vu-suggest-wrap { display: flex; flex-direction: column; gap: 10px; }
+.vu-signup-fields, .vu-suggest-wrap { display: flex; flex-direction: column; gap: 10px; width: 100%; min-width: 0; max-width: 100%; }
 .vu-input {
+  display: block;
+  box-sizing: border-box;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   height: 50px;
   padding: 0 14px;
   border: 1px solid ${surface2};
@@ -757,7 +768,10 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   color: ${text};
   font-family: inherit;
   font-size: 17px;
+  -webkit-appearance: none;
+  appearance: none;
 }
+.vu-input::placeholder { color: #6E717A; }
 .vu-input:focus { outline: 2px solid ${teal}; outline-offset: 2px; }
 .vu-phone-row { display: flex; gap: 8px; }
 .vu-phone-row .vu-field { flex: 1; min-width: 0; }
@@ -777,15 +791,20 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
 .vu-suggest button {
   display: flex;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 44px;
   align-items: center;
-  padding: 0 14px;
+  padding: 10px 14px;
   border: 0;
   border-bottom: 1px solid ${surface2};
   background: transparent;
   color: ${text};
   font-size: 16px;
+  line-height: 1.3;
   text-align: left;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 .vu-suggest li:last-child button { border-bottom: 0; }
 .vu-sheet .vu-suggest { background: #0F1115; }
@@ -796,10 +815,13 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  min-width: 0;
+  max-width: 100%;
   min-height: 44px;
   font-size: 16px;
   line-height: 1.4;
 }
+.vu-check span { min-width: 0; overflow-wrap: anywhere; }
 .vu-check input { width: 24px; height: 24px; margin-top: 0; flex: none; accent-color: ${teal}; }
 .vu-check a { color: ${text}; text-decoration: underline; text-underline-offset: 0.15em; }
 .vu-text-btn {
@@ -946,10 +968,16 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 0;
 }
 .vu-sheet-body {
   flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
@@ -959,6 +987,8 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
 }
 .vu-sheet-title {
   margin: 4px 0 8px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   font-family: var(--font-brand), system-ui, sans-serif;
   font-size: 24px;
   font-weight: 800;
@@ -968,22 +998,70 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
 }
 .vu-sheet-lead {
   margin: 0 0 16px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   color: #A1A3AB;
   font-size: 15px;
   line-height: 1.4;
 }
-.vu-sheet .vu-field { position: relative; }
-.vu-sheet .vu-input {
+.vu-sheet .vu-field { position: relative; width: 100%; min-width: 0; max-width: 100%; }
+.vu-sheet .vu-input,
+.vu-privacy-form .vu-input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   height: 52px;
   padding: 0 14px;
   border: 1px solid #2A2C33;
   border-radius: 14px;
   background: #0F1115;
   font-size: 17px;
+  -webkit-appearance: none;
+  appearance: none;
 }
 .vu-sheet input[type="date"].vu-input {
-  color-scheme: dark;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: 52px;
   min-height: 52px;
+  color-scheme: dark;
+  text-align: left;
+  line-height: 52px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.vu-sheet input[type="date"].vu-input::-webkit-date-and-time-value {
+  display: block;
+  min-height: 52px;
+  line-height: 52px;
+  text-align: left;
+}
+.vu-sheet input[type="date"].vu-input.is-empty,
+.vu-sheet input[type="date"].vu-input.is-empty::-webkit-datetime-edit,
+.vu-sheet input[type="date"].vu-input.is-empty::-webkit-datetime-edit-fields-wrapper,
+.vu-sheet input[type="date"].vu-input.is-empty::-webkit-datetime-edit-text,
+.vu-sheet input[type="date"].vu-input.is-empty::-webkit-datetime-edit-day-field,
+.vu-sheet input[type="date"].vu-input.is-empty::-webkit-datetime-edit-month-field,
+.vu-sheet input[type="date"].vu-input.is-empty::-webkit-datetime-edit-year-field {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.vu-date-hint {
+  position: absolute;
+  left: 14px;
+  top: 0;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  color: #6E717A;
+  font-size: 17px;
+  line-height: 52px;
+  pointer-events: none;
 }
 .vu-sheet .vu-field.is-valid .vu-input { padding-right: 44px; }
 .vu-sheet .vu-field.is-invalid .vu-input { border-color: #F091B2; }
@@ -1000,7 +1078,7 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
 }
 .vu-sheet-mark svg { width: 20px; height: 20px; }
 .vu-sheet .vu-signup-error { margin: 8px 0 0; font-size: 13px; line-height: 1.35; }
-.vu-sheet .vu-check { font-size: 15px; cursor: pointer; }
+.vu-sheet .vu-check { font-size: 16px; cursor: pointer; }
 .vu-sheet-chip {
   display: inline-flex;
   align-items: center;
@@ -1039,8 +1117,12 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   align-items: center;
   justify-content: center;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 50px;
+  height: auto;
   margin-top: 4px;
+  padding: 8px 14px;
   border: 1px solid #2A2C33;
   border-radius: 14px;
   background: transparent;
@@ -1048,17 +1130,23 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   font: inherit;
   font-size: 16px;
   font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+  white-space: normal;
   cursor: pointer;
 }
 .vu-sheet-secondary:disabled { opacity: 0.4; }
 .vu-sheet-foot .vu-cta {
-  height: 50px;
+  height: auto;
+  min-height: 50px;
   background: #F091B2;
   color: #0F1115;
 }
 .vu-sheet-foot .vu-cta:disabled { opacity: 0.4; }
 .vu-sheet-done { position: relative; }
 .vu-sheet .vu-share-code-lg {
+  max-width: 100%;
   padding: 16px 12px;
   border: 1.5px dashed #F091B2;
   border-radius: 14px;
@@ -1066,6 +1154,7 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   font-size: 28px;
   letter-spacing: 1.8px;
   text-align: center;
+  overflow-wrap: anywhere;
 }
 .vu-confetti {
   position: absolute;
@@ -1255,6 +1344,12 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   font-weight: 700;
   letter-spacing: -0.2px;
 }
+.vu-land-doc p,
+.vu-land-doc-title,
+.vu-land-doc h2 {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
 .vu-land-doc p {
   margin: 0.55rem 0 0;
   font-size: 15px;
@@ -1264,7 +1359,17 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   margin-top: 18px;
+}
+@media (max-width: 389px) {
+  .vu-preview { height: calc(470px * (100vw / 390px)); }
+  .vu-preview-stage {
+    transform: translateX(-50%) scale(calc(100vw / 390px));
+    transform-origin: top center;
+  }
 }
 @media (min-width: 768px) {
   .vu-page { max-width: 640px; }

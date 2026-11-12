@@ -219,6 +219,8 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Come ti chiami?": "What's your name?",
   "Nome e email": "Name and email",
   "Data di nascita": "Date of birth",
+  "gg/mm/aaaa": "dd/mm/yyyy",
+  "Quando sei nato/a?": "When were you born?",
   Salvato: "Saved",
   Salva: "Save",
   "Scegli un nome utente": "Choose a username",
@@ -245,7 +247,6 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Questo codice non risulta. Puoi continuare senza.":
     "We can't find this code. You can continue without it.",
   "Non puoi usare il tuo codice.": "You can't use your own code.",
-  "Prima di entrare": "Before you join",
   "Raccogliamo solo i dati che inserisci nel modulo.": "We only collect what you type in the form.",
   "Servono per la community, la gara inviti e per avvisarti al lancio dell'app.":
     "We use them for the community, the invite contest and to tell you when the app launches.",
