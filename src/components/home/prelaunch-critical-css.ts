@@ -1034,6 +1034,23 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   text-underline-offset: 0.18em;
 }
 .vu-sheet-skip:disabled { opacity: 0.4; }
+.vu-sheet-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 50px;
+  margin-top: 4px;
+  border: 1px solid #2A2C33;
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.vu-sheet-secondary:disabled { opacity: 0.4; }
 .vu-sheet-foot .vu-cta {
   height: 50px;
   background: #F091B2;

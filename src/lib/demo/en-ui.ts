@@ -237,9 +237,10 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Che liceo frequenti?": "Which high school do you go to?",
   "Nome del liceo": "School name",
   "Dove ti piacerebbe fare il tuo 18?": "Where would you like to have your 18th?",
+  "Scrivi il nome del locale se ce l'hai già in mente.":
+    "Type the venue's name if you already have one in mind.",
   "Cerca un locale": "Search for a venue",
-  "Scrivi il nome di una location in cui ti piacerebbe organizzare la tua festa":
-    "Write the name of a venue where you'd like to throw your party",
+  "Non ho ancora un'idea": "I don't have one yet",
   "Hai un VibeUpcode di un amico?": "Got a friend's VibeUpcode?",
   "Questo codice non risulta. Puoi continuare senza.":
     "We can't find this code. You can continue without it.",

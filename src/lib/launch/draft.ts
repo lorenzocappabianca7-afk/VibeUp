@@ -20,6 +20,8 @@ export type SignupDraft = {
   emailConfirmed: boolean;
   confirmedEmail: string;
   confirmedSignupId: string;
+  dreamVenue: string;
+  dreamVenueUndecided: boolean;
   flow: number;
 };
 
@@ -82,7 +84,9 @@ export function emptySignupDraft(): SignupDraft {
     emailConfirmed: false,
     confirmedEmail: "",
     confirmedSignupId: "",
-    flow: 3,
+    dreamVenue: "",
+    dreamVenueUndecided: false,
+    flow: 4,
   };
 }
 
@@ -93,11 +97,14 @@ export function loadSignupDraft(): SignupDraft {
     const raw = sessionStorage.getItem(SIGNUP_DRAFT_KEY);
     if (!raw) return base;
     const parsed = JSON.parse(raw) as Partial<SignupDraft> & { flow?: number; emailConfirmed?: boolean; signupId?: string };
-    const legacy = parsed.flow !== 3;
+    const current = parsed.flow === 4;
+    const previous = parsed.flow === 3;
+    const known = current || previous;
     const confirmed = parsed.emailConfirmed === true;
     const hasId = typeof parsed.signupId === "string" && parsed.signupId.length > 0;
     let step = typeof parsed.step === "number" ? parsed.step : 0;
-    if (legacy) step = confirmed ? 2 : hasId ? 1 : 0;
+    if (!known) step = confirmed ? 2 : hasId ? 1 : 0;
+    else if (previous && step >= 2) step = 2;
     const fromUrl = urlReferral();
     const skipped = parsed.referralSkipped === true && !fromUrl;
     const savedCode = typeof parsed.referralCode === "string" ? parsed.referralCode : "";
@@ -113,14 +120,16 @@ export function loadSignupDraft(): SignupDraft {
       consentMarketing: parsed.consentMarketing === true,
       referralSkipped: skipped,
       referralCode: fromUrl || (skipped ? "" : savedCode || storedReferral()),
-      step: Math.min(2, Math.max(0, step)),
+      step: Math.min(3, Math.max(0, step)),
       signupId: hasId ? parsed.signupId! : "",
       codeSentAt: typeof parsed.codeSentAt === "number" ? parsed.codeSentAt : 0,
-      codeSentFor: !legacy && typeof parsed.codeSentFor === "string" ? parsed.codeSentFor : "",
-      emailConfirmed: !legacy && confirmed,
-      confirmedEmail: !legacy && typeof parsed.confirmedEmail === "string" ? parsed.confirmedEmail : "",
-      confirmedSignupId: !legacy && typeof parsed.confirmedSignupId === "string" ? parsed.confirmedSignupId : "",
-      flow: 3,
+      codeSentFor: known && typeof parsed.codeSentFor === "string" ? parsed.codeSentFor : "",
+      emailConfirmed: known && confirmed,
+      confirmedEmail: known && typeof parsed.confirmedEmail === "string" ? parsed.confirmedEmail : "",
+      confirmedSignupId: known && typeof parsed.confirmedSignupId === "string" ? parsed.confirmedSignupId : "",
+      dreamVenue: typeof parsed.dreamVenue === "string" ? parsed.dreamVenue.slice(0, 60) : "",
+      dreamVenueUndecided: parsed.dreamVenueUndecided === true,
+      flow: 4,
     };
   } catch {
     return base;

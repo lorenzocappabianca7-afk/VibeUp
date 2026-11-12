@@ -13,6 +13,7 @@ create table if not exists public.waitlist_signups (
   birth_year integer,
   high_school text,
   dream_venue text,
+  dream_venue_undecided boolean not null default false,
   vibeup_code text,
   referred_by_code text,
   email_confirmed_at timestamptz,
@@ -74,3 +75,5 @@ grant select, insert, update, delete on table public.waitlist_email_codes to ser
 -- birth_date is the full birthday. birth_year remains for rows saved before this column.
 alter table public.waitlist_signups alter column username drop not null;
 alter table public.waitlist_signups add column if not exists birth_date date;
+alter table public.waitlist_signups
+  add column if not exists dream_venue_undecided boolean not null default false;

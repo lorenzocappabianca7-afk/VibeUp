@@ -1,5 +1,5 @@
 import {
-  cleanVenue,
+  cleanDreamVenue,
   isVibeUpCode,
   normalizeCode,
   normalizeEmail,
@@ -78,13 +78,16 @@ export async function POST(request: NextRequest) {
   const referralRaw = normalizeCode(asText(body.referralCode));
   const marketing = body.consentMarketing === true;
   const ipHash = hashClientIp(clientIp(request));
+  const undecided = body.dreamVenueUndecided === true;
+  const typedVenue = cleanDreamVenue(asText(body.dreamVenue));
   const draft = {
     firstName: asText(body.firstName),
     lastName: asText(body.lastName),
     email,
     birthDate: asText(body.birthDate),
     highSchool: asText(body.highSchool),
-    dreamVenue: cleanVenue(asText(body.dreamVenue)) || null,
+    dreamVenue: undecided ? null : typedVenue || null,
+    dreamVenueUndecided: undecided,
     referralCode: isVibeUpCode(referralRaw) ? referralRaw : null,
     consentMarketing: marketing,
     ipHash,

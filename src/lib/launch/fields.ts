@@ -107,6 +107,16 @@ export function cleanVenue(value: string) {
   return value.trim().slice(0, 80);
 }
 
+const DREAM_VENUE_LINK = /(?:https?:\/\/|www\.)/i;
+
+/** A typed venue name: 2–60 characters, with links rejected. Empty when it cannot be saved. */
+export function cleanDreamVenue(value: string) {
+  const venue = value.trim().replace(/\s+/g, " ");
+  if (venue.length < 2 || venue.length > 60) return "";
+  if (DREAM_VENUE_LINK.test(venue)) return "";
+  return venue;
+}
+
 export function shareUrl(code: string) {
   return `https://vibeupevents.com/?ref=${normalizeCode(code)}`;
 }

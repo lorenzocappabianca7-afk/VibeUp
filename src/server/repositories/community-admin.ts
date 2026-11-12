@@ -9,7 +9,14 @@ const DEMOS = "demo_submissions";
 const PAGE_SIZE = 50;
 
 const SIGNUP_LIST_COLUMNS =
-  "id, created_at, first_name, last_name, username, email, phone, birth_date, birth_year, high_school, dream_venue, locale, vibeup_code, referred_by_code, email_verified_at, welcome_email_sent_at, consent_privacy_at, consent_rules_at, consent_marketing, contest_excluded, is_tester";
+  "id, created_at, first_name, last_name, username, email, phone, birth_date, birth_year, high_school, dream_venue, dream_venue_undecided, locale, vibeup_code, referred_by_code, email_verified_at, welcome_email_sent_at, consent_privacy_at, consent_rules_at, consent_marketing, contest_excluded, is_tester";
+
+export const UNDECIDED_DREAM_VENUE = "Nessuna idea";
+
+export function signupDreamVenueLabel(venue: string | null | undefined, undecided: boolean | null | undefined) {
+  if (undecided) return UNDECIDED_DREAM_VENUE;
+  return venue?.trim() ?? "";
+}
 
 export type DemoStatus = "none" | "entered" | "completed";
 
@@ -66,6 +73,7 @@ type SignupDb = {
   birth_year: number | null;
   high_school: string | null;
   dream_venue: string | null;
+  dream_venue_undecided: boolean | null;
   locale: string | null;
   vibeup_code: string | null;
   referred_by_code: string | null;
@@ -331,11 +339,11 @@ function percent(part: number, total: number) {
 export async function loadCommunityOverview() {
   const client = admin();
   if (!client) throw new Error("Supabase non configurato.");
-  const slim: { created_at: string; email_verified_at: string | null; high_school: string | null; dream_venue: string | null; locale: string | null; id: string; email: string; is_tester: boolean | null }[] = [];
+  const slim: { created_at: string; email_verified_at: string | null; high_school: string | null; dream_venue: string | null; dream_venue_undecided: boolean | null; locale: string | null; id: string; email: string; is_tester: boolean | null }[] = [];
   for (let from = 0; ; from += 1000) {
     const { data, error } = await client
       .from(SIGNUPS)
-      .select("id, email, created_at, email_verified_at, high_school, dream_venue, locale, is_tester")
+      .select("id, email, created_at, email_verified_at, high_school, dream_venue, dream_venue_undecided, locale, is_tester")
       .range(from, from + 999);
     if (error) throw new Error(error.message);
     const page = (data ?? []) as typeof slim;
@@ -434,7 +442,7 @@ export async function loadCommunityOverview() {
     })),
     perDay: dayKeys.map((day) => ({ day, count: perDay.get(day) ?? 0 })),
     schools: topCounts(counted.map((row) => row.high_school ?? "")),
-    venues: topCounts(counted.map((row) => row.dream_venue ?? "")),
+    venues: topCounts(counted.map((row) => signupDreamVenueLabel(row.dream_venue, row.dream_venue_undecided))),
     locations: topCounts(locations),
     suggestedVenues: suggestedVenueCounts(demos.map((demo) => demo.customVenue)),
     locales: [
@@ -584,7 +592,7 @@ function mapSignup(
     birthDate: row.birth_date,
     birthYear: row.birth_year,
     highSchool: row.high_school ?? "",
-    dreamVenue: row.dream_venue ?? "",
+    dreamVenue: signupDreamVenueLabel(row.dream_venue, row.dream_venue_undecided),
     locale: row.locale === "en" ? "en" : "it",
     vibeupCode: row.vibeup_code ?? "",
     referredByCode: row.referred_by_code ?? "",
@@ -642,20 +650,29 @@ export async function loadCommunitySignups(filters: CommunityFilters, all: boole
   const venue = cleanLike(filters.venue);
   const q = cleanLike(filters.q);
   if (school) query = query.ilike("high_school", `%${school}%`);
-  if (venue) query = query.ilike("dream_venue", `%${venue}%`);
+  if (venue) {
+    if (venue.toLocaleLowerCase("it") === UNDECIDED_DREAM_VENUE.toLocaleLowerCase("it")) {
+      query = query.eq("dream_venue_undecided", true);
+    } else {
+      query = query.ilike("dream_venue", `%${venue}%`);
+    }
+  }
   if (q) {
-    query = query.or(
-      [
-        `first_name.ilike.%${q}%`,
-        `last_name.ilike.%${q}%`,
-        `username.ilike.%${q}%`,
-        `email.ilike.%${q}%`,
-        `phone.ilike.%${q}%`,
-        `vibeup_code.ilike.%${q}%`,
-        `high_school.ilike.%${q}%`,
-        `dream_venue.ilike.%${q}%`,
-      ].join(","),
-    );
+    const parts = [
+      `first_name.ilike.%${q}%`,
+      `last_name.ilike.%${q}%`,
+      `username.ilike.%${q}%`,
+      `email.ilike.%${q}%`,
+      `phone.ilike.%${q}%`,
+      `vibeup_code.ilike.%${q}%`,
+      `high_school.ilike.%${q}%`,
+      `dream_venue.ilike.%${q}%`,
+    ];
+    const needle = q.toLocaleLowerCase("it");
+    if (needle.length >= 4 && UNDECIDED_DREAM_VENUE.toLocaleLowerCase("it").includes(needle)) {
+      parts.push("dream_venue_undecided.eq.true");
+    }
+    query = query.or(parts.join(","));
   }
   if (filters.demo !== "all") {
     const demos = await loadDemos();

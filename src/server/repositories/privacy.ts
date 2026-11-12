@@ -27,6 +27,7 @@ type SignupRow = {
   birth_year: number;
   high_school: string;
   dream_venue: string | null;
+  dream_venue_undecided: boolean | null;
   vibeup_code: string | null;
   referred_by_code: string | null;
   email_verified_at: string | null;
@@ -129,7 +130,7 @@ async function loadSignup(email: string) {
   const { data, error } = await client
     .from(SIGNUPS)
     .select(
-      "id, first_name, last_name, username, email, phone, birth_year, high_school, dream_venue, vibeup_code, referred_by_code, email_verified_at, consent_privacy_at, consent_rules_at, consent_marketing, created_at",
+      "id, first_name, last_name, username, email, phone, birth_year, high_school, dream_venue, dream_venue_undecided, vibeup_code, referred_by_code, email_verified_at, consent_privacy_at, consent_rules_at, consent_marketing, created_at",
     )
     .eq("email", email)
     .maybeSingle();
@@ -164,7 +165,7 @@ export async function exportSignupData(email: string, code: string) {
         telefono: signup.phone,
         annoDiNascita: signup.birth_year,
         liceo: signup.high_school,
-        localeDesiderato: signup.dream_venue,
+        localeDesiderato: signup.dream_venue_undecided ? "Nessuna idea" : signup.dream_venue,
         vibeupCode: signup.vibeup_code,
         codiceAmico: signup.referred_by_code,
         emailVerificataIl: signup.email_verified_at,

@@ -8,7 +8,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import {
   CODE_ALPHABET,
-  cleanVenue,
+  cleanDreamVenue,
   isAtLeast14OnDate,
   isEmailAddress,
   isHighSchool,
@@ -52,6 +52,7 @@ export type WaitlistDraft = {
   birthDate: string;
   highSchool: string;
   dreamVenue: string | null;
+  dreamVenueUndecided: boolean;
   referralCode: string | null;
   consentMarketing: boolean;
   ipHash: string | null;
@@ -149,6 +150,9 @@ function validateDraft(draft: WaitlistDraft): WaitlistError | null {
   if (!isPersonName(draft.firstName) || !isPersonName(draft.lastName)) return "invalid";
   if (!isEmailAddress(draft.email)) return "invalid";
   if (!isAtLeast14OnDate(draft.birthDate)) return "too_young";
+  if (draft.dreamVenueUndecided) return null;
+  const venue = cleanDreamVenue(draft.dreamVenue ?? "");
+  if (!venue || venue !== (draft.dreamVenue ?? "").trim().replace(/\s+/g, " ")) return "invalid";
   return null;
 }
 
@@ -285,6 +289,8 @@ export async function savePendingSignup(
     birth_date: birthday,
     birth_year: Number(birthday.slice(0, 4)),
     referred_by_code: referred,
+    dream_venue: draft.dreamVenueUndecided ? null : draft.dreamVenue,
+    dream_venue_undecided: draft.dreamVenueUndecided === true,
     consent_privacy_at: now,
     consent_rules_at: now,
     consent_marketing: draft.consentMarketing,
@@ -322,15 +328,16 @@ export async function saveSignupDetails(
   const client = admin();
   if (!client || !isUuid(signupId)) return { ok: false, error: "invalid" };
   const school = input.highSchool.trim();
-  const venue = cleanVenue(input.dreamVenue);
-  const patch: { high_school?: string; dream_venue?: string } = {};
+  const venue = cleanDreamVenue(input.dreamVenue);
+  const patch: { high_school?: string; dream_venue?: string; dream_venue_undecided?: boolean } = {};
   if (school) {
     if (!isHighSchool(school)) return { ok: false, error: "invalid" };
     patch.high_school = school;
   }
-  if (venue) {
-    if (venue.length < 2) return { ok: false, error: "invalid" };
+  if (input.dreamVenue.trim()) {
+    if (!venue) return { ok: false, error: "invalid" };
     patch.dream_venue = venue;
+    patch.dream_venue_undecided = false;
   }
   if (!patch.high_school && !patch.dream_venue) return { ok: false, error: "invalid" };
   const { data, error } = await client
