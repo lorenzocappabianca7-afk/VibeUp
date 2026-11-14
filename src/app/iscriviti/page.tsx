@@ -1,4 +1,4 @@
-import { PrelaunchLanding } from "@/components/home/prelaunch-landing";
+import { PrelaunchLandingPage } from "@/components/home/prelaunch-landing-page";
 import { signupCopy } from "@/content/signup";
 import type { Metadata } from "next";
 
@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 
 /** Full-screen waitlist. Always reachable, including before the public app launches. */
 export default function IscrivitiPage() {
-  return <PrelaunchLanding startSignup />;
+  return <PrelaunchLandingPage startSignup />;
 }

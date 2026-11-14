@@ -17,7 +17,15 @@ function PhoneShot({
   return (
     <div className={`vu-phone vu-phone-${frame}`}>
       <div className="vu-phone-screen">
-        <Image src={src} alt={alt} fill sizes={sizes} loading={loading} className="vu-phone-img" />
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          sizes={sizes}
+          loading={loading}
+          className="vu-phone-img"
+          style={frame === "center" ? { objectFit: "cover", objectPosition: "top center" } : undefined}
+        />
       </div>
     </div>
   );

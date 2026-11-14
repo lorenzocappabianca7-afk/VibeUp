@@ -1,4 +1,4 @@
-import { PrelaunchLanding } from "@/components/home/prelaunch-landing";
+import { PrelaunchLandingPage } from "@/components/home/prelaunch-landing-page";
 import { MobileShell } from "@/components/layout/mobile-shell";
 import { landingCopy } from "@/content/landing";
 import { getServerAdminAccess } from "@/lib/auth/staff-access";
@@ -41,5 +41,5 @@ export default async function Home({
     if ((await getServerAdminAccess()) === "allowed") return <MobileShell />;
     redirect("/");
   }
-  return <PrelaunchLanding />;
+  return <PrelaunchLandingPage />;
 }

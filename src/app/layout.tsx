@@ -42,6 +42,11 @@ const geistMono = Geist_Mono({
 const brandDisplay = localFont({
   src: [
     {
+      path: "../fonts/montserrat-latin-500-normal.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
       path: "../fonts/montserrat-latin-600-normal.woff2",
       weight: "600",
       style: "normal",
@@ -49,6 +54,11 @@ const brandDisplay = localFont({
     {
       path: "../fonts/montserrat-latin-700-normal.woff2",
       weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../fonts/montserrat-latin-800-normal.woff2",
+      weight: "800",
       style: "normal",
     },
   ],

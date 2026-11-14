@@ -1,12 +1,14 @@
 "use client";
 
 import { PrelaunchCommunity } from "@/components/home/prelaunch-community";
+import { PrelaunchCompare } from "@/components/home/prelaunch-compare";
 import { prelaunchCriticalCss } from "@/components/home/prelaunch-critical-css";
 import { PrelaunchDemoSection } from "@/components/home/prelaunch-demo-section";
 import { PrelaunchFooter } from "@/components/home/prelaunch-footer";
 import { PrelaunchHero } from "@/components/home/prelaunch-hero";
 import { PrelaunchMarquee } from "@/components/home/prelaunch-marquee";
 import { PrelaunchPreview } from "@/components/home/prelaunch-preview";
+import { PrelaunchSuite } from "@/components/home/prelaunch-suite";
 import { startLandingReveal } from "@/components/home/prelaunch-reveal";
 import { SignupFlow } from "@/components/home/signup-flow";
 import { landingCopy } from "@/content/landing";
@@ -14,6 +16,7 @@ import { isContestOver } from "@/config/contest";
 import { readDemoSignupId, readVerifiedMember, type VerifiedMemberCard } from "@/lib/demo/signup-gate";
 import { rememberSignupReferral } from "@/lib/launch/draft";
 import { isVibeUpCode, normalizeCode } from "@/lib/launch/fields";
+import type { LandingCompareVenue } from "@/lib/landing/compare-table";
 import { useRouter } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 
@@ -26,7 +29,13 @@ function scrollToLanding(id: string) {
   root.scrollTo({ top: Math.max(0, top - 12), behavior: "auto" });
 }
 
-export function PrelaunchLanding({ startSignup = false }: { startSignup?: boolean }) {
+export function PrelaunchLanding({
+  startSignup = false,
+  compare,
+}: {
+  startSignup?: boolean;
+  compare: LandingCompareVenue[];
+}) {
   const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
   const [signupOpen, setSignupOpen] = useState(startSignup);
@@ -91,7 +100,9 @@ export function PrelaunchLanding({ startSignup = false }: { startSignup?: boolea
             onDemo={() => scrollToLanding("demo")}
           />
           <PrelaunchMarquee />
+          <PrelaunchSuite />
           <PrelaunchPreview />
+          <PrelaunchCompare venues={compare} />
           <p className="vu-invite vu-reveal-item vu-brand font-[family-name:var(--font-brand)]" data-vu-reveal>
             {landingCopy.inviteBefore}
             <span className="vu-invite-prize">{landingCopy.invitePrize}</span>

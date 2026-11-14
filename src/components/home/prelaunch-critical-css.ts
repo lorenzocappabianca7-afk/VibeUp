@@ -425,6 +425,145 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   text-align: center;
 }
 .vu-invite-prize { color: ${pink}; }
+.vu-suite {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 22px 20px 8px;
+  box-sizing: border-box;
+}
+.vu-suite-title {
+  margin: 0;
+  color: ${text};
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.4px;
+  overflow-wrap: break-word;
+}
+.vu-suite-lead {
+  margin: 0;
+  color: ${muted};
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+}
+.vu-suite-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.vu-suite-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid ${surface2};
+  border-radius: 16px;
+  background: ${surface};
+}
+.vu-suite-icon {
+  width: 22px;
+  height: 22px;
+  color: ${teal};
+}
+.vu-suite-name {
+  margin: 0;
+  color: ${text};
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+}
+.vu-suite-detail {
+  margin: 0;
+  color: ${faint};
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+}
+.vu-compare {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 20px 20px 28px;
+}
+.vu-compare-title {
+  margin: 0;
+  min-width: 0;
+  color: ${muted};
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+  overflow-wrap: break-word;
+}
+.vu-compare-mode { font-weight: 800; color: ${teal}; }
+.vu-compare-instant { font-weight: 800; color: ${text}; }
+.vu-compare-wrap {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid ${mockPanelLine};
+  border-radius: 14px;
+  background: ${surface};
+}
+.vu-compare-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 12px;
+  line-height: 1.25;
+}
+.vu-compare-label-col { width: 36%; }
+.vu-compare-table th,
+.vu-compare-table td {
+  box-sizing: border-box;
+  padding: 8px 3px;
+  border-bottom: 1px solid ${surface2};
+  text-align: center;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+.vu-compare-table th[scope="row"] {
+  padding: 8px 4px 8px 8px;
+  color: ${faint};
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+}
+.vu-compare-table tr:last-child th,
+.vu-compare-table tr:last-child td { border-bottom: 0; }
+.vu-compare-venue {
+  padding: 10px 3px 8px;
+  color: ${text};
+  font-size: 12px;
+  font-weight: 600;
+}
+.vu-compare-name {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.2;
+  max-height: 2.4em;
+}
+.vu-compare-table td { color: #E4E5E9; }
+.vu-compare-no,
+.vu-compare-missing { color: #5A5C64; }
+.vu-compare-table svg { display: inline-block; vertical-align: middle; }
 .vu-track {
   display: flex;
   width: max-content;
@@ -1487,19 +1626,37 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
     margin-left: -40px;
     margin-right: -40px;
   }
-  .vu-invite {
+  .vu-suite {
     grid-column: 1 / -1;
     grid-row: 5;
+    padding: 48px 0 8px;
+  }
+  .vu-suite-title { font-size: 28px; letter-spacing: -0.6px; }
+  .vu-suite-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .vu-compare {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-row: 6;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
+    gap: 32px;
+    align-items: center;
+    padding: 36px 0 12px;
+  }
+  .vu-compare-title { font-size: 26px; }
+  .vu-compare-wrap { width: 100%; max-width: 520px; justify-self: end; }
+  .vu-invite {
+    grid-column: 1 / -1;
+    grid-row: 7;
     width: 100%;
     max-width: 720px;
-    margin: 120px auto 0;
+    margin: 64px auto 0;
     padding: 0 0 120px;
     font-size: 24px;
   }
   .vu-join {
     display: grid;
     grid-column: 1 / -1;
-    grid-row: 6;
+    grid-row: 8;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: 64px;
     align-items: center;
@@ -1530,7 +1687,7 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   .vu-fine { max-width: 420px; font-size: 14px; }
   .vu-follow {
     grid-column: 1 / -1;
-    grid-row: 7;
+    grid-row: 9;
     gap: 16px;
     margin: 120px 0 0;
     padding: 0;
@@ -1539,7 +1696,7 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   .vu-follow-note { font-size: 20px; max-width: 720px; }
   .vu-demo {
     grid-column: 1 / -1;
-    grid-row: 8;
+    grid-row: 10;
     padding: 120px 0 0;
   }
   .vu-demo-card {
@@ -1572,7 +1729,7 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   .vu-foot {
     display: grid;
     grid-column: 1 / -1;
-    grid-row: 9;
+    grid-row: 11;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 24px;
