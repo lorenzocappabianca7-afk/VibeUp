@@ -53,24 +53,11 @@ function SuiteIcon({ id }: { id: (typeof landingCopy.suite)[number]["icon"] }) {
           <path d="M9 9h6M9 13h4" />
         </Icon>
       );
-    case "confirm":
-      return (
-        <Icon>
-          <path d="M5 12l5 5L20 7" />
-        </Icon>
-      );
     case "deposit":
       return (
         <Icon>
           <rect x="3" y="6" width="18" height="12" rx="2" />
           <path d="M3 10h18" />
-        </Icon>
-      );
-    case "siae":
-      return (
-        <Icon>
-          <path d="M7 3h7l5 5v13H7V3z" />
-          <path d="M14 3v5h5" />
         </Icon>
       );
     case "tips":
