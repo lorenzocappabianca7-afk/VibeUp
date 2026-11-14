@@ -1214,6 +1214,47 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   outline: none;
   border-color: #3ECFCF;
 }
+.vu-sheet .vu-phone-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.vu-sheet .vu-phone-label {
+  display: block;
+  margin: 0;
+  max-width: 100%;
+  color: #A1A3AB;
+  font-size: 15px;
+  line-height: 1.3;
+}
+.vu-sheet .vu-phone-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.vu-sheet .vu-phone-row .vu-field {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.vu-sheet .vu-phone-row .vu-input {
+  height: 52px;
+  min-height: 52px;
+  font-size: 17px;
+}
+.vu-sheet .vu-phone-row .vu-prefix {
+  width: 92px;
+  max-width: 92px;
+  flex: 0 0 92px;
+  padding: 0 8px;
+  text-align: center;
+}
 .vu-sheet-mark {
   position: absolute;
   top: 16px;

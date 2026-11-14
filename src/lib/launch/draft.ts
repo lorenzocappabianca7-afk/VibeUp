@@ -7,6 +7,8 @@ export type SignupDraft = {
   firstName: string;
   lastName: string;
   email: string;
+  phonePrefix: string;
+  phoneNational: string;
   birthDate: string;
   referralCode: string;
   referralSkipped: boolean;
@@ -17,6 +19,7 @@ export type SignupDraft = {
   signupId: string;
   codeSentAt: number;
   codeSentFor: string;
+  codeSentPhone: string;
   emailConfirmed: boolean;
   confirmedEmail: string;
   confirmedSignupId: string;
@@ -71,6 +74,8 @@ export function emptySignupDraft(): SignupDraft {
     firstName: "",
     lastName: "",
     email: "",
+    phonePrefix: "+39",
+    phoneNational: "",
     birthDate: "",
     referralCode: referralFromLocation(),
     referralSkipped: false,
@@ -81,6 +86,7 @@ export function emptySignupDraft(): SignupDraft {
     signupId: "",
     codeSentAt: 0,
     codeSentFor: "",
+    codeSentPhone: "",
     emailConfirmed: false,
     confirmedEmail: "",
     confirmedSignupId: "",
@@ -109,11 +115,16 @@ export function loadSignupDraft(): SignupDraft {
     const skipped = parsed.referralSkipped === true && !fromUrl;
     const savedCode = typeof parsed.referralCode === "string" ? parsed.referralCode : "";
     const birthDate = typeof parsed.birthDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.birthDate) ? parsed.birthDate : "";
+    const phonePrefix = typeof parsed.phonePrefix === "string" && parsed.phonePrefix.trim() ? parsed.phonePrefix : "+39";
+    const phoneNational = typeof parsed.phoneNational === "string" ? parsed.phoneNational : "";
+    if (!phoneNational.trim()) step = 0;
     return {
       ...base,
       firstName: typeof parsed.firstName === "string" ? parsed.firstName : "",
       lastName: typeof parsed.lastName === "string" ? parsed.lastName : "",
       email: typeof parsed.email === "string" ? parsed.email : "",
+      phonePrefix,
+      phoneNational,
       birthDate,
       consentPrivacy: parsed.consentPrivacy === true,
       consentRules: parsed.consentRules === true,
@@ -124,6 +135,7 @@ export function loadSignupDraft(): SignupDraft {
       signupId: hasId ? parsed.signupId! : "",
       codeSentAt: typeof parsed.codeSentAt === "number" ? parsed.codeSentAt : 0,
       codeSentFor: known && typeof parsed.codeSentFor === "string" ? parsed.codeSentFor : "",
+      codeSentPhone: known && typeof parsed.codeSentPhone === "string" ? parsed.codeSentPhone : "",
       emailConfirmed: known && confirmed,
       confirmedEmail: known && typeof parsed.confirmedEmail === "string" ? parsed.confirmedEmail : "",
       confirmedSignupId: known && typeof parsed.confirmedSignupId === "string" ? parsed.confirmedSignupId : "",

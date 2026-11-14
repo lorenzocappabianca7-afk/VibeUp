@@ -16,10 +16,12 @@ import {
 import {
   cleanDreamVenue,
   isAtLeast14OnDate,
+  isE164,
   isEmailAddress,
   isHighSchool,
   isPersonName,
   isVibeUpCode,
+  joinPhone,
   normalizeCode,
   normalizeEmail,
 } from "@/lib/launch/fields";
@@ -92,6 +94,8 @@ function errorText(code: string) {
   switch (code) {
     case "email_taken":
       return signupCopy.emailTaken;
+    case "phone_taken":
+      return signupCopy.phoneTaken;
     case "too_young":
       return signupCopy.tooYoung;
     case "own_code":
@@ -112,6 +116,7 @@ function errorText(code: string) {
 function stepForError(code: string) {
   switch (code) {
     case "email_taken":
+    case "phone_taken":
       return 0;
     case "too_young":
     case "own_code":
@@ -389,8 +394,10 @@ export function SignupFlow({
 
   const birthdayReady = isAtLeast14OnDate(draft.birthDate);
   const venueReady = Boolean(cleanDreamVenue(draft.dreamVenue));
+  const signupPhone = joinPhone(draft.phonePrefix, draft.phoneNational);
+  const phoneReady = isE164(signupPhone);
   const canContinue =
-    (draft.step === STEP_NAME && isPersonName(draft.firstName) && isPersonName(draft.lastName) && isEmailAddress(draft.email)) ||
+    (draft.step === STEP_NAME && isPersonName(draft.firstName) && isPersonName(draft.lastName) && isEmailAddress(draft.email) && phoneReady) ||
     (draft.step === STEP_VERIFY && /^\d{6}$/.test(verifyCode)) ||
     (draft.step === STEP_VENUE && venueReady) ||
     (draft.step === STEP_PROFILE && birthdayReady && draft.consentPrivacy && draft.consentRules);
@@ -418,6 +425,8 @@ export function SignupFlow({
       firstName: draft.firstName,
       lastName: draft.lastName,
       email: draft.email,
+      phonePrefix: draft.phonePrefix,
+      phoneNational: draft.phoneNational,
       consentPrivacy: false,
       consentRules: false,
       locale: readDemoLanguage(),
@@ -435,6 +444,7 @@ export function SignupFlow({
       signupId: result.signupId,
       codeSentAt: sentAt,
       codeSentFor: normalizeEmail(current.email),
+      codeSentPhone: joinPhone(current.phonePrefix, current.phoneNational),
       emailConfirmed: false,
       step: 1,
     }));
@@ -470,11 +480,12 @@ export function SignupFlow({
     if (busy || !canContinue || done) return;
     if (draft.step === STEP_NAME) {
       const emailKey = normalizeEmail(draft.email);
-      if (draft.emailConfirmed && draft.signupId && draft.confirmedSignupId === draft.signupId && draft.confirmedEmail === emailKey) {
+      const samePhone = draft.codeSentPhone === signupPhone;
+      if (draft.emailConfirmed && draft.signupId && draft.confirmedSignupId === draft.signupId && draft.confirmedEmail === emailKey && samePhone) {
         go(STEP_VENUE);
         return;
       }
-      if (draft.signupId && draft.codeSentFor === emailKey && draft.codeSentAt > 0 && Date.now() - draft.codeSentAt < 30_000) {
+      if (draft.signupId && draft.codeSentFor === emailKey && samePhone && draft.codeSentAt > 0 && Date.now() - draft.codeSentAt < 30_000) {
         go(STEP_VERIFY);
         return;
       }
@@ -611,6 +622,7 @@ export function SignupFlow({
       draft.firstName.trim() ||
         draft.lastName.trim() ||
         draft.email.trim() ||
+        draft.phoneNational.trim() ||
         draft.birthDate ||
         draft.dreamVenue.trim() ||
         draft.dreamVenueUndecided ||
@@ -768,6 +780,7 @@ export function SignupFlow({
                 setSuggestions([]);
                 patch({ dreamVenue: item.slice(0, 60), dreamVenueUndecided: false });
               }, chooseNoVenueIdea)}
+              {draft.step === STEP_NAME && draft.phoneNational.trim() && !phoneReady ? <p className="vu-signup-error">{signupCopy.phoneInvalid}</p> : null}
               {draft.step === STEP_PROFILE && draft.birthDate && !birthdayReady ? <p className="vu-signup-error">{signupCopy.tooYoung}</p> : null}
               {referralWarn ? <p className="vu-signup-error">{referralWarn}</p> : null}
               {error ? <p className="vu-signup-error">{error}</p> : null}
@@ -817,6 +830,7 @@ function fieldsFor(
   onNoVenueIdea: () => void,
 ) {
   if (draft.step === STEP_NAME) {
+    const phoneReady = isE164(joinPhone(draft.phonePrefix, draft.phoneNational));
     return (
       <div className="vu-signup-fields">
         <Field valid={isPersonName(draft.firstName)}>
@@ -832,7 +846,7 @@ function fieldsFor(
             inputMode="email"
             autoComplete="email"
             autoCapitalize="none"
-            enterKeyHint="go"
+            enterKeyHint="next"
             placeholder={signupCopy.emailPlaceholder}
             value={draft.email}
             aria-invalid={error === signupCopy.emailTaken}
@@ -846,6 +860,35 @@ function fieldsFor(
             }}
           />
         </Field>
+        <div className="vu-phone-block">
+          <label className="vu-phone-label" htmlFor="signup-phone">{signupCopy.phoneLabel}</label>
+          <div className="vu-phone-row">
+            <input
+              className="vu-input vu-prefix"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel-country-code"
+              aria-label={signupCopy.phonePrefix}
+              enterKeyHint="next"
+              value={draft.phonePrefix}
+              onChange={(event) => patch({ phonePrefix: event.target.value })}
+            />
+            <Field valid={phoneReady} invalid={error === signupCopy.phoneTaken || (Boolean(draft.phoneNational.trim()) && !phoneReady)}>
+              <input
+                id="signup-phone"
+                className="vu-input"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel-national"
+                enterKeyHint="go"
+                placeholder={signupCopy.phonePlaceholder}
+                value={draft.phoneNational}
+                aria-invalid={error === signupCopy.phoneTaken || (Boolean(draft.phoneNational.trim()) && !phoneReady)}
+                onChange={(event) => patch({ phoneNational: event.target.value })}
+              />
+            </Field>
+          </div>
+        </div>
       </div>
     );
   }

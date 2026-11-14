@@ -10,6 +10,7 @@ import {
   CODE_ALPHABET,
   cleanDreamVenue,
   isAtLeast14OnDate,
+  isE164,
   isEmailAddress,
   isHighSchool,
   isPersonName,
@@ -198,6 +199,7 @@ export async function startEmailSignup(input: {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
   ipHash: string | null;
   locale?: DemoLanguage;
 }): Promise<{ ok: true; id: string; firstName: string } | { ok: false; error: WaitlistError }> {
@@ -206,16 +208,27 @@ export async function startEmailSignup(input: {
   if (!isPersonName(input.firstName) || !isPersonName(input.lastName)) return { ok: false, error: "invalid" };
   const email = normalizeEmail(input.email);
   if (!isEmailAddress(email)) return { ok: false, error: "invalid" };
+  if (!isE164(input.phone)) return { ok: false, error: "invalid" };
 
   const found = await findByEmail(email);
   const existing = await releaseVerifiedTesterSignup(found, email);
   if (existing === "unavailable") return unavailable();
   if (existing?.email_verified_at) return { ok: false, error: "email_taken" };
 
+  const { data: phoneOwner, error: phoneError } = await client
+    .from(SIGNUPS)
+    .select("id")
+    .eq("phone", input.phone)
+    .limit(1);
+  if (phoneError) throw new Error(phoneError.message);
+  const phoneRow = phoneOwner?.[0] as { id: string } | undefined;
+  if (phoneRow && phoneRow.id !== existing?.id) return { ok: false, error: "phone_taken" };
+
   const payload = {
     first_name: input.firstName.trim(),
     last_name: input.lastName.trim(),
     email,
+    phone: input.phone,
     ip_hash: input.ipHash,
     locale: parseSiteLocale(input.locale),
     email_confirmed_at: null as string | null,

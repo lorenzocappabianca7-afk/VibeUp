@@ -260,6 +260,7 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Controllo…": "Checking…",
   "La tua email": "Your email",
   "Il tuo numero di telefono": "Your phone number",
+  "Numero di telefono": "Phone number",
   "Inserisci un numero valido, con il prefisso.": "Enter a valid number, with the country code.",
   "In che anno sei nato/a?": "What year were you born?",
   "Scegli l'anno": "Choose the year",

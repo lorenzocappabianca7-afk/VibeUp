@@ -1,6 +1,7 @@
 import {
   cleanDreamVenue,
   isVibeUpCode,
+  joinPhone,
   normalizeCode,
   normalizeEmail,
 } from "@/lib/launch/fields";
@@ -99,6 +100,7 @@ export async function POST(request: NextRequest) {
       firstName: draft.firstName,
       lastName: draft.lastName,
       email,
+      phone: joinPhone(asText(body.phonePrefix) || "+39", asText(body.phoneNational)),
       ipHash,
       locale: draft.locale,
     }).catch(() => null);
