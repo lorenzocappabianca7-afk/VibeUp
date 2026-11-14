@@ -441,14 +441,14 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.4px;
-  overflow-wrap: break-word;
+  overflow-wrap: normal;
 }
 .vu-suite-lead {
   margin: 0;
   color: ${muted};
   font-size: 15px;
   line-height: 1.45;
-  overflow-wrap: break-word;
+  overflow-wrap: normal;
 }
 .vu-suite-grid {
   display: grid;
@@ -481,14 +481,14 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   font-size: 15px;
   font-weight: 700;
   line-height: 1.25;
-  overflow-wrap: break-word;
+  overflow-wrap: normal;
 }
 .vu-suite-detail {
   margin: 0;
   color: ${faint};
   font-size: 13px;
   line-height: 1.35;
-  overflow-wrap: break-word;
+  overflow-wrap: normal;
 }
 .vu-compare {
   display: flex;
@@ -507,7 +507,12 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   font-weight: 500;
   line-height: 1.3;
   letter-spacing: -0.3px;
-  overflow-wrap: break-word;
+  overflow-wrap: normal;
+}
+@media (max-width: 340px) {
+  .vu-suite { padding-left: 16px; padding-right: 16px; }
+  .vu-suite-grid { gap: 8px; }
+  .vu-suite-card { padding: 16px 10px; }
 }
 .vu-compare-mode { font-weight: 800; color: ${teal}; }
 .vu-compare-instant { font-weight: 800; color: ${text}; }
