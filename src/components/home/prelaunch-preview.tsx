@@ -51,7 +51,7 @@ export function PrelaunchPreview() {
           loading="lazy"
         />
         <PhoneShot
-          src="/landing/vibeup-home.jpg"
+          src="/landing/vibeup-home-v2.jpg"
           alt={landingCopy.previewHomeAlt}
           frame="center"
           sizes="(min-width: 1024px) 300px, 210px"
