@@ -461,22 +461,30 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
 .vu-suite-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   height: 100%;
   min-width: 0;
   box-sizing: border-box;
-  padding: 16px;
+  padding: 12px;
   border: 1px solid ${surface2};
   border-radius: 16px;
   background: ${surface};
 }
+.vu-suite-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
 .vu-suite-icon {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
+  flex: none;
   color: ${teal};
 }
 .vu-suite-name {
   margin: 0;
+  min-width: 0;
   color: ${text};
   font-size: 15px;
   font-weight: 700;
@@ -509,10 +517,19 @@ html.vu-reveal-on [data-vu-reveal].vu-reveal-item.vu-now {
   letter-spacing: -0.3px;
   overflow-wrap: normal;
 }
-@media (max-width: 340px) {
+@media (max-width: 389px) {
   .vu-suite { padding-left: 16px; padding-right: 16px; }
   .vu-suite-grid { gap: 8px; }
-  .vu-suite-card { padding: 16px 10px; }
+  .vu-suite-card { padding: 10px 8px; }
+  .vu-suite-head { gap: 6px; }
+  .vu-suite-icon { width: 18px; height: 18px; }
+  .vu-suite-name { font-size: 14px; }
+}
+@media (max-width: 340px) {
+  .vu-suite { padding-left: 14px; padding-right: 14px; }
+  .vu-suite-grid { gap: 8px; }
+  .vu-suite-card { padding: 10px 8px; }
+  .vu-suite-icon { width: 16px; height: 16px; }
 }
 .vu-compare-mode { font-weight: 800; color: ${teal}; }
 .vu-compare-instant { font-weight: 800; color: ${text}; }

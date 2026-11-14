@@ -78,8 +78,10 @@ export function PrelaunchSuite() {
       <ul className="vu-suite-grid">
         {landingCopy.suite.map((item) => (
           <li key={item.title} className="vu-suite-card vu-reveal-item">
-            <SuiteIcon id={item.icon} />
-            <h3 className="vu-suite-name vu-brand">{item.title}</h3>
+            <div className="vu-suite-head">
+              <SuiteIcon id={item.icon} />
+              <h3 className="vu-suite-name vu-brand">{item.title}</h3>
+            </div>
             <p className="vu-suite-detail">{item.detail}</p>
           </li>
         ))}
