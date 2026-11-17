@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/image-carousel";
 import { useDemoLanguage } from "@/context/demo-language-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
+import { includedPartyServices, partyServiceLabel } from "@/lib/included-party-services";
 import { getFilteredLocationPricePresentation } from "@/lib/location-preview-price";
 import { applyVat } from "@/lib/vat";
 import { cn } from "@/lib/utils";
@@ -45,7 +46,7 @@ export const LocationCard = memo(function LocationCard({
   footerActions = false,
 }: LocationCardProps) {
   const { lang } = useDemoLanguage();
-  const { criteria } = usePartyCriteria();
+  const { criteria, hasAppliedCriteria } = usePartyCriteria();
   const { contactsBeenHere } = location;
   const hasContacts = contactsBeenHere.count > 0;
   const quote = getFilteredLocationPricePresentation(location, criteria);
@@ -75,6 +76,25 @@ export const LocationCard = memo(function LocationCard({
     () => uniqueImages([location.imageUrl, ...(location.gallery ?? [])]),
     [location.gallery, location.imageUrl],
   );
+  const serviceBadges = useMemo(() => {
+    if (!hasAppliedCriteria || criteria.partyServices.length === 0) return [];
+    const included = new Set(includedPartyServices(location, criteria.partyServices));
+    return criteria.partyServices.map((id) => {
+      const name = partyServiceLabel(id, lang);
+      const isIncluded = included.has(id);
+      return {
+        id,
+        included: isIncluded,
+        label: isIncluded
+          ? lang === "en"
+            ? `${name} included`
+            : `${name} incluso`
+          : lang === "en"
+            ? `${name} to add`
+            : `${name} da aggiungere`,
+      };
+    });
+  }, [criteria.partyServices, hasAppliedCriteria, lang, location]);
   const placeLabel = venuePlaceLabel(location.zoneLabel, location.comune);
   const subtitle = [
     placeLabel,
@@ -238,11 +258,11 @@ export const LocationCard = memo(function LocationCard({
 
       {picking ? (
         <div className="block p-4">
-          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} />
+          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} badges={serviceBadges} />
         </div>
       ) : (
         <SoftNavLink href={href} className="block p-4">
-          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} />
+          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} badges={serviceBadges} />
         </SoftNavLink>
       )}
 
@@ -423,11 +443,13 @@ function CardSummary({
   subtitle,
   price,
   detail,
+  badges = [],
 }: {
   name: string;
   subtitle: string;
   price: string;
   detail: string;
+  badges?: { id: string; included: boolean; label: string }[];
 }) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
@@ -438,6 +460,23 @@ function CardSummary({
             <MapPin className="h-3 w-3 shrink-0" aria-hidden />
             <span className="truncate">{subtitle}</span>
           </p>
+        ) : null}
+        {badges.length > 0 ? (
+          <ul className="mt-2 flex flex-wrap gap-1.5">
+            {badges.map((badge) => (
+              <li
+                key={badge.id}
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[11px] font-bold leading-tight",
+                  badge.included
+                    ? "bg-brand-teal text-[#0F1115]"
+                    : "bg-white/10 text-primary-black/45",
+                )}
+              >
+                {badge.label}
+              </li>
+            ))}
+          </ul>
         ) : null}
       </div>
       <p className="shrink-0 self-start sm:text-right">

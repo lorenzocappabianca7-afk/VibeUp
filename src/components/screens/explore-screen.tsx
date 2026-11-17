@@ -8,11 +8,18 @@ import { ExploreSearchBar } from "@/components/explore/explore-search-bar";
 import { LocationCard } from "@/components/explore/location-card";
 import { useAccountGate } from "@/context/account-gate-context";
 import { useAppState } from "@/context/app-state-context";
+import { useDemoLanguage } from "@/context/demo-language-context";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { buildLocationHrefFromCriteria } from "@/lib/location-href";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
+import {
+  includedPartyServices,
+  joinServiceLabels,
+  joinServiceLabelsEn,
+  partyServiceLabel,
+} from "@/lib/included-party-services";
 import { estimateLocationFilteredCostRange } from "@/lib/location-preview-price";
 import { rankLocationsByKeywords } from "@/lib/rank-locations-by-keywords";
 import {
@@ -27,10 +34,10 @@ import {
   type Location,
 } from "@/types/location";
 import {
-  PARTY_SERVICE_OPTIONS,
   partyBudgetBand,
   partyCriteriaRankingText,
   type PartyCriteria,
+  type PartyServicePick,
 } from "@/types/party-criteria";
 import {
   Building2,
@@ -229,6 +236,69 @@ function filterLocationsByPartyCriteria(
   });
 }
 
+function applyIncludedServiceFilter(
+  locations: Location[],
+  wanted: readonly PartyServicePick[],
+) {
+  if (wanted.length === 0) {
+    return { locations, match: "off" as const };
+  }
+  const scored = locations.map((location) => ({
+    location,
+    count: includedPartyServices(location, wanted).length,
+  }));
+  const complete = scored.filter((item) => item.count === wanted.length);
+  if (complete.length > 0) {
+    return {
+      locations: complete.map((item) => item.location),
+      match: "all" as const,
+    };
+  }
+  const max = scored.reduce((best, item) => Math.max(best, item.count), 0);
+  const closest =
+    max > 0 ? scored.filter((item) => item.count === max) : scored;
+  return {
+    locations: closest.map((item) => item.location),
+    match: "partial" as const,
+  };
+}
+
+function IncludedServicesSummary({
+  services,
+  match,
+  lang,
+  onEdit,
+}: {
+  services: readonly PartyServicePick[];
+  match: "off" | "all" | "partial";
+  lang: "it" | "en";
+  onEdit: () => void;
+}) {
+  const labels = services.map((id) => partyServiceLabel(id, lang));
+  const joined = lang === "en" ? joinServiceLabelsEn(labels) : joinServiceLabels(labels);
+  const summary =
+    match === "partial"
+      ? lang === "en"
+        ? "No venue includes every service you picked. Here are the closest: you can add the missing ones separately."
+        : "Nessuna location include tutti i servizi scelti. Ecco le più vicine: quelli mancanti puoi aggiungerli separatamente."
+      : lang === "en"
+        ? `Venues with ${joined} included`
+        : `Location con ${joined} ${labels.length > 1 ? "inclusi" : "incluso"}`;
+
+  return (
+    <p className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 text-sm font-semibold leading-snug text-primary-black">
+      <span className="min-w-0">{summary}</span>
+      <button
+        type="button"
+        onClick={onEdit}
+        className="shrink-0 font-bold text-brand-teal"
+      >
+        {lang === "en" ? "Edit" : "Modifica"}
+      </button>
+    </p>
+  );
+}
+
 function locationFitness(location: Location, criteria: PartyCriteria) {
   const cost = estimateLocationFilteredCostRange(location, criteria);
   const mid = (cost.min + cost.max) / 2;
@@ -354,7 +424,9 @@ export function ExploreScreen({
   } = useAppState();
   const { requireAccount } = useAccountGate();
   const { activeTab } = useTabNavigation();
-  const { criteria, hasAppliedCriteria, clearCriteria } = usePartyCriteria();
+  const { criteria, hasAppliedCriteria, clearCriteria, requestServicesStep } =
+    usePartyCriteria();
+  const { lang } = useDemoLanguage();
   const { isDemoMode, selectedLocations, session, toggleDemoLocation } =
     useDemoMode();
   const demoPicking =
@@ -545,23 +617,30 @@ export function ExploreScreen({
       hasAppliedCriteria &&
       ranked.length === 0 &&
       deferredQuery.trim().length === 0;
-    if (!relax) return { locations: ordered, relaxed: false };
-    const nearest = [...allLocations].sort(
-      (left, right) =>
-        locationFitness(left, criteria) - locationFitness(right, criteria),
-    );
-    const nearestRanked = rankLocationsByKeywords(nearest, freeText);
+    const orderedPool = relax
+      ? [...rankLocationsByKeywords(
+          [...allLocations].sort(
+            (left, right) =>
+              locationFitness(left, criteria) - locationFitness(right, criteria),
+          ),
+          freeText,
+        )].sort(
+          (left, right) =>
+            capacitySortGroup(left, guestCount) -
+            capacitySortGroup(right, guestCount),
+        )
+      : ordered;
+    const wanted = hasAppliedCriteria ? criteria.partyServices : [];
+    const byService = applyIncludedServiceFilter(orderedPool, wanted);
     return {
-      locations: [...nearestRanked].sort(
-        (left, right) =>
-          capacitySortGroup(left, guestCount) -
-          capacitySortGroup(right, guestCount),
-      ),
-      relaxed: true,
+      locations: byService.locations,
+      relaxed: relax,
+      serviceMatch: byService.match,
     };
   }, [allLocations, criteria, deferredQuery, hasAppliedCriteria, isDemoMode]);
   const filteredLocations = locationResults.locations;
   const relaxedLocations = locationResults.relaxed;
+  const serviceMatch = locationResults.serviceMatch;
 
   const filteredServices = useMemo(() => {
     if (activeCategory === "locali") return [];
@@ -657,10 +736,6 @@ export function ExploreScreen({
     if (criteria.guestCount) chips.push(`${criteria.guestCount} persone`);
     if (criteria.budgetMin != null || criteria.budgetMax != null) {
       chips.push(partyBudgetBand(criteria.budgetMin, criteria.budgetMax).label);
-    }
-    for (const id of criteria.partyServices) {
-      const label = PARTY_SERVICE_OPTIONS.find((item) => item.id === id)?.label;
-      if (label) chips.push(label);
     }
     return chips;
   }, [criteria, hasAppliedCriteria]);
@@ -979,10 +1054,18 @@ export function ExploreScreen({
             </p>
           ) : null}
 
-          {relaxedLocations ? (
+          {relaxedLocations && serviceMatch !== "partial" ? (
             <p className="text-sm font-semibold text-primary-black/70">
               Nessuna corrisponde esattamente: ecco le più vicine.
             </p>
+          ) : null}
+          {hasAppliedCriteria && criteria.partyServices.length > 0 ? (
+            <IncludedServicesSummary
+              services={criteria.partyServices}
+              match={serviceMatch}
+              lang={lang}
+              onEdit={requestServicesStep}
+            />
           ) : null}
           <ExploreResultHeading count={filteredLocations.length} chips={filterChips} />
           {filteredLocations.length > 0 ? (

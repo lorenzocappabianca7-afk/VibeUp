@@ -34,6 +34,10 @@ import {
   type DrinkPackageMode,
 } from "@/lib/drinks-quote";
 import {
+  includedPartyServices,
+  partyServicePickForName,
+} from "@/lib/included-party-services";
+import {
   getInternalLocationServicePrice,
   getInternalLocationServices,
 } from "@/lib/location-services";
@@ -420,15 +424,17 @@ export function LocationDetailView({
       openBarPerInvitee: location.drinksPricing?.openBarPerInvitee,
       vatRate: location.drinksPricing?.vatRate,
     });
+    const includedInPrice = new Set(includedPartyServices(location));
     const venueServicesCost = pricedServices.reduce((sum, id) => {
       const service = internalServices.find((item) => item.id === id);
       if (!service) return sum;
+      // Already inside the hall price: the line stays at zero and a paid
+      // twin of the same service is not added again.
+      if (service.pricing.type === "included") return sum;
+      const includedPick = partyServicePickForName(service.name);
+      if (includedPick && includedInPrice.has(includedPick)) return sum;
       // Paid drink package replaces any paid bar line to avoid double counting.
-      if (
-        pricedDrinkMode !== "none" &&
-        service.type === "bar" &&
-        service.pricing.type !== "included"
-      ) {
+      if (pricedDrinkMode !== "none" && service.type === "bar") {
         return sum;
       }
       return sum + getInternalLocationServicePrice(service, guestCount);

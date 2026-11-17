@@ -76,7 +76,7 @@ export interface PartyCriteria {
   guestCount: number | null;
   budgetMin: number | null;
   budgetMax: number | null;
-  /** Services the guest wants besides the venue. Does not filter the catalog. */
+  /** Services the guest wants already included in the venue price. */
   partyServices: PartyServicePick[];
   wantedServices: ExtraServiceId[];
   drinkMode: DrinkPackageMode;

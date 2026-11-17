@@ -1,8 +1,10 @@
 import { EventDashboardView } from "@/components/events/event-dashboard-view";
+import { isDemoModeServer } from "@/lib/demo/mode.server";
 import { getEventById } from "@/lib/mock/events";
 import { pageMetadata, STATIC_PAGE_METADATA } from "@/lib/seo";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 interface EventPageProps {
   params: Promise<{ id: string }>;
@@ -27,6 +29,9 @@ export async function generateMetadata({
 }
 
 export default async function EventPage({ params }: EventPageProps) {
+  if (await isDemoModeServer()) {
+    redirect("/demo?tab=events");
+  }
   const { id } = await params;
   const event = getEventById(id) ?? null;
 

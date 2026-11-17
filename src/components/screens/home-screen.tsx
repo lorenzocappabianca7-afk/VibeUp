@@ -30,7 +30,7 @@ import {
 import type { ExploreCategory, Location } from "@/types/location";
 import type { PartyCriteria } from "@/types/party-criteria";
 import { ArrowRight, Bell, Building2, Cake, Camera, ChevronRight, Disc3, Gift, ShieldCheck, UtensilsCrossed } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type HomeNotification = {
   id: string;
@@ -95,7 +95,7 @@ function buildDjHrefFromCriteria(djId: string, criteria: PartyCriteria): string 
 }
 
 export function HomeScreen() {
-  const { criteria } = usePartyCriteria();
+  const { criteria, servicesStepRequest } = usePartyCriteria();
   const { isDemoMode, dismissHomeTip } = useDemoMode();
   const { setTab } = useTabNavigation();
   const {
@@ -110,10 +110,25 @@ export function HomeScreen() {
   const { communications } = useProfileCommunications();
   const { requests } = useAvailabilityRequests();
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardStart, setWizardStart] = useState<"services" | null>(null);
+  const seenServicesRequest = useRef(0);
+
+  useEffect(() => {
+    if (
+      servicesStepRequest === 0 ||
+      servicesStepRequest === seenServicesRequest.current
+    ) {
+      return;
+    }
+    seenServicesRequest.current = servicesStepRequest;
+    setWizardStart("services");
+    setWizardOpen(true);
+  }, [servicesStepRequest]);
 
   function openPartyPick(category: ExploreCategory) {
     if (isDemoMode) {
       dismissHomeTip();
+      setWizardStart(null);
       setWizardOpen(true);
       return;
     }
@@ -270,7 +285,10 @@ export function HomeScreen() {
         <DemoHomeCreateWrap>
           <button
             type="button"
-            onClick={() => setWizardOpen(true)}
+            onClick={() => {
+              setWizardStart(null);
+              setWizardOpen(true);
+            }}
             className="mt-4 flex h-[60px] w-full items-center justify-between rounded-2xl bg-brand-pink px-5 text-lg font-bold text-[#0F1115]"
           >
             Crea la tua festa
@@ -401,7 +419,14 @@ export function HomeScreen() {
       ) : null}
       </DemoHomeLockedDim>
 
-      <PartyWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
+      <PartyWizard
+        open={wizardOpen}
+        startStep={wizardStart}
+        onClose={() => {
+          setWizardOpen(false);
+          setWizardStart(null);
+        }}
+      />
     </div>
   );
 }

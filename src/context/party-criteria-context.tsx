@@ -32,6 +32,9 @@ interface PartyCriteriaContextValue {
   setHomeBannerText: (text: string) => void;
   applyCriteria: (next: PartyCriteria) => void;
   clearCriteria: () => void;
+  /** Bumps when Esplora asks to reopen the wizard on the services step. */
+  servicesStepRequest: number;
+  requestServicesStep: () => void;
 }
 
 const PartyCriteriaContext = createContext<PartyCriteriaContextValue | null>(
@@ -45,6 +48,7 @@ export function PartyCriteriaProvider({ children }: { children: ReactNode }) {
   const [criteria, setCriteria] = useState<PartyCriteria>(emptyPartyCriteria);
   const [hasAppliedCriteria, setHasAppliedCriteria] = useState(false);
   const [homeBannerText, setHomeBannerText] = useState(DEFAULT_BANNER);
+  const [servicesStepRequest, setServicesStepRequest] = useState(0);
 
   useEffect(() => {
     forgetPersistedPartyCriteria();
@@ -95,6 +99,10 @@ export function PartyCriteriaProvider({ children }: { children: ReactNode }) {
     [isDemoMode, session],
   );
 
+  const requestServicesStep = useCallback(() => {
+    setServicesStepRequest((current) => current + 1);
+  }, []);
+
   const clearCriteria = useCallback(() => {
     setCriteria(emptyPartyCriteria);
     setHasAppliedCriteria(false);
@@ -110,6 +118,8 @@ export function PartyCriteriaProvider({ children }: { children: ReactNode }) {
       setHomeBannerText,
       applyCriteria,
       clearCriteria,
+      servicesStepRequest,
+      requestServicesStep,
     }),
     [
       applyCriteria,
@@ -117,6 +127,8 @@ export function PartyCriteriaProvider({ children }: { children: ReactNode }) {
       criteria,
       hasAppliedCriteria,
       homeBannerText,
+      requestServicesStep,
+      servicesStepRequest,
     ],
   );
 

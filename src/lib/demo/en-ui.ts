@@ -66,6 +66,18 @@ export const DEMO_EN_UI: Record<string, string> = {
   Indietro: "Back",
   Avanti: "Next",
   "Cerca location": "Find venues",
+  "Quali servizi vuoi già inclusi nel prezzo?":
+    "Which services do you want already included in the price?",
+  "Ti mostriamo solo le location che li hanno già compresi.":
+    "We'll only show venues that already include them.",
+  Incluso: "Included",
+  "Quelli che non selezioni potrai aggiungerli dopo alla tua festa.":
+    "The ones you don't select can be added to your party later.",
+  "Aggiungi in seguito separatamente": "Add them separately later",
+  "Aggiungili dopo": "Add them later",
+  Modifica: "Edit",
+  "Nessuna location include tutti i servizi scelti. Ecco le più vicine: quelli mancanti puoi aggiungerli separatamente.":
+    "No venue includes every service you picked. Here are the closest: you can add the missing ones separately.",
   "Scegli almeno una data per continuare.": "Pick at least one date to continue.",
   "Quando vuoi festeggiare?": "When do you want to celebrate?",
   "Date preferite": "Preferred dates",

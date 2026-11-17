@@ -11,6 +11,7 @@ import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
+import { partyServiceLabel } from "@/lib/included-party-services";
 import { cn } from "@/lib/utils";
 import {
   clampDrinksPerInvitee,
@@ -33,7 +34,7 @@ import {
 import {
   EXPLORE_GUEST_MIN,
 } from "@/types/location";
-import { Cake, Calendar, Camera, Check, ChevronDown, Disc3, Gift, Minus, Plus, ShieldCheck, UtensilsCrossed, X } from "lucide-react";
+import { Cake, Calendar, Camera, Check, ChevronDown, Disc3, Gift, Info, Minus, Plus, ShieldCheck, UtensilsCrossed, X } from "lucide-react";
 import { useRef, useState, type Ref } from "react";
 import { createPortal } from "react-dom";
 
@@ -50,7 +51,7 @@ const STEP_QUESTIONS: Record<(typeof STEPS)[number], string> = {
   guests: "Quanti siete?",
   budget: "Quanto vuoi spendere per la location?",
   drinks: "Bevande della serata",
-  services: "Cosa vuoi nella tua festa?",
+  services: "Quali servizi vuoi già inclusi nel prezzo?",
 };
 
 const SERVICE_ICONS = {
@@ -80,9 +81,11 @@ function formatWizardDateLabel(dates: string[], locale: string) {
 interface PartyWizardProps {
   open: boolean;
   onClose: () => void;
+  startStep?: "services" | null;
 }
 
-export function PartyWizard({ open, onClose }: PartyWizardProps) {
+export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProps) {
+  const { lang } = useDemoLanguage();
   const { isDemoMode } = useDemoMode();
   const { applyCriteria, criteria: savedCriteria } = usePartyCriteria();
   const { setTab } = useTabNavigation();
@@ -94,10 +97,11 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
 
   useBodyScrollLock(open);
 
+  const steps = isDemoMode ? STEPS.filter((id) => id !== "drinks") : STEPS;
+
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setStepIndex(0);
       setStepError(null);
       const opened = normalizePartyCriteria(savedCriteria);
       const band = partyBudgetBand(opened.budgetMin, opened.budgetMax);
@@ -108,10 +112,13 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
           ? opened
           : { ...opened, budgetMin: 1000, budgetMax: 2000 },
       );
+      const servicesIndex = steps.indexOf("services");
+      setStepIndex(
+        startStep === "services" && servicesIndex >= 0 ? servicesIndex : 0,
+      );
     }
   }
 
-  const steps = isDemoMode ? STEPS.filter((id) => id !== "drinks") : STEPS;
   const safeIndex = Math.min(stepIndex, steps.length - 1);
   const step = steps[safeIndex];
   const isLast = safeIndex === steps.length - 1;
@@ -201,7 +208,11 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
                 id="party-wizard-title"
                 className="mt-1 text-[1.65rem] font-bold leading-tight text-primary-black"
               >
-                {STEP_QUESTIONS[step]}
+                {step === "services"
+                  ? lang === "en"
+                    ? "Which services do you want already included in the price?"
+                    : STEP_QUESTIONS.services
+                  : STEP_QUESTIONS[step]}
               </h2>
               {step === "budget" ? (
                 <p className="mt-1 text-sm text-primary-black/55">
@@ -210,7 +221,9 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
               ) : null}
               {step === "services" ? (
                 <p className="mt-1 text-sm text-primary-black/55">
-                  Oltre alla location, pensiamo noi a tutto il resto. Scegli quello che ti serve.
+                  {lang === "en"
+                    ? "We'll only show venues that already include them."
+                    : "Ti mostriamo solo le location che li hanno già compresi."}
                 </p>
               ) : null}
             </div>
@@ -274,18 +287,49 @@ export function PartyWizard({ open, onClose }: PartyWizardProps) {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              className="h-[52px] flex-1 rounded-2xl"
+              className={cn(
+                "rounded-2xl",
+                step === "services" ? "h-[50px] shrink-0 px-4" : "h-[52px] flex-1",
+              )}
               onClick={back}
             >
               Indietro
             </Button>
-            <button
-              type="button"
-              onClick={next}
-              className="h-[52px] flex-[1.7] rounded-2xl bg-brand-pink text-base font-bold text-[#0F1115]"
-            >
-              {isLast ? "Cerca location" : "Avanti"}
-            </button>
+            {step === "services" && criteria.partyServices.length === 0 ? (
+              <button
+                type="button"
+                onClick={next}
+                className="h-[50px] min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap rounded-2xl border border-[#2A2C33] bg-transparent px-3 text-[15px] font-bold text-[#F5F5F7]"
+              >
+                <span className="min-[430px]:hidden">
+                  {lang === "en" ? "Add them later" : "Aggiungili dopo"}
+                </span>
+                <span className="hidden min-[430px]:inline">
+                  {lang === "en"
+                    ? "Add them separately later"
+                    : "Aggiungi in seguito separatamente"}
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={next}
+                className={cn(
+                  "rounded-2xl bg-brand-pink font-bold text-[#0F1115]",
+                  step === "services"
+                    ? "h-[50px] min-w-0 flex-1 text-[15px]"
+                    : "h-[52px] flex-[1.7] text-base",
+                )}
+              >
+                {step === "services"
+                  ? lang === "en"
+                    ? "Continue"
+                    : "Continua"
+                  : isLast
+                    ? "Cerca location"
+                    : "Avanti"}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -545,6 +589,8 @@ function ServicesStep({
   criteria: PartyCriteria;
   onChange: (partial: Partial<PartyCriteria>) => void;
 }) {
+  const { lang } = useDemoLanguage();
+
   function toggle(id: PartyServicePick) {
     const current = criteria.partyServices;
     onChange({
@@ -556,7 +602,7 @@ function ServicesStep({
 
   return (
     <fieldset>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="flex flex-wrap gap-2">
         {PARTY_SERVICE_OPTIONS.map((option) => {
           const active = criteria.partyServices.includes(option.id);
           const Icon = SERVICE_ICONS[option.id];
@@ -567,21 +613,40 @@ function ServicesStep({
               aria-pressed={active}
               onClick={() => toggle(option.id)}
               className={cn(
-                "relative flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-2xl border-2 px-2 py-3 text-center text-sm font-bold",
+                "relative flex min-h-[4.5rem] flex-1 basis-[calc(50%-0.25rem)] flex-col items-center justify-center gap-0.5 rounded-2xl border-2 px-3 py-2 text-center",
                 active
-                  ? "border-brand-teal bg-[#123E3E] text-primary-black"
+                  ? "border-brand-teal bg-brand-teal text-[#0F1115]"
                   : "border-white/10 bg-surface text-primary-black/80",
               )}
             >
               {active ? (
-                <Check className="absolute right-2 top-2 h-3.5 w-3.5 text-brand-teal" aria-hidden />
+                <Check className="absolute right-2 top-2 h-3.5 w-3.5" aria-hidden />
               ) : null}
-              <Icon className="h-5 w-5" aria-hidden />
-              {option.label}
+              <Icon className="h-4 w-4" aria-hidden />
+              <span className="text-sm font-bold leading-tight">
+                {partyServiceLabel(option.id, lang)}
+              </span>
+              <span
+                className={cn(
+                  "text-[11px] font-semibold leading-none",
+                  active ? "visible" : "invisible",
+                )}
+                aria-hidden={!active}
+              >
+                {lang === "en" ? "Included" : "Incluso"}
+              </span>
             </button>
           );
         })}
       </div>
+      <p className="mt-3 flex items-start gap-2 text-[13px] leading-snug text-primary-black/50">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+        <span>
+          {lang === "en"
+            ? "The ones you don't select can be added to your party later."
+            : "Quelli che non selezioni potrai aggiungerli dopo alla tua festa."}
+        </span>
+      </p>
       <label className="mt-4 block text-xs font-semibold text-primary-black/55">
         Altri dettagli (facoltativo)
         <textarea

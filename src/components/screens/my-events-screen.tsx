@@ -594,9 +594,7 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [tipsOpen, setTipsOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
-  const { isDemoMode, session } = useDemoMode();
-  const demoLockMissingBanner =
-    isDemoMode && !!session && !session.completed;
+  const { isDemoMode } = useDemoMode();
 
   if (!isActive && (tipsOpen || checklistOpen)) {
     setTipsOpen(false);
@@ -679,6 +677,10 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
                   style={{ colorScheme: "light" }}
                   aria-label="Titolo evento"
                 />
+              ) : isDemoMode ? (
+                <p className="min-w-0 flex-1 cursor-default truncate text-lg font-bold leading-snug text-[color:var(--postit-ink)] sm:text-xl">
+                  {event.title}
+                </p>
               ) : (
                 <HardNavLink
                   href={`/event/${event.id}`}
@@ -872,7 +874,7 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
           </dl>
         </section>
 
-        {missingSuggestions.length > 0 && (
+        {!isDemoMode && missingSuggestions.length > 0 && (
           <section className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">
             <div className="event-postit-dark p-3.5">
               <p className="text-sm font-bold text-white">
@@ -886,19 +888,6 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
                   const Icon = suggestion.icon;
                   const chipClassName =
                     "inline-flex shrink-0 items-center gap-2 rounded-full bg-brand-pink px-3.5 py-2 text-sm font-bold text-ink-inverse";
-
-                  if (demoLockMissingBanner) {
-                    return (
-                      <span
-                        key={suggestion.id}
-                        className={cn(chipClassName, "cursor-default opacity-70")}
-                        aria-disabled="true"
-                      >
-                        <Icon className="h-4 w-4 text-ink-inverse" aria-hidden />
-                        {suggestion.label}
-                      </span>
-                    );
-                  }
 
                   return (
                     <HardNavLink
