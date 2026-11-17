@@ -361,8 +361,8 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Tocca «Invia richiesta di disponibilità» qui sotto.": "Tap «Send availability request» below.",
   "Ecco la tua festa!": "Here's your party!",
   "La tua festa è confermata!": "Your party is confirmed!",
-  "Ora prova ad aggiungere un servizio che manca: tocca uno di quelli nel riquadro rosa.":
-    "Now try adding a missing service: tap one in the pink box.",
+  "Ora prova ad aggiungere un servizio che manca: tocca uno di quelli nel riquadro nero.":
+    "Now try adding a missing service: tap one in the black box.",
   "Perfetto, ora il tuo 18 è completo!": "Perfect, your 18th is now complete!",
   "Tocca «Continua» per dirci cosa ne pensi.": "Tap «Continue» to tell us what you think.",
   "Passo 1 di 5": "Step 1 of 5",

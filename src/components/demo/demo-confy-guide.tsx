@@ -29,7 +29,7 @@ const STEPS = [
   },
   {
     title: "La tua festa è confermata!",
-    body: "Ora prova ad aggiungere un servizio che manca: tocca uno di quelli nel riquadro rosa.",
+    body: "Ora prova ad aggiungere un servizio che manca: tocca uno di quelli nel riquadro nero.",
   },
   {
     title: "Perfetto, ora il tuo 18 è completo!",
