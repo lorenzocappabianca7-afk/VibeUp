@@ -22,6 +22,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -151,6 +152,8 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
   const { isDemoMode } = useDemoMode();
   const demoLockedTab = useDemoLockedTab();
   const [tabParam, setTabParam] = useState<string | null>(null);
+  const [pinnedTab, setPinnedTab] = useState<TabId | null>(null);
+  const locationEntryRef = useRef(false);
 
   const urlTab = useMemo(
     () => resolveTabFromLocation(pathname, tabParam, isBusinessUser),
@@ -180,9 +183,23 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
   const onHome = pathname === "/" || pathname === "" || pathname === "/demo";
   const demoShell = usesDemoShell(pathname, isDemoMode);
   const activeTab =
-    demoLockedTab && pathname === "/demo" && !isBusinessUser
+    pinnedTab ??
+    (demoLockedTab && pathname === "/demo" && !isBusinessUser
       ? demoLockedTab
-      : resolvedTab;
+      : resolvedTab);
+
+  // A typed /location/… link redirects here. The guide lock must not
+  // send that visit back to the current step.
+  useLayoutEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("from") !== "location") return;
+    locationEntryRef.current = true;
+    params.delete("from");
+    const query = params.toString();
+    replaceHomeHref(`${window.location.pathname}${query ? `?${query}` : ""}`);
+    setPinnedTab("explore");
+    setTabParam("explore");
+  }, []);
 
   useEffect(() => {
     router.prefetch("/");
@@ -202,6 +219,7 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
   // Keep the address bar aligned if mode switch invalidates the current tab.
   useEffect(() => {
     if (!onHome) return;
+    if (locationEntryRef.current) return;
     if (candidate === activeTab) return;
 
     const href = buildTabHref(activeTab, isBusinessUser, demoShell);
@@ -246,6 +264,8 @@ export function TabNavigationProvider({ children }: { children: ReactNode }) {
         window.scrollTo({ top: 0, left: 0, behavior: "auto" });
         return;
       }
+      locationEntryRef.current = false;
+      setPinnedTab(null);
 
       const href = buildTabHref(tab, isBusinessUser, demoShell);
 

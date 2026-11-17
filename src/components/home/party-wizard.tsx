@@ -300,27 +300,25 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
                 type="button"
                 onClick={next}
                 className={cn(
-                  "flex h-[50px] min-w-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border-0 px-3 text-center text-[13px] font-bold leading-tight text-[#0F1115] transition-colors duration-150 motion-reduce:transition-none min-[380px]:text-[15px]",
+                  "flex h-[50px] min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-2xl border-0 px-1.5 text-center text-[10px] font-bold tracking-tight text-[#0F1115] transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-background min-[375px]:text-[13px] min-[375px]:tracking-normal min-[430px]:px-3 min-[430px]:text-[15px]",
                   criteria.partyServices.length === 0
                     ? "bg-brand-teal"
                     : "bg-brand-pink",
                 )}
               >
-                <span className="line-clamp-2 block w-full min-w-0">
-                  {criteria.partyServices.length === 0
-                    ? lang === "en"
-                      ? "Add them separately later"
-                      : "Aggiungi in seguito separatamente"
-                    : lang === "en"
-                      ? "Continue"
-                      : "Continua"}
-                </span>
+                {criteria.partyServices.length === 0
+                  ? lang === "en"
+                    ? "Add them separately later"
+                    : "Aggiungi in seguito separatamente"
+                  : lang === "en"
+                    ? "Continue"
+                    : "Continua"}
               </button>
             ) : step === "services" && criteria.partyServices.length === 0 ? (
               <button
                 type="button"
                 onClick={next}
-                className="h-[50px] min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap rounded-2xl border border-[#2A2C33] bg-transparent px-3 text-[15px] font-bold text-[#F5F5F7]"
+                className="h-[50px] min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap rounded-2xl border border-[#2A2C33] bg-transparent px-3 text-[15px] font-bold text-[#F5F5F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <span className="min-[430px]:hidden">
                   {lang === "en" ? "Add them later" : "Aggiungili dopo"}
@@ -336,7 +334,7 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
                 type="button"
                 onClick={next}
                 className={cn(
-                  "rounded-2xl bg-brand-pink font-bold text-[#0F1115]",
+                  "rounded-2xl bg-brand-pink font-bold text-[#0F1115] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                   step === "services"
                     ? "h-[50px] min-w-0 flex-1 text-[15px]"
                     : "h-[52px] flex-[1.7] text-base",

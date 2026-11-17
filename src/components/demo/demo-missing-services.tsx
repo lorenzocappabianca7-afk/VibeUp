@@ -82,6 +82,24 @@ export function DemoMissingServices({
     };
   }, [active, highlight, missing.length]);
 
+  useEffect(() => {
+    const row = rowRef.current;
+    if (!row) return;
+    const onWheel = (event: WheelEvent) => {
+      if (row.scrollWidth <= row.clientWidth + 1) return;
+      const delta =
+        Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      if (!delta) return;
+      const max = row.scrollWidth - row.clientWidth;
+      const next = Math.min(max, Math.max(0, row.scrollLeft + delta));
+      if (next === row.scrollLeft) return;
+      event.preventDefault();
+      row.scrollLeft = next;
+    };
+    row.addEventListener("wheel", onWheel, { passive: false });
+    return () => row.removeEventListener("wheel", onWheel);
+  }, [missing.length]);
+
   function armRow(event: ReactPointerEvent<HTMLDivElement>) {
     const row = rowRef.current;
     rowDrag.current = {

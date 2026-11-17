@@ -43,6 +43,9 @@ function locationPageMetadata(location: Location): Metadata {
 export async function generateMetadata({
   params,
 }: LocationPageProps): Promise<Metadata> {
+  if (await isDemoModeServer()) {
+    return { title: "VibeUp" };
+  }
   const { id } = await params;
   const location = await resolvePublicLocation(id);
   if (!location) notFound();
@@ -54,7 +57,7 @@ export default async function LocationPage({
   searchParams,
 }: LocationPageProps) {
   if (await isDemoModeServer()) {
-    redirect("/demo?tab=explore");
+    redirect("/demo?tab=explore&from=location");
   }
   const { id } = await params;
   const location = await resolvePublicLocation(id);

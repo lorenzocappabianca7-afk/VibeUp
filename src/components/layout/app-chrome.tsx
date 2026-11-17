@@ -42,6 +42,7 @@ function AppChromeNav() {
       onTabChange={setTab}
       variant={isBusinessUser ? "business" : "consumer"}
       tabsLocked={demoLockedTab !== null}
+      guideTab={demoLockedTab}
       onLockedTab={demoLockedTab === "home" ? () => requestDemoNudge() : undefined}
     />
   );

@@ -38,6 +38,8 @@ interface BottomNavProps {
   variant?: "consumer" | "business";
   tabsLocked?: boolean;
   onLockedTab?: (tab: TabId) => void;
+  /** The demo step tab stays reachable when another tab is open. */
+  guideTab?: TabId | null;
 }
 
 export function BottomNav({
@@ -46,6 +48,7 @@ export function BottomNav({
   variant = "consumer",
   tabsLocked = false,
   onLockedTab,
+  guideTab = null,
 }: BottomNavProps) {
   const {
     hasUnreadMessages,
@@ -84,18 +87,21 @@ export function BottomNav({
               variant === "consumer" &&
               hasUnreadProfileComms);
 
+          const guideStep = guideTab === tab.id;
+          const blocked = tabsLocked && !isActive && !guideStep;
+
           return (
             <li key={tab.id} className="flex-1">
               <button
                 type="button"
                 onClick={() => {
-                  if (tabsLocked && !isActive) {
+                  if (blocked) {
                     onLockedTab?.(tab.id);
                     return;
                   }
                   onTabChange(tab.id);
                 }}
-                disabled={tabsLocked && !isActive && !onLockedTab}
+                disabled={blocked && !onLockedTab}
                 aria-current={isActive ? "page" : undefined}
                 aria-label={
                   showBadge
@@ -105,8 +111,8 @@ export function BottomNav({
                 className={cn(
                   "touch-feedback flex w-full min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 py-1.5 text-white transition-colors duration-100 sm:gap-1 sm:px-1 sm:py-2",
                   isActive ? "bg-white/12" : "hover:bg-white/[0.04]",
-                  tabsLocked && !isActive && !onLockedTab && "pointer-events-none",
-                  tabsLocked && !isActive && "opacity-40",
+                  blocked && !onLockedTab && "pointer-events-none",
+                  blocked && "opacity-40",
                 )}
               >
                 <span className="relative inline-flex">
