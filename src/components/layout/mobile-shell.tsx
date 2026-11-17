@@ -1,17 +1,46 @@
 "use client";
 
-import { BusinessCalendarScreen } from "@/components/screens/business-calendar-screen";
-import { BusinessFesteScreen } from "@/components/screens/business-feste-screen";
-import { BusinessNotificationsScreen } from "@/components/screens/business-notifications-screen";
-import { ExploreScreen } from "@/components/screens/explore-screen";
 import { HomeScreen } from "@/components/screens/home-screen";
-import { MessagesScreen } from "@/components/screens/messages-screen";
-import { MyEventsScreen } from "@/components/screens/my-events-screen";
-import { ProfileScreen } from "@/components/screens/profile-screen";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import type { TabId } from "@/types/navigation";
+import dynamic from "next/dynamic";
 import { useState } from "react";
+
+const ExploreScreen = dynamic(
+  () => import("@/components/screens/explore-screen").then((mod) => mod.ExploreScreen),
+  { loading: () => null },
+);
+const MyEventsScreen = dynamic(
+  () => import("@/components/screens/my-events-screen").then((mod) => mod.MyEventsScreen),
+  { loading: () => null },
+);
+const MessagesScreen = dynamic(
+  () => import("@/components/screens/messages-screen").then((mod) => mod.MessagesScreen),
+  { loading: () => null },
+);
+const ProfileScreen = dynamic(
+  () => import("@/components/screens/profile-screen").then((mod) => mod.ProfileScreen),
+  { loading: () => null },
+);
+const BusinessCalendarScreen = dynamic(
+  () =>
+    import("@/components/screens/business-calendar-screen").then(
+      (mod) => mod.BusinessCalendarScreen,
+    ),
+  { loading: () => null },
+);
+const BusinessFesteScreen = dynamic(
+  () => import("@/components/screens/business-feste-screen").then((mod) => mod.BusinessFesteScreen),
+  { loading: () => null },
+);
+const BusinessNotificationsScreen = dynamic(
+  () =>
+    import("@/components/screens/business-notifications-screen").then(
+      (mod) => mod.BusinessNotificationsScreen,
+    ),
+  { loading: () => null },
+);
 
 function TabPanel({
   tab,

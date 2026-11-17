@@ -9,7 +9,7 @@ import path from "node:path";
 const CODE_TTL_MS = 10 * 60 * 1000;
 let pepperWarningShown = false;
 
-function waitlistPepper() {
+export function waitlistPepper() {
   const value = process.env.WAITLIST_CODE_PEPPER?.trim() ?? "";
   if (value.length >= 32) return value;
   const message =

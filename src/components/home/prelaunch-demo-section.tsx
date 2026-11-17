@@ -1,4 +1,5 @@
 import { landingCopy } from "@/content/landing";
+import { DemoEntryLink } from "@/components/demo/demo-entry-link";
 import { ArrowIcon, Wordmark } from "@/components/home/prelaunch-wordmark";
 import { brandTokens } from "@/lib/brand-tokens";
 
@@ -48,10 +49,10 @@ export function PrelaunchDemoSection({
         </div>
 
         {canEnterDemo ? (
-          <a className="vu-btn vu-cta-teal vu-reveal-item vu-reveal-d3 bg-brand-teal font-[family-name:var(--font-brand)] text-[17px] text-ink-inverse" href="/demo">
+          <DemoEntryLink className="vu-btn vu-cta-teal vu-reveal-item vu-reveal-d3 bg-brand-teal font-[family-name:var(--font-brand)] text-[17px] text-ink-inverse" href="/demo">
             {landingCopy.demoEnter}
             <ArrowIcon />
-          </a>
+          </DemoEntryLink>
         ) : (
           <a
             className="vu-btn vu-cta-teal vu-reveal-item vu-reveal-d3 bg-brand-teal font-[family-name:var(--font-brand)] text-[17px] text-ink-inverse"

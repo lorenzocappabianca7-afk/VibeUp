@@ -9,6 +9,7 @@ import {
 import { demoAccessPath, ensureDemoAccessToken } from "@/server/launch/demo-access";
 import { deliverWelcomeEmail } from "@/server/launch/welcome-mail";
 import { verifyEmailCode } from "@/server/repositories/waitlist";
+import { attachSignupCookie } from "@/server/launch/signup-cookie";
 import { type NextRequest } from "next/server";
 
 export const runtime = "nodejs";
@@ -33,7 +34,9 @@ export async function POST(request: NextRequest) {
       return launchError(status, result.error);
     }
     if (result.confirmed) {
-      return launchOk({ signupId, confirmed: true });
+      const confirmed = launchOk({ signupId, confirmed: true });
+      attachSignupCookie(confirmed, signupId);
+      return confirmed;
     }
     if (result.welcomePending) {
       await deliverWelcomeEmail({
@@ -46,11 +49,13 @@ export async function POST(request: NextRequest) {
       });
     }
     const token = await ensureDemoAccessToken(signupId).catch(() => null);
-    return launchOk({
+    const accepted = launchOk({
       signupId,
       vibeupCode: result.vibeupCode,
       ...(token ? { demoPath: demoAccessPath(token) } : {}),
     });
+    attachSignupCookie(accepted, signupId);
+    return accepted;
   } catch {
     return launchError(500, "unavailable");
   }

@@ -7,6 +7,7 @@ import {
   readJsonObject,
 } from "@/server/launch/request";
 import { findSignupByDemoToken, isDemoAccessToken } from "@/server/launch/demo-access";
+import { attachSignupCookie } from "@/server/launch/signup-cookie";
 import { type NextRequest } from "next/server";
 
 export const runtime = "nodejs";
@@ -20,7 +21,9 @@ export async function POST(request: NextRequest) {
   try {
     const found = await findSignupByDemoToken(token);
     if (!found) return launchOk({ ok: false });
-    return launchOk({ ok: true, signupId: found.signupId, locale: found.locale });
+    const accepted = launchOk({ ok: true, signupId: found.signupId, locale: found.locale });
+    attachSignupCookie(accepted, found.signupId);
+    return accepted;
   } catch {
     return launchError(500, "unavailable");
   }

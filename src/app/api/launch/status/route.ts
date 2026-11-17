@@ -8,6 +8,7 @@ import {
 } from "@/server/launch/request";
 import { countValidInvitesForCode } from "@/server/repositories/contest";
 import { findVerifiedSignup } from "@/server/repositories/waitlist";
+import { attachSignupCookie, clearSignupCookie } from "@/server/launch/signup-cookie";
 import { type NextRequest } from "next/server";
 
 export const runtime = "nodejs";
@@ -20,14 +21,20 @@ export async function POST(request: NextRequest) {
   if (!isUuid(signupId)) return launchOk({ ok: false });
   try {
     const row = await findVerifiedSignup(signupId);
-    if (!row) return launchOk({ ok: false });
+    if (!row) {
+      const rejected = launchOk({ ok: false });
+      clearSignupCookie(rejected);
+      return rejected;
+    }
     const inviteCount = await countValidInvitesForCode(row.vibeupCode);
-    return launchOk({
+    const accepted = launchOk({
       ok: true,
       vibeupCode: row.vibeupCode,
       firstName: row.firstName,
       inviteCount,
     });
+    attachSignupCookie(accepted, row.id);
+    return accepted;
   } catch {
     return launchError(500, "unavailable");
   }

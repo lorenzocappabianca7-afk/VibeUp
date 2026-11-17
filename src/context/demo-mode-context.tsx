@@ -63,6 +63,8 @@ interface DemoModeContextValue {
   bookingConfirmed: boolean;
   homeTipDismissed: boolean;
   isDemoHomeLocked: boolean;
+  /** True once /demo may show the tab bar. Stays false during the entry boot screen. */
+  demoEntryReady: boolean;
   enterDemo: () => void;
   exitDemo: () => void;
   toggleDemoLocation: (location: DemoChosenLocation) => void;
@@ -170,6 +172,7 @@ function createDemoAttempt(identity: DemoEntryIdentity) {
 export function DemoModeProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname() || "/";
   const [demoActive, setDemoActive] = useState(false);
+  const [demoEntryReady, setDemoEntryReady] = useState(false);
   const [session, setSession] = useState<DemoSession | null>(null);
   const [landingState, setLandingState] = useState<DemoLandingState>("ready");
   const [bootError, setBootError] = useState<string | null>(null);
@@ -185,6 +188,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     if (exitingToSite) return;
     writeDemoModeCookie();
     publishDemoMode(true);
+    setDemoEntryReady(true);
     setDemoActive(true);
   }, []);
 
@@ -201,6 +205,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     setBootError(null);
     setHomeTipDismissed(true);
     setLandingState("ready");
+    setDemoEntryReady(false);
     setDemoActive(false);
   }, []);
 
@@ -209,6 +214,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     const cookieOn = readDemoModeCookie();
     if (cookieOn !== demoActive) {
       publishDemoMode(cookieOn && usesDemoShell(pathname, true));
+      setDemoEntryReady(cookieOn);
       setDemoActive(cookieOn);
       return;
     }
@@ -237,6 +243,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       demoBoot = null;
       bootedRef.current = false;
       wasActiveRef.current = false;
+      setDemoEntryReady(false);
       setDemoActive(false);
       return;
     }
@@ -292,18 +299,20 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       publishDemoMode(false);
       demoBoot = null;
       wasActiveRef.current = false;
+      setDemoEntryReady(false);
       setDemoActive(false);
       return;
     }
 
     void confirmVerifiedSignup(identity.signupId).then((ok) => {
       if (exitingToSite || attempt !== attemptRef.current) return;
-      if (!ok) {
+      if (ok === false) {
         bootedRef.current = false;
         clearDemoModeCookie();
         publishDemoMode(false);
         demoBoot = null;
         wasActiveRef.current = false;
+        setDemoEntryReady(false);
         setDemoActive(false);
         return;
       }
@@ -505,6 +514,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       bookingConfirmed: session?.bookingConfirmed === true,
       homeTipDismissed,
       isDemoHomeLocked,
+      demoEntryReady,
       enterDemo,
       exitDemo,
       toggleDemoLocation,
@@ -521,6 +531,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       completeDemoSession,
       confirmCustomVenue,
       demoActive,
+      demoEntryReady,
       dismissHomeTip,
       enterDemo,
       exitDemo,
@@ -552,6 +563,7 @@ const DEMO_MODE_FALLBACK: DemoModeContextValue = {
   bookingConfirmed: false,
   homeTipDismissed: true,
   isDemoHomeLocked: false,
+  demoEntryReady: false,
   enterDemo: () => undefined,
   exitDemo: () => undefined,
   toggleDemoLocation: () => undefined,

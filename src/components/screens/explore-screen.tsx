@@ -12,6 +12,10 @@ import { useDemoLanguage } from "@/context/demo-language-context";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
+import {
+  hasQueuedExploreCategory,
+  takeQueuedExploreCategory,
+} from "@/lib/explore-category-queue";
 import { buildLocationHrefFromCriteria } from "@/lib/location-href";
 import { MOCK_LOCATIONS } from "@/lib/mock/locations";
 import {
@@ -102,16 +106,6 @@ function ExploreUrlParamsSync({
   return null;
 }
 const MAX_COMPARE_LOCATIONS = 3;
-
-let queuedExploreCategory: ExploreCategory | null = null;
-
-/** Home cards ask Esplora to open this category on the next paint. */
-export function queueExploreCategory(category: ExploreCategory) {
-  queuedExploreCategory = category;
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event("vibeup-explore-category"));
-  }
-}
 
 const EXPLORE_CATEGORIES: {
   id: ExploreCategory;
@@ -506,7 +500,7 @@ export function ExploreScreen({
     queueMicrotask(() => {
       if (cancelled) return;
 
-      if (queuedExploreCategory) return;
+      if (hasQueuedExploreCategory()) return;
       const liveCategory = new URLSearchParams(window.location.search).get(
         "category",
       );
@@ -530,9 +524,8 @@ export function ExploreScreen({
 
   useEffect(() => {
     const applyQueuedCategory = () => {
-      if (!queuedExploreCategory) return;
-      const next = queuedExploreCategory;
-      queuedExploreCategory = null;
+      const next = takeQueuedExploreCategory();
+      if (!next) return;
       setActiveCategory(next);
       setView("list");
     };

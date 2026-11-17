@@ -4,9 +4,8 @@ import { DjCard } from "@/components/explore/dj-card";
 import { LocationCard } from "@/components/explore/location-card";
 import { DemoHomeLockedDim } from "@/components/demo/demo-confy-guide";
 import { DemoHomeCreateWrap } from "@/components/demo/demo-home-tip";
-import { PartyWizard } from "@/components/home/party-wizard";
 import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
-import { queueExploreCategory } from "@/components/screens/explore-screen";
+import { queueExploreCategory } from "@/lib/explore-category-queue";
 import { useAppState } from "@/context/app-state-context";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
@@ -30,7 +29,13 @@ import {
 import type { ExploreCategory, Location } from "@/types/location";
 import type { PartyCriteria } from "@/types/party-criteria";
 import { ArrowRight, Bell, Building2, Cake, Camera, ChevronRight, Disc3, Gift, ShieldCheck, UtensilsCrossed } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
+
+const PartyWizard = dynamic(
+  () => import("@/components/home/party-wizard").then((mod) => mod.PartyWizard),
+  { loading: () => null },
+);
 
 type HomeNotification = {
   id: string;

@@ -3,6 +3,7 @@
 import { useDemoLanguage } from "@/context/demo-language-context";
 import { consentText } from "@/content/legal";
 import { signupCopy } from "@/content/signup";
+import { DemoEntryLink } from "@/components/demo/demo-entry-link";
 import { SignupMemberCard } from "@/components/home/signup-share";
 import { readDemoLanguage } from "@/lib/demo/language";
 import { DEMO_SIGNUP_ID_STORAGE_KEY, readVerifiedMember } from "@/lib/demo/signup-gate";
@@ -754,7 +755,7 @@ export function SignupFlow({
                 {busy ? signupCopy.wait : signupCopy.saveDetails}
               </button>
             </div>
-            <a className="vu-btn vu-cta vu-signup-demo" href={done.demoPath ?? "/demo"}>{signupCopy.tryDemo}</a>
+            <DemoEntryLink className="vu-btn vu-cta vu-signup-demo" href={done.demoPath ?? "/demo"}>{signupCopy.tryDemo}</DemoEntryLink>
             <button type="button" className="vu-text-btn" onClick={dismiss}>{signupCopy.backToSite}</button>
           </div>
         ) : (

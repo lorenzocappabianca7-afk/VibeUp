@@ -15,8 +15,9 @@ import { useDemoLockedTab } from "@/lib/demo/chrome-lock";
 import { requestDemoNudge } from "@/lib/demo/nudge";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { prelaunchChromeHideCss } from "@/components/home/prelaunch-critical-css";
+import { isPlatformLive } from "@/lib/platform";
 import { usePathname } from "next/navigation";
-import { type ReactNode } from "react";
+import { useLayoutEffect, useState, type ReactNode } from "react";
 
 function shouldHideBottomNav(pathname: string) {
   return (
@@ -53,9 +54,22 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const hideNav = shouldHideBottomNav(pathname);
   const hideFooter = shouldHideFooter(pathname);
   const chromeLocked = useDemoLockedTab() !== null;
-  const { isDemoMode } = useDemoMode();
+  const { isDemoMode, demoEntryReady } = useDemoMode();
   const demoRequestLocation = useDemoAvailabilityTarget();
   const showDemoRequestBar = !hideNav && demoRequestLocation != null;
+  const demoRoute = pathname === "/demo" || pathname.startsWith("/demo/");
+  const [appPreview, setAppPreview] = useState(false);
+  useLayoutEffect(() => {
+    if (isPlatformLive() || pathname !== "/") {
+      setAppPreview(false);
+      return;
+    }
+    setAppPreview(new URLSearchParams(window.location.search).get("app") === "1");
+  }, [pathname]);
+  const prelaunchLanding = !isPlatformLive() && pathname === "/" && !appPreview;
+  const hideInstall = isDemoMode || demoRoute || prelaunchLanding;
+  const hideAppFooter = hideFooter || demoRoute || isDemoMode;
+  const showTabs = !hideNav && (!demoRoute || demoEntryReady);
 
   return (
     <>
@@ -71,8 +85,8 @@ export function AppChrome({ children }: { children: ReactNode }) {
           className={chromeLocked ? "pointer-events-none" : undefined}
           inert={chromeLocked || undefined}
         >
-          {!hideNav && !isDemoMode && <PwaInstallBanner />}
-          {!hideNav && <EmailActivationBanner />}
+          {!hideNav && !hideInstall && <PwaInstallBanner />}
+          {!hideNav && !demoRoute && <EmailActivationBanner />}
         </div>
         <div
           className={
@@ -83,7 +97,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
         >
           {children}
         </div>
-        {hideFooter ? null : (
+        {hideAppFooter ? null : (
           <div
             className={chromeLocked ? "pointer-events-none" : undefined}
             inert={chromeLocked || undefined}
@@ -96,7 +110,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
         <DemoAvailabilityBar location={demoRequestLocation} />
       ) : null}
       {isDemoMode && !hideNav ? <DemoConfyGuide /> : null}
-      {!hideNav && <AppChromeNav />}
+      {showTabs ? <AppChromeNav /> : null}
     </>
   );
 }
