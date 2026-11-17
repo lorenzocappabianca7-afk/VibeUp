@@ -8,6 +8,7 @@ import {
 export const DEMO_SESSION_STORAGE_KEY = "vibeup-demo-session-v1";
 export const DEMO_VISIT_STORAGE_KEY = "vibeup-demo-visit-v1";
 export const DEMO_HOME_TIP_KEY = "vibeup-demo-home-tip-v1";
+export const DEMO_GUIDE_SKIP_KEY = "vibeup-demo-guide-skip-v1";
 export const DEMO_CRITERIA_STORAGE_KEY = "vibeup-demo-party-criteria-v1";
 export const DEMO_SESSION_COOKIE = "vibeup-demo-session";
 /** One location per demo visit. Kept for older imports. */
@@ -213,6 +214,14 @@ export function dismissDemoHomeTip(sessionId: string) {
 
 export function clearDemoHomeTip() {
   clearDurable(DEMO_HOME_TIP_KEY);
+}
+
+export function isDemoGuideSkipped(sessionId: string): boolean {
+  return readDurable(DEMO_GUIDE_SKIP_KEY) === sessionId;
+}
+
+export function skipDemoGuide(sessionId: string) {
+  writeDurable(DEMO_GUIDE_SKIP_KEY, sessionId);
 }
 
 export function readDemoPartyCriteria(sessionId: string): PartyCriteria | null {

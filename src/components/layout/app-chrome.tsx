@@ -4,6 +4,7 @@ import {
   DemoAvailabilityBar,
   useDemoAvailabilityTarget,
 } from "@/components/demo/demo-availability-bar";
+import { DemoConfyGuide } from "@/components/demo/demo-confy-guide";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { EmailActivationBanner } from "@/components/auth/email-activation-banner";
@@ -11,6 +12,7 @@ import { AppWakeRecovery } from "@/components/pwa/app-wake-recovery";
 import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { useDemoLockedTab } from "@/lib/demo/chrome-lock";
+import { requestDemoNudge } from "@/lib/demo/nudge";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { prelaunchChromeHideCss } from "@/components/home/prelaunch-critical-css";
 import { usePathname } from "next/navigation";
@@ -40,6 +42,7 @@ function AppChromeNav() {
       onTabChange={setTab}
       variant={isBusinessUser ? "business" : "consumer"}
       tabsLocked={demoLockedTab !== null}
+      onLockedTab={demoLockedTab === "home" ? () => requestDemoNudge() : undefined}
     />
   );
 }
@@ -91,6 +94,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
       {showDemoRequestBar && demoRequestLocation ? (
         <DemoAvailabilityBar location={demoRequestLocation} />
       ) : null}
+      {isDemoMode && !hideNav ? <DemoConfyGuide /> : null}
       {!hideNav && <AppChromeNav />}
     </>
   );

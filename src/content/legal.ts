@@ -6,6 +6,8 @@ export const LEGAL_VERSIONS = {
   privacy: "privacy-v1",
   rules: "rules-v1",
   marketing: "marketing-v1",
+  realInterestWhatsapp: "real-interest-whatsapp-v1",
+  realInterestEmail: "real-interest-email-v1",
 } as const;
 
 export const consentText = {

@@ -2,8 +2,8 @@
 
 import { DjCard } from "@/components/explore/dj-card";
 import { LocationCard } from "@/components/explore/location-card";
+import { DemoHomeLockedDim } from "@/components/demo/demo-confy-guide";
 import { DemoHomeCreateWrap } from "@/components/demo/demo-home-tip";
-import { useDemoLockedTab } from "@/lib/demo/chrome-lock";
 import { PartyWizard } from "@/components/home/party-wizard";
 import { HorizontalTouchScroll } from "@/components/ui/horizontal-touch-scroll";
 import { queueExploreCategory } from "@/components/screens/explore-screen";
@@ -98,7 +98,6 @@ export function HomeScreen() {
   const { criteria } = usePartyCriteria();
   const { isDemoMode, dismissHomeTip } = useDemoMode();
   const { setTab } = useTabNavigation();
-  const isDemoHomeLocked = useDemoLockedTab() === "home";
   const {
     currentUser,
     events,
@@ -278,7 +277,7 @@ export function HomeScreen() {
             <ArrowRight className="h-5 w-5" aria-hidden />
           </button>
         </DemoHomeCreateWrap>
-        <div className="mt-4 min-w-0">
+        <DemoHomeLockedDim className="mt-4 min-w-0">
           <h3 className="text-sm font-bold text-primary-black">Tutto per la tua festa</h3>
           <HorizontalTouchScroll className="mt-2 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex w-max gap-2">
@@ -302,17 +301,10 @@ export function HomeScreen() {
               })}
             </div>
           </HorizontalTouchScroll>
-        </div>
+        </DemoHomeLockedDim>
       </section>
 
-      <div
-        className={
-          isDemoHomeLocked
-            ? "min-w-0 max-w-full pointer-events-none select-none"
-            : "min-w-0 max-w-full"
-        }
-        inert={isDemoHomeLocked || undefined}
-      >
+      <DemoHomeLockedDim className="min-w-0 max-w-full">
       {isDemoMode ? null : <section className="min-w-0 max-w-full space-y-3">
         <div className="flex min-w-0 items-center justify-between gap-2">
           <h2 className="flex min-w-0 items-center gap-2 text-lg font-bold text-primary-black">
@@ -407,7 +399,7 @@ export function HomeScreen() {
           </HorizontalTouchScroll>
         </section>
       ) : null}
-      </div>
+      </DemoHomeLockedDim>
 
       <PartyWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
     </div>

@@ -12,6 +12,11 @@ import {
   signupsToCsv,
 } from "@/server/repositories/community-admin";
 import { eraseSignupById } from "@/server/repositories/privacy";
+import {
+  listRealInterest,
+  updateRealInterestStatus,
+  type RealInterestStatus,
+} from "@/server/repositories/real-interest";
 import { rateLimit } from "@/server/http/rate-limit";
 import { isUuid } from "@/server/launch/request";
 import { NextResponse, type NextRequest } from "next/server";
@@ -84,6 +89,21 @@ export async function GET(request: NextRequest) {
       if (!data) return NextResponse.json({ error: "Iscritto non trovato." }, { status: 404 });
       return NextResponse.json(data, { headers: { "Cache-Control": "no-store" } });
     }
+    if (view === "real-interest") {
+      const status = request.nextUrl.searchParams.get("status") || "all";
+      const allowed = status === "nuova" || status === "contattato" || status === "chiusa" ? status : "all";
+      const rows = await listRealInterest(allowed);
+      if (format === "csv") {
+        return new NextResponse(realInterestToCsv(rows), {
+          headers: {
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": "attachment; filename=\"vibeup-richieste-reali.csv\"",
+            "Cache-Control": "no-store",
+          },
+        });
+      }
+      return NextResponse.json({ rows }, { headers: { "Cache-Control": "no-store" } });
+    }
     if (view === "demos") {
       const page = Math.max(1, Number(request.nextUrl.searchParams.get("page")) || 1);
       const data = await loadCommunityDemos(page, format === "csv");
@@ -102,6 +122,44 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Lettura non riuscita." },
+      { status: 500 },
+    );
+  }
+}
+
+function realInterestToCsv(rows: Awaited<ReturnType<typeof listRealInterest>>) {
+  const cell = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
+  const header = ["Data", "Nome", "Contatto", "Canale", "Location", "Data festa", "Invitati", "Stato"];
+  const lines = rows.map((row) =>
+    [row.createdAt, row.name, row.contact, row.channel, row.location, row.partyDate, row.guestCount, row.status]
+      .map(cell)
+      .join(","),
+  );
+  return `\uFEFF${header.map(cell).join(",")}\n${lines.join("\n")}`;
+}
+
+export async function PATCH(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (!auth.ok) return auth.response;
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "JSON non valido." }, { status: 400 });
+  }
+  const record = body && typeof body === "object" ? (body as { id?: unknown; status?: unknown }) : {};
+  const id = typeof record.id === "string" ? record.id : "";
+  const status = typeof record.status === "string" ? record.status : "";
+  if (!isUuid(id) || (status !== "nuova" && status !== "contattato" && status !== "chiusa")) {
+    return NextResponse.json({ error: "Richiesta non valida." }, { status: 422 });
+  }
+  try {
+    const updated = await updateRealInterestStatus(id, status as RealInterestStatus);
+    if (!updated) return NextResponse.json({ error: "Richiesta non trovata." }, { status: 404 });
+    return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Aggiornamento non riuscito." },
       { status: 500 },
     );
   }

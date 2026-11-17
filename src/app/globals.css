@@ -287,10 +287,47 @@ input[type="number"]::-webkit-outer-spin-button {
   animation: vu-demo-check-pop 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
+@keyframes vu-confy-in {
+  0% { opacity: 0; transform: translateY(28px); }
+  58% { opacity: 1; transform: translateY(-8px); }
+  78% { transform: translateY(3px); }
+  100% { transform: translateY(0); }
+}
+
+.vu-confy-in {
+  animation: vu-confy-in 640ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes vu-confy-hop {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-12px); }
+}
+
+.vu-confy-hop {
+  animation: vu-confy-hop 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@keyframes vu-demo-create-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.9; }
+}
+
+.vu-demo-create-ring {
+  border: 2px solid #f091b2;
+  animation: vu-demo-create-pulse 1.8s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .vu-demo-request-bar,
-  .vu-demo-check-pop {
+  .vu-demo-check-pop,
+  .vu-confy-in,
+  .vu-confy-hop,
+  .vu-demo-create-ring {
     animation: none;
+  }
+
+  .vu-demo-create-ring {
+    opacity: 0.55;
   }
 }
 

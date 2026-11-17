@@ -6,6 +6,7 @@ import { useDemoLanguage } from "@/context/demo-language-context";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
+import { DemoRealInterestSheet } from "@/components/demo/demo-real-interest-sheet";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import {
   DEMO_EVENT_END_TIME,
@@ -20,9 +21,8 @@ import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 import type { AvailabilityEventPayload } from "@/types/availability-request";
 import type { DemoChosenLocation } from "@/types/demo";
 import { EXPLORE_GUEST_MIN } from "@/types/location";
-import { Check, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
-import { createPortal } from "react-dom";
 
 function formatPartyDate(iso: string, lang: "it" | "en") {
   return new Intl.DateTimeFormat(lang === "en" ? "en-GB" : "it-IT", {
@@ -30,21 +30,6 @@ function formatPartyDate(iso: string, lang: "it" | "en") {
     month: "long",
     year: "numeric",
   }).format(new Date(`${iso}T12:00:00`));
-}
-
-function acceptedSentence(
-  name: string,
-  dateLabel: string | null,
-  lang: "it" | "en",
-) {
-  if (lang === "en") {
-    return dateLabel
-      ? `${name} confirmed availability for your party on ${dateLabel}.`
-      : `${name} confirmed availability for your party.`;
-  }
-  return dateLabel
-    ? `${name} ha confermato la disponibilità per la tua festa del ${dateLabel}.`
-    : `${name} ha confermato la disponibilità per la tua festa.`;
 }
 
 export function useDemoAvailabilityTarget(): DemoChosenLocation | null {
@@ -139,51 +124,16 @@ export function DemoAvailabilityBar({
   }
 
   const sheet =
-    phase === "accepted" && typeof document !== "undefined"
-      ? createPortal(
-          <div
-            className="fixed inset-0 z-[80] flex items-end justify-center"
-            data-overlay-open="true"
-          >
-            <div className="absolute inset-0 bg-black/50" />
-            <div
-              className="relative w-full max-w-md rounded-t-[28px] bg-surface px-5 pt-3 shadow-xl"
-              style={{
-                paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))",
-              }}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="demo-request-accepted-title"
-            >
-              <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-primary-black/20" />
-              <div className="vu-demo-check-pop mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-teal text-ink-inverse">
-                <Check className="h-8 w-8" strokeWidth={2.75} aria-hidden />
-              </div>
-              <h2
-                id="demo-request-accepted-title"
-                className="mt-4 text-center font-[family-name:var(--font-brand)] text-[28px] font-bold leading-tight text-primary-black"
-              >
-                Richiesta accettata!
-              </h2>
-              <p className="mt-3 text-center text-[17px] leading-snug text-primary-black">
-                {acceptedSentence(location.name, dateLabel, lang)}
-              </p>
-              <p className="mt-3 text-center text-[13px] leading-snug text-primary-black/45">
-                Questa è una demo: nessuna richiesta è stata inviata davvero al
-                locale.
-              </p>
-              <button
-                type="button"
-                onClick={() => void openEvent()}
-                className="mt-5 flex h-[50px] w-full items-center justify-center rounded-[14px] bg-brand-pink px-4 text-[17px] font-semibold text-ink-inverse"
-              >
-                Vedi il tuo evento
-              </button>
-            </div>
-          </div>,
-          document.body,
-        )
-      : null;
+    phase === "accepted" ? (
+      <DemoRealInterestSheet
+        locationName={location.name}
+        locationId={location.id}
+        dateLabel={dateLabel}
+        partyDate={chosenDate || demoFallbackEventDate()}
+        guestCount={criteria.guestCount ?? EXPLORE_GUEST_MIN}
+        onSeeEvent={() => void openEvent()}
+      />
+    ) : null;
 
   return (
     <>

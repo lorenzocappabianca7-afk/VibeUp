@@ -1,6 +1,7 @@
 "use client";
 
 import { AdminSectionLinks } from "@/components/admin/admin-section-links";
+import { RealInterestTab } from "@/components/admin/real-interest-tab";
 import { Button } from "@/components/ui/button";
 import { FieldLabel } from "@/components/ui/form-fields";
 import { GUEST_USER, useAppState } from "@/context/app-state-context";
@@ -17,7 +18,7 @@ function formatBirth(date: string | null | undefined, year: number | null | unde
   return year == null ? "—" : String(year);
 }
 
-type TabId = "panoramica" | "iscritti" | "demo" | "gara";
+type TabId = "panoramica" | "iscritti" | "demo" | "richieste" | "gara";
 
 type SignupRow = {
   id: string;
@@ -56,6 +57,7 @@ type Overview = {
     demoCompleted: number;
     averageRating: number | null;
     eighteenthYesRate: number | null;
+    realInterestNew: number;
   };
   funnel: { label: string; count: number; percent: number | null }[];
   perDay: { day: string; count: number }[];
@@ -91,6 +93,16 @@ type Person = {
   inviter: { code: string; username: string } | null;
   invitees: { username: string; firstName: string; verified: boolean; createdAt: string }[];
   demos: DemoRow[];
+  realInterests: {
+    id: string;
+    createdAt: string;
+    location: string;
+    partyDate: string;
+    guestCount: number;
+    channel: "whatsapp" | "email";
+    contact: string;
+    status: "nuova" | "contattato" | "chiusa";
+  }[];
 };
 
 type LeaderRow = SignupRow & {
@@ -106,6 +118,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "panoramica", label: "Panoramica" },
   { id: "iscritti", label: "Iscritti" },
   { id: "demo", label: "Demo" },
+  { id: "richieste", label: "Richieste reali" },
   { id: "gara", label: "Gara inviti" },
 ];
 
@@ -113,7 +126,7 @@ const inputClass =
   "w-full rounded-[14px] border border-white/10 bg-background px-3 py-2 text-sm text-primary-black focus:border-brand-teal focus:outline-none";
 
 function tabFrom(value: string | null): TabId {
-  if (value === "iscritti" || value === "demo" || value === "gara") return value;
+  if (value === "iscritti" || value === "demo" || value === "richieste" || value === "gara") return value;
   return "panoramica";
 }
 
@@ -390,6 +403,7 @@ export function CommunityPanel({
       {tab === "panoramica" ? <OverviewTab /> : null}
       {tab === "iscritti" ? <SignupsTab /> : null}
       {tab === "demo" ? <DemosTab /> : null}
+      {tab === "richieste" ? <RealInterestTab /> : null}
       {tab === "gara" ? <ContestTab /> : null}
     </Shell>
   );
@@ -432,6 +446,7 @@ function OverviewTab() {
     ["Demo completate", String(data.totals.demoCompleted)],
     ["Voto medio", data.totals.averageRating == null ? "—" : String(data.totals.averageRating)],
     ["La useresti per il 18", data.totals.eighteenthYesRate == null ? "—" : `${data.totals.eighteenthYesRate}%`],
+    ["Richieste nuove", String(data.totals.realInterestNew ?? 0)],
   ];
   const maxDay = Math.max(1, ...data.perDay.map((day) => day.count));
   return (
@@ -789,6 +804,16 @@ function SignupsTab() {
               <li key={`${item.username}-${item.createdAt}`}>@{item.username || "—"} · {item.firstName} · {formatWhen(item.createdAt)}</li>
             ))}
           </ul>
+          <h3 className="mt-6 text-sm font-bold">Richieste reali</h3>
+          {person.realInterests.length === 0 ? <p className="mt-2 text-sm text-primary-black/45">Nessuna richiesta.</p> : (
+            <ul className="mt-2 space-y-1 text-sm">
+              {person.realInterests.map((item) => (
+                <li key={item.id}>
+                  {item.location} · {item.partyDate} · {item.guestCount} invitati · {item.channel === "whatsapp" ? "WhatsApp" : "Email"} {item.contact} · {item.status}
+                </li>
+              ))}
+            </ul>
+          )}
           <h3 className="mt-6 text-sm font-bold">Percorso demo</h3>
           {person.demos.length === 0 ? <p className="mt-2 text-sm text-primary-black/45">Non è entrato nella demo.</p> : person.demos.map((demo) => (
             <div key={demo.id} className="mt-3 rounded-2xl bg-background p-3 text-sm">

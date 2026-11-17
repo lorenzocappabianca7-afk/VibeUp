@@ -1,4 +1,5 @@
 import { isValidInvite, collapseSameInbox } from "@/server/repositories/contest";
+import { countNewRealInterest, listRealInterestForSignup } from "@/server/repositories/real-interest";
 import { isUuid } from "@/server/launch/request";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -434,6 +435,7 @@ export async function loadCommunityOverview() {
           ? Math.round((ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length) * 10) / 10
           : null,
       eighteenthYesRate: percent(yes, answered.length),
+      realInterestNew: await countNewRealInterest(),
     },
     funnel: funnel.map(([label, count]) => ({
       label,
@@ -868,6 +870,7 @@ export async function loadCommunityPerson(signupId: string) {
       : null,
     invitees,
     demos: unique,
+    realInterests: await listRealInterestForSignup(row.id),
   };
 }
 

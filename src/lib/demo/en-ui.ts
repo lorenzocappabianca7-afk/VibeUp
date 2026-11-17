@@ -339,6 +339,40 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Scegli questa location": "Choose this venue",
   "Questo budget vale per il totale della location.":
     "This budget is for the venue total.",
+  "Ciao! Sono Confy": "Hi! I'm Confy",
+  "Iniziamo da qui: tocca «Crea la tua festa» e dimmi data e invitati. Il resto si sblocca dopo!":
+    "Let's start here: tap «Create your party» and tell me the date and guests. The rest unlocks after!",
+  "Ottimo!": "Great!",
+  "Ora tocca la location che ti piace di più. Puoi anche confrontarne 2-3 con «Confronta».":
+    "Now tap the venue you like most. You can also compare 2-3 with «Compare».",
+  "Perfetto!": "Perfect!",
+  "Tocca «Invia richiesta di disponibilità» qui sotto.": "Tap «Send availability request» below.",
+  "Ecco la tua festa!": "Here's your party!",
+  "Tocca «Continua» per dirci cosa ne pensi.": "Tap «Continue» to tell us what you think.",
+  "Prima crea la tua festa 👆": "Create your party first 👆",
+  "Prima crea la tua festa": "Create your party first",
+  "Passo 1 di 4": "Step 1 of 4",
+  "Passo 2 di 4": "Step 2 of 4",
+  "Passo 3 di 4": "Step 3 of 4",
+  "Passo 4 di 4": "Step 4 of 4",
+  "Salta la guida": "Skip the guide",
+  "Chiudi la guida": "Close the guide",
+  "Questa è una demo: nessuna richiesta è stata inviata al locale.":
+    "This is a demo: no request was sent to the venue.",
+  "Vuoi organizzare la tua festa davvero con VibeUp?": "Want to plan your party with VibeUp for real?",
+  "Dove preferisci essere contattato?": "How would you like us to contact you?",
+  "Acconsento a essere contattato da VibeUp su WhatsApp per organizzare questa festa.":
+    "I agree to be contacted by VibeUp on WhatsApp to plan this party.",
+  "Acconsento a essere contattato da VibeUp via email per organizzare questa festa.":
+    "I agree to be contacted by VibeUp by email to plan this party.",
+  "Sì, contattatemi": "Yes, contact me",
+  "No grazie, vedi il tuo evento": "No thanks, see your event",
+  "Fatto! Ti scriveremo presto.": "Done! We'll be in touch soon.",
+  "Hai già chiesto questa location per la stessa data.": "You already asked for this venue on the same date.",
+  "Aggiungi un telefono in iscrizione per WhatsApp, oppure scegli l'email.":
+    "Add a phone at signup for WhatsApp, or choose email.",
+  "Spunta il consenso per continuare.": "Tick consent to continue.",
+  "Non riesco a salvare la richiesta. Riprova.": "I can't save the request. Try again.",
 };
 
 export function demoEnUiBootstrapScript() {
