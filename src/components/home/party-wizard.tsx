@@ -295,7 +295,28 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
             >
               Indietro
             </Button>
-            {step === "services" && criteria.partyServices.length === 0 ? (
+            {step === "services" && isDemoMode ? (
+              <button
+                type="button"
+                onClick={next}
+                className={cn(
+                  "flex h-[50px] min-w-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border-0 px-3 text-center text-[13px] font-bold leading-tight text-[#0F1115] transition-colors duration-150 motion-reduce:transition-none min-[380px]:text-[15px]",
+                  criteria.partyServices.length === 0
+                    ? "bg-brand-teal"
+                    : "bg-brand-pink",
+                )}
+              >
+                <span className="line-clamp-2 block w-full min-w-0">
+                  {criteria.partyServices.length === 0
+                    ? lang === "en"
+                      ? "Add them separately later"
+                      : "Aggiungi in seguito separatamente"
+                    : lang === "en"
+                      ? "Continue"
+                      : "Continua"}
+                </span>
+              </button>
+            ) : step === "services" && criteria.partyServices.length === 0 ? (
               <button
                 type="button"
                 onClick={next}

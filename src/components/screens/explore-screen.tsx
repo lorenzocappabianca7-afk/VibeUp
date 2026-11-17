@@ -1086,6 +1086,7 @@ export function ExploreScreen({
                     onToggleFavorite={handleToggleFavoriteLocation}
                     onToggleCompare={handleToggleCompareLocation}
                     href={locationHrefById.get(location.id)}
+                    selectOnTap={demoPicking}
                   />
                 </li>
               ))}

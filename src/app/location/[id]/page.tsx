@@ -1,9 +1,10 @@
 import { LocationPageClient } from "@/components/location/location-page-client";
+import { isDemoModeServer } from "@/lib/demo/mode.server";
 import { pageMetadata } from "@/lib/seo";
 import { resolvePublicLocation } from "@/lib/resolve-public-listing";
 import type { Location } from "@/types/location";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 interface LocationPageProps {
   params: Promise<{ id: string }>;
@@ -52,6 +53,9 @@ export default async function LocationPage({
   params,
   searchParams,
 }: LocationPageProps) {
+  if (await isDemoModeServer()) {
+    redirect("/demo?tab=explore");
+  }
   const { id } = await params;
   const location = await resolvePublicLocation(id);
   if (!location) notFound();

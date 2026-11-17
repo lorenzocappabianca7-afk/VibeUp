@@ -7,6 +7,7 @@ import {
   uniqueImages,
 } from "@/components/ui/image-carousel";
 import { useDemoLanguage } from "@/context/demo-language-context";
+import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { includedPartyServices, partyServiceLabel } from "@/lib/included-party-services";
 import { getFilteredLocationPricePresentation } from "@/lib/location-preview-price";
@@ -29,8 +30,10 @@ interface LocationCardProps {
   priority?: boolean;
   /** Demo Esplora: one circle instead of the heart. */
   selectionStyle?: "heart" | "radio";
-  /** Esplora: Confronta and Scegli under the card, photo still opens the venue. */
+  /** Esplora: Confronta and Scegli under the card. */
   footerActions?: boolean;
+  /** Demo Esplora: a tap on the photo or the name selects the venue. */
+  selectOnTap?: boolean;
 }
 
 export const LocationCard = memo(function LocationCard({
@@ -44,8 +47,10 @@ export const LocationCard = memo(function LocationCard({
   priority = false,
   selectionStyle = "heart",
   footerActions = false,
+  selectOnTap = false,
 }: LocationCardProps) {
   const { lang } = useDemoLanguage();
+  const { isDemoMode } = useDemoMode();
   const { criteria, hasAppliedCriteria } = usePartyCriteria();
   const { contactsBeenHere } = location;
   const hasContacts = contactsBeenHere.count > 0;
@@ -72,6 +77,8 @@ export const LocationCard = memo(function LocationCard({
   const [contactsOpen, setContactsOpen] = useState(false);
   const pointerRef = useRef({ x: 0, y: 0, dragged: false });
   const picking = selectionStyle === "radio" && !footerActions;
+  const openDetail = !isDemoMode && !picking;
+  const demoStatic = isDemoMode && !footerActions && !selectOnTap && !picking;
   const photos = useMemo(
     () => uniqueImages([location.imageUrl, ...(location.gallery ?? [])]),
     [location.gallery, location.imageUrl],
@@ -155,7 +162,12 @@ export const LocationCard = memo(function LocationCard({
           : "border border-primary-black/12 hover:border-primary-black",
       )}
     >
-      <div className="relative">
+      <div
+        className={cn("relative", selectOnTap && "cursor-pointer")}
+        onPointerDown={selectOnTap ? rememberPointer : undefined}
+        onPointerMove={selectOnTap ? trackPointer : undefined}
+        onClick={selectOnTap ? selectFromTap : undefined}
+      >
         <ImageCarousel
           images={photos}
           alt={location.name}
@@ -164,9 +176,7 @@ export const LocationCard = memo(function LocationCard({
           showDots={photos.length > 1}
           priority={priority}
           renderSlide={(_image, _index, imageNode) =>
-            picking ? (
-              imageNode
-            ) : (
+            openDetail ? (
               <SoftNavLink
                 href={href}
                 className="absolute inset-0 block touch-pan-y"
@@ -174,6 +184,8 @@ export const LocationCard = memo(function LocationCard({
               >
                 {imageNode}
               </SoftNavLink>
+            ) : (
+              imageNode
             )
           }
         />
@@ -185,7 +197,7 @@ export const LocationCard = memo(function LocationCard({
         )}
 
         <div className="absolute right-3 top-3 z-10 flex gap-2">
-          {footerActions ? null : showCompare && !picking ? (
+          {footerActions || demoStatic ? null : showCompare && !picking ? (
             <button
               type="button"
               onClick={(e) => {
@@ -212,7 +224,7 @@ export const LocationCard = memo(function LocationCard({
               />
             </button>
           ) : null}
-          {footerActions ? null : picking ? (
+          {footerActions || demoStatic ? null : picking ? (
             <span className="pointer-events-none flex h-11 w-11 items-center justify-center" aria-hidden>
               <span
                 className={cn(
@@ -256,21 +268,29 @@ export const LocationCard = memo(function LocationCard({
         </div>
       </div>
 
-      {picking ? (
-        <div className="block p-4">
-          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} badges={serviceBadges} />
-        </div>
-      ) : (
+      {openDetail ? (
         <SoftNavLink href={href} className="block p-4">
           <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} badges={serviceBadges} />
         </SoftNavLink>
+      ) : (
+        <div
+          className={cn("block p-4", selectOnTap && "cursor-pointer")}
+          onPointerDown={selectOnTap ? rememberPointer : undefined}
+          onPointerMove={selectOnTap ? trackPointer : undefined}
+          onClick={selectOnTap ? selectFromTap : undefined}
+        >
+          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} badges={serviceBadges} />
+        </div>
       )}
 
       {footerActions ? (
         <div className="flex gap-2 px-4 pb-4">
           <button
             type="button"
-            onClick={() => onToggleCompare(location.id)}
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleCompare(location.id);
+            }}
             aria-pressed={isCompareSelected}
             className={cn(
               "flex h-11 flex-1 items-center justify-center rounded-2xl border px-2 text-sm font-bold",
@@ -283,7 +303,10 @@ export const LocationCard = memo(function LocationCard({
           </button>
           <button
             type="button"
-            onClick={() => onToggleFavorite(location.id)}
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleFavorite(location.id);
+            }}
             aria-pressed={isFavorite}
             className={cn(
               "flex h-11 flex-1 items-center justify-center rounded-2xl px-2 text-sm font-bold",

@@ -1,5 +1,6 @@
 "use client";
 
+import { useDemoMode } from "@/context/demo-mode-context";
 import {
   type AnchorHTMLAttributes,
   type MouseEvent,
@@ -14,6 +15,11 @@ type HardNavLinkProps = Omit<
   children: ReactNode;
 };
 
+function isLocationDetailHref(href: string) {
+  const path = href.split(/[?#]/, 1)[0] ?? href;
+  return path === "/location" || path.startsWith("/location/");
+}
+
 /**
  * Same-origin link that always does a full document navigation.
  * Next.js App Router intercepts plain <a> / <Link> into RSC soft nav;
@@ -26,6 +32,8 @@ export function HardNavLink({
   className,
   ...rest
 }: HardNavLinkProps) {
+  const { isDemoMode } = useDemoMode();
+
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     if (
       event.defaultPrevented ||
@@ -39,6 +47,10 @@ export function HardNavLink({
     }
     event.preventDefault();
     window.location.assign(href);
+  }
+
+  if (isDemoMode && isLocationDetailHref(href)) {
+    return <span className={className}>{children}</span>;
   }
 
   return (

@@ -4,6 +4,7 @@ import { SettingsShell } from "@/components/profile/settings/settings-shell";
 import { SoftNavLink } from "@/components/navigation/soft-nav-link";
 import { SafeImage } from "@/components/ui/safe-image";
 import { useAppState } from "@/context/app-state-context";
+import { useDemoMode } from "@/context/demo-mode-context";
 import { buildLocationHref } from "@/lib/location-href";
 import { ONLINE_PAYMENTS_ENABLED } from "@/lib/payments/online-payments";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -70,6 +71,7 @@ function SavedQuoteCard({
   onRemove: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const { isDemoMode } = useDemoMode();
   const photos =
     quote.gallery.length > 0
       ? quote.gallery.slice(0, 4)
@@ -254,6 +256,7 @@ function SavedQuoteCard({
             ) : null}
           </dl>
 
+          {isDemoMode ? null : (
           <SoftNavLink
             href={buildLocationHref(quote.locationId, {
               guestCount: quote.guestCount,
@@ -263,6 +266,7 @@ function SavedQuoteCard({
           >
             Apri location
           </SoftNavLink>
+          )}
         </div>
       )}
     </article>

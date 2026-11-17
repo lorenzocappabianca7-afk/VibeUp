@@ -37,6 +37,20 @@ const STEPS = [
   },
 ] as const;
 
+function dismissedStepKey(sessionId: string) {
+  return `vu-confy-dismiss-step:${sessionId}`;
+}
+
+function readDismissedStep(sessionId: string) {
+  if (typeof window === "undefined") return null;
+  try {
+    const step = Number(window.sessionStorage.getItem(dismissedStepKey(sessionId)));
+    return step >= 1 && step <= 5 ? step : null;
+  } catch {
+    return null;
+  }
+}
+
 function guideStep(input: {
   bookingConfirmed: boolean;
   hasLocation: boolean;
@@ -87,6 +101,7 @@ export function DemoConfyGuide() {
   const { hasAppliedCriteria } = usePartyCriteria();
   const [serviceAdded, setServiceAdded] = useState(false);
   const [skipped, setSkipped] = useState(true);
+  const [dismissedStep, setDismissedStep] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
   const [nudge, setNudge] = useState(false);
   const [hop, setHop] = useState(0);
@@ -98,6 +113,7 @@ export function DemoConfyGuide() {
   useEffect(() => {
     if (!session) return;
     setSkipped(isDemoGuideSkipped(session.id));
+    setDismissedStep(readDismissedStep(session.id));
     setServiceAdded(Boolean(readDemoAddedService(session.id)));
     setReady(true);
     const onAdded = () => setServiceAdded(true);
@@ -183,6 +199,7 @@ export function DemoConfyGuide() {
     hasAppliedCriteria,
     serviceReady: serviceAdded || nothingToAdd,
   });
+  if (dismissedStep === step && !nudge) return null;
   const message = nudge
     ? { title: "Prima crea la tua festa 👆", body: "" }
     : STEPS[step - 1];
@@ -200,6 +217,17 @@ export function DemoConfyGuide() {
     if (!session) return;
     skipDemoGuide(session.id);
     setSkipped(true);
+    setNudge(false);
+  }
+
+  function dismissStep() {
+    if (!session) return;
+    try {
+      window.sessionStorage.setItem(dismissedStepKey(session.id), String(step));
+    } catch {
+      /* the in-memory hide still lasts until the step changes */
+    }
+    setDismissedStep(step);
     setNudge(false);
   }
 
@@ -226,7 +254,7 @@ export function DemoConfyGuide() {
       >
         <button
           type="button"
-          onClick={hide}
+          onClick={dismissStep}
           className="pointer-events-auto absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full text-[#6B6E76]"
           aria-label="Chiudi la guida"
         >

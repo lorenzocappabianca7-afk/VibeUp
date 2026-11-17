@@ -23,7 +23,7 @@ import {
   ShieldCheck,
   UtensilsCrossed,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 
 const ICONS = {
@@ -48,6 +48,8 @@ export function DemoMissingServices({
   const [added, setAdded] = useState<DemoAddedService | null>(null);
   const [openKind, setOpenKind] = useState<PartyServicePick | null>(null);
   const boxRef = useRef<HTMLElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const rowDrag = useRef({ x: 0, y: 0, left: 0, moved: false });
 
   useEffect(() => {
     if (!session) return;
@@ -80,6 +82,35 @@ export function DemoMissingServices({
     };
   }, [active, highlight, missing.length]);
 
+  function armRow(event: ReactPointerEvent<HTMLDivElement>) {
+    const row = rowRef.current;
+    rowDrag.current = {
+      x: event.clientX,
+      y: event.clientY,
+      left: row?.scrollLeft ?? 0,
+      moved: false,
+    };
+  }
+
+  function trackRow(event: ReactPointerEvent<HTMLDivElement>) {
+    const dx = event.clientX - rowDrag.current.x;
+    const dy = event.clientY - rowDrag.current.y;
+    if (dx * dx + dy * dy > 36) rowDrag.current.moved = true;
+  }
+
+  function noteRowScroll() {
+    const row = rowRef.current;
+    if (!row) return;
+    if (Math.abs(row.scrollLeft - rowDrag.current.left) > 6) {
+      rowDrag.current.moved = true;
+    }
+  }
+
+  function openService(id: PartyServicePick) {
+    if (rowDrag.current.moved) return;
+    setOpenKind(id);
+  }
+
   if (!session) return null;
   if (!added && missing.length === 0) return null;
 
@@ -110,18 +141,25 @@ export function DemoMissingServices({
             <p className="event-postit-dark-muted mt-0.5 text-xs font-semibold">
               {lang === "en" ? "Add another service to the party" : "Aggiungi altri servizi alla festa"}
             </p>
-            <div className="mt-3 flex max-w-full flex-wrap gap-2">
+            <div
+              ref={rowRef}
+              onPointerDown={armRow}
+              onPointerMove={trackRow}
+              onScroll={noteRowScroll}
+              className="scrollbar-hidden mt-3 flex w-full min-w-0 snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain pb-1"
+              style={{ touchAction: "pan-x pan-y", overscrollBehaviorX: "contain" }}
+            >
               {missing.map((id) => {
                 const Icon = ICONS[id];
                 return (
                   <button
                     key={id}
                     type="button"
-                    onClick={() => setOpenKind(id)}
-                    className="inline-flex max-w-full items-center gap-2 rounded-full bg-brand-pink px-3.5 py-2 text-sm font-bold text-ink-inverse"
+                    onClick={() => openService(id)}
+                    className="inline-flex shrink-0 snap-start items-center gap-2 rounded-full bg-brand-pink px-3.5 py-2 text-sm font-bold text-ink-inverse"
                   >
                     <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                    <span className="truncate">{partyServiceLabel(id, lang)}</span>
+                    {partyServiceLabel(id, lang)}
                   </button>
                 );
               })}
