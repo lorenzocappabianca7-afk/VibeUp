@@ -108,6 +108,7 @@ export interface DemoSummary {
   criteria: Record<string, unknown> | null;
   chosenLocation: string;
   customVenue: string;
+  addedService: string;
   rating: number | null;
   wouldUse: boolean | null;
   durationMs: number | null;
@@ -153,6 +154,24 @@ function chosenName(payload: Record<string, unknown>) {
   return locationName(payload.chosenLocation) || locationName(payload.bookedLocation);
 }
 
+function addedServiceLabel(payload: Record<string, unknown>) {
+  const raw = payload.addedService;
+  if (!raw || typeof raw !== "object") return "";
+  const row = raw as { serviceId?: unknown; supplierName?: unknown };
+  const supplier = asText(row.supplierName);
+  if (!supplier) return "";
+  const labels: Record<string, string> = {
+    dj: "DJ",
+    photographer: "Fotografo",
+    bakery: "Torta",
+    security: "Security",
+    catering: "Catering",
+    decorations: "Decorazioni",
+  };
+  const kind = asText(row.serviceId);
+  return `${labels[kind] ?? kind} · ${supplier}`;
+}
+
 function customVenueName(payload: Record<string, unknown>) {
   const raw = payload.custom_venue;
   if (!raw || typeof raw !== "object") return "";
@@ -162,6 +181,7 @@ function customVenueName(payload: Record<string, unknown>) {
 
 const STEP_ORDER = [
   ["rating", "Valutazione", "stepRatingAt"],
+  ["service", "Servizio aggiunto", "stepServiceAt"],
   ["event", "Evento visto", "stepEventAt"],
   ["request", "Richiesta inviata", "stepRequestAt"],
   ["location", "Location scelta", "stepLocationAt"],
@@ -181,6 +201,7 @@ export function summarizeDemo(row: DemoDb): DemoSummary {
       asTime(payload.stepRequestAt) ??
       (payload.bookingConfirmed === true ? asTime(payload.bookingConfirmedAt) : null),
     stepEventAt: asTime(payload.stepEventAt),
+    stepServiceAt: asTime(payload.stepServiceAt),
     stepRatingAt: asTime(payload.stepRatingAt) ?? asTime(payload.completedAt),
   };
   let lastStep = "Ingresso";
@@ -216,6 +237,7 @@ export function summarizeDemo(row: DemoDb): DemoSummary {
     criteria,
     chosenLocation: chosenName(payload),
     customVenue: customVenueName(payload),
+    addedService: addedServiceLabel(payload),
     rating,
     wouldUse: typeof payload.wouldUseForEighteenth === "boolean" ? payload.wouldUseForEighteenth : null,
     durationMs: Number.isFinite(start) && Number.isFinite(end) && end >= start ? end - start : null,
@@ -381,6 +403,7 @@ export async function loadCommunityOverview() {
     location: new Set<string>(),
     request: new Set<string>(),
     event: new Set<string>(),
+    service: new Set<string>(),
     rating: new Set<string>(),
   };
   for (const demo of demos) {
@@ -391,6 +414,7 @@ export async function loadCommunityOverview() {
     if (demo.steps.stepLocationAt || demo.chosenLocation || demo.customVenue) reached.location.add(id);
     if (demo.steps.stepRequestAt) reached.request.add(id);
     if (demo.steps.stepEventAt) reached.event.add(id);
+    if (demo.steps.stepServiceAt || demo.addedService) reached.service.add(id);
     if (demo.steps.stepRatingAt || demo.rating != null) reached.rating.add(id);
   }
 
@@ -419,6 +443,7 @@ export async function loadCommunityOverview() {
     ["Location scelta", reached.location.size],
     ["Richiesta inviata", reached.request.size],
     ["Evento visto", reached.event.size],
+    ["Servizio aggiunto", reached.service.size],
     ["Valutazione inviata", reached.rating.size],
   ] as const;
 
@@ -899,6 +924,7 @@ export function demosToCsv(rows: DemoSummary[]) {
     "Criteri",
     "Location scelta",
     "Posto suggerito",
+    "Servizio aggiunto",
     "Voto",
     "Useresti per il 18",
     "Durata minuti",
@@ -927,6 +953,7 @@ export function demosToCsv(rows: DemoSummary[]) {
       criteria,
       row.chosenLocation,
       row.customVenue,
+      row.addedService,
       row.rating == null ? "" : String(row.rating),
       row.wouldUse == null ? "" : row.wouldUse ? "sì" : "no",
       row.durationMs == null ? "" : String(Math.round(row.durationMs / 60000)),

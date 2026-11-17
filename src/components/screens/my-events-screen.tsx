@@ -1,6 +1,7 @@
 "use client";
 
 import { DemoEventsContinueBar } from "@/components/demo/demo-events-continue";
+import { DemoMissingServices } from "@/components/demo/demo-missing-services";
 import { RequestStatusBadge } from "@/components/availability/request-status-badge";
 import { DiscountInviteBanner } from "@/components/discount-invite-banner";
 import { EventCountdown } from "@/components/events/event-countdown";
@@ -873,6 +874,10 @@ export const ExpandedEventCard = memo(function ExpandedEventCard({
             </div>
           </dl>
         </section>
+
+        {isDemoMode && isDemoEventId(event.id) ? (
+          <DemoMissingServices locationId={event.locationId ?? null} active={isActive} />
+        ) : null}
 
         {!isDemoMode && missingSuggestions.length > 0 && (
           <section className="event-postit-section min-w-0 overflow-hidden border-t px-3 sm:px-4">

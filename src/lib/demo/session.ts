@@ -192,6 +192,7 @@ export function clearDemoAttemptLocalState() {
   clearDemoGuideSkip();
   clearDemoOwner();
   clearDemoPartyCriteria();
+  clearDurable("vibeup-demo-added-service-v1");
   if (typeof window !== "undefined") window.__vibeupActivateDemoLang?.();
 }
 
@@ -247,6 +248,9 @@ export function isDemoGuideSkipped(sessionId: string): boolean {
 
 export function skipDemoGuide(sessionId: string) {
   writeDurable(DEMO_GUIDE_SKIP_KEY, sessionId);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("vibeup-demo-guide-skip"));
+  }
 }
 
 export function clearDemoGuideSkip() {

@@ -80,6 +80,7 @@ type DemoRow = {
   criteria: Record<string, unknown> | null;
   chosenLocation: string;
   customVenue: string;
+  addedService?: string;
   rating: number | null;
   wouldUse: boolean | null;
   durationMs: number | null;
@@ -821,6 +822,7 @@ function SignupsTab() {
               <p className="mt-1 text-primary-black/60">Criteri: {criteriaText(demo.criteria)}</p>
               <p className="mt-1">Location: {demo.chosenLocation || "—"}</p>
               <p className="mt-1">Posto suggerito: {demo.customVenue || "—"}</p>
+              <p className="mt-1">Servizio aggiunto: {demo.addedService || "—"}</p>
               <p className="mt-1">Voto {demo.rating ?? "—"} · 18esimo {yesNo(demo.wouldUse)} · {minutes(demo.durationMs)}</p>
               <ul className="mt-2 space-y-1 text-xs text-primary-black/55">
                 {Object.entries({
@@ -829,6 +831,7 @@ function SignupsTab() {
                   Location: demo.steps.stepLocationAt,
                   Richiesta: demo.steps.stepRequestAt,
                   Evento: demo.steps.stepEventAt,
+                  "Servizio aggiunto": demo.steps.stepServiceAt,
                   Valutazione: demo.steps.stepRatingAt,
                 }).map(([label, at]) => <li key={label}>{label}: {formatWhen(at)}</li>)}
               </ul>
@@ -898,7 +901,7 @@ function DemosTab() {
         <table className="min-w-[980px] w-full text-left text-sm">
           <thead className="bg-surface text-xs uppercase tracking-wide text-primary-black/50">
             <tr>
-              {["Data", "Nome / email", "Ultimo passo", "Criteri", "Location", "Posto suggerito", "Voto", "18esimo", "Tempo"].map((label) => (
+              {["Data", "Nome / email", "Ultimo passo", "Criteri", "Location", "Posto suggerito", "Servizio", "Voto", "18esimo", "Tempo"].map((label) => (
                 <th key={label} className="px-3 py-2 font-semibold">{label}</th>
               ))}
             </tr>
@@ -918,6 +921,7 @@ function DemosTab() {
                 <td className="px-3 py-2">{criteriaText(row.criteria)}</td>
                 <td className="px-3 py-2">{row.chosenLocation || "—"}</td>
                 <td className="px-3 py-2">{row.customVenue || "—"}</td>
+                <td className="px-3 py-2">{row.addedService || "—"}</td>
                 <td className="px-3 py-2">{row.rating ?? "—"}</td>
                 <td className="px-3 py-2">{yesNo(row.wouldUse)}</td>
                 <td className="px-3 py-2">{minutes(row.durationMs)}</td>

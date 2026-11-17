@@ -5,6 +5,8 @@ import { useDemoLanguage } from "@/context/demo-language-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { hasVisibleOverlay } from "@/lib/body-scroll-lock";
 import { DEMO_NUDGE_EVENT, requestDemoNudge } from "@/lib/demo/nudge";
+import { DEMO_SERVICE_ADDED_EVENT, readDemoAddedService } from "@/lib/demo/added-service";
+import { demoMissingServiceIds } from "@/lib/demo/missing-services";
 import { isDemoGuideSkipped, skipDemoGuide } from "@/lib/demo/session";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
@@ -25,7 +27,11 @@ const STEPS = [
     body: "Tocca «Invia richiesta di disponibilità» qui sotto.",
   },
   {
-    title: "Ecco la tua festa!",
+    title: "La tua festa è confermata!",
+    body: "Ora prova ad aggiungere un servizio che manca: tocca uno di quelli nel riquadro rosa.",
+  },
+  {
+    title: "Perfetto, ora il tuo 18 è completo!",
     body: "Tocca «Continua» per dirci cosa ne pensi.",
   },
 ] as const;
@@ -34,7 +40,9 @@ function guideStep(input: {
   bookingConfirmed: boolean;
   hasLocation: boolean;
   hasAppliedCriteria: boolean;
+  serviceReady: boolean;
 }) {
+  if (input.bookingConfirmed && input.serviceReady) return 5;
   if (input.bookingConfirmed) return 4;
   if (input.hasLocation) return 3;
   if (input.hasAppliedCriteria) return 2;
@@ -73,8 +81,9 @@ export function DemoHomeLockedDim({
 
 export function DemoConfyGuide() {
   const pathname = usePathname() || "/";
-  const { isDemoMode, session, bookingConfirmed, selectedLocations } = useDemoMode();
-  const { hasAppliedCriteria } = usePartyCriteria();
+  const { isDemoMode, session, bookingConfirmed, selectedLocations, bookedLocation } = useDemoMode();
+  const { hasAppliedCriteria, criteria } = usePartyCriteria();
+  const [serviceAdded, setServiceAdded] = useState(false);
   const [skipped, setSkipped] = useState(true);
   const [ready, setReady] = useState(false);
   const [nudge, setNudge] = useState(false);
@@ -87,7 +96,11 @@ export function DemoConfyGuide() {
   useEffect(() => {
     if (!session) return;
     setSkipped(isDemoGuideSkipped(session.id));
+    setServiceAdded(Boolean(readDemoAddedService(session.id)));
     setReady(true);
+    const onAdded = () => setServiceAdded(true);
+    window.addEventListener(DEMO_SERVICE_ADDED_EVENT, onAdded);
+    return () => window.removeEventListener(DEMO_SERVICE_ADDED_EVENT, onAdded);
   }, [session]);
 
   useEffect(() => {
@@ -156,15 +169,29 @@ export function DemoConfyGuide() {
   if (!ready || !isDemoMode || !session || session.completed || blocked) return null;
   if (skipped && !nudge) return null;
 
+  const locationId = bookedLocation?.id ?? selectedLocations.at(-1)?.id ?? null;
+  const nothingToAdd =
+    demoMissingServiceIds({
+      locationId,
+      wizardServices: criteria.partyServices,
+    }).length === 0;
   const step = guideStep({
     bookingConfirmed,
     hasLocation: selectedLocations.length > 0,
     hasAppliedCriteria,
+    serviceReady: serviceAdded || nothingToAdd,
   });
   const message = nudge
     ? { title: "Prima crea la tua festa 👆", body: "" }
     : STEPS[step - 1];
-  const raised = clearance === "compare" ? "13rem" : step === 4 ? "16rem" : step === 3 ? "11.25rem" : "5.4rem";
+  const raised =
+    clearance === "compare"
+      ? "13rem"
+      : step === 5
+        ? "16rem"
+        : step === 3
+          ? "11.25rem"
+          : "5.4rem";
   const bottom = `calc(${raised} + env(safe-area-inset-bottom, 0px))`;
 
   function hide() {
@@ -211,7 +238,7 @@ export function DemoConfyGuide() {
         ) : null}
         {nudge ? null : (
           <p className="mt-2 flex items-center justify-between gap-3 text-xs text-[#6B6E76]">
-            <span>{`Passo ${step} di 4`}</span>
+            <span>{`Passo ${step} di 5`}</span>
             <button type="button" onClick={hide} className="underline">
               Salta la guida
             </button>

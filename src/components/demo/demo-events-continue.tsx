@@ -1,22 +1,54 @@
 "use client";
 
 import { useDemoMode } from "@/context/demo-mode-context";
+import { usePartyCriteria } from "@/context/party-criteria-context";
+import {
+  DEMO_SERVICE_ADDED_EVENT,
+  readDemoAddedService,
+} from "@/lib/demo/added-service";
+import { demoMissingServiceIds } from "@/lib/demo/missing-services";
 import { scrollDemoPageToTop } from "@/lib/demo/scroll-top";
+import { isDemoGuideSkipped } from "@/lib/demo/session";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export function DemoEventsContinueBar() {
-  const { isDemoMode, session, bookingConfirmed } = useDemoMode();
+  const { isDemoMode, session, bookingConfirmed, bookedLocation, selectedLocations } =
+    useDemoMode();
+  const { criteria } = usePartyCriteria();
   const router = useRouter();
+  const [skipped, setSkipped] = useState(false);
+  const [added, setAdded] = useState(false);
+
+  useEffect(() => {
+    if (!session) return;
+    setSkipped(isDemoGuideSkipped(session.id));
+    setAdded(Boolean(readDemoAddedService(session.id)));
+    const onSkip = () => setSkipped(true);
+    const onAdded = () => setAdded(true);
+    window.addEventListener("vibeup-demo-guide-skip", onSkip);
+    window.addEventListener(DEMO_SERVICE_ADDED_EVENT, onAdded);
+    return () => {
+      window.removeEventListener("vibeup-demo-guide-skip", onSkip);
+      window.removeEventListener(DEMO_SERVICE_ADDED_EVENT, onAdded);
+    };
+  }, [session]);
 
   useEffect(() => {
     if (!isDemoMode || !bookingConfirmed) return;
     router.prefetch("/demo/rating");
   }, [bookingConfirmed, isDemoMode, router]);
 
+  const nothingToAdd =
+    demoMissingServiceIds({
+      locationId: bookedLocation?.id ?? selectedLocations.at(-1)?.id ?? null,
+      wizardServices: criteria.partyServices,
+    }).length === 0;
+
   if (!isDemoMode || !session || session.completed || !bookingConfirmed) {
     return null;
   }
+  if (!added && !nothingToAdd && !skipped) return null;
 
   return (
     <div className="sticky bottom-24 z-20 sm:bottom-28">

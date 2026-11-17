@@ -7,6 +7,7 @@ export const DEMO_STEP_FIELD = {
   location: "stepLocationAt",
   request: "stepRequestAt",
   event: "stepEventAt",
+  service: "stepServiceAt",
   rating: "stepRatingAt",
 } as const;
 
