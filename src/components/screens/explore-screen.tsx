@@ -419,6 +419,17 @@ export function ExploreScreen({
   const [isCategoryPending, startCategoryTransition] = useTransition();
 
   useEffect(() => {
+    if (!isDemoMode) return;
+    const root = document.documentElement;
+    if (view === "compare") root.dataset.confyClearance = "hide";
+    else if (compareLocationIds.length > 0) root.dataset.confyClearance = "compare";
+    else delete root.dataset.confyClearance;
+    return () => {
+      delete root.dataset.confyClearance;
+    };
+  }, [compareLocationIds.length, isDemoMode, view]);
+
+  useEffect(() => {
     let cancelled = false;
     queueMicrotask(() => {
       if (cancelled) return;

@@ -9,8 +9,12 @@ import {
 import {
   clearDemoAttemptLocalState,
   clearDemoPartyCriteria,
+  consumeDemoFreshEntry,
   dismissDemoHomeTip,
+  isDemoHomeTipDismissed,
+  readDemoOwner,
   readDemoSession,
+  writeDemoOwner,
   writeDemoSession,
   writeDemoVisitId,
 } from "@/lib/demo/session";
@@ -148,6 +152,7 @@ async function startDemoAttempt(identity: DemoEntryIdentity): Promise<DemoSessio
 
   writeDemoSession(next);
   writeDemoVisitId(next.id);
+  if (identity.signupId) writeDemoOwner(identity.signupId);
   clearDemoPartyCriteria();
   return next;
 }
@@ -242,6 +247,16 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     const boot = () => {
       setLandingState("loading");
       setBootError(null);
+      const fresh = consumeDemoFreshEntry();
+      const existing = readDemoSession();
+      const owner = readDemoOwner();
+      const samePerson = !owner || owner === identity.signupId;
+      if (!fresh && existing && samePerson) {
+        setSession(existing);
+        setHomeTipDismissed(existing.completed || isDemoHomeTipDismissed(existing.id));
+        setLandingState(existing.completed ? "completed" : "ready");
+        return;
+      }
       clearDemoAttemptLocalState();
       dispatchDemoLocalReset();
       setSession(null);

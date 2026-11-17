@@ -1,9 +1,13 @@
 /** Show a phone as +39 *** *** 123. The last three digits stay visible. */
 export function maskPhone(value: string) {
   const digits = value.replace(/\D/g, "");
-  if (digits.length < 4) return "";
+  if (!digits) return "";
+  if (digits.length <= 3) return "***";
   const last = digits.slice(-3);
-  const prefix = digits.startsWith("39") ? "+39" : `+${digits.slice(0, Math.min(3, digits.length - 3))}`;
+  const head = digits.slice(0, -3);
+  const prefix = head.startsWith("39") ? "+39" : `+${head.slice(0, Math.min(3, head.length))}`;
+  const middle = head.startsWith("39") ? head.slice(2) : head.slice(Math.min(3, head.length));
+  if (!middle) return `${prefix} ***`;
   return `${prefix} *** *** ${last}`;
 }
 

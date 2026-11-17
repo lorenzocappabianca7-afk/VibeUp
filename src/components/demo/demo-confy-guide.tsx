@@ -1,12 +1,15 @@
 "use client";
 
 import { useDemoMode } from "@/context/demo-mode-context";
+import { useDemoLanguage } from "@/context/demo-language-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
+import { hasVisibleOverlay } from "@/lib/body-scroll-lock";
 import { DEMO_NUDGE_EVENT, requestDemoNudge } from "@/lib/demo/nudge";
 import { isDemoGuideSkipped, skipDemoGuide } from "@/lib/demo/session";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 const STEPS = [
   {
@@ -46,6 +49,7 @@ export function DemoHomeLockedDim({
   children: ReactNode;
   className?: string;
 }) {
+  const { lang } = useDemoLanguage();
   const { isDemoMode, session, bookingConfirmed } = useDemoMode();
   const { hasAppliedCriteria } = usePartyCriteria();
   const locked = isDemoMode && Boolean(session) && !session?.completed && !bookingConfirmed && !hasAppliedCriteria;
@@ -53,11 +57,14 @@ export function DemoHomeLockedDim({
 
   return (
     <div className={cn("relative", className)}>
-      <div className="pointer-events-none opacity-30 select-none">{children}</div>
+      <div className="pointer-events-none opacity-30 select-none" inert>
+        {children}
+      </div>
       <button
         type="button"
+        tabIndex={-1}
         className="absolute inset-0 cursor-pointer"
-        aria-label="Prima crea la tua festa"
+        aria-label={lang === "en" ? "Create your party first" : "Prima crea la tua festa"}
         onClick={() => requestDemoNudge()}
       />
     </div>
@@ -65,12 +72,17 @@ export function DemoHomeLockedDim({
 }
 
 export function DemoConfyGuide() {
+  const pathname = usePathname() || "/";
   const { isDemoMode, session, bookingConfirmed, selectedLocations } = useDemoMode();
   const { hasAppliedCriteria } = usePartyCriteria();
   const [skipped, setSkipped] = useState(true);
   const [ready, setReady] = useState(false);
   const [nudge, setNudge] = useState(false);
   const [hop, setHop] = useState(0);
+  const [blocked, setBlocked] = useState(false);
+  const [clearance, setClearance] = useState("");
+  const mascotRef = useRef<HTMLImageElement>(null);
+  const nudgeUntil = useRef(0);
 
   useEffect(() => {
     if (!session) return;
@@ -80,6 +92,9 @@ export function DemoConfyGuide() {
 
   useEffect(() => {
     const onNudge = () => {
+      const now = Date.now();
+      if (now < nudgeUntil.current) return;
+      nudgeUntil.current = now + 420;
       setNudge(true);
       setHop((value) => value + 1);
     };
@@ -93,7 +108,52 @@ export function DemoConfyGuide() {
     return () => window.clearTimeout(timer);
   }, [nudge, hop]);
 
-  if (!ready || !isDemoMode || !session || session.completed) return null;
+  useEffect(() => {
+    const mascot = mascotRef.current;
+    if (!mascot || hop === 0) return;
+    mascot.classList.remove("vu-confy-hop");
+    void mascot.getBoundingClientRect();
+    mascot.classList.add("vu-confy-hop");
+  }, [hop]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const viewport = window.visualViewport;
+    let maxHeight = viewport?.height ?? window.innerHeight;
+    let last = "";
+    const compute = () => {
+      if (viewport) maxHeight = Math.max(maxHeight, viewport.height);
+      const keyboard = viewport ? maxHeight - viewport.height > 120 : false;
+      const onLocation = pathname.startsWith("/location");
+      const clearance = root.dataset.confyClearance ?? "";
+      const nextBlocked =
+        keyboard || onLocation || clearance === "hide" || hasVisibleOverlay();
+      const key = `${nextBlocked ? "1" : "0"}|${clearance}`;
+      if (key === last) return;
+      last = key;
+      setClearance(clearance);
+      setBlocked(nextBlocked);
+    };
+    const observer = new MutationObserver(compute);
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ["data-confy-clearance"],
+    });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-overlay-open"],
+    });
+    viewport?.addEventListener("resize", compute);
+    compute();
+    return () => {
+      observer.disconnect();
+      viewport?.removeEventListener("resize", compute);
+    };
+  }, [pathname]);
+
+  if (!ready || !isDemoMode || !session || session.completed || blocked) return null;
   if (skipped && !nudge) return null;
 
   const step = guideStep({
@@ -104,12 +164,8 @@ export function DemoConfyGuide() {
   const message = nudge
     ? { title: "Prima crea la tua festa 👆", body: "" }
     : STEPS[step - 1];
-  const bottom =
-    step === 4
-      ? "calc(16rem + env(safe-area-inset-bottom, 0px))"
-      : step === 3
-        ? "calc(11.25rem + env(safe-area-inset-bottom, 0px))"
-        : "calc(5.4rem + env(safe-area-inset-bottom, 0px))";
+  const raised = clearance === "compare" ? "13rem" : step === 4 ? "16rem" : step === 3 ? "11.25rem" : "5.4rem";
+  const bottom = `calc(${raised} + env(safe-area-inset-bottom, 0px))`;
 
   function hide() {
     if (!session) return;
@@ -120,20 +176,25 @@ export function DemoConfyGuide() {
 
   return (
     <div
-      className="vu-confy-in pointer-events-none fixed inset-x-0 z-[58] mx-auto flex w-full max-w-[430px] items-end px-4"
+      className="vu-confy-in pointer-events-none fixed inset-x-0 z-[52] mx-auto flex w-full max-w-full items-end overflow-x-clip px-4 sm:max-w-[430px]"
       style={{ bottom }}
     >
       <img
-        key={hop}
+        ref={mascotRef}
         src="/demo/confy.svg"
         alt=""
         aria-hidden
         width={112}
         height={112}
-        className={cn("h-28 w-28 shrink-0", hop > 0 && "vu-confy-hop")}
+        className="pointer-events-none h-28 w-28 shrink-0"
         style={{ marginRight: -14 }}
       />
-      <div className="pointer-events-auto relative mb-[18px] min-w-0 flex-1 rounded-[18px] rounded-bl-[6px] bg-[#F5F5F7] px-4 py-3.5 text-[#0F1115] shadow-[0_12px_30px_-10px_rgba(0,0,0,0.7)]">
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="pointer-events-auto relative mb-[18px] min-w-0 flex-1 rounded-[18px] rounded-bl-[6px] bg-[#F5F5F7] py-3.5 pl-4 pr-8 text-[#0F1115] shadow-[0_12px_30px_-10px_rgba(0,0,0,0.7)]"
+      >
         <button
           type="button"
           onClick={hide}
@@ -150,7 +211,7 @@ export function DemoConfyGuide() {
         ) : null}
         {nudge ? null : (
           <p className="mt-2 flex items-center justify-between gap-3 text-xs text-[#6B6E76]">
-            <span>Passo {step} di 4</span>
+            <span>{`Passo ${step} di 4`}</span>
             <button type="button" onClick={hide} className="underline">
               Salta la guida
             </button>

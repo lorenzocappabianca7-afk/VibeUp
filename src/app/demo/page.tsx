@@ -3,6 +3,7 @@
 import { MobileShell } from "@/components/layout/mobile-shell";
 import { isDemoExitToSite, useDemoMode } from "@/context/demo-mode-context";
 import { isSiteLocale, writeDemoLanguage } from "@/lib/demo/language";
+import { markDemoFreshEntry } from "@/lib/demo/session";
 import { confirmVerifiedSignup, DEMO_SIGNUP_ID_STORAGE_KEY, demoEntryIdentity } from "@/lib/demo/signup-gate";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -39,6 +40,7 @@ export default function DemoRoutePage() {
             window.__vibeupActivateDemoLang?.();
           }
           window.localStorage.setItem(DEMO_SIGNUP_ID_STORAGE_KEY, data.signupId);
+          markDemoFreshEntry();
           History.prototype.replaceState.call(window.history, window.history.state, "", "/demo");
           enterDemo();
         })

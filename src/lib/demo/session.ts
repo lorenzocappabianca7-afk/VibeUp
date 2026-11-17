@@ -9,6 +9,8 @@ export const DEMO_SESSION_STORAGE_KEY = "vibeup-demo-session-v1";
 export const DEMO_VISIT_STORAGE_KEY = "vibeup-demo-visit-v1";
 export const DEMO_HOME_TIP_KEY = "vibeup-demo-home-tip-v1";
 export const DEMO_GUIDE_SKIP_KEY = "vibeup-demo-guide-skip-v1";
+export const DEMO_OWNER_KEY = "vibeup-demo-owner-v1";
+const DEMO_FRESH_ENTRY_KEY = "vu-demo-fresh-entry";
 export const DEMO_CRITERIA_STORAGE_KEY = "vibeup-demo-party-criteria-v1";
 export const DEMO_SESSION_COOKIE = "vibeup-demo-session";
 /** One location per demo visit. Kept for older imports. */
@@ -187,8 +189,31 @@ export function clearDemoAttemptLocalState() {
   clearDemoSession();
   clearDemoVisit();
   clearDemoHomeTip();
+  clearDemoGuideSkip();
+  clearDemoOwner();
   clearDemoPartyCriteria();
   if (typeof window !== "undefined") window.__vibeupActivateDemoLang?.();
+}
+
+/** A link with a new access token starts a clean attempt. A refresh does not. */
+export function markDemoFreshEntry() {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(DEMO_FRESH_ENTRY_KEY, "1");
+  } catch {
+    /* private mode */
+  }
+}
+
+export function consumeDemoFreshEntry() {
+  if (typeof window === "undefined") return false;
+  try {
+    const fresh = window.sessionStorage.getItem(DEMO_FRESH_ENTRY_KEY) === "1";
+    window.sessionStorage.removeItem(DEMO_FRESH_ENTRY_KEY);
+    return fresh;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -222,6 +247,22 @@ export function isDemoGuideSkipped(sessionId: string): boolean {
 
 export function skipDemoGuide(sessionId: string) {
   writeDurable(DEMO_GUIDE_SKIP_KEY, sessionId);
+}
+
+export function clearDemoGuideSkip() {
+  clearDurable(DEMO_GUIDE_SKIP_KEY);
+}
+
+export function readDemoOwner() {
+  return readDurable(DEMO_OWNER_KEY);
+}
+
+export function writeDemoOwner(signupId: string) {
+  writeDurable(DEMO_OWNER_KEY, signupId);
+}
+
+export function clearDemoOwner() {
+  clearDurable(DEMO_OWNER_KEY);
 }
 
 export function readDemoPartyCriteria(sessionId: string): PartyCriteria | null {

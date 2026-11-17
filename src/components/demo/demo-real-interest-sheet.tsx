@@ -4,7 +4,7 @@ import { useDemoLanguage } from "@/context/demo-language-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { readDemoSignupId } from "@/lib/demo/signup-gate";
 import { Check } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 type Channel = "whatsapp" | "email";
@@ -37,6 +37,7 @@ export function DemoRealInterestSheet({
   const [emailMasked, setEmailMasked] = useState("");
   const [phase, setPhase] = useState<"form" | "saving" | "saved">("form");
   const [error, setError] = useState("");
+  const sending = useRef(false);
 
   useEffect(() => {
     const signupId = readDemoSignupId();
@@ -67,12 +68,13 @@ export function DemoRealInterestSheet({
   const masked = channel === "whatsapp" ? phoneMasked : emailMasked;
 
   async function submit() {
-    if (!consent || phase === "saving") return;
+    if (!consent || sending.current) return;
     const signupId = readDemoSignupId();
     if (!signupId || !partyDate) {
       setError("Non riesco a salvare la richiesta. Riprova.");
       return;
     }
+    sending.current = true;
     setPhase("saving");
     setError("");
     try {
@@ -91,6 +93,7 @@ export function DemoRealInterestSheet({
       });
       const body = (await response.json()) as { error?: string };
       if (!response.ok) {
+        sending.current = false;
         setPhase("form");
         if (body.error === "already") {
           setError("Hai già chiesto questa location per la stessa data.");
@@ -109,6 +112,7 @@ export function DemoRealInterestSheet({
       }
       setPhase("saved");
     } catch {
+      sending.current = false;
       setPhase("form");
       setError("Non riesco a salvare la richiesta. Riprova.");
     }
