@@ -256,6 +256,7 @@ active=true;
 seedDemoDict();
 if(document.body)applyDict(document.body);
 };
-try{window.__vibeupActivateDemoLang();}catch(e){}
+// Applied after hydration. Translating the server HTML first makes React
+// report a hydration mismatch on every English page.
 }catch(e){}
 })();`;

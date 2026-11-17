@@ -19,10 +19,12 @@ import {
   writeDemoVisitId,
 } from "@/lib/demo/session";
 import {
-  confirmVerifiedSignup,
   demoEntryIdentity,
+  ensureSignupKnown,
+  isKnownDemoTester,
   type DemoEntryIdentity,
 } from "@/lib/demo/signup-gate";
+import { forceUnlockBodyScrollIfIdle } from "@/lib/body-scroll-lock";
 import { claimDemoStep } from "@/lib/demo/steps";
 import {
   catalogChoice,
@@ -210,6 +212,13 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useLayoutEffect(() => {
+    if (usesDemoShell(pathname, true)) return;
+    delete document.documentElement.dataset.demoMode;
+    delete document.documentElement.dataset.confyClearance;
+    forceUnlockBodyScrollIfIdle();
+  }, [pathname]);
+
+  useLayoutEffect(() => {
     if (exitingToSite) return;
     const cookieOn = readDemoModeCookie();
     if (cookieOn !== demoActive) {
@@ -258,7 +267,11 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       const existing = readDemoSession();
       const owner = readDemoOwner();
       const samePerson = !owner || owner === identity.signupId;
-      if (!fresh && existing && samePerson) {
+      const testerRestart =
+        existing?.completed === true &&
+        !!identity.signupId &&
+        isKnownDemoTester(identity.signupId);
+      if (!fresh && existing && samePerson && !testerRestart) {
         setSession(existing);
         setHomeTipDismissed(existing.completed || isDemoHomeTipDismissed(existing.id));
         setLandingState(existing.completed ? "completed" : "ready");
@@ -304,7 +317,7 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    void confirmVerifiedSignup(identity.signupId).then((ok) => {
+    void ensureSignupKnown(identity.signupId).then((ok) => {
       if (exitingToSite || attempt !== attemptRef.current) return;
       if (ok === false) {
         bootedRef.current = false;

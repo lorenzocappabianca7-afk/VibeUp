@@ -214,6 +214,7 @@ export function PwaInstallBanner() {
       className="border-b border-white/10 bg-surface-2 text-primary-black"
       role="region"
       aria-label="Installa VibeUp"
+      data-pwa-install=""
     >
       <div className="mx-auto flex max-w-3xl items-center gap-2.5 px-3 py-3.5 sm:gap-4 sm:px-4 sm:py-4">
         <Image

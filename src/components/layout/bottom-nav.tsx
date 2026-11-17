@@ -74,6 +74,7 @@ export function BottomNav({
         paddingRight: "max(0.5rem, env(safe-area-inset-right, 0px))",
       }}
       aria-label="Navigazione principale"
+      data-app-nav=""
     >
       <ul className="flex items-stretch justify-around rounded-[1.35rem] border border-white/10 bg-background/95 px-1 py-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.55)] backdrop-blur-xl">
         {tabs.map((tab) => {

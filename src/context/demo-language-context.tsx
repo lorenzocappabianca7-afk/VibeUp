@@ -8,7 +8,7 @@ import {
 import {
   createContext,
   useContext,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -26,7 +26,7 @@ const DemoLanguageContext = createContext<DemoLanguageContextValue | null>(
 export function DemoLanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<DemoLanguage>("it");
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const stored = readDemoLanguage();
     setLangState(stored);
     window.__vibeupActivateDemoLang?.();

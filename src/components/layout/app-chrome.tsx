@@ -69,7 +69,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const prelaunchLanding = !isPlatformLive() && pathname === "/" && !appPreview;
   const hideInstall = isDemoMode || demoRoute || prelaunchLanding;
   const hideAppFooter = hideFooter || demoRoute || isDemoMode;
-  const showTabs = !hideNav && (!demoRoute || demoEntryReady);
+  const showTabs = !hideNav && !prelaunchLanding && (!demoRoute || demoEntryReady);
 
   return (
     <>

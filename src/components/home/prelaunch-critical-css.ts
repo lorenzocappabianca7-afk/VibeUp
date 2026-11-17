@@ -12,9 +12,9 @@ const mockPanelLine = "#1F4A4A";
 
 /** Hides app tab bar, app footer, and the PWA install banner while the landing is mounted. */
 export const prelaunchChromeHideCss = `
-html:has([data-prelaunch-landing]) nav[aria-label="Navigazione principale"],
+html:has([data-prelaunch-landing]) nav[data-app-nav],
 html:has([data-prelaunch-landing]) footer:not([data-landing-footer]),
-html:has([data-prelaunch-landing]) [aria-label="Installa VibeUp"] {
+html:has([data-prelaunch-landing]) [data-pwa-install] {
   display: none !important;
 }
 `.trim();

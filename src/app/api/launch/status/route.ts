@@ -9,6 +9,7 @@ import {
 import { countValidInvitesForCode } from "@/server/repositories/contest";
 import { findVerifiedSignup } from "@/server/repositories/waitlist";
 import { attachSignupCookie, clearSignupCookie } from "@/server/launch/signup-cookie";
+import { isTesterEmail } from "@/server/launch/testers";
 import { type NextRequest } from "next/server";
 
 export const runtime = "nodejs";
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
       vibeupCode: row.vibeupCode,
       firstName: row.firstName,
       inviteCount,
+      tester: isTesterEmail(row.email),
     });
     attachSignupCookie(accepted, row.id);
     return accepted;

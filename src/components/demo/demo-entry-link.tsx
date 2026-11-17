@@ -23,6 +23,7 @@ export function DemoEntryLink({
 }) {
   const router = useRouter();
   const linkRef = useRef<HTMLAnchorElement>(null);
+  const opened = useRef(false);
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
@@ -51,7 +52,13 @@ export function DemoEntryLink({
       if (visible()) prefetch();
     };
     scroller?.addEventListener("scroll", onScroll, { passive: true });
+    // The control often mounts below the fold and is scrolled in before this
+    // effect attaches. Recheck once the scroll position has settled.
+    const recheck = window.setTimeout(() => {
+      if (visible()) prefetch();
+    }, 150);
     return () => {
+      window.clearTimeout(recheck);
       observer?.disconnect();
       scroller?.removeEventListener("scroll", onScroll);
     };
@@ -67,7 +74,15 @@ export function DemoEntryLink({
         data-pending={pending ? "" : undefined}
         aria-busy={pending || undefined}
         onPointerDown={() => setPending(true)}
-        onClick={() => setPending(true)}
+        onClick={(event) => {
+          if (opened.current) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
+          opened.current = true;
+          setPending(true);
+        }}
       >
         {children}
       </a>

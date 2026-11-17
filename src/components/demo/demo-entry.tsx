@@ -4,19 +4,25 @@ import { MobileShell } from "@/components/layout/mobile-shell";
 import { isDemoExitToSite, useDemoMode } from "@/context/demo-mode-context";
 import { brandTokens } from "@/lib/brand-tokens";
 import { isSiteLocale, writeDemoLanguage } from "@/lib/demo/language";
-import { markDemoFreshEntry } from "@/lib/demo/session";
+import { markDemoFreshEntry, readDemoSession } from "@/lib/demo/session";
 import {
-  confirmVerifiedSignup,
-  DEMO_SIGNUP_ID_STORAGE_KEY,
   demoEntryIdentity,
-  revalidateVerifiedSignup,
+  ensureSignupKnown,
+  rememberDemoSignupId,
   trustSignupVerified,
 } from "@/lib/demo/signup-gate";
 import { useLayoutEffect, useRef } from "react";
 
+let entryGeneration = 0;
+
 function redirectToSignup() {
   if (window.location.pathname === "/" && window.location.hash === "#iscriviti") return;
   window.location.replace("/#iscriviti");
+}
+
+function redirectHome() {
+  if (window.location.pathname === "/" && window.location.hash === "") return;
+  window.location.replace("/");
 }
 
 const bootCss = `
@@ -91,23 +97,20 @@ function DemoBootScreen() {
   );
 }
 
-function rememberSignup(signupId: string) {
-  try {
-    window.localStorage.setItem(DEMO_SIGNUP_ID_STORAGE_KEY, signupId);
-  } catch {
-    // Private mode can block storage. The cookie still identifies a trusted entry.
-  }
-}
-
 export function DemoEntry({ trustedSignupId }: { trustedSignupId: string | null }) {
   const { isDemoMode, enterDemo, exitDemo } = useDemoMode();
   const started = useRef(false);
 
   useLayoutEffect(() => {
-    if (isDemoExitToSite() || isDemoMode || started.current) return;
-    started.current = true;
-
+    if (isDemoExitToSite() || started.current) return;
     const token = new URLSearchParams(window.location.search).get("t")?.trim() ?? "";
+    // A token must be checked even when a previous demo is still on screen.
+    // Otherwise a bad link keeps the open demo and leaves ?t= in the address.
+    if (!token && (isDemoMode || started.current)) return;
+    started.current = true;
+    const generation = ++entryGeneration;
+    const still = () => generation === entryGeneration && !isDemoExitToSite();
+
     if (token) {
       void fetch("/api/launch/demo-access", {
         method: "POST",
@@ -116,28 +119,27 @@ export function DemoEntry({ trustedSignupId }: { trustedSignupId: string | null 
       })
         .then((response) => response.json())
         .then((data: { ok?: boolean; signupId?: string; locale?: string }) => {
-          if (isDemoExitToSite()) return;
+          if (!still()) return;
           if (data.ok !== true || typeof data.signupId !== "string" || !data.signupId) {
-            redirectToSignup();
+            redirectHome();
             return;
           }
-          if (isSiteLocale(data.locale)) {
-            const active = document.documentElement.dataset.vibeupLang;
-            writeDemoLanguage(data.locale);
-            if (active !== data.locale) {
-              window.location.replace(window.location.href);
-              return;
-            }
-            window.__vibeupActivateDemoLang?.();
-          }
-          rememberSignup(data.signupId);
+          rememberDemoSignupId(data.signupId);
           trustSignupVerified(data.signupId);
           markDemoFreshEntry();
+          const nextLocale = isSiteLocale(data.locale) ? data.locale : null;
+          if (nextLocale) writeDemoLanguage(nextLocale);
           History.prototype.replaceState.call(window.history, window.history.state, "", "/demo");
+          const active = document.documentElement.dataset.vibeupLang;
+          if (isDemoMode || (nextLocale && active !== nextLocale)) {
+            window.location.replace("/demo");
+            return;
+          }
+          window.__vibeupActivateDemoLang?.();
           enterDemo();
         })
         .catch(() => {
-          redirectToSignup();
+          if (still()) redirectHome();
         });
       return;
     }
@@ -148,17 +150,23 @@ export function DemoEntry({ trustedSignupId }: { trustedSignupId: string | null 
       redirectToSignup();
       return;
     }
-    if (!identity?.signupId) rememberSignup(signupId);
+    if (!identity?.signupId) rememberDemoSignupId(signupId);
     const trusted = trustedSignupId === signupId;
-    if (trusted) trustSignupVerified(signupId);
-    enterDemo();
-    void (trusted ? revalidateVerifiedSignup(signupId) : confirmVerifiedSignup(signupId)).then(
-      (ok) => {
-        if (ok !== false || isDemoExitToSite()) return;
+    const completedHere = readDemoSession()?.completed === true;
+    if (trusted && !completedHere) {
+      trustSignupVerified(signupId);
+      enterDemo();
+    }
+    void ensureSignupKnown(signupId).then((ok) => {
+      if (!still()) return;
+      if (ok === false) {
         exitDemo();
         redirectToSignup();
-      },
-    );
+        return;
+      }
+      if (ok === null || isDemoMode) return;
+      enterDemo();
+    });
   }, [enterDemo, exitDemo, isDemoMode, trustedSignupId]);
 
   if (!isDemoMode) return <DemoBootScreen />;

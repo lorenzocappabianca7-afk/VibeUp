@@ -8,16 +8,34 @@ export interface DemoEntryIdentity {
   email: string;
 }
 
+let memorySignupId: string | null = null;
+
+/** Keeps the id when an in-app browser blocks localStorage. */
+export function rememberDemoSignupId(signupId: string) {
+  const id = signupId.trim();
+  if (!id || id.length > SIGNUP_ID_MAX) return;
+  memorySignupId = id;
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(DEMO_SIGNUP_ID_STORAGE_KEY, id);
+  } catch {
+    // Instagram/TikTok webviews can refuse storage. The memory copy still opens this visit.
+  }
+}
+
 export function readDemoSignupId(): string | null {
   if (typeof window === "undefined") return null;
   try {
     const value =
       window.localStorage.getItem(DEMO_SIGNUP_ID_STORAGE_KEY)?.trim() ?? "";
-    if (!value || value.length > SIGNUP_ID_MAX) return null;
-    return value;
+    if (value && value.length <= SIGNUP_ID_MAX) {
+      memorySignupId = value;
+      return value;
+    }
   } catch {
-    return null;
+    // Fall through to the in-memory id from this document.
   }
+  return memorySignupId;
 }
 
 /** Local identity only. The server still checks that the signup id is verified. */
@@ -34,7 +52,20 @@ type SignupStatus = {
   vibeupCode?: string;
   firstName?: string;
   inviteCount?: number;
+  tester?: boolean;
 };
+
+const testerKnown = new Map<string, boolean>();
+
+function rememberVerified(id: string, data: SignupStatus) {
+  verifiedSignupIds.add(id);
+  testerKnown.set(id, data.tester === true);
+}
+
+/** True after a status response said this signup may start the demo again. */
+export function isKnownDemoTester(signupId: string) {
+  return testerKnown.get(signupId.trim()) === true;
+}
 
 const statusInflight = new Map<string, Promise<SignupStatus | null>>();
 
@@ -76,12 +107,20 @@ export function trustSignupVerified(signupId: string) {
 export async function confirmVerifiedSignup(signupId: string): Promise<boolean | null> {
   const id = signupId.trim();
   if (!id || id.length > SIGNUP_ID_MAX) return false;
-  if (verifiedSignupIds.has(id)) return true;
+  if (verifiedSignupIds.has(id) && testerKnown.has(id)) return true;
   const data = await requestSignupStatus(id);
   if (data === null) return null;
   if (!isVerifiedStatus(data)) return false;
-  verifiedSignupIds.add(id);
+  rememberVerified(id, data);
   return true;
+}
+
+/**
+ * Verifies the signup and learns whether a completed demo may restart.
+ * Null when the network failed.
+ */
+export async function ensureSignupKnown(signupId: string): Promise<boolean | null> {
+  return confirmVerifiedSignup(signupId);
 }
 
 /**
@@ -95,9 +134,10 @@ export async function revalidateVerifiedSignup(signupId: string): Promise<boolea
   if (data === null) return null;
   if (!isVerifiedStatus(data)) {
     verifiedSignupIds.delete(id);
+    testerKnown.delete(id);
     return false;
   }
-  verifiedSignupIds.add(id);
+  rememberVerified(id, data);
   return true;
 }
 
@@ -115,7 +155,7 @@ export async function readVerifiedMember(signupId: string): Promise<VerifiedMemb
   const inviteCount = Number.isInteger(data.inviteCount) && (data.inviteCount ?? 0) >= 0
     ? (data.inviteCount as number)
     : 0;
-  verifiedSignupIds.add(id);
+  rememberVerified(id, data);
   return {
     code: data.vibeupCode,
     firstName: typeof data.firstName === "string" ? data.firstName.trim() : "",
