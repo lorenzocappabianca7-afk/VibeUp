@@ -217,6 +217,16 @@ export function consumeDemoFreshEntry() {
   }
 }
 
+/** True while a new token entry is about to replace the local attempt. */
+export function hasDemoFreshEntry() {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.sessionStorage.getItem(DEMO_FRESH_ENTRY_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Every full entry (TikTok link, refresh, PWA relaunch) is a new attempt.
  * Previous rows stay in `demo_submissions`; this only forgets the local resume.

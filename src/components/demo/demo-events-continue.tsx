@@ -1,7 +1,7 @@
 "use client";
 
+import { useAppState } from "@/context/app-state-context";
 import { useDemoMode } from "@/context/demo-mode-context";
-import { usePartyCriteria } from "@/context/party-criteria-context";
 import {
   DEMO_SERVICE_ADDED_EVENT,
   readDemoAddedService,
@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 export function DemoEventsContinueBar() {
   const { isDemoMode, session, bookingConfirmed, bookedLocation, selectedLocations } =
     useDemoMode();
-  const { criteria } = usePartyCriteria();
+  const { managedListings } = useAppState();
   const router = useRouter();
   const [skipped, setSkipped] = useState(false);
   const [added, setAdded] = useState(false);
@@ -42,7 +42,7 @@ export function DemoEventsContinueBar() {
   const nothingToAdd =
     demoMissingServiceIds({
       locationId: bookedLocation?.id ?? selectedLocations.at(-1)?.id ?? null,
-      wizardServices: criteria.partyServices,
+      listings: managedListings,
     }).length === 0;
 
   if (!isDemoMode || !session || session.completed || !bookingConfirmed) {

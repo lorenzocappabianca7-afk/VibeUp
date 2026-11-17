@@ -1,8 +1,8 @@
 "use client";
 
+import { useAppState } from "@/context/app-state-context";
 import { useDemoLanguage } from "@/context/demo-language-context";
 import { useDemoMode } from "@/context/demo-mode-context";
-import { usePartyCriteria } from "@/context/party-criteria-context";
 import {
   readDemoAddedService,
   writeDemoAddedService,
@@ -44,7 +44,7 @@ export function DemoMissingServices({
 }) {
   const { lang } = useDemoLanguage();
   const { session } = useDemoMode();
-  const { criteria } = usePartyCriteria();
+  const { managedListings } = useAppState();
   const [added, setAdded] = useState<DemoAddedService | null>(null);
   const [openKind, setOpenKind] = useState<PartyServicePick | null>(null);
   const boxRef = useRef<HTMLElement>(null);
@@ -56,15 +56,29 @@ export function DemoMissingServices({
 
   const missing = demoMissingServiceIds({
     locationId,
-    wizardServices: criteria.partyServices,
+    listings: managedListings,
     addedServiceId: added?.serviceId ?? null,
   });
   const highlight = !added && missing.length > 0;
 
   useEffect(() => {
     if (!active || !highlight) return;
-    boxRef.current?.scrollIntoView({ block: "center" });
-  }, [active, highlight]);
+    const place = () => {
+      const box = boxRef.current;
+      const scroller = document.scrollingElement;
+      if (!box || !scroller) return;
+      const rect = box.getBoundingClientRect();
+      if (rect.height < 8) return;
+      // Confy sits on the lower part of the screen during this step.
+      const limit = window.innerHeight - 252;
+      if (rect.bottom <= limit && rect.top >= 72) return;
+      scroller.scrollTop += rect.bottom - limit;
+    };
+    const timers = [50, 400].map((delay) => window.setTimeout(place, delay));
+    return () => {
+      for (const timer of timers) window.clearTimeout(timer);
+    };
+  }, [active, highlight, missing.length]);
 
   if (!session) return null;
   if (!added && missing.length === 0) return null;

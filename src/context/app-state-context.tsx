@@ -32,6 +32,7 @@ import {
   setAdminManagerViewEnabled,
 } from "@/lib/admin-access";
 import { isDemoEventId, isDemoMode } from "@/lib/demo/mode";
+import { hasDemoFreshEntry, readDemoSession } from "@/lib/demo/session";
 import { DEMO_LOCAL_RESET_EVENT } from "@/lib/demo/testers";
 import {
   buildAdminPreviewEvent,
@@ -881,8 +882,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setAccounts(migratedAccounts);
       setCurrentUserId(resolvedUserId);
       const userStates = hydrateUserStates(storedState);
+      const session = readDemoSession();
+      const resumeDemoEvent =
+        isDemoMode() && !hasDemoFreshEntry() && !!session && !session.completed;
       setUserStatesMap(
-        isDemoMode() ? stripDemoProgressFromUserStates(userStates) : userStates,
+        isDemoMode() && !resumeDemoEvent
+          ? stripDemoProgressFromUserStates(userStates)
+          : userStates,
       );
       if (storedState.managedListings) {
         setManagedListings(storedState.managedListings);

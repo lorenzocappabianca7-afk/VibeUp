@@ -1,5 +1,6 @@
 "use client";
 
+import { useAppState } from "@/context/app-state-context";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { useDemoLanguage } from "@/context/demo-language-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
@@ -82,7 +83,8 @@ export function DemoHomeLockedDim({
 export function DemoConfyGuide() {
   const pathname = usePathname() || "/";
   const { isDemoMode, session, bookingConfirmed, selectedLocations, bookedLocation } = useDemoMode();
-  const { hasAppliedCriteria, criteria } = usePartyCriteria();
+  const { managedListings } = useAppState();
+  const { hasAppliedCriteria } = usePartyCriteria();
   const [serviceAdded, setServiceAdded] = useState(false);
   const [skipped, setSkipped] = useState(true);
   const [ready, setReady] = useState(false);
@@ -173,7 +175,7 @@ export function DemoConfyGuide() {
   const nothingToAdd =
     demoMissingServiceIds({
       locationId,
-      wizardServices: criteria.partyServices,
+      listings: managedListings,
     }).length === 0;
   const step = guideStep({
     bookingConfirmed,
@@ -220,12 +222,12 @@ export function DemoConfyGuide() {
         role="status"
         aria-live="polite"
         aria-atomic="true"
-        className="pointer-events-auto relative mb-[18px] min-w-0 flex-1 rounded-[18px] rounded-bl-[6px] bg-[#F5F5F7] py-3.5 pl-4 pr-8 text-[#0F1115] shadow-[0_12px_30px_-10px_rgba(0,0,0,0.7)]"
+        className="pointer-events-none relative mb-[18px] min-w-0 flex-1 rounded-[18px] rounded-bl-[6px] bg-[#F5F5F7] py-3.5 pl-4 pr-8 text-[#0F1115] shadow-[0_12px_30px_-10px_rgba(0,0,0,0.7)]"
       >
         <button
           type="button"
           onClick={hide}
-          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full text-[#6B6E76]"
+          className="pointer-events-auto absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full text-[#6B6E76]"
           aria-label="Chiudi la guida"
         >
           <X className="h-4 w-4" aria-hidden />
@@ -239,7 +241,7 @@ export function DemoConfyGuide() {
         {nudge ? null : (
           <p className="mt-2 flex items-center justify-between gap-3 text-xs text-[#6B6E76]">
             <span>{`Passo ${step} di 5`}</span>
-            <button type="button" onClick={hide} className="underline">
+            <button type="button" onClick={hide} className="pointer-events-auto underline">
               Salta la guida
             </button>
           </p>

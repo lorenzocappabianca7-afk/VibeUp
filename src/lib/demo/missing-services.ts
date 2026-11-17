@@ -1,6 +1,7 @@
-import { includedPartyServices } from "@/lib/included-party-services";
+import { resolveDemoCatalogLocation } from "@/lib/demo/book";
 import { CUSTOM_VENUE_ID } from "@/lib/demo/custom-venue";
-import { MOCK_LOCATIONS } from "@/lib/mock/locations";
+import { includedPartyServices } from "@/lib/included-party-services";
+import type { ManagedListing } from "@/types/admin";
 import {
   PARTY_SERVICE_OPTIONS,
   type PartyServicePick,
@@ -8,20 +9,20 @@ import {
 
 /**
  * Services still missing from the demo party: not included in the chosen
- * venue price, and not picked in the wizard as already included.
+ * venue price, and not already added from the event card.
+ * A wizard pick does not hide a service the venue does not include.
  */
 export function demoMissingServiceIds(input: {
   locationId: string | null;
-  wizardServices: readonly PartyServicePick[];
+  listings?: readonly ManagedListing[];
   addedServiceId?: PartyServicePick | null;
 }): PartyServicePick[] {
   const location =
     input.locationId && input.locationId !== CUSTOM_VENUE_ID
-      ? MOCK_LOCATIONS.find((item) => item.id === input.locationId)
+      ? resolveDemoCatalogLocation(input.locationId, [...(input.listings ?? [])])
       : undefined;
   const included = new Set(location ? includedPartyServices(location) : []);
-  const picked = new Set(input.wizardServices);
   return PARTY_SERVICE_OPTIONS.map((option) => option.id).filter(
-    (id) => id !== input.addedServiceId && !included.has(id) && !picked.has(id),
+    (id) => id !== input.addedServiceId && !included.has(id),
   );
 }
