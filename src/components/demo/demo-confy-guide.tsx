@@ -12,7 +12,55 @@ import { isDemoGuideSkipped, skipDemoGuide } from "@/lib/demo/session";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+
+/** Confy and the home dim share this clock, so they start on the same frame. */
+const CONFY_ENTRANCE_MS = 1500;
+let confyRevealed = false;
+let confyEntranceArmed = false;
+let confyEntranceTimer = 0;
+const confyEntranceListeners = new Set<() => void>();
+
+function emitConfyEntrance() {
+  for (const listener of confyEntranceListeners) listener();
+}
+
+function armConfyEntrance() {
+  if (confyEntranceArmed || confyRevealed) return;
+  confyEntranceArmed = true;
+  confyEntranceTimer = window.setTimeout(() => {
+    confyRevealed = true;
+    emitConfyEntrance();
+  }, CONFY_ENTRANCE_MS);
+}
+
+function resetConfyEntrance() {
+  if (!confyEntranceArmed && !confyRevealed) return;
+  window.clearTimeout(confyEntranceTimer);
+  confyEntranceArmed = false;
+  confyRevealed = false;
+  emitConfyEntrance();
+}
+
+function useConfyRevealed() {
+  const { isDemoMode } = useDemoMode();
+  const revealed = useSyncExternalStore(
+    (listener) => {
+      confyEntranceListeners.add(listener);
+      return () => confyEntranceListeners.delete(listener);
+    },
+    () => confyRevealed,
+    () => false,
+  );
+  useEffect(() => {
+    if (!isDemoMode) {
+      resetConfyEntrance();
+      return;
+    }
+    armConfyEntrance();
+  }, [isDemoMode]);
+  return isDemoMode && revealed;
+}
 
 const STEPS = [
   {
@@ -73,9 +121,18 @@ export function DemoHomeLockedDim({
   className?: string;
 }) {
   const { t } = useDemoLanguage();
-  const { isDemoMode, session, bookingConfirmed } = useDemoMode();
+  const { isDemoMode, session, bookingConfirmed, landingState } = useDemoMode();
   const { hasAppliedCriteria } = usePartyCriteria();
-  const locked = isDemoMode && Boolean(session) && !session?.completed && !bookingConfirmed && !hasAppliedCriteria;
+  const revealed = useConfyRevealed();
+  const awaitingSession =
+    isDemoMode && !session && landingState !== "error" && landingState !== "completed";
+  const locked =
+    revealed &&
+    isDemoMode &&
+    !session?.completed &&
+    !bookingConfirmed &&
+    !hasAppliedCriteria &&
+    (Boolean(session) || awaitingSession);
   if (!locked) return <div className={className}>{children}</div>;
 
   return (
@@ -118,6 +175,7 @@ export function DemoConfyGuide() {
   const [clearance, setClearance] = useState("");
   const mascotRef = useRef<HTMLImageElement>(null);
   const nudgeUntil = useRef(0);
+  const revealed = useConfyRevealed();
 
   useEffect(() => {
     if (!session) return;
@@ -202,6 +260,7 @@ export function DemoConfyGuide() {
   if (!isDemoMode || blocked || session?.completed) return null;
   if (!session && !awaitingSession) return null;
   if (skipped && !nudge) return null;
+  if (!revealed && !nudge) return null;
 
   const locationId = bookedLocation?.id ?? selectedLocations.at(-1)?.id ?? null;
   const nothingToAdd =
