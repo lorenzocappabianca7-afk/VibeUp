@@ -1,4 +1,4 @@
-import { landingCopy } from "@/content/landing";
+import { useLandingCopy } from "@/lib/locale/use-localized";
 import Image from "next/image";
 
 function PhoneShot({
@@ -32,6 +32,7 @@ function PhoneShot({
 }
 
 export function PrelaunchPreview() {
+  const landingCopy = useLandingCopy();
   return (
     <section className="vu-preview vu-reveal-item" data-vu-reveal aria-label={landingCopy.previewLabel}>
       <div className="vu-preview-fit">

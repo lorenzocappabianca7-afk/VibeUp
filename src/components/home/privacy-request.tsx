@@ -1,20 +1,21 @@
 "use client";
 
-import { privacyRequestCopy } from "@/content/legal";
-import { signupCopy } from "@/content/signup";
+import { privacyRequestCopy as privacyMessages } from "@/content/legal";
+import { signupCopy as signupMessages } from "@/content/signup";
+import { useLocalized } from "@/lib/locale/use-localized";
 import { DEMO_SIGNUP_ID_STORAGE_KEY } from "@/lib/demo/signup-gate";
 import { clearSignupDraft } from "@/lib/launch/draft";
 import { isEmailAddress } from "@/lib/launch/fields";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-function errorText(code: string) {
+function errorText(code: string, copy: typeof signupMessages) {
   if (code.includes(" ")) return code;
-  if (code === "expired") return signupCopy.codeExpired;
-  if (code === "locked") return signupCopy.codeLocked;
-  if (code === "mismatch") return signupCopy.codeInvalid;
-  if (code === "send_failed") return signupCopy.sendFailed;
-  return signupCopy.genericError;
+  if (code === "expired") return copy.codeExpired;
+  if (code === "locked") return copy.codeLocked;
+  if (code === "mismatch") return copy.codeInvalid;
+  if (code === "send_failed") return copy.sendFailed;
+  return copy.genericError;
 }
 
 async function postJson(url: string, body: unknown) {
@@ -33,6 +34,8 @@ async function postJson(url: string, body: unknown) {
 }
 
 export function PrivacyRequest() {
+  const privacyRequestCopy = useLocalized(privacyMessages);
+  const signupCopy = useLocalized(signupMessages);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [sent, setSent] = useState(false);
@@ -60,7 +63,7 @@ export function PrivacyRequest() {
     const result = await postJson("/api/launch/privacy", { email });
     setBusy(false);
     if (!result.ok) {
-      setError(errorText(result.error || "unavailable"));
+      setError(errorText(result.error || "unavailable", signupCopy));
       return;
     }
     const sentAt = Date.now();
@@ -77,7 +80,7 @@ export function PrivacyRequest() {
     const result = await postJson("/api/launch/privacy/export", { email, code });
     setBusy(false);
     if (!result.ok || !result.export) {
-      setError(errorText(result.error || "mismatch"));
+      setError(errorText(result.error || "mismatch", signupCopy));
       return;
     }
     const blob = new Blob([JSON.stringify(result.export, null, 2)], { type: "application/json" });
@@ -102,7 +105,7 @@ export function PrivacyRequest() {
     const result = await postJson("/api/launch/privacy/delete", { email, code });
     setBusy(false);
     if (!result.ok) {
-      setError(errorText(result.error || "mismatch"));
+      setError(errorText(result.error || "mismatch", signupCopy));
       return;
     }
     try {

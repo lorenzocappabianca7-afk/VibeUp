@@ -1,6 +1,6 @@
 import { DemoLanguageSwitch } from "@/components/demo/demo-language-switch";
 import { SignupMemberCard } from "@/components/home/signup-share";
-import { landingCopy } from "@/content/landing";
+import { useLandingCopy } from "@/lib/locale/use-localized";
 import { ArrowIcon, Wordmark } from "@/components/home/prelaunch-wordmark";
 import { brandTokens } from "@/lib/brand-tokens";
 
@@ -13,6 +13,7 @@ export function PrelaunchHero({
   onDemo: () => void;
   member: { firstName: string; code: string; inviteCount: number } | null;
 }) {
+  const landingCopy = useLandingCopy();
   return (
     <>
       <header className="vu-in vu-head">

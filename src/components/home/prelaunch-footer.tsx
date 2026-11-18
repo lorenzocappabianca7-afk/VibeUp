@@ -1,7 +1,8 @@
-import { landingCopy } from "@/content/landing";
+import { useLandingCopy } from "@/lib/locale/use-localized";
 import { Wordmark } from "@/components/home/prelaunch-wordmark";
 
 export function PrelaunchFooter() {
+  const landingCopy = useLandingCopy();
   return (
     <footer className="vu-foot vu-reveal-item border-surface-2" data-landing-footer data-vu-reveal>
       <div className="vu-foot-row">

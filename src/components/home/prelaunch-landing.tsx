@@ -11,7 +11,7 @@ import { PrelaunchPreview } from "@/components/home/prelaunch-preview";
 import { PrelaunchSuite } from "@/components/home/prelaunch-suite";
 import { startLandingReveal } from "@/components/home/prelaunch-reveal";
 import { SignupFlow } from "@/components/home/signup-flow";
-import { landingCopy } from "@/content/landing";
+import { useLandingCopy } from "@/lib/locale/use-localized";
 import { isContestOver } from "@/config/contest";
 import { readDemoSignupId, readVerifiedMember, type VerifiedMemberCard } from "@/lib/demo/signup-gate";
 import { rememberSignupReferral } from "@/lib/launch/draft";
@@ -36,6 +36,7 @@ export function PrelaunchLanding({
   startSignup?: boolean;
   compare: LandingCompareVenue[];
 }) {
+  const landingCopy = useLandingCopy();
   const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
   const [signupOpen, setSignupOpen] = useState(startSignup);

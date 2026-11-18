@@ -153,6 +153,7 @@ export async function proxy(request: NextRequest) {
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("Content-Security-Policy", csp);
+  requestHeaders.set("x-vu-search", request.nextUrl.search);
 
   let response = continueRequest(request, requestHeaders);
 

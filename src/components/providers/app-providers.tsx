@@ -5,7 +5,8 @@ import { AccountGateProvider } from "@/context/account-gate-context";
 import { AppStateProvider } from "@/context/app-state-context";
 import { AvailabilityRequestProvider } from "@/context/availability-request-context";
 import { ChatProvider } from "@/context/chat-context";
-import { DemoLanguageProvider } from "@/context/demo-language-context";
+import { LocaleProvider } from "@/context/locale-context";
+import type { DemoLanguage } from "@/lib/demo/language";
 import { DemoModeProvider } from "@/context/demo-mode-context";
 import { InboxBadgeProvider } from "@/context/inbox-badge-context";
 import { PartyCriteriaProvider } from "@/context/party-criteria-context";
@@ -16,10 +17,16 @@ import { RecoveryRedirect } from "@/components/auth/recovery-redirect";
 import { SecurityRuntimeGuard } from "@/components/security/security-runtime-guard";
 import type { ReactNode } from "react";
 
-export function AppProviders({ children }: { children: ReactNode }) {
+export function AppProviders({
+  locale,
+  children,
+}: {
+  locale: DemoLanguage;
+  children: ReactNode;
+}) {
   return (
     <DemoModeProvider>
-      <DemoLanguageProvider>
+      <LocaleProvider locale={locale}>
       <AppStateProvider>
         <AccountGateProvider>
           <InboxBadgeProvider>
@@ -40,7 +47,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
           </InboxBadgeProvider>
         </AccountGateProvider>
       </AppStateProvider>
-      </DemoLanguageProvider>
+      </LocaleProvider>
     </DemoModeProvider>
   );
 }

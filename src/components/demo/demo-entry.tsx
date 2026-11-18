@@ -3,7 +3,6 @@
 import { MobileShell } from "@/components/layout/mobile-shell";
 import { isDemoExitToSite, useDemoMode } from "@/context/demo-mode-context";
 import { brandTokens } from "@/lib/brand-tokens";
-import { isSiteLocale, writeDemoLanguage } from "@/lib/demo/language";
 import { markDemoFreshEntry, readDemoSession } from "@/lib/demo/session";
 import {
   demoEntryIdentity,
@@ -127,15 +126,11 @@ export function DemoEntry({ trustedSignupId }: { trustedSignupId: string | null 
           rememberDemoSignupId(data.signupId);
           trustSignupVerified(data.signupId);
           markDemoFreshEntry();
-          const nextLocale = isSiteLocale(data.locale) ? data.locale : null;
-          if (nextLocale) writeDemoLanguage(nextLocale);
           History.prototype.replaceState.call(window.history, window.history.state, "", "/demo");
-          const active = document.documentElement.dataset.vibeupLang;
-          if (isDemoMode || (nextLocale && active !== nextLocale)) {
+          if (isDemoMode) {
             window.location.replace("/demo");
             return;
           }
-          window.__vibeupActivateDemoLang?.();
           enterDemo();
         })
         .catch(() => {

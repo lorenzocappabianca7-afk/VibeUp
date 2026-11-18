@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "locale:check": "node --experimental-strip-types --import ./scripts/register-locale-loader.mjs scripts/check-locale-parity.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

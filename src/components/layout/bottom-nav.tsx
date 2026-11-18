@@ -1,6 +1,7 @@
 "use client";
 
 import { useInboxBadge } from "@/context/inbox-badge-context";
+import { useLocale } from "@/context/locale-context";
 import { useProfileCommunications } from "@/context/profile-communications-context";
 import { cn, APP_SHELL_WIDTH_CLASS } from "@/lib/utils";
 import {
@@ -50,6 +51,7 @@ export function BottomNav({
   onLockedTab,
   guideTab = null,
 }: BottomNavProps) {
+  const { t } = useLocale();
   const {
     hasUnreadMessages,
     hasUnreadNotifications,
@@ -73,7 +75,7 @@ export function BottomNav({
         paddingLeft: "max(0.5rem, env(safe-area-inset-left, 0px))",
         paddingRight: "max(0.5rem, env(safe-area-inset-right, 0px))",
       }}
-      aria-label="Navigazione principale"
+      aria-label={t("Navigazione principale")}
       data-app-nav=""
     >
       <ul className="flex items-stretch justify-around rounded-[1.35rem] border border-white/10 bg-background/95 px-1 py-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.55)] backdrop-blur-xl">
@@ -106,8 +108,8 @@ export function BottomNav({
                 aria-current={isActive ? "page" : undefined}
                 aria-label={
                   showBadge
-                    ? `${tab.label}, nuove notifiche`
-                    : tab.label
+                    ? t("{label}, nuove notifiche").replaceAll("{label}", t(tab.label))
+                    : t(tab.label)
                 }
                 className={cn(
                   "touch-feedback flex w-full min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 py-1.5 text-white transition-colors duration-100 sm:gap-1 sm:px-1 sm:py-2",
@@ -130,7 +132,7 @@ export function BottomNav({
                   )}
                 </span>
                 <span className="max-w-full truncate px-0.5 text-[9px] font-medium leading-none sm:text-[10px] sm:leading-tight">
-                  {tab.label}
+                  {t(tab.label)}
                 </span>
               </button>
             </li>

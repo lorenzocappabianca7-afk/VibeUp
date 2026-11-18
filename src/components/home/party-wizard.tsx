@@ -7,6 +7,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { VibeUpCalendar } from "@/components/ui/vibeup-calendar";
 import { useDemoLanguage } from "@/context/demo-language-context";
+import { formatLongDate } from "@/lib/locale/format";
+import { translate } from "@/lib/locale/translate";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
@@ -63,18 +65,11 @@ const SERVICE_ICONS = {
   decorations: Gift,
 } as const;
 
-function formatWizardDateLabel(dates: string[], locale: string) {
-  const dateLabelFormatter = new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "short",
-  });
-  if (dates.length === 0) {
-    return locale.startsWith("en") ? "Pick up to 5 dates" : "Scegli fino a 5 date";
-  }
-  if (dates.length === 1) return dateLabelFormatter.format(new Date(dates[0]));
-  const prefix = locale.startsWith("en") ? "dates" : "date";
-  return `${dates.length} ${prefix}: ${dates
-    .map((value) => dateLabelFormatter.format(new Date(value)))
+function formatWizardDateLabel(dates: string[], locale: "it" | "en") {
+  if (dates.length === 0) return translate(locale, "Scegli fino a 5 date");
+  if (dates.length === 1) return formatLongDate(locale, dates[0]);
+  return `${translate(locale, "{n} date").replaceAll("{n}", String(dates.length))}: ${dates
+    .map((value) => formatLongDate(locale, value))
     .join(", ")}`;
 }
 
@@ -85,7 +80,7 @@ interface PartyWizardProps {
 }
 
 export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProps) {
-  const { lang } = useDemoLanguage();
+  const { t } = useDemoLanguage();
   const { isDemoMode } = useDemoMode();
   const { applyCriteria, criteria: savedCriteria } = usePartyCriteria();
   const { setTab } = useTabNavigation();
@@ -122,7 +117,6 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
   const safeIndex = Math.min(stepIndex, steps.length - 1);
   const step = steps[safeIndex];
   const isLast = safeIndex === steps.length - 1;
-  const progressLabel = `${safeIndex + 1} di ${steps.length}`;
 
   if (!open || typeof document === "undefined") return null;
 
@@ -187,7 +181,7 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
       <button
         type="button"
         className="absolute inset-0 bg-black/50"
-        aria-label="Chiudi"
+        aria-label={t("Chiudi")}
         onClick={handleClose}
       />
       <div
@@ -202,28 +196,22 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-semibold text-primary-black/45">
-                Crea la tua festa · {progressLabel}
+                {t("Crea la tua festa")} · {t("{current} di {total}").replaceAll("{current}", String(safeIndex + 1)).replaceAll("{total}", String(steps.length))}
               </p>
               <h2
                 id="party-wizard-title"
                 className="mt-1 text-[1.65rem] font-bold leading-tight text-primary-black"
               >
-                {step === "services"
-                  ? lang === "en"
-                    ? "Which services do you want already included in the price?"
-                    : STEP_QUESTIONS.services
-                  : STEP_QUESTIONS[step]}
+                {t(STEP_QUESTIONS[step])}
               </h2>
               {step === "budget" ? (
                 <p className="mt-1 text-sm text-primary-black/55">
-                  Sala e drink inclusi. Tocca una fascia.
+                  {t("Sala e drink inclusi. Tocca una fascia.")}
                 </p>
               ) : null}
               {step === "services" ? (
                 <p className="mt-1 text-sm text-primary-black/55">
-                  {lang === "en"
-                    ? "We'll only show venues that already include them."
-                    : "Ti mostriamo solo le location che li hanno già compresi."}
+                  {t("Ti mostriamo solo le location che li hanno già compresi.")}
                 </p>
               ) : null}
             </div>
@@ -231,7 +219,7 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
               type="button"
               onClick={handleClose}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-paper text-ink-inverse/70"
-              aria-label="Chiudi"
+              aria-label={t("Chiudi")}
             >
               <X className="h-4 w-4" aria-hidden />
             </button>
@@ -281,7 +269,7 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
         >
           {stepError ? (
             <p className="mb-2 text-xs font-semibold text-brand-pink">
-              {stepError}
+              {t(stepError)}
             </p>
           ) : null}
           <div className="flex gap-3">
@@ -293,7 +281,7 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
               )}
               onClick={back}
             >
-              Indietro
+              {t("Indietro")}
             </Button>
             {step === "services" && isDemoMode ? (
               <button
@@ -307,12 +295,8 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
                 )}
               >
                 {criteria.partyServices.length === 0
-                  ? lang === "en"
-                    ? "Add them separately later"
-                    : "Aggiungi in seguito separatamente"
-                  : lang === "en"
-                    ? "Continue"
-                    : "Continua"}
+                  ? t("Aggiungi in seguito separatamente")
+                  : t("Continua")}
               </button>
             ) : step === "services" && criteria.partyServices.length === 0 ? (
               <button
@@ -321,12 +305,10 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
                 className="h-[50px] min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap rounded-2xl border border-[#2A2C33] bg-transparent px-3 text-[15px] font-bold text-[#F5F5F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <span className="min-[430px]:hidden">
-                  {lang === "en" ? "Add them later" : "Aggiungili dopo"}
+                  {t("Aggiungili dopo")}
                 </span>
                 <span className="hidden min-[430px]:inline">
-                  {lang === "en"
-                    ? "Add them separately later"
-                    : "Aggiungi in seguito separatamente"}
+                  {t("Aggiungi in seguito separatamente")}
                 </span>
               </button>
             ) : (
@@ -341,12 +323,10 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
                 )}
               >
                 {step === "services"
-                  ? lang === "en"
-                    ? "Continue"
-                    : "Continua"
+                  ? t("Continua")
                   : isLast
-                    ? "Cerca location"
-                    : "Avanti"}
+                    ? t("Cerca location")
+                    : t("Avanti")}
               </button>
             )}
           </div>
@@ -365,7 +345,6 @@ function DateStep({
   onChange: (partial: Partial<PartyCriteria>) => void;
 }) {
   const { lang } = useDemoLanguage();
-  const locale = lang === "en" ? "en-GB" : "it-IT";
   const [datePickerOpen, setDatePickerOpen] = useState(true);
   const dates = criteria.dates;
   const atMax = dates.length >= MAX_PARTY_DATES;
@@ -395,7 +374,7 @@ function DateStep({
               Date preferite
             </span>
             <span className="block truncate text-sm font-black text-ink-inverse">
-              {formatWizardDateLabel(dates, locale)}
+              {formatWizardDateLabel(dates, lang)}
             </span>
           </span>
         </span>
@@ -424,7 +403,7 @@ function DateStep({
           }}
           className="mt-3 text-xs font-semibold text-primary-black/45"
         >
-          Cancella date
+          {translate(lang, "Cancella date")}
         </button>
       )}
     </fieldset>
@@ -461,6 +440,7 @@ function DrinksStep({
   criteria: PartyCriteria;
   onChange: (partial: Partial<PartyCriteria>) => void;
 }) {
+  const { t } = useDemoLanguage();
   function setDrinkMode(drinkMode: DrinkPackageMode) {
     onChange({
       drinkMode,
@@ -475,8 +455,7 @@ function DrinksStep({
   return (
     <fieldset>
       <p className="mb-3 text-xs leading-relaxed text-primary-black/50">
-        I drink li fornisce il locale. Il costo entra nel prezzo della
-        location, insieme alla sala.
+        {t("I drink li fornisce il locale. Il costo entra nel prezzo della location, insieme alla sala.")}
       </p>
       <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-paper p-1 ring-1 ring-primary-black/8">
         {(
@@ -498,7 +477,7 @@ function DrinksStep({
                 : "bg-transparent text-ink-inverse/55 hover:bg-white/40 hover:text-ink-inverse",
             )}
           >
-            {option.label}
+            {t(option.label)}
           </button>
         ))}
       </div>
@@ -525,7 +504,7 @@ function DrinksStep({
               }
               disabled={criteria.drinksPerInvitee <= MIN_DRINKS_PER_INVITEE}
               className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-teal/15 text-brand-teal disabled:opacity-35"
-              aria-label="Riduci drink per persona"
+              aria-label={t("Riduci drink per persona")}
             >
               <Minus className="h-3.5 w-3.5" aria-hidden />
             </button>
@@ -543,7 +522,7 @@ function DrinksStep({
               }
               disabled={criteria.drinksPerInvitee >= MAX_DRINKS_PER_INVITEE}
               className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-teal text-ink-inverse disabled:opacity-35"
-              aria-label="Aumenta drink per persona"
+              aria-label={t("Aumenta drink per persona")}
             >
               <Plus className="h-3.5 w-3.5" aria-hidden />
             </button>
@@ -553,8 +532,7 @@ function DrinksStep({
 
       {criteria.drinkMode === "open_bar" ? (
         <p className="mt-3 rounded-xl border border-primary-black/10 bg-paper px-3 py-2 text-xs font-semibold text-ink-inverse/70">
-          Open bar per tutta la serata, a partecipante. Lo fornisce il locale
-          ed è incluso nel prezzo.
+          {t("Open bar per tutta la serata, a partecipante. Lo fornisce il locale ed è incluso nel prezzo.")}
         </p>
       ) : null}
     </fieldset>
@@ -608,7 +586,7 @@ function ServicesStep({
   criteria: PartyCriteria;
   onChange: (partial: Partial<PartyCriteria>) => void;
 }) {
-  const { lang } = useDemoLanguage();
+  const { lang, t } = useDemoLanguage();
 
   function toggle(id: PartyServicePick) {
     const current = criteria.partyServices;
@@ -652,7 +630,7 @@ function ServicesStep({
                 )}
                 aria-hidden={!active}
               >
-                {lang === "en" ? "Included" : "Incluso"}
+                {t("Incluso")}
               </span>
             </button>
           );
@@ -661,18 +639,16 @@ function ServicesStep({
       <p className="mt-3 flex items-start gap-2 text-[13px] leading-snug text-primary-black/50">
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
         <span>
-          {lang === "en"
-            ? "The ones you don't select can be added to your party later."
-            : "Quelli che non selezioni potrai aggiungerli dopo alla tua festa."}
+          {t("Quelli che non selezioni potrai aggiungerli dopo alla tua festa.")}
         </span>
       </p>
       <label className="mt-4 block text-xs font-semibold text-primary-black/55">
-        Altri dettagli (facoltativo)
+        {t("Altri dettagli (facoltativo)")}
         <textarea
           value={criteria.freeText}
           onChange={(event) => onChange({ freeText: event.target.value })}
           rows={2}
-          placeholder="Es. area esterna, cena, stile"
+          placeholder={t("Es. area esterna, cena, stile")}
           className="mt-1 w-full resize-none rounded-2xl border border-primary-black/10 bg-paper px-3 py-2 text-base text-ink-inverse placeholder:text-ink-inverse/40 focus:border-brand-teal focus:outline-none"
         />
       </label>

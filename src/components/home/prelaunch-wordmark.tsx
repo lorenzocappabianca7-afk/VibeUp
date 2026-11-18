@@ -1,6 +1,7 @@
-import { landingCopy } from "@/content/landing";
+import { useLandingCopy } from "@/lib/locale/use-localized";
 
 export function Wordmark({ size }: { size: "header" | "footer" | "mock" }) {
+  const landingCopy = useLandingCopy();
   return (
     <span className="vu-mark">
       <span className={`vu-brand vu-mark-${size} font-[family-name:var(--font-brand)] font-extrabold text-primary-black`}>

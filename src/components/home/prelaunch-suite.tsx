@@ -1,4 +1,5 @@
 import { landingCopy } from "@/content/landing";
+import { useLandingCopy } from "@/lib/locale/use-localized";
 import type { ReactNode } from "react";
 
 function Icon({ children }: { children: ReactNode }) {
@@ -71,12 +72,13 @@ function SuiteIcon({ id }: { id: (typeof landingCopy.suite)[number]["icon"] }) {
 }
 
 export function PrelaunchSuite() {
+  const copy = useLandingCopy();
   return (
-    <section className="vu-suite" data-vu-reveal aria-label={landingCopy.suiteLabel}>
-      <h2 className="vu-suite-title vu-reveal-item vu-brand">{landingCopy.suiteTitle}</h2>
-      <p className="vu-suite-lead vu-reveal-item vu-reveal-d1">{landingCopy.suiteSubtitle}</p>
+    <section className="vu-suite" data-vu-reveal aria-label={copy.suiteLabel}>
+      <h2 className="vu-suite-title vu-reveal-item vu-brand">{copy.suiteTitle}</h2>
+      <p className="vu-suite-lead vu-reveal-item vu-reveal-d1">{copy.suiteSubtitle}</p>
       <ul className="vu-suite-grid">
-        {landingCopy.suite.map((item) => (
+        {copy.suite.map((item) => (
           <li key={item.title} className="vu-suite-card vu-reveal-item">
             <div className="vu-suite-head">
               <SuiteIcon id={item.icon} />

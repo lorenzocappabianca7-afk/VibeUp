@@ -21,7 +21,9 @@ import {
   SERVICE_PROVIDERS,
   type ServiceProvider,
 } from "@/lib/mock/service-providers";
-import { formatDate } from "@/lib/utils";
+import { useLocale } from "@/context/locale-context";
+import { formatLongDate } from "@/lib/locale/format";
+import { translate } from "@/lib/locale/translate";
 import {
   isManagedListingLive,
   type ManagedServiceListing,
@@ -44,14 +46,18 @@ type HomeNotification = {
   timeLabel: string;
 };
 
-function formatRelative(iso: string) {
+function formatRelative(iso: string, locale: "it" | "en") {
   const stamp = Date.parse(iso);
   if (!Number.isFinite(stamp)) return "";
   const diff = Date.now() - stamp;
-  if (diff < 60_000) return "Ora";
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} min fa`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} ore fa`;
-  return formatDate(iso);
+  if (diff < 60_000) return translate(locale, "Ora");
+  if (diff < 3_600_000) {
+    return translate(locale, "{n} min fa").replaceAll("{n}", String(Math.floor(diff / 60_000)));
+  }
+  if (diff < 86_400_000) {
+    return translate(locale, "{n} ore fa").replaceAll("{n}", String(Math.floor(diff / 3_600_000)));
+  }
+  return formatLongDate(locale, iso);
 }
 
 function managedListingToDj(listing: ManagedServiceListing): ServiceProvider {
@@ -100,6 +106,7 @@ function buildDjHrefFromCriteria(djId: string, criteria: PartyCriteria): string 
 }
 
 export function HomeScreen() {
+  const { locale, t } = useLocale();
   const { criteria, servicesStepRequest } = usePartyCriteria();
   const { isDemoMode, dismissHomeTip } = useDemoMode();
   const { setTab } = useTabNavigation();
@@ -171,7 +178,7 @@ export function HomeScreen() {
           request.confirmationDeadline,
         ),
         body: `${request.eventPayload.title} · ${request.locationName}`,
-        timeLabel: formatRelative(request.updatedAt),
+        timeLabel: formatRelative(request.updatedAt, locale),
       });
     }
 
@@ -181,12 +188,12 @@ export function HomeScreen() {
         id: item.id,
         title: item.title,
         body: item.body,
-        timeLabel: formatRelative(item.createdAt),
+        timeLabel: formatRelative(item.createdAt, locale),
       });
     }
 
     return items.slice(0, 8);
-  }, [communications, currentUser.id, requests]);
+  }, [communications, currentUser.id, locale, requests]);
 
   const visibleNotifications = notifications.slice(0, 4);
 
@@ -282,10 +289,10 @@ export function HomeScreen() {
 
       <section className="min-w-0 max-w-full rounded-2xl border border-brand-teal/25 bg-brand-teal/10 p-5">
         <h2 className="max-w-full text-pretty text-[2rem] font-bold leading-tight tracking-tight text-primary-black">
-          Organizza il tuo 18
+          {t("Organizza il tuo 18")}
         </h2>
         <p className="mt-2 text-sm font-medium text-primary-black/55">
-          Location, DJ, fotografo e tutto il resto. In un&apos;unica app.
+          {t("Location, DJ, fotografo e tutto il resto. In un'unica app.")}
         </p>
         <DemoHomeCreateWrap>
           <button
@@ -296,12 +303,12 @@ export function HomeScreen() {
             }}
             className="mt-4 flex h-[60px] w-full items-center justify-between rounded-2xl bg-brand-pink px-5 text-lg font-bold text-[#0F1115]"
           >
-            Crea la tua festa
+            {t("Crea la tua festa")}
             <ArrowRight className="h-5 w-5" aria-hidden />
           </button>
         </DemoHomeCreateWrap>
         <DemoHomeLockedDim className="mt-4 min-w-0">
-          <h3 className="text-sm font-bold text-primary-black">Tutto per la tua festa</h3>
+          <h3 className="text-sm font-bold text-primary-black">{t("Tutto per la tua festa")}</h3>
           <HorizontalTouchScroll className="mt-2 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex w-max gap-2">
               {HOME_PARTY_PICKS.map((pick) => {
@@ -317,7 +324,7 @@ export function HomeScreen() {
                       <Icon className="h-4 w-4" aria-hidden />
                     </span>
                     <span className="text-center text-[11px] font-bold leading-tight text-primary-black">
-                      {pick.label}
+                      {t(pick.label)}
                     </span>
                   </button>
                 );
@@ -332,22 +339,21 @@ export function HomeScreen() {
         <div className="flex min-w-0 items-center justify-between gap-2">
           <h2 className="flex min-w-0 items-center gap-2 text-lg font-bold text-primary-black">
             <Bell className="h-4 w-4 shrink-0 text-brand-teal" aria-hidden />
-            Notifiche
+            {t("Notifiche")}
           </h2>
           <button
             type="button"
             onClick={() => setTab("profile")}
             className="touch-target inline-flex shrink-0 items-center justify-center gap-0.5 px-1 text-xs font-semibold text-brand-teal"
           >
-            Vedi tutte
+            {t("Vedi tutte")}
             <ChevronRight className="h-3.5 w-3.5" aria-hidden />
           </button>
         </div>
 
         {visibleNotifications.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-primary-black/15 bg-primary-black/[0.02] px-4 py-8 text-center text-sm text-primary-black/50">
-            Nessuna notifica per ora. Quando una richiesta cambia stato, la
-            trovi qui.
+            {t("Nessuna notifica per ora. Quando una richiesta cambia stato, la trovi qui.")}
           </p>
         ) : (
           <ul className="space-y-2">
@@ -374,7 +380,7 @@ export function HomeScreen() {
 
       <section className="min-w-0 max-w-full space-y-3">
         <h2 className="text-lg font-bold text-primary-black">
-          Location suggerite per te
+          {t("Location suggerite per te")}
         </h2>
         <HorizontalTouchScroll className="pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex w-max gap-3">
@@ -401,7 +407,7 @@ export function HomeScreen() {
       {suggestedDjs.length > 0 ? (
         <section className="min-w-0 max-w-full space-y-3">
           <h2 className="text-lg font-bold text-primary-black">
-            DJ suggeriti per te
+            {t("DJ suggeriti per te")}
           </h2>
           <HorizontalTouchScroll className="pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex w-max gap-3">

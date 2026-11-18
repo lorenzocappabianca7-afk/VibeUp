@@ -4,6 +4,8 @@ import localFont from "next/font/local";
 import { AppCssLoaderGate } from "@/components/app-css-loader-gate";
 import { AppChrome } from "@/components/layout/app-chrome";
 import { AppProviders } from "@/components/providers/app-providers";
+import { getRequestLocale } from "@/lib/locale/server";
+import { translate } from "@/lib/locale/translate";
 import { CriticalPaint } from "@/components/splash/critical-paint";
 import { SplashScreen } from "@/components/splash/splash-screen";
 import { APPLE_STARTUP_IMAGES } from "@/lib/apple-startup";
@@ -75,14 +77,21 @@ const eventsScript = localFont({
   display: "swap",
 });
 
-export const metadata: Metadata = {
+const SITE_TITLE = "VibeUp — Organizza feste senza stress";
+const SITE_DESCRIPTION =
+  "VibeUp (Vibe Up) è la web app per organizzare feste: trova location, DJ, fotografi e servizi per il tuo evento in un unico posto.";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getRequestLocale();
+  const title = translate(locale, SITE_TITLE);
+  const description = translate(locale, SITE_DESCRIPTION);
+  return {
   metadataBase: new URL(getSiteUrl()),
   title: {
-    default: "VibeUp — Organizza feste senza stress",
+    default: title,
     template: "%s | VibeUp",
   },
-  description:
-    "VibeUp (Vibe Up) è la web app per organizzare feste: trova location, DJ, fotografi e servizi per il tuo evento in un unico posto.",
+  description,
   keywords: [
     "VibeUp",
     "Vibe Up",
@@ -109,19 +118,17 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    locale: "it_IT",
+    locale: locale === "en" ? "en_GB" : "it_IT",
     siteName: "VibeUp",
     url: "/",
-    title: "VibeUp — Organizza feste senza stress",
-    description:
-      "VibeUp (Vibe Up) è la web app per organizzare feste: trova location, DJ, fotografi e servizi per il tuo evento in un unico posto.",
+    title,
+    description,
     images: [{ url: "/vibeup-mark.png", width: 512, height: 512, alt: "VibeUp" }],
   },
   twitter: {
     card: "summary",
-    title: "VibeUp — Organizza feste senza stress",
-    description:
-      "VibeUp (Vibe Up) è la web app per organizzare feste: trova location, DJ, fotografi e servizi per il tuo evento in un unico posto.",
+    title,
+    description,
     images: ["/vibeup-mark.png"],
   },
   robots: {
@@ -145,7 +152,8 @@ export const metadata: Metadata = {
       { url: "/vibeup-apple.png", sizes: "180x180", type: "image/png" },
     ],
   },
-};
+  };
+}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -164,14 +172,15 @@ export const viewport: Viewport = {
   colorScheme: "only dark" as Viewport["colorScheme"],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getRequestLocale();
   return (
     <html
-      lang="it"
+      lang={locale}
       translate="yes"
       className={`${geistSans.variable} ${geistMono.variable} ${brandDisplay.variable} ${eventsScript.variable} h-full antialiased`}
       style={{ backgroundColor: "#000000", colorScheme: "only dark" }}
@@ -307,7 +316,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: BROWSER_TRANSLATE_GUARD_SCRIPT }} />
         <SplashScreen />
         <AppCssLoaderGate />
-        <AppProviders>
+        <AppProviders locale={locale}>
           <div
             id="vibeup-app-shell"
             className="flex min-h-dvh min-w-0 max-w-full flex-col overflow-x-clip bg-background"

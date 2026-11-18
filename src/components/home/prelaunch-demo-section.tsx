@@ -1,4 +1,4 @@
-import { landingCopy } from "@/content/landing";
+import { useLandingCopy } from "@/lib/locale/use-localized";
 import { DemoEntryLink } from "@/components/demo/demo-entry-link";
 import { ArrowIcon, Wordmark } from "@/components/home/prelaunch-wordmark";
 import { brandTokens } from "@/lib/brand-tokens";
@@ -10,6 +10,7 @@ export function PrelaunchDemoSection({
   canEnterDemo: boolean;
   onNeedSignup: () => void;
 }) {
+  const landingCopy = useLandingCopy();
   return (
     <section id="demo" className="vu-demo">
       <div className="vu-demo-card bg-surface" data-vu-reveal>

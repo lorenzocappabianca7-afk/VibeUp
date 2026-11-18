@@ -72,7 +72,7 @@ export function DemoHomeLockedDim({
   children: ReactNode;
   className?: string;
 }) {
-  const { lang } = useDemoLanguage();
+  const { t } = useDemoLanguage();
   const { isDemoMode, session, bookingConfirmed } = useDemoMode();
   const { hasAppliedCriteria } = usePartyCriteria();
   const locked = isDemoMode && Boolean(session) && !session?.completed && !bookingConfirmed && !hasAppliedCriteria;
@@ -87,7 +87,7 @@ export function DemoHomeLockedDim({
         type="button"
         tabIndex={-1}
         className="absolute inset-0 cursor-pointer"
-        aria-label={lang === "en" ? "Create your party first" : "Prima crea la tua festa"}
+        aria-label={t("Prima crea la tua festa")}
         onClick={() => requestDemoNudge()}
       />
     </div>
@@ -95,14 +95,23 @@ export function DemoHomeLockedDim({
 }
 
 export function DemoConfyGuide() {
+  const { t } = useDemoLanguage();
   const pathname = usePathname() || "/";
-  const { isDemoMode, session, bookingConfirmed, selectedLocations, bookedLocation } = useDemoMode();
+  const { isDemoMode, session, landingState, bookingConfirmed, selectedLocations, bookedLocation } =
+    useDemoMode();
   const { managedListings } = useAppState();
   const { hasAppliedCriteria } = usePartyCriteria();
   const [serviceAdded, setServiceAdded] = useState(false);
-  const [skipped, setSkipped] = useState(true);
+  const [skipped, setSkipped] = useState(false);
   const [dismissedStep, setDismissedStep] = useState<number | null>(null);
-  const [ready, setReady] = useState(false);
+  const [trackedSessionId, setTrackedSessionId] = useState<string | null>(null);
+  if (session && session.id !== trackedSessionId) {
+    const carried = trackedSessionId === null;
+    setTrackedSessionId(session.id);
+    setSkipped(isDemoGuideSkipped(session.id) || (carried && skipped));
+    setDismissedStep(readDismissedStep(session.id) ?? (carried ? dismissedStep : null));
+    setServiceAdded(Boolean(readDemoAddedService(session.id)));
+  }
   const [nudge, setNudge] = useState(false);
   const [hop, setHop] = useState(0);
   const [blocked, setBlocked] = useState(false);
@@ -112,14 +121,18 @@ export function DemoConfyGuide() {
 
   useEffect(() => {
     if (!session) return;
-    setSkipped(isDemoGuideSkipped(session.id));
-    setDismissedStep(readDismissedStep(session.id));
-    setServiceAdded(Boolean(readDemoAddedService(session.id)));
-    setReady(true);
+    if (skipped) skipDemoGuide(session.id);
+    if (dismissedStep != null) {
+      try {
+        window.sessionStorage.setItem(dismissedStepKey(session.id), String(dismissedStep));
+      } catch {
+        /* the in-memory hide still lasts until the step changes */
+      }
+    }
     const onAdded = () => setServiceAdded(true);
     window.addEventListener(DEMO_SERVICE_ADDED_EVENT, onAdded);
     return () => window.removeEventListener(DEMO_SERVICE_ADDED_EVENT, onAdded);
-  }, [session]);
+  }, [dismissedStep, session, skipped]);
 
   useEffect(() => {
     const onNudge = () => {
@@ -184,7 +197,10 @@ export function DemoConfyGuide() {
     };
   }, [pathname]);
 
-  if (!ready || !isDemoMode || !session || session.completed || blocked) return null;
+  const awaitingSession =
+    isDemoMode && !session && landingState !== "error" && landingState !== "completed";
+  if (!isDemoMode || blocked || session?.completed) return null;
+  if (!session && !awaitingSession) return null;
   if (skipped && !nudge) return null;
 
   const locationId = bookedLocation?.id ?? selectedLocations.at(-1)?.id ?? null;
@@ -193,12 +209,14 @@ export function DemoConfyGuide() {
       locationId,
       listings: managedListings,
     }).length === 0;
-  const step = guideStep({
-    bookingConfirmed,
-    hasLocation: selectedLocations.length > 0,
-    hasAppliedCriteria,
-    serviceReady: serviceAdded || nothingToAdd,
-  });
+  const step = session
+    ? guideStep({
+        bookingConfirmed,
+        hasLocation: selectedLocations.length > 0,
+        hasAppliedCriteria,
+        serviceReady: serviceAdded || nothingToAdd,
+      })
+    : 1;
   if (dismissedStep === step && !nudge) return null;
   const message = nudge
     ? { title: "Prima crea la tua festa 👆", body: "" }
@@ -214,18 +232,18 @@ export function DemoConfyGuide() {
   const bottom = `calc(${raised} + env(safe-area-inset-bottom, 0px))`;
 
   function hide() {
-    if (!session) return;
-    skipDemoGuide(session.id);
+    if (session) skipDemoGuide(session.id);
     setSkipped(true);
     setNudge(false);
   }
 
   function dismissStep() {
-    if (!session) return;
-    try {
-      window.sessionStorage.setItem(dismissedStepKey(session.id), String(step));
-    } catch {
-      /* the in-memory hide still lasts until the step changes */
+    if (session) {
+      try {
+        window.sessionStorage.setItem(dismissedStepKey(session.id), String(step));
+      } catch {
+        /* the in-memory hide still lasts until the step changes */
+      }
     }
     setDismissedStep(step);
     setNudge(false);
@@ -243,6 +261,7 @@ export function DemoConfyGuide() {
         aria-hidden
         width={112}
         height={112}
+        fetchPriority="high"
         className="pointer-events-none h-28 w-28 shrink-0"
         style={{ marginRight: -14 }}
       />
@@ -256,21 +275,21 @@ export function DemoConfyGuide() {
           type="button"
           onClick={dismissStep}
           className="pointer-events-auto absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full text-[#6B6E76]"
-          aria-label="Chiudi la guida"
+          aria-label={t("Chiudi la guida")}
         >
           <X className="h-4 w-4" aria-hidden />
         </button>
         <p className="pr-6 font-[family-name:var(--font-brand)] text-[15px] font-extrabold leading-tight">
-          {message.title}
+          {t(message.title)}
         </p>
         {message.body ? (
-          <p className="mt-1 text-sm leading-snug text-[#2A2C33]">{message.body}</p>
+          <p className="mt-1 text-sm leading-snug text-[#2A2C33]">{t(message.body)}</p>
         ) : null}
         {nudge ? null : (
           <p className="mt-2 flex items-center justify-between gap-3 text-xs text-[#6B6E76]">
-            <span>{`Passo ${step} di 5`}</span>
+            <span>{t(`Passo ${step} di 5`)}</span>
             <button type="button" onClick={hide} className="pointer-events-auto underline">
-              Salta la guida
+              {t("Salta la guida")}
             </button>
           </p>
         )}

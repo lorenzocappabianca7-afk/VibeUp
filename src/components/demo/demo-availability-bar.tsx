@@ -24,13 +24,7 @@ import { EXPLORE_GUEST_MIN } from "@/types/location";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 
-function formatPartyDate(iso: string, lang: "it" | "en") {
-  return new Intl.DateTimeFormat(lang === "en" ? "en-GB" : "it-IT", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(new Date(`${iso}T12:00:00`));
-}
+import { formatLongDate } from "@/lib/locale/format";
 
 export function useDemoAvailabilityTarget(): DemoChosenLocation | null {
   const { isDemoMode, session, selectedLocations, bookingConfirmed } =
@@ -46,7 +40,7 @@ export function DemoAvailabilityBar({
 }: {
   location: DemoChosenLocation;
 }) {
-  const { lang } = useDemoLanguage();
+  const { lang, t } = useDemoLanguage();
   const { criteria } = usePartyCriteria();
   const { managedListings } = useAppState();
   const { sendAvailabilityRequest } = useAvailabilityRequests();
@@ -58,7 +52,7 @@ export function DemoAvailabilityBar({
   useBodyScrollLock(phase === "accepted");
 
   const chosenDate = criteria.dates[0] ?? criteria.dateFrom ?? "";
-  const dateLabel = chosenDate ? formatPartyDate(chosenDate, lang) : null;
+  const dateLabel = chosenDate ? formatLongDate(lang, chosenDate) : null;
 
   async function handleSend() {
     if (phase !== "idle") return;
@@ -162,10 +156,10 @@ export function DemoAvailabilityBar({
                   className="h-5 w-5 shrink-0 motion-reduce:animate-none animate-spin"
                   aria-hidden
                 />
-                Invio in corso…
+                {t("Invio in corso…")}
               </span>
             ) : (
-              "Invia richiesta di disponibilità"
+              t("Invia richiesta di disponibilità")
             )}
           </button>
         </div>

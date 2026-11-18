@@ -8,6 +8,7 @@ import { useAppState } from "@/context/app-state-context";
 import { useAvailabilityRequests } from "@/context/availability-request-context";
 import { useChat } from "@/context/chat-context";
 import { useDemoMode } from "@/context/demo-mode-context";
+import { useLocale } from "@/context/locale-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { useTabNavigation } from "@/context/tab-navigation-context";
 import { pushHomeHref } from "@/lib/home-navigation";
@@ -138,6 +139,7 @@ export function LocationDetailView({
   const { startVendorConversation } = useChat();
   const { setTab } = useTabNavigation();
   const { isDemoMode, selectDemoLocation } = useDemoMode();
+  const { t } = useLocale();
   const { criteria, hasAppliedCriteria } = usePartyCriteria();
   const router = useRouter();
   const [chatError, setChatError] = useState<string | null>(null);
@@ -789,8 +791,8 @@ export function LocationDetailView({
             }`}
             aria-label={
               isCompareSelected
-                ? `Rimuovi ${location.name} dal confronto`
-                : `Aggiungi ${location.name} al confronto`
+                ? t("Rimuovi {name} dal confronto").replaceAll("{name}", location.name)
+                : t("Aggiungi {name} al confronto").replaceAll("{name}", location.name)
             }
           >
             <GitCompareArrows
@@ -810,8 +812,8 @@ export function LocationDetailView({
             }`}
             aria-label={
               isFavorite
-                ? `Rimuovi ${location.name} dai preferiti`
-                : `Aggiungi ${location.name} ai preferiti`
+                ? t("Rimuovi {name} dai preferiti").replaceAll("{name}", location.name)
+                : t("Aggiungi {name} ai preferiti").replaceAll("{name}", location.name)
             }
           >
             <Heart

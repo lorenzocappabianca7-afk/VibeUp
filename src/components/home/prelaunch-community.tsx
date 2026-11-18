@@ -1,5 +1,6 @@
 import { contestConfig, topPrizeAmount } from "@/config/contest";
-import { landingCopy } from "@/content/landing";
+import { useLocale } from "@/context/locale-context";
+import { useLandingCopy } from "@/lib/locale/use-localized";
 import { brandTokens } from "@/lib/brand-tokens";
 
 const prizeClass = {
@@ -31,6 +32,8 @@ export function PrelaunchCommunity({
   member: { firstName: string; code: string; inviteCount: number } | null;
   contestOver: boolean;
 }) {
+  const landingCopy = useLandingCopy();
+  const { t } = useLocale();
   return (
     <section id="iscriviti" className="vu-join">
       <div className="vu-join-main">
@@ -47,7 +50,7 @@ export function PrelaunchCommunity({
         ) : (
           <p className="vu-body vu-reveal-item vu-reveal-d2 text-[15px]">
             {landingCopy.communityBefore}
-            <span className="vu-em text-primary-black">{topPrizeAmount()}</span>
+            <span className="vu-em text-primary-black">{t(topPrizeAmount())}</span>
             {landingCopy.communityAfter}
           </p>
         )}
@@ -103,7 +106,7 @@ export function PrelaunchCommunity({
               {prize.label}
             </span>
             <span className={`vu-amount vu-brand font-[family-name:var(--font-brand)] ${amountClass[prize.rank]}`}>
-              {prize.amount}
+              {t(prize.amount)}
             </span>
           </div>
           );
@@ -121,7 +124,7 @@ export function PrelaunchCommunity({
         </button>
       )}
       <p className="vu-fine vu-reveal-item" data-vu-reveal>
-        {contestConfig.redeemNote}{" "}
+        {t(contestConfig.redeemNote)}{" "}
         <a href="/regolamento">{landingCopy.rulesLink}</a>
       </p>
       </div>

@@ -2,10 +2,10 @@
 
 import { useDemoLanguage } from "@/context/demo-language-context";
 import { consentText } from "@/content/legal";
-import { signupCopy } from "@/content/signup";
+import { signupCopy as signupMessages } from "@/content/signup";
+import { useLocalized, useSignupCopy } from "@/lib/locale/use-localized";
 import { DemoEntryLink } from "@/components/demo/demo-entry-link";
 import { SignupMemberCard } from "@/components/home/signup-share";
-import { readDemoLanguage } from "@/lib/demo/language";
 import { DEMO_SIGNUP_ID_STORAGE_KEY, readVerifiedMember } from "@/lib/demo/signup-gate";
 import {
   clearSignupDraft,
@@ -90,27 +90,27 @@ function cancelFrame(id: number) {
   window.clearTimeout(id);
 }
 
-function errorText(code: string) {
+function errorText(code: string, copy: typeof signupMessages) {
   if (code.includes(" ")) return code;
   switch (code) {
     case "email_taken":
-      return signupCopy.emailTaken;
+      return copy.emailTaken;
     case "phone_taken":
-      return signupCopy.phoneTaken;
+      return copy.phoneTaken;
     case "too_young":
-      return signupCopy.tooYoung;
+      return copy.tooYoung;
     case "own_code":
-      return signupCopy.codeOwn;
+      return copy.codeOwn;
     case "expired":
-      return signupCopy.codeExpired;
+      return copy.codeExpired;
     case "locked":
-      return signupCopy.codeLocked;
+      return copy.codeLocked;
     case "mismatch":
-      return signupCopy.codeInvalid;
+      return copy.codeInvalid;
     case "send_failed":
-      return signupCopy.sendFailed;
+      return copy.sendFailed;
     default:
-      return signupCopy.genericError;
+      return copy.genericError;
   }
 }
 
@@ -194,6 +194,8 @@ export function SignupFlow({
   const dragRef = useRef<{ y: number; id: number } | null>(null);
 
   const { lang } = useDemoLanguage();
+  const signupCopy = useSignupCopy();
+  const consent = useLocalized(consentText);
   const storedReferral = readStoredSignupReferral();
   const linkedReferral =
     !draft.referralSkipped && storedReferral.length > 0 && normalizeCode(draft.referralCode) === storedReferral;
@@ -416,7 +418,7 @@ export function SignupFlow({
   function showError(code: string) {
     const jump = stepForError(code);
     if (jump !== null && jump !== draft.step) go(jump);
-    setError(errorText(code));
+    setError(errorText(code, signupCopy));
   }
 
   async function sendAccountCode() {
@@ -430,7 +432,7 @@ export function SignupFlow({
       phoneNational: draft.phoneNational,
       consentPrivacy: false,
       consentRules: false,
-      locale: readDemoLanguage(),
+      locale: lang,
     });
     setBusy(false);
     if (!result.ok || !result.signupId) {
@@ -466,7 +468,7 @@ export function SignupFlow({
       consentPrivacy: draft.consentPrivacy,
       consentRules: draft.consentRules,
       consentMarketing: draft.consentMarketing,
-      locale: readDemoLanguage(),
+      locale: lang,
     });
     setBusy(false);
     const signupId = result.signupId || draft.signupId;
@@ -565,7 +567,7 @@ export function SignupFlow({
       return;
     }
     verifyInflight.delete(key);
-    setError(errorText(result.error || "mismatch"));
+    setError(errorText(result.error || "mismatch", signupCopy));
   }
 
   async function resend() {
@@ -574,7 +576,7 @@ export function SignupFlow({
     const result = await postJson("/api/launch/resend", { signupId: draft.signupId });
     setBusy(false);
     if (!result.ok) {
-      setError(errorText(result.error || "send_failed"));
+      setError(errorText(result.error || "send_failed", signupCopy));
       return;
     }
     setDraft((current) => ({
@@ -611,7 +613,7 @@ export function SignupFlow({
     });
     setBusy(false);
     if (!result.ok) {
-      setError(errorText(result.error || "unavailable"));
+      setError(errorText(result.error || "unavailable", signupCopy));
       return;
     }
     setDetailsSaved(true);
@@ -683,9 +685,9 @@ export function SignupFlow({
 
   const stepNumber = draft.step + 1;
   const progress = (stepNumber / TOTAL_STEPS) * 100;
-  const stepLabel = lang === "en"
-    ? `Step ${stepNumber} of ${TOTAL_STEPS}`
-    : signupCopy.stepProgress.replaceAll("{n}", String(stepNumber)).replaceAll("{total}", String(TOTAL_STEPS));
+  const stepLabel = signupCopy.stepProgress
+    .replaceAll("{n}", String(stepNumber))
+    .replaceAll("{total}", String(TOTAL_STEPS));
   const sheetStyle: CSSProperties = { ["--drag" as string]: `${dragY}px` };
   const lead = draft.step === STEP_VERIFY ? signupCopy.verifyBody : draft.step === STEP_VENUE ? signupCopy.venueHint : "";
   const showBack = !done && draft.step > 0;
@@ -775,12 +777,12 @@ export function SignupFlow({
             }}
           >
             <div className={`vu-sheet-body vu-sheet-slide is-${dir}`} key={draft.step} ref={panelRef}>
-              <h1 id="signup-title" className="vu-sheet-title">{titleFor(draft.step)}</h1>
+              <h1 id="signup-title" className="vu-sheet-title">{titleFor(draft.step, signupCopy)}</h1>
               {lead ? <p className="vu-sheet-lead">{lead}</p> : null}
               {fieldsFor(draft, patch, verifyCode, setVerifyCode, setError, error, birthdayReady, linkedReferral, referralWarn, setReferralWarn, (code) => void verifyNow(code), suggestions, (item) => {
                 setSuggestions([]);
                 patch({ dreamVenue: item.slice(0, 60), dreamVenueUndecided: false });
-              }, chooseNoVenueIdea)}
+              }, chooseNoVenueIdea, signupCopy, consent)}
               {draft.step === STEP_NAME && draft.phoneNational.trim() && !phoneReady ? <p className="vu-signup-error">{signupCopy.phoneInvalid}</p> : null}
               {draft.step === STEP_PROFILE && draft.birthDate && !birthdayReady ? <p className="vu-signup-error">{signupCopy.tooYoung}</p> : null}
               {referralWarn ? <p className="vu-signup-error">{referralWarn}</p> : null}
@@ -829,6 +831,8 @@ function fieldsFor(
   suggestions: string[],
   onVenuePick: (item: string) => void,
   onNoVenueIdea: () => void,
+  signupCopy: typeof signupMessages,
+  consent: { summary: readonly string[] },
 ) {
   if (draft.step === STEP_NAME) {
     const phoneReady = isE164(joinPhone(draft.phonePrefix, draft.phoneNational));
@@ -974,7 +978,7 @@ function fieldsFor(
       )}
       <div className="vu-checks">
         <div className="vu-consent-summary">
-          {consentText.summary.map((line) => <p key={line}>{line}</p>)}
+          {consent.summary.map((line) => <p key={line}>{line}</p>)}
         </div>
         <label className="vu-check">
           <input type="checkbox" checked={draft.consentPrivacy} onChange={(event) => patch({ consentPrivacy: event.target.checked })} />
@@ -1005,7 +1009,7 @@ function SuggestionList({ items, onPick }: { items: string[]; onPick: (item: str
   );
 }
 
-function titleFor(step: number) {
+function titleFor(step: number, signupCopy: typeof signupMessages) {
   if (step === STEP_NAME) return signupCopy.nameTitle;
   if (step === STEP_VERIFY) return signupCopy.verifyTitle;
   if (step === STEP_VENUE) return signupCopy.venueTitle;

@@ -1144,6 +1144,7 @@ const ServiceCard = memo(function ServiceCard({
   isFavorite: boolean;
   onToggleFavorite: (id: string) => void;
 }) {
+  const { t } = useDemoLanguage();
   const showProfilePhoto =
     service.category === "dj" || service.category === "fotografo";
   const ProfileFallbackIcon =
@@ -1238,8 +1239,8 @@ const ServiceCard = memo(function ServiceCard({
           )}
           aria-label={
             isFavorite
-              ? `Rimuovi ${service.name} dai preferiti`
-              : `Aggiungi ${service.name} ai preferiti`
+              ? t("Rimuovi {name} dai preferiti").replaceAll("{name}", service.name)
+              : t("Aggiungi {name} ai preferiti").replaceAll("{name}", service.name)
           }
         >
           <Heart
@@ -1247,7 +1248,7 @@ const ServiceCard = memo(function ServiceCard({
             fill={isFavorite ? "currentColor" : "none"}
             aria-hidden
           />
-          {isFavorite ? "Nei preferiti" : "Aggiungi ai preferiti"}
+          {isFavorite ? t("Nei preferiti") : t("Aggiungi ai preferiti")}
         </button>
       </div>
     </article>

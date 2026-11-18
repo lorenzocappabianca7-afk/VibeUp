@@ -1,6 +1,8 @@
 import { PrelaunchLandingPage } from "@/components/home/prelaunch-landing-page";
 import { MobileShell } from "@/components/layout/mobile-shell";
 import { landingCopy } from "@/content/landing";
+import { getRequestLocale } from "@/lib/locale/server";
+import { localize } from "@/lib/locale/translate";
 import { getServerAdminAccess } from "@/lib/auth/staff-access";
 import { isPlatformLive } from "@/lib/platform";
 import type { Metadata } from "next";
@@ -24,9 +26,10 @@ export async function generateMetadata({
   if (wantsAppPreview(params.app) && (await getServerAdminAccess()) === "allowed") {
     return {};
   }
+  const copy = localize(await getRequestLocale(), landingCopy);
   return {
-    title: { absolute: landingCopy.metaTitle },
-    description: landingCopy.metaDescription,
+    title: { absolute: copy.metaTitle },
+    description: copy.metaDescription,
   };
 }
 

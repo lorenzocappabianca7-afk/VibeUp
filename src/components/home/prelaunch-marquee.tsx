@@ -1,7 +1,8 @@
-import { landingCopy } from "@/content/landing";
+import { useLandingCopy } from "@/lib/locale/use-localized";
 import { Fragment } from "react";
 
 function MarqueeRun({ hidden = false }: { hidden?: boolean }) {
+  const landingCopy = useLandingCopy();
   return (
     <div className="vu-run font-[family-name:var(--font-brand)]" aria-hidden={hidden || undefined}>
       {landingCopy.marquee.map((item, index) => (
@@ -17,6 +18,7 @@ function MarqueeRun({ hidden = false }: { hidden?: boolean }) {
 }
 
 export function PrelaunchMarquee() {
+  const landingCopy = useLandingCopy();
   return (
     <>
       <p className="vu-tagline vu-brand vu-reveal-item font-[family-name:var(--font-brand)] text-[20px] font-extrabold" data-vu-reveal>

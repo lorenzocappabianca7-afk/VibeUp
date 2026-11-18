@@ -7,6 +7,8 @@ import {
   uniqueImages,
 } from "@/components/ui/image-carousel";
 import { useDemoLanguage } from "@/context/demo-language-context";
+import { formatEuro } from "@/lib/locale/format";
+import type { DemoLanguage } from "@/lib/demo/language";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
 import { includedPartyServices, partyServiceLabel } from "@/lib/included-party-services";
@@ -49,7 +51,7 @@ export const LocationCard = memo(function LocationCard({
   footerActions = false,
   selectOnTap = false,
 }: LocationCardProps) {
-  const { lang } = useDemoLanguage();
+  const { lang, t } = useDemoLanguage();
   const { isDemoMode } = useDemoMode();
   const { criteria, hasAppliedCriteria } = usePartyCriteria();
   const { contactsBeenHere } = location;
@@ -64,14 +66,14 @@ export const LocationCard = memo(function LocationCard({
       ? applyVat(location.personPrice, location.vatRate)
       : null;
   const price = personUnit != null && !guestsChosen
-    ? { price: `${formatEuroAmount(personUnit)} a persona`, detail: "" }
+    ? { price: t("{price} a persona").replaceAll("{price}", formatEuro(lang, personUnit)), detail: "" }
     : personUnit != null && guestsChosen
       ? {
-          price: formatEuroSpan(quote.min, quote.max),
-          detail: `per ${criteria.guestCount} invitati`,
+          price: formatEuroSpan(lang, quote.min, quote.max),
+          detail: t("per {count} invitati").replaceAll("{count}", String(criteria.guestCount)),
         }
       : {
-          price: formatHundreds(quote.min, quote.max),
+          price: formatHundreds(lang, quote.min, quote.max),
           detail: quote.detail,
         };
   const [contactsOpen, setContactsOpen] = useState(false);
@@ -93,19 +95,15 @@ export const LocationCard = memo(function LocationCard({
         id,
         included: isIncluded,
         label: isIncluded
-          ? lang === "en"
-            ? `${name} included`
-            : `${name} incluso`
-          : lang === "en"
-            ? `${name} to add`
-            : `${name} da aggiungere`,
+          ? t("{name} incluso").replaceAll("{name}", name)
+          : t("{name} da aggiungere").replaceAll("{name}", name),
       };
     });
-  }, [criteria.partyServices, hasAppliedCriteria, lang, location]);
+  }, [criteria.partyServices, hasAppliedCriteria, lang, location, t]);
   const placeLabel = venuePlaceLabel(location.zoneLabel, location.comune);
   const subtitle = [
     placeLabel,
-    location.capacity > 0 ? `fino a ${location.capacity} ospiti` : "",
+    location.capacity > 0 ? t("fino a {n} ospiti").replaceAll("{n}", String(location.capacity)) : "",
   ]
     .filter(Boolean)
     .join(" · ");
@@ -132,12 +130,8 @@ export const LocationCard = memo(function LocationCard({
   }
 
   const pickLabel = isFavorite
-    ? lang === "en"
-      ? `Selected: ${location.name}. Tap to clear.`
-      : `Selezionata: ${location.name}. Tocca per togliere.`
-    : lang === "en"
-      ? `Choose ${location.name}`
-      : `Scegli ${location.name}`;
+    ? t("Selezionata: {name}. Tocca per togliere.").replaceAll("{name}", location.name)
+    : t("Scegli {name}").replaceAll("{name}", location.name);
 
   const card = (
     <article
@@ -207,8 +201,8 @@ export const LocationCard = memo(function LocationCard({
               }}
               aria-label={
                 isCompareSelected
-                  ? `Rimuovi ${location.name} dal confronto`
-                  : `Aggiungi ${location.name} al confronto`
+                  ? t("Rimuovi {name} dal confronto").replaceAll("{name}", location.name)
+                  : t("Aggiungi {name} al confronto").replaceAll("{name}", location.name)
               }
               className={cn(
                 "touch-target touch-feedback flex items-center justify-center rounded-full shadow-md backdrop-blur-md transition-colors duration-150",
@@ -247,8 +241,8 @@ export const LocationCard = memo(function LocationCard({
               }}
               aria-label={
                 isFavorite
-                  ? `Rimuovi ${location.name} dai preferiti`
-                  : `Aggiungi ${location.name} ai preferiti`
+                  ? t("Rimuovi {name} dai preferiti").replaceAll("{name}", location.name)
+                  : t("Aggiungi {name} ai preferiti").replaceAll("{name}", location.name)
               }
               className={cn(
                 "touch-target touch-feedback flex items-center justify-center rounded-full shadow-md backdrop-blur-md transition-colors duration-150",
@@ -378,7 +372,7 @@ export const LocationCard = memo(function LocationCard({
             {contactsOpen && (
               <span className="mt-3 block border-t border-ink-inverse/20 pt-3">
                 <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-ink-inverse/80">
-                  Chi è stato qui
+                  {t("Chi è stato qui")}
                 </span>
                 <span className="mt-2 flex flex-wrap gap-2">
                   {contactsBeenHere.contacts.map((contact) => (
@@ -416,7 +410,7 @@ export const LocationCard = memo(function LocationCard({
         aria-pressed={isCompareSelected}
       >
         <GitCompareArrows className="h-3.5 w-3.5" strokeWidth={2.75} aria-hidden />
-        {isCompareSelected ? "Nel confronto" : "Confronta"}
+        {isCompareSelected ? t("Nel confronto") : t("Confronta")}
       </button>
     </div>
   );
@@ -433,32 +427,18 @@ function venuePlaceLabel(zoneLabel: string, comune: string) {
   return `${zone} · ${town}`;
 }
 
-function formatEuroAmount(amount: number) {
-  const rounded = Math.round(amount * 100) / 100;
-  const hasCents = Math.abs(rounded - Math.round(rounded)) > 0.001;
-  const [whole, cents] = rounded.toFixed(hasCents ? 2 : 0).split(".");
-  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  return cents ? `${grouped},${cents} €` : `${grouped} €`;
-}
-
-function formatEuroSpan(min: number, max: number) {
-  const low = formatEuroAmount(Math.min(min, max));
-  const high = formatEuroAmount(Math.max(min, max));
+function formatEuroSpan(locale: DemoLanguage, min: number, max: number) {
+  const low = formatEuro(locale, Math.min(min, max));
+  const high = formatEuro(locale, Math.max(min, max));
   if (low === high) return low;
-  return `${low.replace(" €", "")}–${high}`;
+  return `${low}–${high}`;
 }
 
-function groupedEuros(amount: number) {
-  return Math.round(amount)
-    .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-
-function formatHundreds(min: number, max: number) {
+function formatHundreds(locale: DemoLanguage, min: number, max: number) {
   const low = Math.max(0, Math.round(Math.min(min, max) / 100) * 100);
   const high = Math.max(0, Math.round(Math.max(min, max) / 100) * 100);
-  if (low === high) return `${groupedEuros(low)} €`;
-  return `${groupedEuros(low)}–${groupedEuros(high)} €`;
+  if (low === high) return formatEuro(locale, low);
+  return `${formatEuro(locale, low)}–${formatEuro(locale, high)}`;
 }
 
 function CardSummary({
@@ -474,6 +454,10 @@ function CardSummary({
   detail: string;
   badges?: { id: string; included: boolean; label: string }[];
 }) {
+  const { t } = useDemoLanguage();
+  const guestDetail = detail
+    .replace(/\b(\d+) ospiti\b/g, (_, count: string) => t("{n} ospiti").replaceAll("{n}", count))
+    .replace(/\b(\d+) ospite\b/g, (_, count: string) => t("{n} ospite").replaceAll("{n}", count));
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
       <div className="min-w-0">
@@ -508,11 +492,11 @@ function CardSummary({
         </span>
         {detail ? (
           <span className="mt-1 block text-[10px] font-bold text-brand-teal">
-            {detail}
+            {guestDetail}
           </span>
         ) : null}
         <span className="mt-1 block text-[10px] font-medium text-primary-black/45">
-          prezzo indicativo
+          {t("prezzo indicativo")}
         </span>
       </p>
     </div>

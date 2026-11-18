@@ -1,11 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/context/locale-context";
 import { leaveDemoForSite, useDemoMode } from "@/context/demo-mode-context";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { APP_SHELL_WIDTH_CLASS, cn } from "@/lib/utils";
 
 export function DemoLanding() {
+  const { t } = useLocale();
   const { landingState, bootError } = useDemoMode();
   const blocking = landingState === "completed" || landingState === "error";
   useBodyScrollLock(blocking);
@@ -30,24 +32,24 @@ export function DemoLanding() {
         {landingState === "error" ? (
           <div className="rounded-3xl border border-primary-black/10 bg-surface p-8 text-center shadow-xl">
             <h1 className="text-2xl font-bold text-primary-black">
-              Demo non avviata
+              {t("Demo non avviata")}
             </h1>
             <p className="mt-3 text-sm text-primary-black/60">
-              {bootError || "Non riesco a salvare i dati della demo. Riprova."}
+              {bootError || t("Non riesco a salvare i dati della demo. Riprova.")}
             </p>
             <Button
               type="button"
               className="mt-6 w-full"
               onClick={() => window.location.reload()}
             >
-              Riprova
+              {t("Riprova")}
             </Button>
             <button
               type="button"
               onClick={leaveDemo}
               className="mt-4 text-xs font-medium text-primary-black/45 underline-offset-2 hover:underline"
             >
-              Esci dalla demo
+              {t("Esci dalla demo")}
             </button>
           </div>
         ) : (
@@ -56,10 +58,10 @@ export function DemoLanding() {
               VibeUp
             </p>
             <h1 className="mt-4 text-2xl font-bold text-primary-black">
-              Hai già completato la demo, grazie per il tuo feedback!
+              {t("Hai già completato la demo, grazie per il tuo feedback!")}
             </h1>
             <p className="mt-3 text-sm text-primary-black/60">
-              Se vuoi aggiornare il tuo parere, scrivici a{" "}
+              {t("Se vuoi aggiornare il tuo parere, scrivici a")}{" "}
               <a
                 href="mailto:info@vibeupevents.com"
                 className="font-semibold text-brand-teal"
@@ -69,7 +71,7 @@ export function DemoLanding() {
               .
             </p>
             <Button type="button" className="mt-6 w-full" onClick={leaveDemo}>
-              Torna al sito
+              {t("Torna al sito")}
             </Button>
           </div>
         )}

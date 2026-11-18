@@ -1,4 +1,4 @@
-import { landingCopy } from "@/content/landing";
+import { useLandingCopy } from "@/lib/locale/use-localized";
 import type { LandingCompareMark, LandingCompareVenue } from "@/lib/landing/compare-table";
 
 function Price({ value }: { value: string }) {
@@ -13,6 +13,7 @@ function Price({ value }: { value: string }) {
 }
 
 function Mark({ value }: { value: LandingCompareMark }) {
+  const landingCopy = useLandingCopy();
   if (value === "yes") {
     return (
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3ECFCF" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-label={landingCopy.compareYes}>
@@ -35,6 +36,7 @@ function Mark({ value }: { value: LandingCompareMark }) {
 }
 
 export function PrelaunchCompare({ venues }: { venues: LandingCompareVenue[] }) {
+  const landingCopy = useLandingCopy();
   if (venues.length === 0) return null;
   return (
     <section className="vu-compare" data-vu-reveal aria-label={landingCopy.compareMode}>

@@ -188,11 +188,24 @@ export async function readSignupEmail(signupId: string) {
 
 /** Name, username and email only. The profile and consents come later. */
 export async function readSignupLocale(signupId: string): Promise<DemoLanguage> {
+  return (await readSignupLocaleChoice(signupId)) ?? "it";
+}
+
+/** Null when the row is missing, so a guess does not override the browser language. */
+export async function readSignupLocaleChoice(signupId: string): Promise<DemoLanguage | null> {
   const client = admin();
-  if (!client || !isUuid(signupId)) return "it";
+  if (!client || !isUuid(signupId)) return null;
   const { data, error } = await client.from(SIGNUPS).select("locale").eq("id", signupId).maybeSingle();
-  if (error) return "it";
-  return parseSiteLocale((data as { locale?: string } | null)?.locale);
+  if (error || !data) return null;
+  const locale = (data as { locale?: string }).locale;
+  return locale === "en" || locale === "it" ? locale : null;
+}
+
+export async function updateSignupLocale(signupId: string, locale: DemoLanguage) {
+  const client = admin();
+  if (!client || !isUuid(signupId)) return false;
+  const { error } = await client.from(SIGNUPS).update({ locale }).eq("id", signupId);
+  return !error;
 }
 
 export async function startEmailSignup(input: {

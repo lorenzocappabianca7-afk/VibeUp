@@ -66,7 +66,7 @@ var timer=0;
 function browserMarked(){
 var name=document.documentElement.className;
 if(typeof name!=="string")name="";
-return name.indexOf("translated-ltr")!==-1||name.indexOf("translated-rtl")!==-1||(document.documentElement.getAttribute("lang")||"").toLowerCase().indexOf("en")===0;
+return name.indexOf("translated-ltr")!==-1||name.indexOf("translated-rtl")!==-1;
 }
 function qualifies(slots){
 var moves=0,gain=0;
@@ -76,7 +76,11 @@ if(slots[i].enDelta>0){moves++;if(slots[i].gain>0)gain+=slots[i].gain;}
 if(browserMarked())return moves>=1;
 return moves>=3&&gain>=4;
 }
+function handsOff(){
+return !browserMarked()&&(window.__vibeupDemoLang==="en"||window.__vibeupDemoLang==="it");
+}
 function remember(source,translated){
+if(handsOff())return;
 source=(source||"").trim();
 translated=(translated||"").trim();
 if(!source||source===translated||ignorable(source)||ignorable(translated))return;
@@ -143,6 +147,7 @@ restoreAttr(nodes[j],"alt");
 }
 }
 function flush(){
+if(handsOff()){active=false;dict=new Map();pending=new Map();return;}
 var slots=[];
 pending.forEach(function(slot){slots.push(slot);});
 pending=new Map();
@@ -170,7 +175,7 @@ if(skipText(node))continue;
 var prev=m.oldValue==null?"":m.oldValue;
 var next=node.data||"";
 var known=dict.get(norm(next));
-if(active&&known&&known!==norm(next)){writeData(node,applyWs(next,next.trim(),known));continue;}
+if(active&&!handsOff()&&known&&known!==norm(next)){writeData(node,applyWs(next,next.trim(),known));continue;}
 remember(prev,next);
 }else if(m.type==="attributes"){
 var el=m.target;
@@ -181,7 +186,7 @@ if(!attr)continue;
 var before=m.oldValue==null?"":m.oldValue;
 var after=el.getAttribute(attr)||"";
 var knownAttr=dict.get(norm(after));
-if(active&&knownAttr&&knownAttr!==norm(after)){writeAttr(el,attr,knownAttr);continue;}
+if(active&&!handsOff()&&knownAttr&&knownAttr!==norm(after)){writeAttr(el,attr,knownAttr);continue;}
 remember(before,after);
 }else if(m.type==="childList"){
 if(shell(m.target))continue;
@@ -189,7 +194,7 @@ var removed="",added="";
 if(m.removedNodes.length===1)removed=directText(m.removedNodes[0]);
 if(m.addedNodes.length===1)added=directText(m.addedNodes[0]);
 if(removed&&added)remember(removed,added);
-if(active){
+if(active&&!handsOff()){
 for(var k=0;k<m.addedNodes.length;k++)applyDict(m.addedNodes[k]);
 }
 }
@@ -248,13 +253,10 @@ var nav=((navigator.language||"")+"").toLowerCase();
 return nav.indexOf("en")===0?"en":"it";
 }
 window.__vibeupActivateDemoLang=function(){
-var lang=resolveLocale();
+var lang=document.documentElement.lang==="en"?"en":"it";
 window.__vibeupDemoLang=lang;
 try{document.documentElement.dataset.vibeupLang=lang;}catch(e){}
-if(lang!=="en"){active=false;return;}
-active=true;
-seedDemoDict();
-if(document.body)applyDict(document.body);
+if(!browserMarked()){active=false;dict=new Map();pending=new Map();clearTimeout(timer);}
 };
 // Applied after hydration. Translating the server HTML first makes React
 // report a hydration mismatch on every English page.

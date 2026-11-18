@@ -5,8 +5,10 @@ import {
   ImageCarousel,
   uniqueImages,
 } from "@/components/ui/image-carousel";
+import { useDemoLanguage } from "@/context/demo-language-context";
+import { formatEuro } from "@/lib/locale/format";
 import type { ServiceProvider } from "@/lib/mock/service-providers";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { MUSIC_TYPE_LABELS } from "@/types/location";
 import { Disc3, Heart, MapPin } from "lucide-react";
 import { memo, useMemo } from "react";
@@ -24,6 +26,7 @@ export const DjCard = memo(function DjCard({
   onToggleFavorite,
   href = `/service/${dj.id}?category=dj`,
 }: DjCardProps) {
+  const { lang, t } = useDemoLanguage();
   const photos = useMemo(
     () => uniqueImages([dj.imageUrl, ...(dj.galleryImageUrls ?? [])]),
     [dj.galleryImageUrls, dj.imageUrl],
@@ -70,8 +73,8 @@ export const DjCard = memo(function DjCard({
             }}
             aria-label={
               isFavorite
-                ? `Rimuovi ${dj.name} dai preferiti`
-                : `Aggiungi ${dj.name} ai preferiti`
+                ? t("Rimuovi {name} dai preferiti").replaceAll("{name}", dj.name)
+                : t("Aggiungi {name} ai preferiti").replaceAll("{name}", dj.name)
             }
             className={cn(
               "touch-target touch-feedback flex items-center justify-center rounded-full shadow-md backdrop-blur-md transition-colors duration-150",
@@ -115,10 +118,10 @@ export const DjCard = memo(function DjCard({
           </div>
           <p className="shrink-0 self-start sm:text-right">
             <span className="rounded-full bg-paper px-3 py-1 text-xs font-bold text-ink-inverse">
-              da {formatCurrency(dj.price)}
+              {t("da {price}").replaceAll("{price}", formatEuro(lang, dj.price))}
             </span>
             <span className="mt-1 block text-[10px] font-bold text-primary-black/50">
-              /{dj.priceSuffix}
+              /{t(dj.priceSuffix)}
             </span>
           </p>
         </div>

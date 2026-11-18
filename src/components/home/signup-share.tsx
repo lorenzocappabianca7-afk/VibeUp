@@ -1,16 +1,13 @@
 "use client";
 
-import { signupCopy } from "@/content/signup";
 import { useDemoLanguage } from "@/context/demo-language-context";
+import { useSignupCopy } from "@/lib/locale/use-localized";
 import { fillShareMessage, shareUrl } from "@/lib/launch/fields";
 import { useState } from "react";
 
-export function invitedLabel(count: number, lang: "it" | "en" = "it") {
-  if (lang === "en") {
-    return count === 1 ? "You invited 1 friend" : `You invited ${count} friends`;
-  }
-  if (count === 1) return signupCopy.invitedOne;
-  return signupCopy.invitedMany.replaceAll("N", String(count));
+export function invitedLabel(count: number, one: string, many: string) {
+  if (count === 1) return one;
+  return many.replaceAll("N", String(count));
 }
 
 export function SignupMemberCard({
@@ -24,16 +21,17 @@ export function SignupMemberCard({
   inviteCount: number | null;
   variant: "compact" | "full";
 }) {
-  const { lang } = useDemoLanguage();
+  const { t } = useDemoLanguage();
+  const copy = useSignupCopy();
   const name = firstName.trim();
-  const hello = lang === "en"
-    ? (name ? `Hi ${name}` : "Hi")
-    : (name ? signupCopy.hello.replaceAll("{nome}", name) : "Ciao");
+  const hello = name ? copy.hello.replaceAll("{nome}", name) : t("Ciao");
   return (
     <div className={variant === "full" ? "vu-member vu-member-full" : "vu-member"}>
       <p className="vu-hello">{hello}</p>
       <SignupShare code={code} variant={variant} />
-      {inviteCount === null ? null : <p className="vu-invites">{invitedLabel(inviteCount, lang)}</p>}
+      {inviteCount === null ? null : (
+        <p className="vu-invites">{invitedLabel(inviteCount, copy.invitedOne, copy.invitedMany)}</p>
+      )}
     </div>
   );
 }
@@ -45,8 +43,9 @@ export function SignupShare({
   code: string;
   variant: "compact" | "full";
 }) {
+  const copy = useSignupCopy();
   const [copied, setCopied] = useState(false);
-  const message = fillShareMessage(signupCopy.shareMessage, code);
+  const message = fillShareMessage(copy.shareMessage, code);
   const link = shareUrl(code);
 
   async function copyCode() {
@@ -73,11 +72,11 @@ export function SignupShare({
 
   return (
     <div className={variant === "full" ? "vu-share vu-share-full" : "vu-share"}>
-      <p className="vu-share-label">{signupCopy.yourCode}</p>
+      <p className="vu-share-label">{copy.yourCode}</p>
       <p className={variant === "full" ? "vu-share-code vu-share-code-lg" : "vu-share-code"}>{code}</p>
       <div className="vu-share-actions">
         <button type="button" className="vu-btn vu-cta" onClick={() => void copyCode()}>
-          {copied ? signupCopy.copied : signupCopy.copy}
+          {copied ? copy.copied : copy.copy}
         </button>
         {variant === "full" ? (
           <a
@@ -86,11 +85,11 @@ export function SignupShare({
             target="_blank"
             rel="noreferrer"
           >
-            {signupCopy.shareWhatsapp}
+            {copy.shareWhatsapp}
           </a>
         ) : null}
         <button type="button" className="vu-btn vu-ghost" onClick={() => void shareNative()}>
-          {signupCopy.share}
+          {copy.share}
         </button>
       </div>
     </div>
