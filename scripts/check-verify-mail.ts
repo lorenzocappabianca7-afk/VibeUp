@@ -163,7 +163,20 @@ try {
       new NextRequest(`http://localhost/api/launch/confirm?id=${encodeURIComponent(link.id)}&t=${encodeURIComponent(link.token)}`),
     );
     const again = openedAgain.headers.get("location") ?? "";
-    assert("link is single use", openedAgain.status === 307 && again.includes("confirm=used"), again);
+    assert("link does not verify twice", openedAgain.status === 307 && again.includes("confirm=continue"), again);
+  }
+
+  const expiring = await signup(addresses[8], "3330001189");
+  const expiringLink = tokenFromPreview();
+  if (expiringLink && expiring.status === 200) {
+    await admin.from("waitlist_email_codes").update({ expires_at: new Date(Date.now() - 1000).toISOString() }).eq("signup_id", expiringLink.id);
+    const expired = await confirmRoute.GET(
+      new NextRequest(`http://localhost/api/launch/confirm?id=${encodeURIComponent(expiringLink.id)}&t=${encodeURIComponent(expiringLink.token)}`),
+    );
+    const expiredLocation = expired.headers.get("location") ?? "";
+    assert("expired link is rejected", expired.status === 307 && expiredLocation.includes("confirm=expired"), expiredLocation);
+  } else {
+    fail("expired link is rejected", "missing link");
   }
 
   const stale = await signup(addresses[3], "3330001185");

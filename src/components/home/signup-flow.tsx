@@ -156,6 +156,7 @@ async function postJson(url: string, body: unknown) {
     sentAt: typeof data.sentAt === "string" ? data.sentAt : "",
     vibeupCode: typeof data.vibeupCode === "string" ? data.vibeupCode : "",
     confirmed: data.confirmed === true,
+    firstName: typeof data.firstName === "string" ? data.firstName : "",
     delivery: typeof data.status === "string" ? data.status : "",
     demoPath:
       typeof data.demoPath === "string" && data.demoPath.startsWith("/demo?t=") ? data.demoPath : "",
@@ -235,7 +236,7 @@ export function SignupFlow({
         setDone({
           id: sid,
           code: result.vibeupCode,
-          firstName: draftRef.current.firstName.trim(),
+          firstName: result.firstName || draftRef.current.firstName.trim(),
           inviteCount: null,
           demoPath: result.demoPath || null,
         });
@@ -244,6 +245,9 @@ export function SignupFlow({
       return () => {
         cancelled = true;
       };
+    }
+    if (confirm === "expired" || confirm === "used") {
+      setError(confirm === "expired" ? signupCopy.codeExpired : signupCopy.codeReplaced);
     }
     void fetch("/api/launch/pending", { cache: "no-store" })
       .then((response) => response.json())
@@ -259,10 +263,13 @@ export function SignupFlow({
           });
           return;
         }
-        if (data.stage !== "code" && data.stage !== "continue") return;
+        if (data.stage !== "code" && data.stage !== "continue" && data.stage !== "hold") return;
+        const reopen = confirm === "expired" || confirm === "used";
+        if (data.stage === "hold" && !reopen) return;
         setDraft((current) => {
-          if (current.signupId && current.step > 0) return current;
+          if (!reopen && current.signupId && current.step > 0) return current;
           const phone = splitStoredPhone(typeof data.phone === "string" ? data.phone : "");
+          const step = data.stage === "continue" ? STEP_VENUE : STEP_VERIFY;
           return {
             ...current,
             firstName: typeof data.firstName === "string" ? data.firstName : current.firstName,
@@ -271,9 +278,13 @@ export function SignupFlow({
             phonePrefix: phone.phonePrefix,
             phoneNational: phone.phoneNational || current.phoneNational,
             signupId: typeof data.id === "string" ? data.id : current.signupId,
-            step: data.stage === "continue" ? STEP_VENUE : STEP_VERIFY,
+            step: reopen && data.stage !== "continue" ? STEP_VERIFY : step,
             emailConfirmed: data.stage === "continue",
-            codeSentAt: typeof data.sentAt === "string" ? new Date(data.sentAt).getTime() : current.codeSentAt || Date.now(),
+            codeSentAt: reopen
+              ? 0
+              : typeof data.sentAt === "string"
+                ? new Date(data.sentAt).getTime()
+                : current.codeSentAt || Date.now(),
           };
         });
       })

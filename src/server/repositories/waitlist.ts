@@ -940,7 +940,16 @@ export async function readPendingSignup(signupId: string) {
       phone: row.phone ?? "",
     };
   }
-  if (!code || expires <= Date.now()) return null;
+  if (!code || expires <= Date.now()) {
+    return {
+      stage: "hold" as const,
+      id: row.id,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      email: row.email,
+      phone: row.phone ?? "",
+    };
+  }
   return {
     stage: "code" as const,
     id: row.id,

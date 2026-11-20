@@ -1,6 +1,6 @@
 import { requestOrigin } from "@/server/launch/request";
 import { attachSignupCookie, attachVerifyCookie, clearVerifyCookie } from "@/server/launch/signup-cookie";
-import { confirmEmailToken } from "@/server/repositories/waitlist";
+import { confirmEmailToken, readPendingSignup } from "@/server/repositories/waitlist";
 import { deliverWelcomeEmail } from "@/server/launch/welcome-mail";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -14,9 +14,28 @@ export async function GET(request: NextRequest) {
   try {
     const result = await confirmEmailToken(signupId, token);
     if (!result.ok) {
-      target.searchParams.set("confirm", result.error === "expired" ? "expired" : "used");
+      target.searchParams.set("sid", signupId);
+      if (result.error === "expired") {
+        target.searchParams.set("confirm", "expired");
+        const failed = NextResponse.redirect(target);
+        attachVerifyCookie(failed, signupId);
+        return failed;
+      }
+      const pending = await readPendingSignup(signupId).catch(() => null);
+      if (pending?.stage === "done" || pending?.stage === "continue") {
+        target.searchParams.set("confirm", pending.stage === "done" ? "done" : "continue");
+        const again = NextResponse.redirect(target);
+        if (pending.stage === "done") {
+          attachSignupCookie(again, signupId);
+          clearVerifyCookie(again);
+        } else {
+          attachVerifyCookie(again, signupId);
+        }
+        return again;
+      }
+      target.searchParams.set("confirm", "used");
       const failed = NextResponse.redirect(target);
-      clearVerifyCookie(failed);
+      attachVerifyCookie(failed, signupId);
       return failed;
     }
     if (!result.confirmed && result.welcomePending && result.vibeupCode) {

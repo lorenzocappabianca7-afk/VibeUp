@@ -1,5 +1,6 @@
 import { findSignupByDemoToken } from "@/server/launch/demo-access";
-import { signupIdFromCookie } from "@/server/launch/signup-cookie";
+import { isUuid } from "@/server/launch/request";
+import { signupIdFromCookie, verifyIdFromCookie } from "@/server/launch/signup-cookie";
 import { readSignupLocaleChoice } from "@/server/repositories/waitlist";
 import { resolveLocale, LOCALE_COOKIE, LOCALE_EXPLICIT_COOKIE } from "@/lib/locale/resolve";
 import { cookies, headers } from "next/headers";
@@ -25,7 +26,16 @@ export const getRequestLocale = cache(async () => {
       }
     }
     if (!signupLocale) {
-      const signupId = signupIdFromCookie(jar.get("vu_signup")?.value);
+      const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+      const sid = params.get("sid")?.trim() ?? "";
+      if (params.get("open") === "signup" && isUuid(sid)) {
+        signupLocale = await readSignupLocaleChoice(sid);
+      }
+    }
+    if (!signupLocale) {
+      const signupId =
+        signupIdFromCookie(jar.get("vu_signup")?.value) ??
+        verifyIdFromCookie(jar.get("vu_verify")?.value);
       if (signupId) signupLocale = await readSignupLocaleChoice(signupId);
     }
   }
