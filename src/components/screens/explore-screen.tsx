@@ -24,6 +24,7 @@ import {
   joinServiceLabelsEn,
   partyServiceLabel,
 } from "@/lib/included-party-services";
+import { splitLocationsByBudget, roundedOverageEuros } from "@/lib/demo/budget-groups";
 import { estimateLocationFilteredCostRange } from "@/lib/location-preview-price";
 import { rankLocationsByKeywords } from "@/lib/rank-locations-by-keywords";
 import {
@@ -190,12 +191,14 @@ interface ExploreScreenProps {
  * Hard filters from Home wizard (guests + budget). Search query is name/city only.
  * Free-text description is applied later as ranking, never as an excluding filter.
  * Date is booking context for detail links — catalog has no per-location availability.
+ * In the demo the budget never hides a venue: it only groups the list.
  */
 function filterLocationsByPartyCriteria(
   locations: Location[],
   query: string,
   criteria: PartyCriteria,
   hasAppliedCriteria: boolean,
+  skipBudget: boolean,
 ) {
   const normalizedQuery = query.trim().toLowerCase();
   const guestCount = hasAppliedCriteria ? criteria.guestCount : null;
@@ -216,6 +219,8 @@ function filterLocationsByPartyCriteria(
       guestCount == null ||
       location.capacity <= 0 ||
       location.capacity >= guestCount;
+
+    if (skipBudget) return matchesQuery && matchesCapacity;
 
     const estimatedCost = estimateLocationFilteredCostRange(
       location,
@@ -420,7 +425,7 @@ export function ExploreScreen({
   const { activeTab } = useTabNavigation();
   const { criteria, hasAppliedCriteria, clearCriteria, requestServicesStep } =
     usePartyCriteria();
-  const { lang } = useDemoLanguage();
+  const { lang, t } = useDemoLanguage();
   const { isDemoMode, selectedLocations, session, toggleDemoLocation } =
     useDemoMode();
   const demoPicking =
@@ -597,6 +602,7 @@ export function ExploreScreen({
       deferredQuery,
       criteria,
       hasAppliedCriteria,
+      isDemoMode,
     );
     const ranked = rankLocationsByKeywords(hardFiltered, freeText);
     const guestCount = hasAppliedCriteria ? criteria.guestCount : null;
@@ -634,6 +640,14 @@ export function ExploreScreen({
   const filteredLocations = locationResults.locations;
   const relaxedLocations = locationResults.relaxed;
   const serviceMatch = locationResults.serviceMatch;
+  const budgetSplit = useMemo(() => {
+    if (!isDemoMode || !hasAppliedCriteria) return null;
+    return splitLocationsByBudget(filteredLocations, criteria);
+  }, [criteria, filteredLocations, hasAppliedCriteria, isDemoMode]);
+  const noVenueInBudget =
+    budgetSplit != null &&
+    budgetSplit.inBudget.length === 0 &&
+    budgetSplit.overBudget.length > 0;
 
   const filteredServices = useMemo(() => {
     if (activeCategory === "locali") return [];
@@ -1047,9 +1061,14 @@ export function ExploreScreen({
             </p>
           ) : null}
 
-          {relaxedLocations && serviceMatch !== "partial" ? (
+          {relaxedLocations && serviceMatch !== "partial" && !noVenueInBudget ? (
             <p className="text-sm font-semibold text-primary-black/70">
               Nessuna corrisponde esattamente: ecco le più vicine.
+            </p>
+          ) : null}
+          {noVenueInBudget ? (
+            <p className="text-sm font-semibold text-primary-black/70">
+              {t("Nessuna location nel tuo budget, ecco le più vicine")}
             </p>
           ) : null}
           {hasAppliedCriteria && criteria.partyServices.length > 0 ? (
@@ -1063,6 +1082,73 @@ export function ExploreScreen({
           <ExploreResultHeading count={filteredLocations.length} chips={filterChips} />
           {filteredLocations.length > 0 ? (
             <>
+              {budgetSplit ? (
+                <>
+                  {budgetSplit.inBudget.length > 0 ? (
+                    <ul className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {budgetSplit.inBudget.map((location) => (
+                        <li key={location.id} className="min-w-0 h-full">
+                          <LocationCard
+                            location={location}
+                            isFavorite={
+                              demoPicking
+                                ? location.id === demoSelectedId
+                                : favoriteLocationIdSet.has(location.id)
+                            }
+                            footerActions
+                            showCompare={false}
+                            isCompareSelected={compareLocationIdSet.has(location.id)}
+                            onToggleFavorite={handleToggleFavoriteLocation}
+                            onToggleCompare={handleToggleCompareLocation}
+                            href={locationHrefById.get(location.id)}
+                            selectOnTap={demoPicking}
+                            budgetTag={{ tone: "in", label: t("Nel tuo budget") }}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {budgetSplit.overBudget.length > 0 ? (
+                    <>
+                      {budgetSplit.inBudget.length > 0 ? (
+                        <h2 className="border-t border-white/10 pt-4 text-sm font-bold text-[#A1A3AB]">
+                          {t("Fuori budget")}
+                        </h2>
+                      ) : null}
+                      <ul className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {budgetSplit.overBudget.map(({ location, overagePerHead }) => (
+                          <li key={location.id} className="min-w-0 h-full">
+                            <LocationCard
+                              location={location}
+                              isFavorite={
+                                demoPicking
+                                  ? location.id === demoSelectedId
+                                  : favoriteLocationIdSet.has(location.id)
+                              }
+                              footerActions
+                              showCompare={false}
+                              isCompareSelected={compareLocationIdSet.has(location.id)}
+                              onToggleFavorite={handleToggleFavoriteLocation}
+                              onToggleCompare={handleToggleCompareLocation}
+                              href={locationHrefById.get(location.id)}
+                              selectOnTap={demoPicking}
+                              budgetTag={{
+                                tone: "over",
+                                label: t("+{amount} €/testa").replaceAll(
+                                  "{amount}",
+                                  new Intl.NumberFormat(lang === "en" ? "en-GB" : "it-IT", {
+                                    maximumFractionDigits: 0,
+                                  }).format(roundedOverageEuros(overagePerHead)),
+                                ),
+                              }}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
+                </>
+              ) : (
               <ul className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredLocations.map((location) => (
                 <li key={location.id} className="min-w-0 h-full">
@@ -1084,6 +1170,7 @@ export function ExploreScreen({
                 </li>
               ))}
             </ul>
+              )}
             {demoPicking ? null : compareLocationIds.length > 0 ? (
               <div className="sticky bottom-24 z-20 sm:bottom-28">
                 <button

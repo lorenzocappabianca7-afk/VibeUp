@@ -36,6 +36,8 @@ interface LocationCardProps {
   footerActions?: boolean;
   /** Demo Esplora: a tap on the photo or the name selects the venue. */
   selectOnTap?: boolean;
+  /** Demo list: in-budget label, or how far the starting price is over. */
+  budgetTag?: { tone: "in" | "over"; label: string } | null;
 }
 
 export const LocationCard = memo(function LocationCard({
@@ -50,6 +52,7 @@ export const LocationCard = memo(function LocationCard({
   selectionStyle = "heart",
   footerActions = false,
   selectOnTap = false,
+  budgetTag = null,
 }: LocationCardProps) {
   const { lang, t } = useDemoLanguage();
   const { isDemoMode } = useDemoMode();
@@ -264,7 +267,7 @@ export const LocationCard = memo(function LocationCard({
 
       {openDetail ? (
         <SoftNavLink href={href} className="block p-4">
-          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} badges={serviceBadges} />
+          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} badges={serviceBadges} budgetTag={budgetTag} />
         </SoftNavLink>
       ) : (
         <div
@@ -273,7 +276,7 @@ export const LocationCard = memo(function LocationCard({
           onPointerMove={selectOnTap ? trackPointer : undefined}
           onClick={selectOnTap ? selectFromTap : undefined}
         >
-          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} badges={serviceBadges} />
+          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} badges={serviceBadges} budgetTag={budgetTag} />
         </div>
       )}
 
@@ -447,12 +450,14 @@ function CardSummary({
   price,
   detail,
   badges = [],
+  budgetTag = null,
 }: {
   name: string;
   subtitle: string;
   price: string;
   detail: string;
   badges?: { id: string; included: boolean; label: string }[];
+  budgetTag?: { tone: "in" | "over"; label: string } | null;
 }) {
   const { t } = useDemoLanguage();
   const guestDetail = detail
@@ -461,6 +466,16 @@ function CardSummary({
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
       <div className="min-w-0">
+        {budgetTag?.tone === "in" ? (
+          <p className="mb-1 text-[10px] font-black uppercase tracking-[0.14em] text-brand-teal">
+            {budgetTag.label}
+          </p>
+        ) : null}
+        {budgetTag?.tone === "over" ? (
+          <p className="mb-1 text-[11px] font-semibold leading-tight text-[#A1A3AB]">
+            {budgetTag.label}
+          </p>
+        ) : null}
         <h3 className="truncate font-semibold text-primary-black">{name}</h3>
         {subtitle ? (
           <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-primary-black/50">

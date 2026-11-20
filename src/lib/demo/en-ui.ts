@@ -351,6 +351,11 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Scegli questa location": "Choose this venue",
   "Questo budget vale per il totale della location.":
     "This budget is for the venue total.",
+  "Nel tuo budget": "Within your budget",
+  "Fuori budget": "Over budget",
+  "Nessuna location nel tuo budget, ecco le più vicine":
+    "No venues within your budget, here are the closest",
+  "+{amount} €/testa": "+{amount} €/person",
   "Ciao! Sono Confy": "Hi! I'm Confy",
   "Iniziamo da qui: tocca «Crea la tua festa» e dimmi data e invitati. Il resto si sblocca dopo!":
     "Let's start here: tap «Create your party» and tell me the date and guests. The rest unlocks after!",
