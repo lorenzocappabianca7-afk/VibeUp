@@ -356,7 +356,7 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Nessuna location nel tuo budget, ecco le più vicine":
     "No venues within your budget, here are the closest",
   "+{amount} €/testa": "+{amount} €/person",
-  "Ciao! Sono Confy": "Hi! I'm Confy",
+  "Ciao! Sono Marlon": "Hi! I'm Marlon",
   "Iniziamo da qui: tocca «Crea la tua festa» e dimmi data e invitati. Il resto si sblocca dopo!":
     "Let's start here: tap «Create your party» and tell me the date and guests. The rest unlocks after!",
   "Ottimo!": "Great!",

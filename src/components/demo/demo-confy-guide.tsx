@@ -64,7 +64,7 @@ function useConfyRevealed() {
 
 const STEPS = [
   {
-    title: "Ciao! Sono Confy",
+    title: "Ciao! Sono Marlon",
     body: "Iniziamo da qui: tocca «Crea la tua festa» e dimmi data e invitati. Il resto si sblocca dopo!",
   },
   {
