@@ -68,6 +68,15 @@ export const DEMO_EN_UI: Record<string, string> = {
   "Cerca location": "Find venues",
   "Quali servizi vuoi già inclusi nel prezzo?":
     "Which services do you want already included in the price?",
+  "Cosa vuoi alla tua festa?": "What do you want at your party?",
+  "Scegli quello che ti serve. Ti diciamo quali location lo includono già.":
+    "Pick what you need. We'll show which venues already include it.",
+  "Se la location non li include, potrai prenotarli {brand}, con uno sconto riservato.":
+    "If the venue doesn't include them, you can book them {brand}, at a reserved discount.",
+  "con VibeUp": "with VibeUp",
+  "Vedi le location →": "See the venues →",
+  "✓ {name} incluso": "✓ {name} included",
+  "{name} con VibeUp": "{name} with VibeUp",
   "Ti mostriamo solo le location che li hanno già compresi.":
     "We'll only show venues that already include them.",
   Incluso: "Included",

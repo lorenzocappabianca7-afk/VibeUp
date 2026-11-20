@@ -4,7 +4,11 @@ import type { Location } from "@/types/location";
 import { Check, X } from "lucide-react";
 import { memo, useMemo } from "react";
 import { SafeImage } from "@/components/ui/safe-image";
+import { useDemoLanguage } from "@/context/demo-language-context";
+import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
+import { demoVenueIncludesPartyService } from "@/lib/demo/venue-party-services";
+import { partyServiceLabel } from "@/lib/included-party-services";
 import { getFilteredLocationPricePresentation } from "@/lib/location-preview-price";
 
 interface CompareFavoritesProps {
@@ -16,7 +20,11 @@ export const CompareFavorites = memo(function CompareFavorites({
   locations,
   onRemove,
 }: CompareFavoritesProps) {
-  const { criteria } = usePartyCriteria();
+  const { criteria, hasAppliedCriteria } = usePartyCriteria();
+  const { isDemoMode } = useDemoMode();
+  const { lang, t } = useDemoLanguage();
+  const selectedServices =
+    isDemoMode && hasAppliedCriteria ? criteria.partyServices : [];
   const allServices = useMemo(
     () =>
       Array.from(
@@ -144,6 +152,30 @@ export const CompareFavorites = memo(function CompareFavorites({
                 </span>
               )}
             />
+            {selectedServices.map((serviceId) => (
+              <tr key={serviceId} className="group">
+                <th className="min-w-0 break-words border-b border-r border-primary-black/8 bg-background px-1 py-2 text-left text-[10px] font-bold leading-tight text-primary-black/70 group-hover:bg-primary-black/[0.02] sm:px-2 sm:py-3 sm:text-[11px]">
+                  {partyServiceLabel(serviceId, lang)}
+                </th>
+                {locations.map((loc) => {
+                  const included = demoVenueIncludesPartyService(loc, serviceId);
+                  return (
+                    <td
+                      key={loc.id}
+                      className="min-w-0 border-b border-r border-primary-black/8 px-1 py-2 text-center last:border-r-0 group-hover:bg-primary-black/[0.02] sm:px-3 sm:py-3"
+                    >
+                      {included ? (
+                        <span className="text-sm font-bold text-[#3ECFCF]" aria-label={t("Incluso")}>
+                          ✓
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-bold text-[#F091B2]">{t("con VibeUp")}</span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
             <tr>
               <th
                 colSpan={locations.length + 1}

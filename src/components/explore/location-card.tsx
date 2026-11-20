@@ -11,6 +11,7 @@ import { formatEuro } from "@/lib/locale/format";
 import type { DemoLanguage } from "@/lib/demo/language";
 import { useDemoMode } from "@/context/demo-mode-context";
 import { usePartyCriteria } from "@/context/party-criteria-context";
+import { demoVenueIncludesPartyService } from "@/lib/demo/venue-party-services";
 import { includedPartyServices, partyServiceLabel } from "@/lib/included-party-services";
 import { getFilteredLocationPricePresentation } from "@/lib/location-preview-price";
 import { applyVat } from "@/lib/vat";
@@ -90,19 +91,27 @@ export const LocationCard = memo(function LocationCard({
   );
   const serviceBadges = useMemo(() => {
     if (!hasAppliedCriteria || criteria.partyServices.length === 0) return [];
-    const included = new Set(includedPartyServices(location, criteria.partyServices));
+    const included = new Set(
+      isDemoMode
+        ? criteria.partyServices.filter((id) => demoVenueIncludesPartyService(location, id))
+        : includedPartyServices(location, criteria.partyServices),
+    );
     return criteria.partyServices.map((id) => {
       const name = partyServiceLabel(id, lang);
       const isIncluded = included.has(id);
       return {
         id,
         included: isIncluded,
-        label: isIncluded
-          ? t("{name} incluso").replaceAll("{name}", name)
-          : t("{name} da aggiungere").replaceAll("{name}", name),
+        label: isDemoMode
+          ? isIncluded
+            ? t("✓ {name} incluso").replaceAll("{name}", name)
+            : t("{name} con VibeUp").replaceAll("{name}", name)
+          : isIncluded
+            ? t("{name} incluso").replaceAll("{name}", name)
+            : t("{name} da aggiungere").replaceAll("{name}", name),
       };
     });
-  }, [criteria.partyServices, hasAppliedCriteria, lang, location, t]);
+  }, [criteria.partyServices, hasAppliedCriteria, isDemoMode, lang, location, t]);
   const placeLabel = venuePlaceLabel(location.zoneLabel, location.comune);
   const subtitle = [
     placeLabel,
@@ -267,7 +276,7 @@ export const LocationCard = memo(function LocationCard({
 
       {openDetail ? (
         <SoftNavLink href={href} className="block p-4">
-          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} badges={serviceBadges} budgetTag={budgetTag} />
+          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} badges={serviceBadges} budgetTag={budgetTag} demoBadges={isDemoMode} />
         </SoftNavLink>
       ) : (
         <div
@@ -276,7 +285,7 @@ export const LocationCard = memo(function LocationCard({
           onPointerMove={selectOnTap ? trackPointer : undefined}
           onClick={selectOnTap ? selectFromTap : undefined}
         >
-          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} badges={serviceBadges} budgetTag={budgetTag} />
+          <CardSummary subtitle={subtitle} name={location.name} price={price.price} detail={price.detail} badges={serviceBadges} budgetTag={budgetTag} demoBadges={isDemoMode} />
         </div>
       )}
 
@@ -451,6 +460,7 @@ function CardSummary({
   detail,
   badges = [],
   budgetTag = null,
+  demoBadges = false,
 }: {
   name: string;
   subtitle: string;
@@ -458,12 +468,38 @@ function CardSummary({
   detail: string;
   badges?: { id: string; included: boolean; label: string }[];
   budgetTag?: { tone: "in" | "over"; label: string } | null;
+  /** Demo: selected-service chips sit under the price and wrap. */
+  demoBadges?: boolean;
 }) {
   const { t } = useDemoLanguage();
   const guestDetail = detail
     .replace(/\b(\d+) ospiti\b/g, (_, count: string) => t("{n} ospiti").replaceAll("{n}", count))
     .replace(/\b(\d+) ospite\b/g, (_, count: string) => t("{n} ospite").replaceAll("{n}", count));
+  const badgeList =
+    badges.length > 0 ? (
+      <ul className="mt-2 flex flex-wrap gap-1.5">
+        {badges.map((badge) => (
+          <li
+            key={badge.id}
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[11px] leading-tight",
+              demoBadges
+                ? badge.included
+                  ? "bg-[#12262A] font-semibold text-[#3ECFCF]"
+                  : "bg-[#22191D] font-semibold text-[#F091B2]"
+                : badge.included
+                  ? "bg-brand-teal font-bold text-[#0F1115]"
+                  : "bg-white/10 font-bold text-primary-black/45",
+            )}
+          >
+            {badge.label}
+          </li>
+        ))}
+      </ul>
+    ) : null;
+
   return (
+    <div>
     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
       <div className="min-w-0">
         {budgetTag?.tone === "in" ? (
@@ -483,23 +519,7 @@ function CardSummary({
             <span className="truncate">{subtitle}</span>
           </p>
         ) : null}
-        {badges.length > 0 ? (
-          <ul className="mt-2 flex flex-wrap gap-1.5">
-            {badges.map((badge) => (
-              <li
-                key={badge.id}
-                className={cn(
-                  "rounded-full px-2 py-0.5 text-[11px] font-bold leading-tight",
-                  badge.included
-                    ? "bg-brand-teal text-[#0F1115]"
-                    : "bg-white/10 text-primary-black/45",
-                )}
-              >
-                {badge.label}
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        {demoBadges ? null : badgeList}
       </div>
       <p className="shrink-0 self-start sm:text-right">
         <span className="rounded-full bg-paper px-3 py-1 text-xs font-bold text-ink-inverse">
@@ -514,6 +534,8 @@ function CardSummary({
           {t("prezzo indicativo")}
         </span>
       </p>
+    </div>
+    {demoBadges ? badgeList : null}
     </div>
   );
 }

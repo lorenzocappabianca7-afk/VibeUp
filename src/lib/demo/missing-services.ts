@@ -1,6 +1,6 @@
 import { resolveDemoCatalogLocation } from "@/lib/demo/book";
 import { CUSTOM_VENUE_ID } from "@/lib/demo/custom-venue";
-import { includedPartyServices } from "@/lib/included-party-services";
+import { demoIncludedPartyServiceIds } from "@/lib/demo/venue-party-services";
 import type { ManagedListing } from "@/types/admin";
 import {
   PARTY_SERVICE_OPTIONS,
@@ -21,7 +21,7 @@ export function demoMissingServiceIds(input: {
     input.locationId && input.locationId !== CUSTOM_VENUE_ID
       ? resolveDemoCatalogLocation(input.locationId, [...(input.listings ?? [])])
       : undefined;
-  const included = new Set(location ? includedPartyServices(location) : []);
+  const included = new Set(location ? demoIncludedPartyServiceIds(location) : []);
   return PARTY_SERVICE_OPTIONS.map((option) => option.id).filter(
     (id) => id !== input.addedServiceId && !included.has(id),
   );

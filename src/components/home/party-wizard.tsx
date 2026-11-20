@@ -145,7 +145,7 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
         guestCount: criteria.guestCount ?? EXPLORE_GUEST_MIN,
         budgetMin: criteria.budgetMin ?? 1000,
         budgetMax: criteria.budgetMax === undefined ? 2000 : criteria.budgetMax,
-        ...(isDemoMode ? { drinkMode: "none" as const } : {}),
+        ...(isDemoMode ? { drinkMode: "none" as const, freeText: "" } : {}),
       });
       applyCriteria(finalized);
       onClose();
@@ -200,16 +200,27 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
               </p>
               <h2
                 id="party-wizard-title"
-                className="mt-1 text-[1.65rem] font-bold leading-tight text-primary-black"
+                className={cn(
+                  "mt-1 leading-tight text-primary-black",
+                  step === "services" && isDemoMode
+                    ? "font-[family-name:var(--font-brand)] text-[25px] font-extrabold"
+                    : "text-[1.65rem] font-bold",
+                )}
               >
-                {t(STEP_QUESTIONS[step])}
+                {step === "services" && isDemoMode
+                  ? t("Cosa vuoi alla tua festa?")
+                  : t(STEP_QUESTIONS[step])}
               </h2>
               {step === "budget" ? (
                 <p className="mt-1 text-sm text-primary-black/55">
                   {t("Sala e drink inclusi. Tocca una fascia.")}
                 </p>
               ) : null}
-              {step === "services" ? (
+              {step === "services" && isDemoMode ? (
+                <p className="mt-1 text-[14px] leading-snug text-[#A1A3AB]">
+                  {t("Scegli quello che ti serve. Ti diciamo quali location lo includono già.")}
+                </p>
+              ) : step === "services" ? (
                 <p className="mt-1 text-sm text-primary-black/55">
                   {t("Ti mostriamo solo le location che li hanno già compresi.")}
                 </p>
@@ -256,7 +267,7 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
               <DrinksStep criteria={criteria} onChange={patch} />
             ) : null}
             {step === "services" ? (
-              <ServicesStep criteria={criteria} onChange={patch} />
+              <ServicesStep criteria={criteria} onChange={patch} demo={isDemoMode} />
             ) : null}
           </div>
         </div>
@@ -277,7 +288,11 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
               variant="outline"
               className={cn(
                 "rounded-2xl",
-                step === "services" ? "h-[50px] shrink-0 px-4" : "h-[52px] flex-1",
+                step === "services" && isDemoMode
+                  ? "h-[50px] w-[110px] shrink-0 px-0"
+                  : step === "services"
+                    ? "h-[50px] shrink-0 px-4"
+                    : "h-[52px] flex-1",
               )}
               onClick={back}
             >
@@ -287,16 +302,9 @@ export function PartyWizard({ open, onClose, startStep = null }: PartyWizardProp
               <button
                 type="button"
                 onClick={next}
-                className={cn(
-                  "flex h-[50px] min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-2xl border-0 px-1.5 text-center text-[10px] font-bold tracking-tight text-[#0F1115] transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-background min-[375px]:text-[13px] min-[375px]:tracking-normal min-[430px]:px-3 min-[430px]:text-[15px]",
-                  criteria.partyServices.length === 0
-                    ? "bg-brand-teal"
-                    : "bg-brand-pink",
-                )}
+                className="ml-auto h-[50px] shrink-0 whitespace-nowrap rounded-full bg-[#F091B2] px-5 text-[15px] font-bold text-[#0F1115] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
-                {criteria.partyServices.length === 0
-                  ? t("Aggiungi in seguito separatamente")
-                  : t("Continua")}
+                {t("Vedi le location →")}
               </button>
             ) : step === "services" && criteria.partyServices.length === 0 ? (
               <button
@@ -582,9 +590,11 @@ function BudgetStep({
 function ServicesStep({
   criteria,
   onChange,
+  demo = false,
 }: {
   criteria: PartyCriteria;
   onChange: (partial: Partial<PartyCriteria>) => void;
+  demo?: boolean;
 }) {
   const { lang, t } = useDemoLanguage();
 
@@ -595,6 +605,58 @@ function ServicesStep({
         ? current.filter((item) => item !== id)
         : [...current, id],
     });
+  }
+
+  if (demo) {
+    const note = t(
+      "Se la location non li include, potrai prenotarli {brand}, con uno sconto riservato.",
+    );
+    const [noteBefore, noteAfter] = note.split("{brand}");
+    return (
+      <fieldset>
+        <div className="grid grid-cols-2 gap-[10px]">
+          {PARTY_SERVICE_OPTIONS.map((option) => {
+            const active = criteria.partyServices.includes(option.id);
+            const Icon = SERVICE_ICONS[option.id];
+            return (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => toggle(option.id)}
+                className={cn(
+                  "relative flex h-[84px] flex-col items-center justify-center gap-1.5 rounded-[18px]",
+                  active
+                    ? "border-2 border-[#F091B2] bg-[#22191D]"
+                    : "border border-[#2A2C33] bg-[#1A1C21]",
+                )}
+              >
+                {active ? (
+                  <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#F091B2]">
+                    <Check className="h-3 w-3 text-[#0F1115]" strokeWidth={3} aria-hidden />
+                  </span>
+                ) : null}
+                <Icon
+                  className={cn("h-5 w-5", active ? "text-[#F091B2]" : "text-[#A1A3AB]")}
+                  aria-hidden
+                />
+                <span className="font-[family-name:var(--font-brand)] text-[15px] font-extrabold leading-none text-[#F5F5F7]">
+                  {partyServiceLabel(option.id, lang)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-[10px] flex items-start gap-3 rounded-[16px] border border-[#1F4A4A] bg-[#12262A] px-3.5 py-3">
+          <Gift className="mt-0.5 h-5 w-5 shrink-0 text-[#3ECFCF]" aria-hidden />
+          <p className="text-[13px] leading-snug text-[#A1A3AB]">
+            {noteBefore}
+            <span className="font-bold text-white">{t("con VibeUp")}</span>
+            {noteAfter}
+          </p>
+        </div>
+      </fieldset>
+    );
   }
 
   return (

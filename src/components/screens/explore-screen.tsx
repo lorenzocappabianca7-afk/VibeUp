@@ -629,7 +629,8 @@ export function ExploreScreen({
             capacitySortGroup(right, guestCount),
         )
       : ordered;
-    const wanted = hasAppliedCriteria ? criteria.partyServices : [];
+    // In the demo a picked service only labels the cards. It never hides a venue.
+    const wanted = hasAppliedCriteria && !isDemoMode ? criteria.partyServices : [];
     const byService = applyIncludedServiceFilter(orderedPool, wanted);
     return {
       locations: byService.locations,
@@ -1071,7 +1072,7 @@ export function ExploreScreen({
               {t("Nessuna location nel tuo budget, ecco le più vicine")}
             </p>
           ) : null}
-          {hasAppliedCriteria && criteria.partyServices.length > 0 ? (
+          {!isDemoMode && hasAppliedCriteria && criteria.partyServices.length > 0 ? (
             <IncludedServicesSummary
               services={criteria.partyServices}
               match={serviceMatch}
