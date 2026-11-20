@@ -89,10 +89,15 @@ export function AppChrome({ children }: { children: ReactNode }) {
           {!hideNav && !demoRoute && <EmailActivationBanner />}
         </div>
         <div
-          className={
-            showDemoRequestBar
-              ? "min-w-0 max-w-full flex-1 overflow-x-clip pb-44"
-              : "min-w-0 max-w-full flex-1 overflow-x-clip"
+          className="min-w-0 max-w-full flex-1 overflow-x-clip"
+          style={
+            showTabs && hideAppFooter
+              ? {
+                  paddingBottom: showDemoRequestBar
+                    ? "max(var(--vu-demo-pad, 0px), calc(12.5rem + env(safe-area-inset-bottom, 0px)))"
+                    : "var(--vu-demo-pad, calc(7rem + env(safe-area-inset-bottom, 0px)))",
+                }
+              : undefined
           }
         >
           {children}

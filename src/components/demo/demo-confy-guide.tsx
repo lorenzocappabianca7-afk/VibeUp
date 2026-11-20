@@ -12,7 +12,7 @@ import { isDemoGuideSkipped, skipDemoGuide } from "@/lib/demo/session";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 
 /** Confy and the home dim share this clock, so they start on the same frame. */
 const CONFY_ENTRANCE_MS = 1500;
@@ -257,11 +257,6 @@ export function DemoConfyGuide() {
 
   const awaitingSession =
     isDemoMode && !session && landingState !== "error" && landingState !== "completed";
-  if (!isDemoMode || blocked || session?.completed) return null;
-  if (!session && !awaitingSession) return null;
-  if (skipped && !nudge) return null;
-  if (!revealed && !nudge) return null;
-
   const locationId = bookedLocation?.id ?? selectedLocations.at(-1)?.id ?? null;
   const nothingToAdd =
     demoMissingServiceIds({
@@ -276,10 +271,6 @@ export function DemoConfyGuide() {
         serviceReady: serviceAdded || nothingToAdd,
       })
     : 1;
-  if (dismissedStep === step && !nudge) return null;
-  const message = nudge
-    ? { title: "Prima crea la tua festa 👆", body: "" }
-    : STEPS[step - 1];
   const raised =
     clearance === "compare"
       ? "13rem"
@@ -288,6 +279,37 @@ export function DemoConfyGuide() {
         : step === 3
           ? "11.25rem"
           : "5.4rem";
+  const guideOpen =
+    isDemoMode &&
+    !blocked &&
+    !session?.completed &&
+    (Boolean(session) || awaitingSession) &&
+    !(skipped && !nudge) &&
+    (revealed || nudge) &&
+    !(dismissedStep === step && !nudge);
+
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (!guideOpen) {
+      root.style.removeProperty("--vu-demo-pad");
+      return;
+    }
+    // `raised` is the bubble's bottom edge. The stack is about 8.5rem tall;
+    // the rest lets the last row scroll fully clear of it, with a little air.
+    root.style.setProperty(
+      "--vu-demo-pad",
+      `calc(${raised} + 11rem + env(safe-area-inset-bottom, 0px))`,
+    );
+    return () => {
+      root.style.removeProperty("--vu-demo-pad");
+    };
+  }, [guideOpen, raised]);
+
+  if (!guideOpen) return null;
+
+  const message = nudge
+    ? { title: "Prima crea la tua festa 👆", body: "" }
+    : STEPS[step - 1];
   const bottom = `calc(${raised} + env(safe-area-inset-bottom, 0px))`;
 
   function hide() {
