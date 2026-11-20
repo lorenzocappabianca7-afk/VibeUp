@@ -26,7 +26,8 @@ export async function sendTransactionalEmail(input: {
   unsubscribeUrl?: string;
   /** Service mail keeps its own footer. Marketing mail adds the offers opt-out. */
   marketingFooter?: boolean;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
+  tags?: { name: string; value: string }[];
+}): Promise<{ ok: true; id: string | null } | { ok: false; error: string }> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) {
     return {
@@ -42,7 +43,7 @@ export async function sendTransactionalEmail(input: {
   const text = marketingFooter ? appendUnsubscribeText(input.text, unsubscribeUrl) : input.text;
   const html = marketingFooter ? appendUnsubscribeHtml(input.html, unsubscribeUrl) : input.html;
   const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
+  const { data, error } = await resend.emails.send({
     from: `${fromName} <${VIBEUP_FROM_EMAIL}>`,
     to: input.to,
     replyTo: VIBEUP_FROM_EMAIL,
@@ -52,13 +53,14 @@ export async function sendTransactionalEmail(input: {
     headers: {
       "List-Unsubscribe": `<${unsubscribeUrl}>`,
     },
+    ...(input.tags?.length ? { tags: input.tags } : {}),
   });
 
   if (error) {
     return { ok: false, error: error.message };
   }
 
-  return { ok: true };
+  return { ok: true, id: data?.id ?? null };
 }
 
 function appendUnsubscribeText(text: string, url: string) {

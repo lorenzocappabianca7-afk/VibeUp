@@ -157,6 +157,11 @@ export async function proxy(request: NextRequest) {
 
   let response = continueRequest(request, requestHeaders);
 
+  if (pathname === "/api/webhooks/resend") {
+    applySecurityHeaders(response, csp, isDev);
+    return response;
+  }
+
   const refreshedCookies: {
     name: string;
     value: string;

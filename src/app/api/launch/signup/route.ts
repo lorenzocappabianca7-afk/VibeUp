@@ -7,6 +7,8 @@ import {
 } from "@/lib/launch/fields";
 import { parseSiteLocale } from "@/lib/demo/language";
 import { hashClientIp, sendVerificationEmail } from "@/server/launch/code-mail";
+import { domainHasMx } from "@/server/launch/mx";
+import { attachVerifyCookie } from "@/server/launch/signup-cookie";
 import { demoAccessPath, ensureDemoAccessToken } from "@/server/launch/demo-access";
 import { isTesterEmail } from "@/server/launch/testers";
 import {
@@ -27,6 +29,7 @@ import {
   finishConfirmedSignup,
   issueEmailCode,
   recordConsents,
+  recordVerifyMail,
   savePendingSignup,
   saveSignupDetails,
   startEmailSignup,
@@ -34,6 +37,40 @@ import {
 import { type NextRequest } from "next/server";
 
 export const runtime = "nodejs";
+
+async function deliverCode(input: {
+  signupId: string;
+  email: string;
+  firstName: string;
+  code: string;
+  confirmToken: string;
+  sentAt: string;
+  origin: string;
+  locale: ReturnType<typeof parseSiteLocale>;
+}) {
+  const mailed = await sendVerificationEmail({
+    to: input.email,
+    firstName: input.firstName,
+    code: input.code,
+    confirmToken: input.confirmToken,
+    signupId: input.signupId,
+    origin: input.origin,
+    locale: input.locale,
+  });
+  if (!mailed.ok) {
+    await recordVerifyMail(input.signupId, "error", null);
+    return launchError(503, "send_failed");
+  }
+  await recordVerifyMail(input.signupId, "sent", mailed.id);
+  const response = launchOk({ signupId: input.signupId, sentAt: input.sentAt });
+  attachVerifyCookie(response, input.signupId);
+  return response;
+}
+
+async function emailCanReceive(email: string) {
+  const domain = email.split("@")[1] ?? "";
+  return domainHasMx(domain);
+}
 
 export async function POST(request: NextRequest) {
   const tooBig = rejectLargeRequest(request, 16_000);
@@ -96,6 +133,7 @@ export async function POST(request: NextRequest) {
   };
 
   if (!hasConsents) {
+    if ((await emailCanReceive(email)) === false) return launchError(400, "no_mx");
     const started = await startEmailSignup({
       firstName: draft.firstName,
       lastName: draft.lastName,
@@ -116,16 +154,17 @@ export async function POST(request: NextRequest) {
       return launchError(409, issued.error);
     }
 
-    const mailed = await sendVerificationEmail({
-      to: issued.email,
+    const mailed = await deliverCode({
+      signupId: started.id,
+      email: issued.email,
       firstName: issued.firstName,
       code: issued.code,
-      signupId: started.id,
+      confirmToken: issued.confirmToken,
+      sentAt: issued.sentAt,
       origin: requestOrigin(request),
       locale: draft.locale,
     });
-    if (!mailed.ok) return launchError(503, "send_failed");
-    return launchOk({ signupId: started.id, sentAt: issued.sentAt });
+    return mailed;
   }
 
   if (completing) {
@@ -156,6 +195,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  if ((await emailCanReceive(draft.email)) === false) return launchError(400, "no_mx");
   const saved = await savePendingSignup(draft).catch(() => null);
   if (!saved) return launchError(500, "unavailable");
   if (!saved.ok) return launchError(saved.error === "invalid" ? 400 : 409, saved.error);
@@ -177,14 +217,15 @@ export async function POST(request: NextRequest) {
     return launchError(409, issued.error);
   }
 
-  const mailed = await sendVerificationEmail({
-    to: issued.email,
+  const mailed = await deliverCode({
+    signupId: saved.id,
+    email: issued.email,
     firstName: issued.firstName,
     code: issued.code,
-    signupId: saved.id,
+    confirmToken: issued.confirmToken,
+    sentAt: issued.sentAt,
     origin: requestOrigin(request),
     locale: draft.locale,
   });
-  if (!mailed.ok) return launchError(503, "send_failed");
-  return launchOk({ signupId: saved.id, sentAt: issued.sentAt });
+  return mailed;
 }

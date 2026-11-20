@@ -4,5 +4,8 @@ export async function resolve(specifier, context, nextResolve) {
     const file = relative.endsWith(".ts") ? relative : `${relative}.ts`;
     return nextResolve(new URL(`../src/${file}`, import.meta.url).href, context);
   }
+  if (specifier.startsWith("next/") && !specifier.endsWith(".js")) {
+    return nextResolve(`${specifier}.js`, context);
+  }
   return nextResolve(specifier, context);
 }

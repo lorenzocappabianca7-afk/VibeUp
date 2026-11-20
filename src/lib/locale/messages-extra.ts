@@ -243,4 +243,15 @@ export const EXTRA_EN: Record<string, string> = {
   "300 €": "€300",
   "150 €": "€150",
   "50 €": "€50",
+  "Forse intendevi {email}?": "Did you mean {email}?",
+  "Questo indirizzo email non sembra esistere, controlla di averlo scritto bene":
+    "This email address doesn't seem to exist. Check that you typed it correctly.",
+  "Non è giusta? Modificala": "Not right? Change it",
+  "Non la trovi? Controlla anche Spam, Promozioni o Indesiderata. Può volerci un minuto.":
+    "Can't find it? Also check Spam, Promotions or Junk. It can take a minute.",
+  "Ti abbiamo mandato un nuovo codice.": "We sent you a new code.",
+  "Questo codice non è più valido, usa l’ultimo che ti abbiamo mandato":
+    "This code is no longer valid. Use the last one we sent you.",
+  "Non siamo riusciti a consegnare la mail a questo indirizzo, controlla di averlo scritto bene":
+    "We couldn't deliver the email to this address. Check that you typed it correctly.",
 };

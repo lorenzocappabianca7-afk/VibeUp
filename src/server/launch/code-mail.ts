@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomInt, timingSafeEqual } from "crypto";
+import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from "crypto";
 import { verifyCopy } from "@/content/emails/verify";
 import { sendTransactionalEmail } from "@/lib/email/mailer";
 import { parseSiteLocale, type DemoLanguage } from "@/lib/demo/language";
@@ -33,6 +33,21 @@ export function createVerificationCode() {
 
 export function hashVerificationCode(code: string) {
   return createHash("sha256").update(`${waitlistPepper()}:${code}`).digest("hex");
+}
+
+export function createConfirmToken() {
+  return randomBytes(32).toString("base64url");
+}
+
+export function hashConfirmToken(token: string) {
+  return createHash("sha256").update(`${waitlistPepper()}:confirm:${token}`).digest("hex");
+}
+
+export function confirmTokenMatches(hash: string, token: string) {
+  const left = Buffer.from(hash);
+  const right = Buffer.from(hashConfirmToken(token));
+  if (left.length !== right.length || left.length === 0) return false;
+  return timingSafeEqual(left, right);
 }
 
 export function verificationCodesMatch(hash: string, code: string) {
@@ -77,13 +92,18 @@ export function buildVerificationEmail(input: {
   firstName: string;
   code: string;
   locale?: DemoLanguage;
+  confirmUrl?: string;
 }) {
   const locale = parseSiteLocale(input.locale);
   const copy = verifyCopy(locale);
   const name = input.firstName.trim() || (locale === "en" ? "there" : "ciao");
   const greeting = copy.greeting.replaceAll("{nome}", name);
   const subject = copy.subject;
-  const text = `${greeting}\n\n${copy.lead} ${input.code}.\n${copy.textExpires}\n\n${copy.textIgnore}`;
+  const confirmUrl = input.confirmUrl?.trim() ?? "";
+  const text = `${greeting}\n\n${copy.lead} ${input.code}.\n${copy.textExpires}\n\n${confirmUrl ? `${copy.button}: ${confirmUrl}\n\n` : ""}${copy.textIgnore}`;
+  const button = confirmUrl
+    ? `<p style="margin:20px 0;"><a href="${escapeHtml(confirmUrl)}" style="display:inline-block;background:#1F8F8F;color:#F5F5F7;text-decoration:none;font-weight:700;border-radius:999px;padding:12px 18px;">${escapeHtml(copy.button)}</a></p>`
+    : "";
   const html = `<!DOCTYPE html>
 <html lang="${locale}">
   <head><meta charset="utf-8" /><title>${escapeHtml(subject)}</title></head>
@@ -91,10 +111,16 @@ export function buildVerificationEmail(input: {
     <p style="margin:0 0 12px;font-size:16px;">${escapeHtml(greeting)}</p>
     <p style="margin:0 0 12px;font-size:15px;line-height:1.5;color:#C9CAD0;">${escapeHtml(copy.lead)}</p>
     <p style="margin:0 0 12px;font-size:32px;letter-spacing:6px;font-weight:700;">${escapeHtml(input.code)}</p>
+    ${button}
     <p style="margin:0;font-size:14px;line-height:1.5;color:#A1A3AB;">${escapeHtml(copy.expires)}</p>
   </body>
 </html>`;
   return { subject, text, html };
+}
+
+export function verificationConfirmUrl(origin: string | undefined, signupId: string, token: string) {
+  const base = (origin || getSiteUrl()).replace(/\/$/, "");
+  return `${base}/api/launch/confirm?id=${encodeURIComponent(signupId)}&t=${encodeURIComponent(token)}`;
 }
 
 export async function sendVerificationEmail(input: {
@@ -102,10 +128,14 @@ export async function sendVerificationEmail(input: {
   firstName: string;
   code: string;
   signupId: string;
+  confirmToken?: string;
   origin?: string;
   locale?: DemoLanguage;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
-  const mail = buildVerificationEmail(input);
+}): Promise<{ ok: true; id: string | null } | { ok: false; error: string }> {
+  const confirmUrl = input.confirmToken
+    ? verificationConfirmUrl(input.origin, input.signupId, input.confirmToken)
+    : "";
+  const mail = buildVerificationEmail({ ...input, confirmUrl });
   const skipSend =
     (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY?.trim()) ||
     isLocalTestInbox(input.to);
@@ -113,8 +143,8 @@ export async function sendVerificationEmail(input: {
   if (skipSend) {
     await mkdir(path.dirname(VERIFY_PREVIEW_PATH), { recursive: true });
     await writeFile(VERIFY_PREVIEW_PATH, mail.html, "utf8");
-    console.info(`[waitlist] codice per ${input.to}: ${input.code}`);
-    return { ok: true };
+    console.info(`[waitlist] codice di verifica preparato per l'iscrizione ${input.signupId}`);
+    return { ok: true, id: null };
   }
 
   return sendTransactionalEmail({
@@ -124,6 +154,10 @@ export async function sendVerificationEmail(input: {
     html: mail.html,
     fromName: "VibeUp",
     unsubscribeUrl: marketingUnsubscribeUrl(input.signupId, input.origin),
+    tags: [
+      { name: "signup", value: input.signupId },
+      { name: "kind", value: "verify" },
+    ],
   });
 }
 

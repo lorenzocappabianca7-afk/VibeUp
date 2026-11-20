@@ -38,6 +38,7 @@ type SignupRow = {
   referredByUsername: string;
   validInvites: number;
   verified: boolean;
+  verifyMail: string;
   welcomeEmailSent: boolean;
   consentPrivacy: boolean;
   consentRules: boolean;
@@ -51,6 +52,8 @@ type Overview = {
   totals: {
     signups: number;
     verified: number;
+    unverified: number;
+    bounced: number;
     today: number;
     week: number;
     demoEntered: number;
@@ -154,6 +157,14 @@ function demoLabel(status: SignupRow["demoStatus"]) {
   if (status === "completed") return "Completata";
   if (status === "entered") return "Entrato";
   return "Non entrato";
+}
+
+function mailCodeLabel(status: string) {
+  if (status === "delivered") return "consegnata";
+  if (status === "bounced" || status === "complained") return "respinta";
+  if (status === "error") return "errore";
+  if (status === "sent" || status === "delayed") return "inviata";
+  return "—";
 }
 
 function minutes(ms: number | null) {
@@ -441,6 +452,8 @@ function OverviewTab() {
   const cards = [
     ["Iscritti", String(data.totals.signups)],
     ["Verificati", String(data.totals.verified)],
+    ["Non verificati", String(data.totals.unverified ?? 0)],
+    ["Mail respinte", String(data.totals.bounced ?? 0)],
     ["Oggi", String(data.totals.today)],
     ["Ultimi 7 giorni", String(data.totals.week)],
     ["Entrati in demo", String(data.totals.demoEntered)],
@@ -718,6 +731,7 @@ function SignupsTab() {
               ))}
               <th className="px-3 py-2 font-semibold">Inviti</th>
               <th className="px-3 py-2 font-semibold">Verifica</th>
+              <th className="px-3 py-2 font-semibold">Mail codice</th>
               <th className="px-3 py-2 font-semibold">Benvenuto</th>
               <th className="px-3 py-2 font-semibold">Consensi</th>
               <th className="px-3 py-2 font-semibold">Demo</th>
@@ -744,6 +758,7 @@ function SignupsTab() {
                 <td className="px-3 py-2">{row.referredByCode ? `${row.referredByCode}${row.referredByUsername ? ` · @${row.referredByUsername}` : ""}` : "—"}</td>
                 <td className="px-3 py-2">{row.validInvites}</td>
                 <td className="px-3 py-2">{row.verified ? "Sì" : "No"}</td>
+                <td className="px-3 py-2">{mailCodeLabel(row.verifyMail)}</td>
                 <td className="px-3 py-2">{row.welcomeEmailSent ? "Sì" : "No"}</td>
                 <td className="px-3 py-2">{`${row.consentPrivacy ? "P" : "–"} ${row.consentRules ? "R" : "–"} ${row.consentMarketing ? "M" : "–"}`}</td>
                 <td className="px-3 py-2">{demoLabel(row.demoStatus)}</td>

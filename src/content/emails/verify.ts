@@ -7,6 +7,7 @@ export const verifyEmailCopy = {
   expires: "Scade tra 10 minuti. Se non hai chiesto tu l’iscrizione, ignora questa email.",
   textExpires: "Scade tra 10 minuti.",
   textIgnore: "Se non hai chiesto tu l’iscrizione, ignora questa email.",
+  button: "Conferma la mia email",
 } as const;
 
 export const verifyEmailCopyEn = {
@@ -16,6 +17,7 @@ export const verifyEmailCopyEn = {
   expires: "It expires in 10 minutes. If you didn't ask to sign up, ignore this email.",
   textExpires: "It expires in 10 minutes.",
   textIgnore: "If you didn't ask to sign up, ignore this email.",
+  button: "Confirm my email",
 } as const;
 
 export function verifyCopy(locale: "it" | "en") {

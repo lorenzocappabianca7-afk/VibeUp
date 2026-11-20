@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const result = await verifyEmailCode(signupId, code);
     if (!result.ok) {
       const status =
-        result.error === "expired" || result.error === "mismatch" || result.error === "locked"
+        result.error === "expired" || result.error === "mismatch" || result.error === "replaced" || result.error === "locked"
           ? 400
           : result.error === "not_found"
             ? 404

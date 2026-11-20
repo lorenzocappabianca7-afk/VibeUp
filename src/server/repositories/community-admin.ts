@@ -10,7 +10,7 @@ const DEMOS = "demo_submissions";
 const PAGE_SIZE = 50;
 
 const SIGNUP_LIST_COLUMNS =
-  "id, created_at, first_name, last_name, username, email, phone, birth_date, birth_year, high_school, dream_venue, dream_venue_undecided, locale, vibeup_code, referred_by_code, email_verified_at, welcome_email_sent_at, consent_privacy_at, consent_rules_at, consent_marketing, contest_excluded, is_tester";
+  "id, created_at, first_name, last_name, username, email, phone, birth_date, birth_year, high_school, dream_venue, dream_venue_undecided, locale, vibeup_code, referred_by_code, email_verified_at, welcome_email_sent_at, consent_privacy_at, consent_rules_at, consent_marketing, contest_excluded, is_tester, verify_mail_status";
 
 export const UNDECIDED_DREAM_VENUE = "Nessuna idea";
 
@@ -39,6 +39,7 @@ export interface CommunitySignupRow {
   referredByUsername: string;
   validInvites: number;
   verified: boolean;
+  verifyMail: string;
   welcomeEmailSent: boolean;
   consentPrivacy: boolean;
   consentRules: boolean;
@@ -79,6 +80,7 @@ type SignupDb = {
   vibeup_code: string | null;
   referred_by_code: string | null;
   email_verified_at: string | null;
+  verify_mail_status: string | null;
   welcome_email_sent_at: string | null;
   consent_privacy_at: string | null;
   consent_rules_at: string | null;
@@ -362,11 +364,11 @@ function percent(part: number, total: number) {
 export async function loadCommunityOverview() {
   const client = admin();
   if (!client) throw new Error("Supabase non configurato.");
-  const slim: { created_at: string; email_verified_at: string | null; high_school: string | null; dream_venue: string | null; dream_venue_undecided: boolean | null; locale: string | null; id: string; email: string; is_tester: boolean | null }[] = [];
+  const slim: { created_at: string; email_verified_at: string | null; verify_mail_status: string | null; high_school: string | null; dream_venue: string | null; dream_venue_undecided: boolean | null; locale: string | null; id: string; email: string; is_tester: boolean | null }[] = [];
   for (let from = 0; ; from += 1000) {
     const { data, error } = await client
       .from(SIGNUPS)
-      .select("id, email, created_at, email_verified_at, high_school, dream_venue, dream_venue_undecided, locale, is_tester")
+      .select("id, email, created_at, email_verified_at, verify_mail_status, high_school, dream_venue, dream_venue_undecided, locale, is_tester")
       .range(from, from + 999);
     if (error) throw new Error(error.message);
     const page = (data ?? []) as typeof slim;
@@ -451,6 +453,8 @@ export async function loadCommunityOverview() {
     totals: {
       signups: counted.length,
       verified,
+      unverified: counted.filter((row) => !row.email_verified_at).length,
+      bounced: counted.filter((row) => row.verify_mail_status === "bounced" || row.verify_mail_status === "complained").length,
       today: counted.filter((row) => romeDay(row.created_at) === today).length,
       week: counted.filter((row) => romeDay(row.created_at) >= weekDay).length,
       demoEntered: demos.filter((demo) => demo.steps.stepEnteredAt).length,
@@ -626,6 +630,7 @@ function mapSignup(
     referredByUsername: row.referred_by_code ? names.get(row.referred_by_code) ?? "" : "",
     validInvites: row.vibeup_code ? invites.get(row.vibeup_code) ?? 0 : 0,
     verified: Boolean(row.email_verified_at),
+    verifyMail: row.verify_mail_status ?? "",
     welcomeEmailSent: Boolean(row.welcome_email_sent_at),
     consentPrivacy: Boolean(row.consent_privacy_at),
     consentRules: Boolean(row.consent_rules_at),

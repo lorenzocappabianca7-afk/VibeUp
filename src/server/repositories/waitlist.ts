@@ -22,7 +22,10 @@ import {
 import { LEGAL_VERSIONS } from "@/content/legal";
 import {
   CODE_MAX_ATTEMPTS,
+  confirmTokenMatches,
+  createConfirmToken,
   createVerificationCode,
+  hashConfirmToken,
   hashVerificationCode,
   RESEND_WAIT_MS,
   verificationCodesMatch,
@@ -44,6 +47,7 @@ export type WaitlistError =
   | "expired"
   | "locked"
   | "mismatch"
+  | "replaced"
   | "wait";
 
 export type WaitlistDraft = {
@@ -107,11 +111,33 @@ export async function isUsernameAvailable(username: string, exceptId?: string) {
   if (!client) return null;
   const name = username.trim();
   if (!USERNAME_RE.test(name)) return false;
-  let query = client.from(SIGNUPS).select("id").ilike("username", escapeLike(name)).limit(1);
+  let query = client
+    .from(SIGNUPS)
+    .select("id, email_verified_at")
+    .ilike("username", escapeLike(name))
+    .limit(5);
   if (exceptId) query = query.neq("id", exceptId);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return (data ?? []).length === 0;
+  const rows = (data ?? []) as { id: string; email_verified_at: string | null }[];
+  if (rows.some((row) => row.email_verified_at)) return false;
+  for (const row of rows) {
+    await deleteUnverifiedSignup(row.id);
+  }
+  return true;
+}
+
+async function deleteUnverifiedSignup(signupId: string) {
+  const client = admin();
+  if (!client || !isUuid(signupId)) return false;
+  const { data, error } = await client
+    .from(SIGNUPS)
+    .delete()
+    .eq("id", signupId)
+    .is("email_verified_at", null)
+    .select("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).length > 0;
 }
 
 export async function searchVenueNames(query: string) {
@@ -230,12 +256,15 @@ export async function startEmailSignup(input: {
 
   const { data: phoneOwner, error: phoneError } = await client
     .from(SIGNUPS)
-    .select("id")
+    .select("id, email_verified_at")
     .eq("phone", input.phone)
-    .limit(1);
+    .limit(5);
   if (phoneError) throw new Error(phoneError.message);
-  const phoneRow = phoneOwner?.[0] as { id: string } | undefined;
-  if (phoneRow && phoneRow.id !== existing?.id) return { ok: false, error: "phone_taken" };
+  for (const row of (phoneOwner ?? []) as { id: string; email_verified_at: string | null }[]) {
+    if (row.id === existing?.id) continue;
+    if (row.email_verified_at) return { ok: false, error: "phone_taken" };
+    await deleteUnverifiedSignup(row.id);
+  }
 
   const payload = {
     first_name: input.firstName.trim(),
@@ -408,7 +437,7 @@ export async function issueEmailCode(
   signupId: string,
   options?: { enforceWait?: boolean },
 ): Promise<
-  | { ok: true; code: string; email: string; firstName: string; sentAt: string }
+  | { ok: true; code: string; confirmToken: string; email: string; firstName: string; sentAt: string }
   | { ok: false; error: WaitlistError; retryAfter?: number }
 > {
   const client = admin();
@@ -425,12 +454,13 @@ export async function issueEmailCode(
 
   const { data: current, error: codeError } = await client
     .from(CODES)
-    .select("sent_at")
+    .select("sent_at, code_hash")
     .eq("signup_id", signupId)
     .maybeSingle();
   if (codeError) throw new Error(codeError.message);
-  if (options?.enforceWait && current?.sent_at) {
-    const elapsed = Date.now() - new Date(current.sent_at as string).getTime();
+  const currentCode = current as { sent_at?: string; code_hash?: string } | null;
+  if (options?.enforceWait && currentCode?.sent_at) {
+    const elapsed = Date.now() - new Date(currentCode.sent_at).getTime();
     if (elapsed < RESEND_WAIT_MS) {
       return {
         ok: false,
@@ -441,6 +471,7 @@ export async function issueEmailCode(
   }
 
   const code = createVerificationCode();
+  const confirmToken = createConfirmToken();
   const sentAt = new Date().toISOString();
   const expiresAt = new Date(Date.now() + verificationTtlMs()).toISOString();
   const { error: clearError } = await client
@@ -452,6 +483,8 @@ export async function issueEmailCode(
     {
       signup_id: signupId,
       code_hash: hashVerificationCode(code),
+      previous_code_hash: currentCode?.code_hash ?? null,
+      confirm_token_hash: hashConfirmToken(confirmToken),
       expires_at: expiresAt,
       attempts: 0,
       sent_at: sentAt,
@@ -459,7 +492,7 @@ export async function issueEmailCode(
     { onConflict: "signup_id" },
   );
   if (upsertError) throw new Error(upsertError.message);
-  return { ok: true, code, email: row.email, firstName: row.first_name, sentAt };
+  return { ok: true, code, confirmToken, email: row.email, firstName: row.first_name, sentAt };
 }
 
 function makeVibeUpCode() {
@@ -576,16 +609,19 @@ export async function verifyEmailCode(
 
   const { data, error } = await client
     .from(CODES)
-    .select("signup_id, code_hash, expires_at, attempts, sent_at")
+    .select("signup_id, code_hash, previous_code_hash, confirm_token_hash, expires_at, attempts, sent_at")
     .eq("signup_id", signupId)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return { ok: false, error: "not_found" };
-  const row = data as CodeRow;
+  const row = data as CodeRow & { previous_code_hash?: string | null };
   if (row.attempts >= CODE_MAX_ATTEMPTS) return { ok: false, error: "locked" };
   if (new Date(row.expires_at).getTime() <= Date.now()) {
     await client.from(CODES).delete().eq("signup_id", signupId);
     return { ok: false, error: "expired" };
+  }
+  if (row.previous_code_hash && verificationCodesMatch(row.previous_code_hash, digits)) {
+    return { ok: false, error: "replaced" };
   }
   if (!verificationCodesMatch(row.code_hash, digits)) {
     await client
@@ -596,6 +632,43 @@ export async function verifyEmailCode(
     return { ok: false, error: "mismatch" };
   }
 
+  return finishEmailProof(signupId);
+}
+
+export async function confirmEmailToken(signupId: string, token: string) {
+  const client = admin();
+  if (!client || !isUuid(signupId) || !token) return { ok: false as const, error: "not_found" as const };
+  const { data, error } = await client
+    .from(CODES)
+    .select("confirm_token_hash, expires_at")
+    .eq("signup_id", signupId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return { ok: false as const, error: "not_found" as const };
+  const row = data as { confirm_token_hash: string | null; expires_at: string };
+  if (!row.confirm_token_hash || !confirmTokenMatches(row.confirm_token_hash, token)) {
+    return { ok: false as const, error: "mismatch" as const };
+  }
+  if (new Date(row.expires_at).getTime() <= Date.now()) {
+    await client.from(CODES).delete().eq("signup_id", signupId);
+    return { ok: false as const, error: "expired" as const };
+  }
+  return finishEmailProof(signupId);
+}
+
+async function finishEmailProof(signupId: string): Promise<
+  | {
+      ok: true;
+      vibeupCode: string;
+      email: string;
+      firstName: string;
+      welcomePending: boolean;
+      confirmed: boolean;
+    }
+  | { ok: false; error: WaitlistError }
+> {
+  const client = admin();
+  if (!client) return unavailable();
   const { data: signup, error: signupError } = await client
     .from(SIGNUPS)
     .select(
@@ -780,5 +853,101 @@ export async function purgeWaitlistRetention() {
     expiredCodes: codes.data?.length ?? 0,
     expiredPrivacyCodes: privacy.data?.length ?? 0,
     unverifiedSignups: signups.data?.length ?? 0,
+  };
+}
+
+export type VerifyMailStatus = "sent" | "delivered" | "bounced" | "complained" | "delayed" | "error";
+
+export async function recordVerifyMail(signupId: string, status: VerifyMailStatus, mailId: string | null) {
+  const client = admin();
+  if (!client || !isUuid(signupId)) return;
+  await client
+    .from(SIGNUPS)
+    .update({
+      verify_mail_status: status,
+      verify_mail_id: mailId,
+      verify_mail_at: new Date().toISOString(),
+    })
+    .eq("id", signupId);
+}
+
+export async function readVerifyMail(signupId: string) {
+  const client = admin();
+  if (!client || !isUuid(signupId)) return null;
+  const { data, error } = await client
+    .from(SIGNUPS)
+    .select("verify_mail_status")
+    .eq("id", signupId)
+    .maybeSingle();
+  if (error || !data) return null;
+  const status = (data as { verify_mail_status?: string | null }).verify_mail_status ?? null;
+  return status;
+}
+
+export async function applyVerifyMailEvent(input: {
+  mailId: string;
+  signupId?: string | null;
+  status: VerifyMailStatus;
+}) {
+  const client = admin();
+  if (!client) return false;
+  const patch = {
+    verify_mail_status: input.status,
+    verify_mail_at: new Date().toISOString(),
+  };
+  if (input.mailId) {
+    const byId = await client.from(SIGNUPS).update(patch).eq("verify_mail_id", input.mailId).select("id");
+    if (!byId.error && (byId.data ?? []).length > 0) return true;
+  }
+  if (input.signupId && isUuid(input.signupId)) {
+    const bySignup = await client.from(SIGNUPS).update(patch).eq("id", input.signupId).select("id");
+    return !bySignup.error && (bySignup.data ?? []).length > 0;
+  }
+  return false;
+}
+
+export async function readPendingSignup(signupId: string) {
+  const client = admin();
+  if (!client || !isUuid(signupId)) return null;
+  const { data, error } = await client
+    .from(SIGNUPS)
+    .select("id, first_name, last_name, email, phone, email_confirmed_at, email_verified_at, vibeup_code")
+    .eq("id", signupId)
+    .maybeSingle();
+  if (error || !data) return null;
+  const row = data as {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string | null;
+    email_confirmed_at: string | null;
+    email_verified_at: string | null;
+    vibeup_code: string | null;
+  };
+  if (row.email_verified_at && row.vibeup_code) {
+    return { stage: "done" as const, id: row.id, firstName: row.first_name, code: row.vibeup_code, email: row.email };
+  }
+  const { data: code } = await client.from(CODES).select("expires_at, sent_at").eq("signup_id", signupId).maybeSingle();
+  const expires = code ? new Date((code as { expires_at: string }).expires_at).getTime() : 0;
+  if (row.email_confirmed_at) {
+    return {
+      stage: "continue" as const,
+      id: row.id,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      email: row.email,
+      phone: row.phone ?? "",
+    };
+  }
+  if (!code || expires <= Date.now()) return null;
+  return {
+    stage: "code" as const,
+    id: row.id,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    email: row.email,
+    phone: row.phone ?? "",
+    sentAt: (code as { sent_at: string }).sent_at,
   };
 }

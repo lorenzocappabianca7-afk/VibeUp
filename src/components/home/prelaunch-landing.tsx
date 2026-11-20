@@ -14,7 +14,7 @@ import { SignupFlow } from "@/components/home/signup-flow";
 import { useLandingCopy } from "@/lib/locale/use-localized";
 import { isContestOver } from "@/config/contest";
 import { readDemoSignupId, readVerifiedMember, type VerifiedMemberCard } from "@/lib/demo/signup-gate";
-import { rememberSignupReferral } from "@/lib/launch/draft";
+import { loadSignupDraft, rememberSignupReferral } from "@/lib/launch/draft";
 import { isVibeUpCode, normalizeCode } from "@/lib/launch/fields";
 import type { LandingCompareVenue } from "@/lib/landing/compare-table";
 import { useRouter } from "next/navigation";
@@ -49,6 +49,13 @@ export function PrelaunchLanding({
     const params = new URLSearchParams(window.location.search);
     const ref = normalizeCode(params.get("ref") ?? "");
     if (isVibeUpCode(ref)) rememberSignupReferral(ref);
+    if (params.get("open") === "signup" || loadSignupDraft().step === 1) setSignupOpen(true);
+    void fetch("/api/launch/pending", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((data: { stage?: string }) => {
+        if (data.stage === "code" || data.stage === "continue" || data.stage === "done") setSignupOpen(true);
+      })
+      .catch(() => undefined);
     const signupId = readDemoSignupId();
     if (signupId) {
       void readVerifiedMember(signupId).then((card) => {

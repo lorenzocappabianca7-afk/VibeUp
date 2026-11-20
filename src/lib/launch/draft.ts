@@ -96,11 +96,21 @@ export function emptySignupDraft(): SignupDraft {
   };
 }
 
+const DRAFT_CODE_TTL_MS = 10 * 60 * 1000;
+
+function readDraftRaw() {
+  try {
+    return sessionStorage.getItem(SIGNUP_DRAFT_KEY) || localStorage.getItem(SIGNUP_DRAFT_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export function loadSignupDraft(): SignupDraft {
   const base = emptySignupDraft();
   if (typeof window === "undefined") return base;
   try {
-    const raw = sessionStorage.getItem(SIGNUP_DRAFT_KEY);
+    const raw = readDraftRaw();
     if (!raw) return base;
     const parsed = JSON.parse(raw) as Partial<SignupDraft> & { flow?: number; emailConfirmed?: boolean; signupId?: string };
     const current = parsed.flow === 4;
@@ -117,6 +127,9 @@ export function loadSignupDraft(): SignupDraft {
     const birthDate = typeof parsed.birthDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.birthDate) ? parsed.birthDate : "";
     const phonePrefix = typeof parsed.phonePrefix === "string" && parsed.phonePrefix.trim() ? parsed.phonePrefix : "+39";
     const phoneNational = typeof parsed.phoneNational === "string" ? parsed.phoneNational : "";
+    if (step === 1 && (typeof parsed.codeSentAt !== "number" || Date.now() - parsed.codeSentAt > DRAFT_CODE_TTL_MS)) {
+      step = 0;
+    }
     if (!phoneNational.trim()) step = 0;
     return {
       ...base,
@@ -152,6 +165,7 @@ export function saveSignupDraft(draft: SignupDraft) {
   if (typeof window === "undefined") return;
   try {
     sessionStorage.setItem(SIGNUP_DRAFT_KEY, JSON.stringify(draft));
+    localStorage.setItem(SIGNUP_DRAFT_KEY, JSON.stringify(draft));
   } catch {
     /* private mode */
   }
@@ -161,6 +175,7 @@ export function clearSignupDraft() {
   if (typeof window === "undefined") return;
   try {
     sessionStorage.removeItem(SIGNUP_DRAFT_KEY);
+    localStorage.removeItem(SIGNUP_DRAFT_KEY);
   } catch {
     /* private mode */
   }

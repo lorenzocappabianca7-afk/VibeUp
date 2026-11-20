@@ -1,4 +1,7 @@
+import { parseSiteLocale } from "@/lib/demo/language";
 import { sendVerificationEmail } from "@/server/launch/code-mail";
+import { domainHasMx } from "@/server/launch/mx";
+import { attachVerifyCookie } from "@/server/launch/signup-cookie";
 import { isTesterEmail } from "@/server/launch/testers";
 import {
   asText,
@@ -10,7 +13,7 @@ import {
 } from "@/server/launch/request";
 import { rateLimit } from "@/server/http/rate-limit";
 import { rejectLargeRequest } from "@/server/http/request-limits";
-import { issueEmailCode, readSignupEmail, readSignupLocale } from "@/server/repositories/waitlist";
+import { issueEmailCode, readSignupEmail, readSignupLocale, recordVerifyMail, updateSignupLocale } from "@/server/repositories/waitlist";
 import { type NextRequest } from "next/server";
 
 export const runtime = "nodejs";
@@ -31,6 +34,11 @@ export async function POST(request: NextRequest) {
       windowMs: 60 * 60 * 1000,
     });
     if (limited) return limited;
+    const domain = (email ?? "").split("@")[1] ?? "";
+    if (domain && (await domainHasMx(domain)) === false) return launchError(400, "no_mx");
+    const requested = asText(body?.locale).trim();
+    const locale = requested === "en" || requested === "it" ? parseSiteLocale(requested) : await readSignupLocale(signupId);
+    if (requested === "en" || requested === "it") await updateSignupLocale(signupId, locale);
     const issued = await issueEmailCode(signupId, { enforceWait: !tester });
     if (!issued.ok) {
       if (issued.error === "wait") {
@@ -42,12 +50,19 @@ export async function POST(request: NextRequest) {
       to: issued.email,
       firstName: issued.firstName,
       code: issued.code,
+      confirmToken: issued.confirmToken,
       signupId,
       origin: requestOrigin(request),
-      locale: await readSignupLocale(signupId),
+      locale,
     });
-    if (!mailed.ok) return launchError(503, "send_failed");
-    return launchOk({ sentAt: issued.sentAt });
+    if (!mailed.ok) {
+      await recordVerifyMail(signupId, "error", null);
+      return launchError(503, "send_failed");
+    }
+    await recordVerifyMail(signupId, "sent", mailed.id);
+    const response = launchOk({ sentAt: issued.sentAt });
+    attachVerifyCookie(response, signupId);
+    return response;
   } catch {
     return launchError(500, "unavailable");
   }
