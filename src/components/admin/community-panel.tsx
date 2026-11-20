@@ -669,11 +669,9 @@ function SignupsTab() {
     ["createdAt", "Data"],
     ["firstName", "Nome"],
     ["lastName", "Cognome"],
-    ["username", "Username"],
     ["email", "Email"],
     ["phone", "Telefono"],
     ["birthDate", "Data di nascita"],
-    ["highSchool", "Liceo"],
     ["dreamVenue", "Locale"],
     ["locale", "Lingua"],
     ["vibeupCode", "Codice"],
@@ -747,11 +745,9 @@ function SignupsTab() {
                   {row.isTester ? <span className="ml-2 rounded-full bg-brand-pink/15 px-2 py-0.5 text-xs font-semibold text-brand-pink">Tester</span> : null}
                 </td>
                 <td className="px-3 py-2">{row.lastName}</td>
-                <td className="px-3 py-2">{row.username || "—"}</td>
                 <td className="px-3 py-2">{row.email}</td>
                 <td className="px-3 py-2 whitespace-nowrap">{row.phone || "—"}</td>
                 <td className="px-3 py-2 whitespace-nowrap">{formatBirth(row.birthDate, row.birthYear)}</td>
-                <td className="px-3 py-2">{row.highSchool || "—"}</td>
                 <td className="px-3 py-2">{row.dreamVenue || "—"}</td>
                 <td className="px-3 py-2 uppercase">{row.locale}</td>
                 <td className="px-3 py-2">{row.vibeupCode || "—"}</td>
